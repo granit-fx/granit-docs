@@ -1,0 +1,28 @@
+{
+  "name": "granit-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\""
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.34",
+    "astro": "^5.7",
+    "sharp": "^0.33"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.17",
+    "starlight-links-validator": "^0.14",
+    "starlight-image-zoom": "^0.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

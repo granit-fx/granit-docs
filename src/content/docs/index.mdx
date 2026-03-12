@@ -1,0 +1,65 @@
+---
+title: Granit Framework
+description: Rock-solid, production-ready modular framework for .NET and React
+template: splash
+hero:
+  title: Granit Framework
+  tagline: Rock-solid, production-ready modular framework for .NET and React. 93 NuGet packages. GDPR + ISO 27001 + ISO 9001 compliant.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Module Reference
+      link: /reference/
+      icon: open-book
+      variant: minimal
+---
+
+import { CardGrid, Card, LinkCard } from "@astrojs/starlight/components";
+
+## Why Granit?
+
+<CardGrid>
+  <Card title="Modular by design" icon="puzzle">
+    93 NuGet packages. Pick only what you need — each module is independent with
+    explicit `[DependsOn]` declarations.
+  </Card>
+  <Card title="Multi-provider" icon="setting">
+    Swap implementations without changing your code. In-memory for dev, production
+    providers for deployment.
+  </Card>
+  <Card title="Compliance built-in" icon="approve-check">
+    GDPR, ISO 27001, and ISO 9001 compliance baked into every module — audit trail,
+    encryption, soft delete, data filtering.
+  </Card>
+  <Card title="Production-ready" icon="rocket">
+    Battle-tested in healthcare and government applications. Observability,
+    background jobs, multi-tenancy included.
+  </Card>
+</CardGrid>
+
+## Explore
+
+<CardGrid>
+  <LinkCard
+    title="Getting Started"
+    description="From zero to running API in minutes"
+    href="/getting-started/"
+  />
+  <LinkCard
+    title="Concepts"
+    description="Understand the module system, persistence, security model"
+    href="/concepts/"
+  />
+  <LinkCard
+    title="Guides"
+    description="Step-by-step how-to guides for every module"
+    href="/guides/"
+  />
+  <LinkCard
+    title="Module Reference"
+    description="All 93 packages documented with providers and configuration"
+    href="/reference/"
+  />
+</CardGrid>
