@@ -25,7 +25,16 @@ async function initMermaid() {
       const wrapper = isExpressiveCode
         ? el.closest(".expressive-code") || el.parentElement
         : el.parentElement;
-      const text = el.textContent;
+      // Expressive Code wraps each line in <div class="ec-line"> without
+      // newline characters between them. el.textContent concatenates everything
+      // into one line, which breaks mermaid parsing. Extract line-by-line instead.
+      const lines = el.querySelectorAll(".ec-line");
+      const text =
+        lines.length > 0
+          ? Array.from(lines)
+              .map((line) => line.textContent)
+              .join("\n")
+          : el.textContent;
       const pre = document.createElement("pre");
       pre.classList.add("mermaid");
       pre.textContent = text;
