@@ -23,10 +23,10 @@ The authentication pipeline is built from four packages, each adding one concern
 
 ```mermaid
 graph TD
-    S["Granit.Security<br/>ICurrentUserService abstraction"] --> C[Granit.Core]
-    JWT["Granit.Authentication.JwtBearer<br/>Generic OIDC JWT Bearer"] --> S
-    KC["Granit.Authentication.Keycloak<br/>Keycloak claims transformation"] --> JWT
-    EID["Granit.Authentication.EntraId<br/>Entra ID roles parsing"] --> JWT
+    S["Granit.Security\nICurrentUserService abstraction"] --> C[Granit.Core]
+    JWT["Granit.Authentication.JwtBearer\nGeneric OIDC JWT Bearer"] --> S
+    KC["Granit.Authentication.Keycloak\nKeycloak claims transformation"] --> JWT
+    EID["Granit.Authentication.EntraId\nEntra ID roles parsing"] --> JWT
 ```
 
 ### Granit.Security -- the foundation

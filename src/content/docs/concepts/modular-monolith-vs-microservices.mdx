@@ -13,8 +13,8 @@ Architecture is not a binary choice between monolith and microservices. It is a 
 
 ```mermaid
 graph LR
-    A["Monolith<br/><small>Low complexity<br/>Low ops cost</small>"] --> B["Modular Monolith<br/><small>Moderate complexity<br/>Low ops cost</small>"]
-    B --> C["Microservices<br/><small>High complexity<br/>High ops cost</small>"]
+    A["Monolith\nLow complexity\nLow ops cost"] --> B["Modular Monolith\nModerate complexity\nLow ops cost"]
+    B --> C["Microservices\nHigh complexity\nHigh ops cost"]
 
     style A fill:#e8f5e9,stroke:#388e3c
     style B fill:#fff3e0,stroke:#f57c00
@@ -131,8 +131,8 @@ graph TB
 
     subgraph "Step 3-5: Extracted Service"
         N1["Module A"] -->|Wolverine| N2["Module B"]
-        N1 -->|Channel| N3["Module C<br/><small>(still in monolith)</small>"]
-        N2["Module B<br/><small>(separate service)</small>"]
+        N1 -->|Channel| N3["Module C\n(still in monolith)"]
+        N2["Module B\n(separate service)"]
     end
 ```
 

@@ -125,9 +125,9 @@ Each tenant gets a dedicated database. Full physical separation.
 
 ```mermaid
 flowchart TD
-    A[New tenant onboarding] --> B{ISO 27001 physical<br/>separation required?}
+    A[New tenant onboarding] --> B{"ISO 27001 physical\nseparation required?"}
     B -- Yes --> C[DatabasePerTenant]
-    B -- No --> D{More than 1000<br/>tenants expected?}
+    B -- No --> D{"More than 1000\ntenants expected?"}
     D -- Yes --> E[SharedDatabase]
     D -- No --> F[SchemaPerTenant]
 ```

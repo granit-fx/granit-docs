@@ -113,14 +113,20 @@ export default defineConfig({
               const isDark = document.documentElement.dataset.theme === 'dark'
                 || window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-              // Convert code blocks to mermaid-renderable elements
-              document.querySelectorAll('code.language-mermaid').forEach(code => {
-                const pre = code.parentElement;
-                const div = document.createElement('pre');
-                div.classList.add('mermaid');
-                div.textContent = code.textContent;
-                div.setAttribute('data-original', code.textContent);
-                pre.parentElement.replaceChild(div, pre);
+              // Convert mermaid code blocks to <pre class="mermaid"> for rendering.
+              // Expressive Code (build): <div class="expressive-code"><figure><pre data-language="mermaid">...
+              // Standard Markdown (dev):  <pre><code class="language-mermaid">...
+              document.querySelectorAll('pre[data-language="mermaid"], code.language-mermaid').forEach(el => {
+                const isExpressiveCode = el.matches('pre[data-language="mermaid"]');
+                const wrapper = isExpressiveCode
+                  ? (el.closest('.expressive-code') || el.parentElement)
+                  : el.parentElement;
+                const text = el.textContent;
+                const pre = document.createElement('pre');
+                pre.classList.add('mermaid');
+                pre.textContent = text;
+                pre.setAttribute('data-original', text);
+                wrapper.replaceWith(pre);
               });
 
               mermaid.initialize({

@@ -58,7 +58,7 @@ sequenceDiagram
     participant ModA as Module A (leaf)
     participant ModB as Module B (root)
 
-    Host->>Loader: builder.AddGranit<ModB>()
+    Host->>Loader: builder.AddGranit~ModB~()
     Loader->>Loader: Discover + topological sort
 
     Note over Loader: Phase 1 — ConfigureServices
