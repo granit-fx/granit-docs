@@ -9,7 +9,7 @@ Thank you for your interest in contributing to Granit. This section covers
 everything you need to get started as a contributor to the framework.
 
 Before contributing, please read the
-[Code of Conduct](https://gitlab.com/digital-dynamics/granit-dotnet/-/blob/main/CODE_OF_CONDUCT.md)
+[Code of Conduct](https://github.com/granit-fx/granit-dotnet/blob/main/CODE_OF_CONDUCT.md)
 (Contributor Covenant 2.1). We are committed to providing a welcoming and
 inclusive experience for everyone.
 

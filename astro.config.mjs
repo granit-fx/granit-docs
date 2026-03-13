@@ -36,14 +36,14 @@ export default defineConfig({
       },
       social: [
         {
-          icon: "gitlab",
-          label: "GitLab",
-          href: "https://gitlab.com/digital-dynamics/granit-dotnet",
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/granit-fx/granit-dotnet",
         },
       ],
       editLink: {
         baseUrl:
-          "https://gitlab.com/digital-dynamics/granit-dotnet/-/edit/develop/docs-site/",
+          "https://github.com/granit-fx/granit-dotnet/edit/develop/docs-site/",
       },
       plugins: [
         starlightSidebarTopics([

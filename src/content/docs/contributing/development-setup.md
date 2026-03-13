@@ -23,7 +23,7 @@ sidebar:
 ## Clone and build
 
 ```bash
-git clone git@gitlab.com:digital-dynamics/granit-dotnet.git
+git clone git@github.com:granit-fx/granit-dotnet.git
 cd granit-dotnet
 
 # Build the entire solution
