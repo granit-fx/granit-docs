@@ -26,16 +26,45 @@ abstractions that other modules implement.
 
 <FileTree>
 - src/Granit.Core/
-  - Modularity/ GranitModule, GranitBuilder, DependsOnAttribute, ModuleLoader
-  - Domain/ Entity, ValueObject, AggregateRoot, audit hierarchy, filter interfaces
-  - DataFiltering/ IDataFilter, DataFilter
-  - MultiTenancy/ ICurrentTenant, NullTenantContext
-  - Events/ IDomainEvent, IIntegrationEvent, IDomainEventDispatcher
-  - Exceptions/ BusinessException, ValidationException, EntityNotFoundException...
-  - Endpoints/ ModuleConfigEndpointExtensions, BatchResult
-  - Extensions/ GranitHostBuilderExtensions, GranitApplicationExtensions
-  - Localization/ LocalizableString, LocalizationResourceNameAttribute
-  - Diagnostics/ GranitActivitySourceRegistry
+  - Modularity/
+    - GranitModule.cs
+    - GranitBuilder.cs
+    - DependsOnAttribute.cs
+    - ModuleLoader.cs
+  - Domain/
+    - Entity.cs
+    - ValueObject.cs
+    - AggregateRoot.cs
+    - ISoftDeletable.cs
+    - IMultiTenant.cs
+    - IActive.cs
+    - IPublishable.cs
+    - IProcessingRestrictable.cs
+  - DataFiltering/
+    - IDataFilter.cs
+    - DataFilter.cs
+  - MultiTenancy/
+    - ICurrentTenant.cs
+    - NullTenantContext.cs
+  - Events/
+    - IDomainEvent.cs
+    - IIntegrationEvent.cs
+    - IDomainEventDispatcher.cs
+  - Exceptions/
+    - BusinessException.cs
+    - ValidationException.cs
+    - EntityNotFoundException.cs
+  - Endpoints/
+    - ModuleConfigEndpointExtensions.cs
+    - BatchResult.cs
+  - Extensions/
+    - GranitHostBuilderExtensions.cs
+    - GranitApplicationExtensions.cs
+  - Localization/
+    - LocalizableString.cs
+    - LocalizationResourceNameAttribute.cs
+  - Diagnostics/
+    - GranitActivitySourceRegistry.cs
 </FileTree>
 
 ## Setup
