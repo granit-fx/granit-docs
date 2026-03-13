@@ -1,0 +1,274 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+
+const programCs = `<span class="text-blue-400">var</span> builder = WebApplication.CreateBuilder(args);
+
+builder.AddGranit&lt;<span class="text-sky-300">AppModule</span>&gt;();
+
+<span class="text-blue-400">var</span> app = builder.Build();
+app.UseGranit();
+app.Run();`;
+
+const appModuleCs = `[<span class="text-cyan-400">DependsOn</span>(<span class="text-blue-400">typeof</span>(<span class="text-sky-300">GranitPersistenceModule</span>))]
+[<span class="text-cyan-400">DependsOn</span>(<span class="text-blue-400">typeof</span>(<span class="text-sky-300">GranitSecurityModule</span>))]
+[<span class="text-cyan-400">DependsOn</span>(<span class="text-blue-400">typeof</span>(<span class="text-sky-300">GranitObservabilityModule</span>))]
+<span class="text-blue-400">public class</span> <span class="text-sky-300">AppModule</span> : <span class="text-cyan-400">GranitModule</span>
+{
+    <span class="text-blue-400">public override void</span> ConfigureServices(
+        <span class="text-cyan-400">ServiceConfigurationContext</span> context)
+    {
+        context.Services.AddGranitDbContext&lt;<span class="text-sky-300">AppDbContext</span>&gt;(
+            options =&gt; options.UseNpgsql(
+                context.Configuration
+                    .GetConnectionString(<span class="text-amber-300">&quot;Default&quot;</span>)));
+    }
+}`;
+---
+
+<StarlightPage
+  frontmatter={{ title: "Granit", template: "splash", hero: { tagline: "" } }}
+  headings={[]}
+>
+  <!-- Hero -->
+  <section class="mx-auto max-w-6xl px-4 pt-12 pb-16 text-center sm:pt-20 sm:pb-24">
+    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-600 bg-slate-800/50 px-4 py-1.5 text-sm text-slate-300">
+      <span class="inline-block h-2 w-2 rounded-full bg-blue-400"></span>
+      Apache-2.0 &middot; .NET 10 &middot; GDPR &amp; ISO 27001 ready
+    </div>
+
+    <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
+      Build production apps,<br />
+      <span class="bg-gradient-to-r from-blue-400 to-slate-300 bg-clip-text text-transparent">
+        not boilerplate.
+      </span>
+    </h1>
+
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-slate-400 sm:text-xl">
+      Granit is a rock-solid modular framework for .NET and React.
+      93 packages covering auth, persistence, messaging, documents, workflow,
+      observability — wired together with a topological module system.
+    </p>
+
+    <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a
+        href="/getting-started/"
+        class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition hover:bg-blue-400"
+      >
+        Get Started
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+      <a
+        href="/reference/"
+        class="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-6 py-3 font-semibold text-slate-300 transition hover:border-slate-400 hover:text-white"
+      >
+        Module Reference
+      </a>
+    </div>
+  </section>
+
+  <!-- Quick Start CLI -->
+  <section class="mx-auto max-w-4xl px-4 pb-16">
+    <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
+      <div class="flex items-center gap-2 border-b border-slate-700 px-4 py-3">
+        <span class="h-3 w-3 rounded-full bg-red-500"></span>
+        <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
+        <span class="h-3 w-3 rounded-full bg-green-500"></span>
+        <span class="ml-2 text-sm text-slate-400">Terminal</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed">
+        <p class="text-slate-500"># Install the template</p>
+        <p><span class="text-blue-400">$</span> <span class="text-white">dotnet new install Granit.Templates</span></p>
+        <p class="mt-3 text-slate-500"># Create a new project</p>
+        <p><span class="text-blue-400">$</span> <span class="text-white">dotnet new granit-app -n MyApp</span></p>
+        <p class="mt-3 text-slate-500"># Run with full observability</p>
+        <p><span class="text-blue-400">$</span> <span class="text-white">cd MyApp &amp;&amp; dotnet run</span></p>
+        <p class="mt-2 text-slate-500">info: Granit.Core.Modularity.ModuleLoader[0]</p>
+        <p class="text-slate-500">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Loaded 12 modules in topological order</p>
+        <p class="text-slate-500">info: Microsoft.Hosting.Lifetime[14]</p>
+        <p class="text-slate-500">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Now listening on: https://localhost:5001</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Showcase -->
+  <section class="mx-auto max-w-6xl px-4 pb-20">
+    <h2 class="mb-4 text-center text-3xl font-bold text-white sm:text-4xl">
+      Declare modules, not plumbing
+    </h2>
+    <p class="mx-auto mb-12 max-w-2xl text-center text-slate-400">
+      Each module declares its dependencies. Granit resolves the graph, wires DI,
+      runs interceptors, and applies query filters — automatically.
+    </p>
+
+    <div class="grid gap-8 lg:grid-cols-2">
+      <!-- Program.cs -->
+      <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
+        <div class="border-b border-slate-700 px-4 py-2 text-sm text-slate-400">
+          Program.cs
+        </div>
+        <pre class="overflow-x-auto p-4 text-sm leading-relaxed"><code class="text-slate-300" set:html={programCs} /></pre>
+      </div>
+
+      <!-- AppModule.cs -->
+      <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
+        <div class="border-b border-slate-700 px-4 py-2 text-sm text-slate-400">
+          AppModule.cs
+        </div>
+        <pre class="overflow-x-auto p-4 text-sm leading-relaxed"><code class="text-slate-300" set:html={appModuleCs} /></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento Grid -->
+  <section class="mx-auto max-w-6xl px-4 pb-20">
+    <h2 class="mb-4 text-center text-3xl font-bold text-white sm:text-4xl">
+      Everything you need, nothing you don't
+    </h2>
+    <p class="mx-auto mb-12 max-w-2xl text-center text-slate-400">
+      93 NuGet packages organized into cohesive modules.
+      Pick what you need — dependencies resolve automatically.
+    </p>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F9F1;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Module System</h3>
+        <p class="text-sm text-slate-400">
+          Topological dependency resolution, lifecycle hooks, conditional modules.
+          Inspired by ABP, built for .NET 10.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F4BE;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Persistence &amp; Audit</h3>
+        <p class="text-sm text-slate-400">
+          EF Core interceptors for audit trails, soft delete, domain events,
+          and entity versioning. Zero manual WHERE clauses.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F510;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Security &amp; Identity</h3>
+        <p class="text-sm text-slate-400">
+          JWT + Keycloak authentication, policy-based authorization,
+          Vault integration, GDPR privacy helpers.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F4E8;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Messaging &amp; Events</h3>
+        <p class="text-sm text-slate-400">
+          Wolverine message bus with transactional outbox, webhooks,
+          6-channel notification engine (email, SMS, push, SignalR...).
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F3E2;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Multi-Tenancy</h3>
+        <p class="text-sm text-slate-400">
+          Shared database, schema-per-tenant, or database-per-tenant.
+          Transparent query filters, zero code changes between strategies.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F4CA;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Observability</h3>
+        <p class="text-sm text-slate-400">
+          Serilog + OpenTelemetry out of the box. Structured logs, distributed traces,
+          metrics — all flowing to Grafana stack via OTLP.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F4C4;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Documents &amp; Templates</h3>
+        <p class="text-sm text-slate-400">
+          Scriban template engine, HTML-to-PDF, Excel generation.
+          Versioned templates with workflow integration.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F504;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Data Exchange</h3>
+        <p class="text-sm text-slate-400">
+          Structured import pipeline (Extract, Map, Validate, Execute)
+          and export presets with background job support.
+        </p>
+      </div>
+
+      <div class="group rounded-xl border border-slate-700 bg-slate-900/50 p-6 transition hover:border-blue-500/50">
+        <div class="mb-3 text-2xl">&#x1F30D;</div>
+        <h3 class="mb-2 text-lg font-semibold text-white">Localization</h3>
+        <p class="text-sm text-slate-400">
+          17 cultures out of the box, source-generated type-safe keys,
+          override store for runtime corrections without redeployment.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compliance Banner -->
+  <section class="mx-auto max-w-6xl px-4 pb-20">
+    <div class="rounded-xl border border-slate-700 bg-gradient-to-r from-slate-900 to-slate-800 p-8 sm:p-12">
+      <div class="grid items-center gap-8 lg:grid-cols-2">
+        <div>
+          <h2 class="text-2xl font-bold text-white sm:text-3xl">
+            Compliance built in, not bolted on
+          </h2>
+          <p class="mt-4 text-slate-400">
+            Every module is designed with GDPR, ISO 27001, and ISO 9001 in mind.
+            Audit trails, data encryption, right to erasure, tenant isolation —
+            these aren't afterthoughts, they're architectural constraints.
+          </p>
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div class="rounded-lg border border-slate-600 bg-slate-800/50 p-4">
+            <div class="text-2xl font-bold text-blue-400">GDPR</div>
+            <div class="mt-1 text-xs text-slate-500">Art. 17, 18, 25</div>
+          </div>
+          <div class="rounded-lg border border-slate-600 bg-slate-800/50 p-4">
+            <div class="text-2xl font-bold text-blue-400">27001</div>
+            <div class="mt-1 text-xs text-slate-500">Annex A</div>
+          </div>
+          <div class="rounded-lg border border-slate-600 bg-slate-800/50 p-4">
+            <div class="text-2xl font-bold text-blue-400">9001</div>
+            <div class="mt-1 text-xs text-slate-500">Clause 7-10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="mx-auto max-w-4xl px-4 pb-20 text-center">
+    <h2 class="text-3xl font-bold text-white sm:text-4xl">
+      Ready to build on solid ground?
+    </h2>
+    <p class="mx-auto mt-4 max-w-xl text-slate-400">
+      Start with the getting started guide, explore the module reference,
+      or dive into the architecture decisions that shaped Granit.
+    </p>
+    <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a
+        href="/getting-started/"
+        class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition hover:bg-blue-400"
+      >
+        Get Started
+      </a>
+      <a
+        href="https://gitlab.com/digital-dynamics/granit-dotnet"
+        class="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-6 py-3 font-semibold text-slate-300 transition hover:border-slate-400 hover:text-white"
+      >
+        View on GitLab
+      </a>
+    </div>
+  </section>
+</StarlightPage>

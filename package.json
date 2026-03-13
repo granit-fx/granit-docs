@@ -10,14 +10,16 @@
     "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\""
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.34",
-    "astro": "^5.7",
-    "sharp": "^0.33"
+    "@astrojs/starlight": "^0.38.1",
+    "@tailwindcss/vite": "^4.2.1",
+    "astro": "^6.0.4",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
-    "markdownlint-cli2": "^0.17",
-    "starlight-links-validator": "^0.14",
-    "starlight-image-zoom": "^0.9"
+    "markdownlint-cli2": "^0.21.0",
+    "starlight-image-zoom": "^0.14.1",
+    "starlight-links-validator": "^0.20.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

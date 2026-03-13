@@ -1,9 +1,13 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import tailwindcss from "@tailwindcss/vite";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightImageZoom from "starlight-image-zoom";
 
 export default defineConfig({
+  vite: {
+    plugins: [tailwindcss()],
+  },
   integrations: [
     starlight({
       title: "Granit",
@@ -51,8 +55,12 @@ export default defineConfig({
           items: [
             { label: "Overview", link: "/reference/" },
             {
-              label: "Modules",
+              label: ".NET Modules",
               autogenerate: { directory: "reference/modules" },
+            },
+            {
+              label: "Frontend SDK",
+              autogenerate: { directory: "reference/frontend" },
             },
           ],
         },
@@ -93,7 +101,7 @@ export default defineConfig({
           collapsed: true,
         },
       ],
-      customCss: [],
+      customCss: ["./src/styles/tailwind.css"],
       head: [],
       lastUpdated: true,
       pagination: true,
