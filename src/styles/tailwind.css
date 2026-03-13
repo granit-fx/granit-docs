@@ -1,4 +1,6 @@
-@import "tailwindcss";
+/* Import Tailwind without Preflight to avoid overriding Starlight theme */
+@import "tailwindcss/theme" layer(base);
+@import "tailwindcss/utilities";
 
 /* Widen the content area — Starlight defaults are too narrow for tables */
 :root {
