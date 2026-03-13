@@ -3,9 +3,7 @@ title: "ADR-008: SmartFormat.NET — CLDR Pluralization"
 description: "Selection of SmartFormat.NET for CLDR-compliant pluralization in the localization system"
 sidebar:
   order: 8
-  badge:
-    text: Accepted
-    variant: success
+  label: "008 - SmartFormat.NET"
 ---
 
 > **Date:** 2026-02-26

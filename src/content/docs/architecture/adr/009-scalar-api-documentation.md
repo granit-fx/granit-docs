@@ -3,9 +3,7 @@ title: "ADR-009: Scalar.AspNetCore — Interactive API Documentation"
 description: "Adoption of Scalar as the interactive OpenAPI documentation UI replacing Swagger UI"
 sidebar:
   order: 9
-  badge:
-    text: Accepted
-    variant: success
+  label: "009 - Scalar API Docs"
 ---
 
 > **Date:** 2026-02-26

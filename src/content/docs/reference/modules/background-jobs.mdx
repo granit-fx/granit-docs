@@ -17,7 +17,7 @@ cluster-safe singleton execution.
 ## Package structure
 
 <FileTree>
-- Granit.BackgroundJobs Core: [RecurringJob] attribute, Cronos cron, CQRS interfaces, Channel dispatcher
+- Granit.BackgroundJobs/ Core: \[RecurringJob\] attribute, Cronos cron, CQRS interfaces, Channel dispatcher
   - Granit.BackgroundJobs.EntityFrameworkCore EF Core store (SQL Server / PostgreSQL)
   - Granit.BackgroundJobs.Endpoints Minimal API admin endpoints (RBAC)
   - Granit.BackgroundJobs.Wolverine Durable outbox, SingularAgent, atomic rescheduling middleware

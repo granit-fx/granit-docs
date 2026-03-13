@@ -16,10 +16,10 @@ The first check (without lock) serves as a fast-path for the nominal case
 
 ```mermaid
 flowchart TD
-    REQ[GetOrAddAsync] --> C1{Check 1\nwithout lock}
+    REQ[GetOrAddAsync] --> C1{Check 1<br/>without lock}
     C1 -->|hit| RET[Return value]
     C1 -->|miss| ACQ[Acquire SemaphoreSlim]
-    ACQ --> C2{Check 2\nafter lock}
+    ACQ --> C2{Check 2<br/>after lock}
     C2 -->|hit| REL1[Release lock] --> RET
     C2 -->|miss| FAC[Execute factory]
     FAC --> SET[Store in cache]

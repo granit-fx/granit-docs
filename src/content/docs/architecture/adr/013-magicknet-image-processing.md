@@ -3,9 +3,7 @@ title: "ADR-013: Magick.NET — Image Processing"
 description: "Selection of Magick.NET (ImageMagick wrapper) for cross-platform image processing with Apache-2.0 licensing"
 sidebar:
   order: 13
-  badge:
-    text: Accepted
-    variant: success
+  label: "013 - Magick.NET"
 ---
 
 > **Date:** 2026-02-28

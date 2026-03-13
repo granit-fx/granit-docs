@@ -6,14 +6,16 @@ sidebar:
 ---
 
 This page documents the dependency graph across all %%PACKAGE_COUNT%% Granit source packages. Arrows
-indicate the direction of dependency: `A --> B` means "A depends on B". `Granit.Core`
-is the root and has zero dependencies.
+indicate the direction of usage: `A --> B` means "A is used by B". `Granit.Core`
+is the root and feeds the entire tree.
 
 Conventions used throughout this page:
 
+- **Diagram arrows** flow from foundation to consumers (`Core → Security → Wolverine`).
+  Tables still list dependencies from the consumer's perspective ("Depends on").
 - Transitive dependencies on `Granit.Core` are omitted when a package already depends
   on another module that depends on Core.
-- The systematic pattern `*.Endpoints --> Authorization` is omitted from the overview
+- The systematic pattern `*.Endpoints → Authorization` is omitted from the overview
   diagram (documented in the coupling rules section).
 - `*.EntityFrameworkCore` packages are leaf nodes unless stated otherwise.
 
@@ -39,7 +41,7 @@ flowchart TD
 
     subgraph Functional
         LOC["Localization (4)"]
-        WEB["Web and API (6)"]
+        WEB["Web, API, Webhooks (9)"]
         CONFIG["Configuration (8)"]
         STORAGE["Storage (5)"]
     end
@@ -51,45 +53,46 @@ flowchart TD
         WF["Workflow (4)"]
         NOTIF["Notifications (15)"]
         TL["Timeline (4)"]
-        JOBS["Jobs and Events (7)"]
+        JOBS["Background Jobs (4)"]
     end
 
     ANLZ["Analyzers (2)"]
 
-    UTILS --> CORE
-    SEC --> CORE
-    SEC --> CACHE
-    CACHE --> CORE
-    IDENT --> CORE
-    IDENT --> PERS
+    CORE --> UTILS
+    CORE --> SEC
+    CORE --> CACHE
+    CORE --> LOC
 
-    PERS --> UTILS
-    PERS --> SEC
-    WOL --> SEC
-    WOL --> PERS
+    CACHE --> SEC
+    SEC --> PERS
+    UTILS --> PERS
+    UTILS --> STORAGE
 
-    LOC --> CORE
-    LOC --> PERS
-    WEB --> SEC
-    WEB --> CACHE
-    CONFIG --> CACHE
-    CONFIG --> LOC
-    CONFIG --> PERS
-    STORAGE --> UTILS
+    SEC --> WOL
+    PERS --> WOL
+    PERS --> LOC
+    PERS --> QRY
+    PERS --> WF
+    CORE --> IDENT
+    PERS --> IDENT
 
-    TMPL --> UTILS
-    TMPL --> WF
-    QRY --> PERS
-    DX --> QRY
-    DX --> WOL
-    WF --> PERS
-    WF --> NOTIF
-    WF --> IDENT
-    NOTIF --> WOL
-    TL --> SEC
-    TL --> NOTIF
-    JOBS --> WOL
-    JOBS --> SEC
+    SEC --> WEB
+    CACHE --> WEB
+    CACHE --> CONFIG
+    LOC --> CONFIG
+    PERS --> CONFIG
+
+    UTILS --> TMPL
+    QRY --> NOTIF
+    WOL --> DX
+    WOL --> JOBS
+    SEC --> TL
+    SEC --> JOBS
+    QRY --> DX
+    WF --> TMPL
+    NOTIF --> WF
+    NOTIF --> TL
+    IDENT --> WF
 ```
 
 ### Domain composition
@@ -100,9 +103,9 @@ flowchart TD
 | Identity | Identity, Identity.Keycloak, Identity.EntraId, Identity.EntityFrameworkCore, Identity.Endpoints |
 | Security | Security, Encryption, Vault, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
 | Configuration | Settings (3), Features (2), ReferenceData (3) |
-| Web and API | ApiVersioning, ApiDocumentation, Cookies, Cookies.Klaro, Cookies.Endpoints, Idempotency |
+| Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies, Cookies.Klaro, Cookies.Endpoints, Idempotency, Webhooks (3) |
 | Storage | BlobStorage (3), Imaging (2) |
-| Jobs and Events | BackgroundJobs (4), Webhooks (3) |
+| Background Jobs | BackgroundJobs (4) |
 | Localization | Localization, Localization.EntityFrameworkCore, Localization.Endpoints, Localization.SourceGenerator |
 | Templating | Templating, Templating.Scriban, Templating.EF, Templating.Endpoints, Templating.Workflow, DocumentGeneration, DocumentGeneration.Pdf, DocumentGeneration.Excel |
 | Notifications | Notifications, Notifications.EF, Notifications.Endpoints, Notifications.Wolverine, Email, Email.Smtp, Sms, WhatsApp, WebPush, SignalR, Sse, Zulip, Brevo, MobilePush, MobilePush.Fcm |
@@ -115,48 +118,91 @@ flowchart TD
 The backbone of the framework: security, distributed cache, and data persistence.
 
 ```mermaid
-flowchart LR
-    SEC["Security"] --> CORE["Core"]
-    ENCR["Encryption"] --> CORE
-    VAULT["Vault"] --> ENCR
+flowchart TD
+    CORE["Core"]
 
-    JWT["Auth.JwtBearer"] --> SEC
-    KC["Auth.Keycloak"] --> JWT
-    ENTRA["Auth.EntraId"] --> JWT
+    subgraph Primitives
+        TIMING["Timing"]
+        GUIDS["Guids"]
+        EXC["ExceptionHandling"]
+        ENCR["Encryption"]
+    end
 
-    APIKEYS["Auth.ApiKeys"] --> SEC
-    APIKEYS --> GUIDS["Guids"]
-    APIKEYS --> QRY["Querying"]
-    APIKEYS_EP["Auth.ApiKeys.Endpoints"] --> APIKEYS
-    APIKEYS_EP --> AUTHZ
-    APIKEYS_EF["Auth.ApiKeys.EF"] --> APIKEYS
-    APIKEYS_EF --> PERS
+    subgraph Security
+        SEC["Security"]
+        JWT["Auth.JwtBearer"]
+        KC["Auth.Keycloak"]
+        ENTRA["Auth.EntraId"]
+        APIKEYS["Auth.ApiKeys"]
+        APIKEYS_EP["Auth.ApiKeys.Endpoints"]
+        APIKEYS_EF["Auth.ApiKeys.EF"]
+    end
 
-    CACHE["Caching"] --> CORE
-    CACHE_REDIS["Caching.Redis"] --> CACHE
-    CACHE_HYB["Caching.Hybrid"] --> CACHE_REDIS
-    CACHE_HYB --> TIMING["Timing"]
+    subgraph Authorization
+        AUTHZ["Authorization"]
+        AUTHZ_EF["Authorization.EF"]
+        AUTHZ_EP["Authorization.Endpoints"]
+    end
 
-    AUTHZ["Authorization"] --> SEC
-    AUTHZ --> CACHE
-    AUTHZ_EF["Authorization.EF"] --> AUTHZ
-    AUTHZ_EF --> PERS
-    AUTHZ_EP["Authorization.Endpoints"] --> AUTHZ
+    subgraph Caching
+        CACHE["Caching"]
+        CACHE_REDIS["Caching.Redis"]
+        CACHE_HYB["Caching.Hybrid"]
+    end
 
-    PERS["Persistence"] --> GUIDS
-    PERS --> SEC
-    PERS --> EXC["ExceptionHandling"]
+    subgraph Persistence
+        PERS["Persistence"]
+        PERS_MIG["Persistence.Migrations"]
+        PERS_MIG_WOL["Persistence.Migrations.Wolverine"]
+    end
 
-    PERS_MIG["Persistence.Migrations"] --> PERS
+    subgraph Wolverine
+        WOL["Wolverine"]
+        WOL_PG["Wolverine.Postgresql"]
+        WOL_SQL["Wolverine.SqlServer"]
+    end
 
-    PERS_MIG_WOL["Persistence.Migrations.Wolverine"] --> PERS_MIG
-    PERS_MIG_WOL --> WOL["Wolverine"]
+    CORE --> Primitives
+    CORE --> SEC
+    CORE --> CACHE
 
-    WOL --> SEC
-    WOL_PG["Wolverine.Postgresql"] --> WOL
-    WOL_PG --> PERS
-    WOL_SQL["Wolverine.SqlServer"] --> WOL
-    WOL_SQL --> PERS
+    ENCR --> VAULT["Vault"]
+    TIMING --> GUIDS
+
+    SEC --> JWT
+    JWT --> KC
+    JWT --> ENTRA
+    SEC --> APIKEYS
+    APIKEYS --> APIKEYS_EP
+    APIKEYS --> APIKEYS_EF
+
+    SEC --> AUTHZ
+    CACHE --> AUTHZ
+    AUTHZ --> AUTHZ_EF
+    AUTHZ --> AUTHZ_EP
+
+    CACHE --> CACHE_REDIS
+    CACHE_REDIS --> CACHE_HYB
+
+    GUIDS --> PERS
+    SEC --> PERS
+    EXC --> PERS
+    PERS --> PERS_MIG
+    PERS_MIG --> PERS_MIG_WOL
+
+    SEC --> WOL
+    WOL --> WOL_PG
+    WOL --> WOL_SQL
+    WOL --> PERS_MIG_WOL
+    PERS --> WOL_PG
+    PERS --> WOL_SQL
+
+    style KC fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style ENTRA fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style VAULT fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style CACHE_REDIS fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style WOL_PG fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style WOL_SQL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
 ```
 
 ### Utilities (flat dependencies)
@@ -209,7 +255,7 @@ flowchart LR
 | `Granit.ReferenceData.Endpoints` | `ReferenceData` |
 | `Granit.ReferenceData.EntityFrameworkCore` | `ReferenceData`, `Persistence` |
 
-### Web and API
+### Web, API, and Webhooks
 
 | Package | Depends on |
 |---------|------------|
@@ -219,6 +265,9 @@ flowchart LR
 | `Granit.Cookies.Klaro` | `Cookies` |
 | `Granit.Cookies.Endpoints` | `Cookies`, `Core` |
 | `Granit.Idempotency` | `Caching`, `Security` |
+| `Granit.Webhooks` | `Timing`, `Wolverine` |
+| `Granit.Webhooks.EntityFrameworkCore` | `Webhooks`, `Persistence` |
+| `Granit.Webhooks.Wolverine` | `Webhooks`, `Wolverine` |
 
 ### Storage and Imaging
 
@@ -239,37 +288,60 @@ and WhatsApp.
 
 ```mermaid
 flowchart LR
-    NOTIF["Notifications"] --> TIMING["Timing"]
-    NOTIF --> WOL["Wolverine"]
+    NOTIF["Notifications"] --> NOTIF_EP["Notifications.Endpoints"]
+    NOTIF --> NOTIF_EF["Notifications.EF"]
+    NOTIF --> NOTIF_WOL["Notifications.Wolverine"]
 
-    NOTIF_EP["Notifications.Endpoints"] --> NOTIF
-    NOTIF_EF["Notifications.EF"] --> NOTIF
+    NOTIF --> NOTIF_EMAIL["Notifications.Email"]
+    NOTIF_EMAIL --> NOTIF_SMTP["Notifications.Email.Smtp"]
 
-    NOTIF_WOL["Notifications.Wolverine"] --> NOTIF
-    NOTIF_WOL --> WOL
+    NOTIF --> NOTIF_SMS["Notifications.Sms"]
+    NOTIF --> NOTIF_WA["Notifications.WhatsApp"]
+    NOTIF --> NOTIF_PUSH["Notifications.WebPush"]
+    NOTIF --> NOTIF_SR["Notifications.SignalR"]
+    NOTIF --> NOTIF_SSE["Notifications.Sse"]
+    NOTIF --> NOTIF_ZULIP["Notifications.Zulip"]
 
-    NOTIF_EMAIL["Notifications.Email"] --> NOTIF
-    NOTIF_SMTP["Notifications.Email.Smtp"] --> NOTIF_EMAIL
+    NOTIF --> NOTIF_MP["Notifications.MobilePush"]
+    NOTIF_MP --> NOTIF_FCM["Notifications.MobilePush.Fcm"]
 
-    NOTIF_SMS["Notifications.Sms"] --> NOTIF
-    NOTIF_WA["Notifications.WhatsApp"] --> NOTIF
-    NOTIF_PUSH["Notifications.WebPush"] --> NOTIF
-    NOTIF_SR["Notifications.SignalR"] --> NOTIF
-    NOTIF_SSE["Notifications.Sse"] --> NOTIF
-    NOTIF_ZULIP["Notifications.Zulip"] --> NOTIF
+    NOTIF_EMAIL --> NOTIF_BREVO["Notifications.Brevo"]
+    NOTIF_SMS --> NOTIF_BREVO
+    NOTIF_WA --> NOTIF_BREVO
 
-    NOTIF_MP["Notifications.MobilePush"] --> NOTIF
-    NOTIF_FCM["Notifications.MobilePush.Fcm"] --> NOTIF_MP
+    style NOTIF_EMAIL fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style NOTIF_SMS fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style NOTIF_WA fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style NOTIF_MP fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
 
-    NOTIF_BREVO["Notifications.Brevo"] --> NOTIF_EMAIL
-    NOTIF_BREVO --> NOTIF_SMS
-    NOTIF_BREVO --> NOTIF_WA
+    style NOTIF_SMTP fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_BREVO fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_SR fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_SSE fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_ZULIP fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_PUSH fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_FCM fill:#e8f5e9,stroke:#43a047,color:#1b5e20
 ```
 
-### Templating, Workflow, and Timeline
+### Templating and Document Generation
 
-These three domains have cross-module dependencies that form the richest part of the
-graph.
+Template engine (Scriban) with document rendering pipeline (HTML-to-PDF, Excel).
+
+```mermaid
+flowchart LR
+    TMPL["Templating"] --> SCRIBAN["Templating.Scriban"]
+    TMPL --> TMPL_EF["Templating.EF"]
+    TMPL --> TMPL_EP["Templating.Endpoints"]
+    TMPL --> TMPL_WF["Templating.Workflow"]
+
+    TMPL --> DOCGEN["DocumentGeneration"]
+    DOCGEN --> DOCGEN_PDF["DocumentGeneration.Pdf"]
+    TMPL --> DOCGEN_EXCEL["DocumentGeneration.Excel"]
+
+    style SCRIBAN fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style DOCGEN_PDF fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style DOCGEN_EXCEL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+```
 
 | Package | Depends on |
 |---------|------------|
@@ -281,6 +353,13 @@ graph.
 | `Granit.DocumentGeneration` | `Templating` |
 | `Granit.DocumentGeneration.Pdf` | `DocumentGeneration` |
 | `Granit.DocumentGeneration.Excel` | `Templating` |
+
+### Workflow and Timeline
+
+These two domains share cross-module dependencies with Notifications and Identity.
+
+| Package | Depends on |
+|---------|------------|
 | `Granit.Workflow` | `Timing` |
 | `Granit.Workflow.EntityFrameworkCore` | `Workflow`, `Persistence` |
 | `Granit.Workflow.Endpoints` | `Workflow`, `Authorization` |
@@ -290,7 +369,7 @@ graph.
 | `Granit.Timeline.Endpoints` | `Timeline`, `Authorization` |
 | `Granit.Timeline.Notifications` | `Timeline`, `Notifications` |
 
-### Jobs and Events
+### Background Jobs
 
 | Package | Depends on |
 |---------|------------|
@@ -298,17 +377,33 @@ graph.
 | `Granit.BackgroundJobs.EntityFrameworkCore` | `BackgroundJobs` |
 | `Granit.BackgroundJobs.Endpoints` | `BackgroundJobs`, `Authorization` |
 | `Granit.BackgroundJobs.Wolverine` | `BackgroundJobs`, `Wolverine` |
-| `Granit.Webhooks` | `Timing`, `Wolverine` |
-| `Granit.Webhooks.EntityFrameworkCore` | `Webhooks`, `Persistence` |
-| `Granit.Webhooks.Wolverine` | `Webhooks`, `Wolverine` |
 
-### Querying and DataExchange
+### Querying
 
 | Package | Depends on |
 |---------|------------|
 | `Granit.Querying` | `Core` |
 | `Granit.Querying.Endpoints` | `Querying`, `Authorization` |
 | `Granit.Querying.EntityFrameworkCore` | `Querying`, `Persistence` |
+
+### DataExchange
+
+Import/export pipeline with format adapters (CSV, Excel) and async processing via Wolverine.
+
+```mermaid
+flowchart LR
+    DX["DataExchange"] --> DX_CSV["DataExchange.Csv"]
+    DX --> DX_EXCEL["DataExchange.Excel"]
+    DX --> DX_EF["DataExchange.EF"]
+    DX --> DX_EP["DataExchange.Endpoints"]
+    DX --> DX_WOL["DataExchange.Wolverine"]
+
+    style DX_CSV fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style DX_EXCEL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+```
+
+| Package | Depends on |
+|---------|------------|
 | `Granit.DataExchange` | `Querying`, `Timing`, `Validation` |
 | `Granit.DataExchange.Csv` | `DataExchange` |
 | `Granit.DataExchange.Excel` | `DataExchange` |
@@ -323,31 +418,6 @@ graph.
 | `Granit.Analyzers` | none (Roslyn analyzer) |
 | `Granit.Analyzers.CodeFixes` | `Analyzers` |
 
-## Cross-module dependencies
-
-The `[DependsOn(typeof(...))]` attribute declares hard module dependencies resolved at
-startup. The following table lists every cross-domain dependency (within the same domain
-is omitted):
-
-| Source module | Target module | Reason |
-|---------------|---------------|--------|
-| `Validation` | `Localization` | Localized validation error messages |
-| `Features` | `Localization` | Feature flag display names |
-| `Features` | `Caching` | Cached feature state lookups |
-| `Settings` | `Caching` | Cached settings values |
-| `Settings` | `Encryption` | Encrypted settings at rest |
-| `Settings` | `Security` | Per-user setting scoping |
-| `Idempotency` | `Caching` | Distributed idempotency key store |
-| `Authorization` | `Caching` | Per-role permission grant cache |
-| `Templating.Workflow` | `Workflow` | Template publication lifecycle |
-| `Workflow.Notifications` | `Notifications` | Transition notification dispatch |
-| `Workflow.Notifications` | `Identity` | Assignee user lookup |
-| `Timeline.Notifications` | `Notifications` | Activity event notifications |
-| `Notifications.Brevo` | `Email`, `Sms`, `WhatsApp` | Unified multi-channel aggregator |
-| `DataExchange` | `Querying` | Export column metadata from QueryDefinition |
-| `Auth.ApiKeys` | `Querying` | Paginated API key listings |
-| `DocumentGeneration.Excel` | `Templating` | Scriban cell rendering in XLSX |
-
 ## Soft dependencies
 
 Several core interfaces live in `Granit.Core` rather than in their dedicated module.
@@ -358,7 +428,6 @@ null-object default is used.
 | Interface | Declared in | Implemented by | Default behavior |
 |-----------|-------------|----------------|------------------|
 | `ICurrentTenant` | `Granit.Core.MultiTenancy` | `Granit.MultiTenancy` | `NullTenantContext` (`IsAvailable = false`) |
-| `IClock` | `Granit.Core.Timing` | `Granit.Timing` | System clock |
 | `IDataFilter` | `Granit.Core.DataFiltering` | `Granit.Persistence` | No-op (all data visible) |
 
 Modules that access `ICurrentTenant` use `using Granit.Core.MultiTenancy;` and check

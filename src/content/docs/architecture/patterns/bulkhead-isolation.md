@@ -21,11 +21,11 @@ per-tenant quota isolation, and HTTP circuit breakers.
 flowchart TB
     subgraph Bulkheads
         direction LR
-        B1[Queue domain-events\nParallelism: local]
-        B2[Queue notification-delivery\nMaxParallel: 8]
-        B3[Queue webhook-delivery\nMaxParallel: 20]
-        B4[HttpClient Keycloak\nCircuit Breaker]
-        B5[HttpClient Brevo\nCircuit Breaker]
+        B1[Queue domain-events<br/>Parallelism: local]
+        B2[Queue notification-delivery<br/>MaxParallel: 8]
+        B3[Queue webhook-delivery<br/>MaxParallel: 20]
+        B4[HttpClient Keycloak<br/>Circuit Breaker]
+        B5[HttpClient Brevo<br/>Circuit Breaker]
     end
 
     REQ[Incoming requests] --> B1

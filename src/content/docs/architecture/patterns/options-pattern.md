@@ -21,7 +21,7 @@ flowchart LR
     end
 
     subgraph Registration["DI Extension"]
-        Bind["AddOptions of VaultOptions\n.BindConfiguration(SectionName)\n.ValidateDataAnnotations()\n.ValidateOnStart()"]
+        Bind["AddOptions of VaultOptions<br/>.BindConfiguration(SectionName)<br/>.ValidateDataAnnotations()<br/>.ValidateOnStart()"]
     end
 
     subgraph Runtime["Injection"]

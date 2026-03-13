@@ -3,9 +3,7 @@ title: "ADR-011: ClosedXML — Excel Spreadsheet Generation"
 description: "Selection of ClosedXML for Excel file generation from templates with MIT licensing"
 sidebar:
   order: 11
-  badge:
-    text: Accepted
-    variant: success
+  label: "011 - ClosedXML"
 ---
 
 > **Date:** 2026-02-27

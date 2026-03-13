@@ -17,7 +17,7 @@ integrate with Wolverine for durable outbox-backed execution when installed.
 ## Package structure
 
 <FileTree>
-- Granit.DataExchange Core: import/export pipelines, fluent definitions, mapping suggestion engine
+- Granit.DataExchange/ Core: import/export pipelines, fluent definitions, mapping suggestion engine
   - Granit.DataExchange.Csv CSV parser (Sep SIMD) and writer (semicolon separator)
   - Granit.DataExchange.Excel Excel parser (Sylvan.Data.Excel) and writer (ClosedXML)
   - Granit.DataExchange.EntityFrameworkCore DataExchangeDbContext, EF executor, identity resolvers, stores
@@ -155,13 +155,13 @@ No EF Core, no endpoints. Useful for CLI tools or custom orchestration.
 flowchart LR
     A[Upload file] --> B[Extract headers]
     B --> C[Preview rows]
-    C --> D["Suggest mappings\n4-tier"]
-    D --> E["User confirms\nmappings"]
+    C --> D["Suggest mappings<br/>4-tier"]
+    D --> E["User confirms<br/>mappings"]
     E --> F[Parse rows]
     F --> G[Map to entities]
     G --> H[Validate rows]
     H --> I[Resolve identity]
-    I --> J["Execute batch\nINSERT / UPDATE"]
+    I --> J["Execute batch<br/>INSERT / UPDATE"]
     J --> K[Report + correction file]
 ```
 
@@ -236,10 +236,10 @@ from lower tiers:
 ```mermaid
 flowchart TD
     H[Source column headers] --> T1
-    T1["Tier 1: Saved mappings\nPreviously confirmed by user"] --> T2
-    T2["Tier 2: Exact match\nProperty name, display name, aliases"] --> T3
-    T3["Tier 3: Fuzzy match\nLevenshtein distance >= threshold"] --> T4
-    T4["Tier 4: Semantic / AI\nHeader metadata only, GDPR-safe"] --> R[Suggested mappings]
+    T1["Tier 1: Saved mappings<br/>Previously confirmed by user"] --> T2
+    T2["Tier 2: Exact match<br/>Property name, display name, aliases"] --> T3
+    T3["Tier 3: Fuzzy match<br/>Levenshtein distance >= threshold"] --> T4
+    T4["Tier 4: Semantic / AI<br/>Header metadata only, GDPR-safe"] --> R[Suggested mappings]
 ```
 
 | Tier | Confidence | Source |

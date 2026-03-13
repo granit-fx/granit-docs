@@ -15,12 +15,12 @@ feature flags with plan-based activation, and **Reference Data** for i18n lookup
 ## Package structure
 
 <FileTree>
-- Granit.Settings Cascading settings engine (User, Tenant, Global, Configuration, Default)
+- Granit.Settings/ Cascading settings engine (User, Tenant, Global, Configuration, Default)
   - Granit.Settings.EntityFrameworkCore Isolated SettingsDbContext
   - Granit.Settings.Endpoints User, Global, and Tenant setting HTTP endpoints
-- Granit.Features SaaS feature management (Toggle/Numeric/Selection)
+- Granit.Features/ SaaS feature management (Toggle/Numeric/Selection)
   - Granit.Features.EntityFrameworkCore Isolated FeaturesDbContext
-- Granit.ReferenceData i18n reference data entity and store abstractions
+- Granit.ReferenceData/ i18n reference data entity and store abstractions
   - Granit.ReferenceData.EntityFrameworkCore EF Core store + seeding
   - Granit.ReferenceData.Endpoints Generic CRUD endpoints
 </FileTree>

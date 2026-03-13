@@ -24,7 +24,7 @@ flowchart TD
     G3 -->|no| X3["throw ForbiddenException"]
     G3 -->|yes| BL[Business logic]
 
-    X1 --> PD["GranitExceptionHandler\nProblemDetails RFC 7807"]
+    X1 --> PD["GranitExceptionHandler<br/>ProblemDetails RFC 7807"]
     X2 --> PD
     X3 --> PD
 ```

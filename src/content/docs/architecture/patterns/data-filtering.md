@@ -23,11 +23,11 @@ Granit supports three filters:
 flowchart TD
     Q[EF Core query] --> FB{Active filters?}
 
-    FB -->|ISoftDeletable| F1["WHERE IsDeleted = false\n(or bypass if disabled)"]
-    FB -->|IActive| F2["WHERE IsActive = true\n(or bypass if disabled)"]
-    FB -->|IMultiTenant| F3["WHERE TenantId = @tid\n(or bypass if disabled)"]
+    FB -->|ISoftDeletable| F1["WHERE IsDeleted = false<br/>(or bypass if disabled)"]
+    FB -->|IActive| F2["WHERE IsActive = true<br/>(or bypass if disabled)"]
+    FB -->|IMultiTenant| F3["WHERE TenantId = @tid<br/>(or bypass if disabled)"]
 
-    F1 --> COMB["Combined expression\nAND"]
+    F1 --> COMB["Combined expression<br/>AND"]
     F2 --> COMB
     F3 --> COMB
 
@@ -40,7 +40,7 @@ flowchart TD
     end
 
     subgraph FilterProxy
-        FP["Boolean properties\nfor EF Core"]
+        FP["Boolean properties<br/>for EF Core"]
     end
 
     DataFilter --> FB

@@ -3,9 +3,7 @@ title: "ADR-012: PuppeteerSharp — HTML to PDF Rendering"
 description: "Adoption of PuppeteerSharp with headless Chromium for pixel-perfect HTML to PDF conversion"
 sidebar:
   order: 12
-  badge:
-    text: Accepted
-    variant: success
+  label: "012 - PuppeteerSharp"
 ---
 
 > **Date:** 2026-02-28

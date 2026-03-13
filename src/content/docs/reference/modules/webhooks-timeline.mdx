@@ -15,10 +15,10 @@ logs, threaded replies, file attachments, and a follow/notify pattern.
 ## Package structure
 
 <FileTree>
-- Granit.Webhooks Core publisher, HMAC signatures, in-memory default
+- Granit.Webhooks/ Core publisher, HMAC signatures, in-memory default
   - Granit.Webhooks.EntityFrameworkCore Durable subscriptions + delivery audit
   - Granit.Webhooks.Wolverine Durable outbox dispatch via Wolverine
-- Granit.Timeline Core stream engine, in-memory default
+- Granit.Timeline/ Core stream engine, in-memory default
   - Granit.Timeline.EntityFrameworkCore Durable persistence (PostgreSQL)
   - Granit.Timeline.Endpoints Minimal API routes, permissions
   - Granit.Timeline.Notifications Follow/notify via Granit.Notifications

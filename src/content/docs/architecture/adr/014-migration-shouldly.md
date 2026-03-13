@@ -3,9 +3,7 @@ title: "ADR-014: Migrate FluentAssertions to Shouldly"
 description: "Migration from FluentAssertions to Shouldly due to license change incompatible with commercial use"
 sidebar:
   order: 14
-  badge:
-    text: Accepted
-    variant: success
+  label: "014 - Migrate to Shouldly"
 ---
 
 > **Date:** 2026-02-28

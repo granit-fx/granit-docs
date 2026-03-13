@@ -23,15 +23,15 @@ actions, each with different dependencies.
 flowchart LR
     subgraph REPR["REPR -- per operation"]
         direction LR
-        Req["Request\nsealed record"]
-        EP["Endpoint\nprivate static method"]
-        Res["Response\nsealed record"]
+        Req["Request<br/>sealed record"]
+        EP["Endpoint<br/>private static method"]
+        Res["Response<br/>sealed record"]
         Req --> EP --> Res
     end
 
     subgraph MVC["MVC -- avoid"]
         direction LR
-        C["Controller\nN actions\nN x M dependencies"]
+        C["Controller<br/>N actions<br/>N x M dependencies"]
     end
 
     style REPR fill:#f0f9f0,stroke:#2d8a4e
@@ -41,13 +41,13 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant C as HTTP Client
-    participant MW as Middleware\n(Validation, Auth, Tenant)
+    participant MW as Middleware<br/>(Validation, Auth, Tenant)
     participant EP as Endpoint Handler
     participant SVC as Service / Store
     participant DB as Database
 
     C->>MW: POST /api/tasks (TaskCreateRequest)
-    MW->>MW: FluentValidation\nJWT / RBAC
+    MW->>MW: FluentValidation<br/>JWT / RBAC
     MW->>EP: Validated request
     EP->>SVC: CreateAsync(request, ct)
     SVC->>DB: INSERT

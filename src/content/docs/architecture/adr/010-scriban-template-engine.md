@@ -3,9 +3,7 @@ title: "ADR-010: Scriban — Text Template Engine"
 description: "Selection of Scriban as the sandboxed text template engine for document generation"
 sidebar:
   order: 10
-  badge:
-    text: Accepted
-    variant: success
+  label: "010 - Scriban"
 ---
 
 > **Date:** 2026-02-27

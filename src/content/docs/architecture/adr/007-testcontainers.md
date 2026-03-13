@@ -3,9 +3,7 @@ title: "ADR-007: Testcontainers — Containerized Integration Tests"
 description: "Adoption of Testcontainers for ephemeral PostgreSQL containers in integration tests"
 sidebar:
   order: 7
-  badge:
-    text: Accepted
-    variant: success
+  label: "007 - Testcontainers"
 ---
 
 > **Date:** 2026-02-24

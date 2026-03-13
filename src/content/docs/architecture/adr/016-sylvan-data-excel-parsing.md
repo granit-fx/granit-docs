@@ -3,9 +3,7 @@ title: "ADR-016: Sylvan.Data.Excel — Streaming Excel File Reading"
 description: "Selection of Sylvan.Data.Excel for zero-dependency streaming Excel file reading in the DataExchange pipeline"
 sidebar:
   order: 16
-  badge:
-    text: Accepted
-    variant: success
+  label: "016 - Sylvan Excel Reading"
 ---
 
 > **Date:** 2026-03-01

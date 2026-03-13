@@ -16,10 +16,10 @@ before marking blobs as valid. Granit.Imaging adds a fluent image processing pip
 ## Package structure
 
 <FileTree>
-- Granit.BlobStorage Core abstractions, validation pipeline, domain model
+- Granit.BlobStorage/ Core abstractions, validation pipeline, domain model
   - Granit.BlobStorage.S3 S3 client, presigned URLs, key strategy
   - Granit.BlobStorage.EntityFrameworkCore Isolated DbContext, EF persistence
-- Granit.Imaging Image processing abstractions, fluent pipeline API
+- Granit.Imaging/ Image processing abstractions, fluent pipeline API
   - Granit.Imaging.MagickNet Magick.NET implementation (JPEG/PNG/WebP/AVIF/GIF/BMP/TIFF)
 </FileTree>
 

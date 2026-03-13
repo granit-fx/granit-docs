@@ -20,10 +20,10 @@ layer above. In Granit, three main layers structure each module:
 ```mermaid
 flowchart BT
     subgraph Infrastructure
-        EF["*.EntityFrameworkCore\n(DbContext, EF stores)"]
-        S3["*.S3\n(S3BlobClient)"]
-        VAULT["Granit.Vault\n(VaultClientFactory)"]
-        CACHE["Granit.Caching\n(DistributedCacheService)"]
+        EF["*.EntityFrameworkCore<br/>(DbContext, EF stores)"]
+        S3["*.S3<br/>(S3BlobClient)"]
+        VAULT["Granit.Vault<br/>(VaultClientFactory)"]
+        CACHE["Granit.Caching<br/>(DistributedCacheService)"]
     end
 
     subgraph Application
@@ -34,11 +34,11 @@ flowchart BT
     end
 
     subgraph Domain
-        ENT["Entity, AuditedEntity\nFullAuditedEntity"]
-        INT["IBlobStorage, IFeatureStore\nIBackgroundJobStore"]
-        EVT["IDomainEvent\nIIntegrationEvent"]
-        EXC["BusinessException\nNotFoundException"]
-        MRK["ISoftDeletable, IMultiTenant\nIActive"]
+        ENT["Entity, AuditedEntity<br/>FullAuditedEntity"]
+        INT["IBlobStorage, IFeatureStore<br/>IBackgroundJobStore"]
+        EVT["IDomainEvent<br/>IIntegrationEvent"]
+        EXC["BusinessException<br/>NotFoundException"]
+        MRK["ISoftDeletable, IMultiTenant<br/>IActive"]
     end
 
     EF -->|implements| INT

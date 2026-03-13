@@ -3,9 +3,7 @@ title: "ADR-015: Sep — High-Performance CSV Parsing"
 description: "Selection of Sep for SIMD-vectorized zero-allocation CSV parsing in the DataExchange pipeline"
 sidebar:
   order: 15
-  badge:
-    text: Accepted
-    variant: success
+  label: "015 - Sep CSV Parsing"
 ---
 
 > **Date:** 2026-03-01

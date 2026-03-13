@@ -3,9 +3,7 @@ title: "ADR-004: Asp.Versioning — REST API Versioning"
 description: "Adoption of Asp.Versioning for semantic REST API versioning with OpenAPI integration"
 sidebar:
   order: 4
-  badge:
-    text: Accepted
-    variant: success
+  label: "004 - API Versioning"
 ---
 
 > **Date:** 2026-02-22

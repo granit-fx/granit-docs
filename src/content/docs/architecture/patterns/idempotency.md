@@ -19,18 +19,20 @@ and a multi-tenant Redis store.
 ## Diagram
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Absent : First request
+flowchart TD
+    REQ([New request with<br/>Idempotency-Key]) --> LOOKUP{Key exists<br/>in Redis?}
 
-    Absent --> InProgress : Acquires lock\n(SET NX PX)
-    InProgress --> Completed : Handler succeeds\n(caches response)
-    InProgress --> Absent : Handler fails (5xx)\n(releases lock)
+    LOOKUP -->|No| LOCK["Acquire lock<br/>(SET NX PX)"]
+    LOCK --> EXEC[Execute handler]
+    EXEC -->|Success| CACHE["Cache response<br/>+ SHA-256 hash"]
+    CACHE --> R200([200 — Original response])
+    EXEC -->|Failure 5xx| REL["Release lock<br/>(DEL key)"]
+    REL --> R5XX([5xx — Error propagated])
 
-    Absent --> Completed : Double-check\nafter lock
-    Completed --> Completed : Same hash = replay (200)
-    Completed --> [*] : Different hash = reject (422)
-
-    InProgress --> InProgress : Concurrent request\n= 409 + Retry-After
+    LOOKUP -->|Yes, InProgress| R409([409 + Retry-After])
+    LOOKUP -->|Yes, Completed| HASH{Payload hash<br/>matches?}
+    HASH -->|Same| REPLAY([200 — Cached response])
+    HASH -->|Different| REJECT([422 — Payload mismatch])
 ```
 
 ## Implementation in Granit

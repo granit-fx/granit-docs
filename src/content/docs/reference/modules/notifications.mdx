@@ -18,16 +18,16 @@ for durable outbox-backed dispatch with exponential backoff retry.
 ## Package structure
 
 <FileTree>
-- Granit.Notifications Core: fan-out engine, InApp channel, definitions, entity tracking
+- Granit.Notifications/ Core: fan-out engine, InApp channel, definitions, entity tracking
   - Granit.Notifications.EntityFrameworkCore EF Core persistence (all stores)
   - Granit.Notifications.Endpoints Minimal API REST endpoints
   - Granit.Notifications.Wolverine Durable outbox dispatch via IMessageBus
-  - Granit.Notifications.Email Email channel abstraction (Keyed Services)
+  - Granit.Notifications.Email/ Email channel abstraction (Keyed Services)
     - Granit.Notifications.Email.Smtp MailKit SMTP provider
   - Granit.Notifications.Sms SMS channel abstraction (Keyed Services)
   - Granit.Notifications.WhatsApp WhatsApp Business API channel
   - Granit.Notifications.Brevo Unified Brevo provider (Email + SMS + WhatsApp)
-  - Granit.Notifications.MobilePush Mobile push abstraction + token store
+  - Granit.Notifications.MobilePush/ Mobile push abstraction + token store
     - Granit.Notifications.MobilePush.Fcm Firebase Cloud Messaging provider
   - Granit.Notifications.SignalR Real-time SignalR channel + Redis backplane
   - Granit.Notifications.WebPush W3C Web Push (VAPID, RFC 8030)

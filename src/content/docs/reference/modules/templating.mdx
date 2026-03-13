@@ -16,12 +16,12 @@ ISO 27001 audit trail (Draft, PendingReview, Published, Archived).
 ## Package structure
 
 <FileTree>
-- Granit.Templating Core pipeline: ITextTemplateRenderer, resolvers, engines, enrichers, global contexts, template store CQRS
+- Granit.Templating/ Core pipeline: ITextTemplateRenderer, resolvers, engines, enrichers, global contexts, template store CQRS
   - Granit.Templating.Scriban Scriban engine (sandboxed, no I/O or reflection), template caching, built-in global contexts
   - Granit.Templating.EntityFrameworkCore EF Core persistence (TemplatingDbContext), HybridCache-backed store, StoreTemplateResolver
   - Granit.Templating.Endpoints 16 admin endpoints (CRUD, preview, publish, categories, history, variables)
   - Granit.Templating.Workflow Bridge to Granit.Workflow: FSM validation, approval routing, unified audit trail
-- Granit.DocumentGeneration IDocumentGenerator facade, 2-stage pipeline (text render + binary conversion)
+- Granit.DocumentGeneration/ IDocumentGenerator facade, 2-stage pipeline (text render + binary conversion)
   - Granit.DocumentGeneration.Pdf PuppeteerSharp headless Chromium, PdfRenderOptions, PDF/A-3b conversion
   - Granit.DocumentGeneration.Excel ClosedXML engine, Base64-encoded XLSX templates, direct binary output
 </FileTree>
@@ -132,15 +132,15 @@ flowchart LR
         E2 --> ED[Enriched TData]
     end
     subgraph "2. Resolve"
-        ED --> R1["StoreTemplateResolver\n(Priority=100)"]
-        R1 -->|miss| R2["EmbeddedTemplateResolver\n(Priority=-100)"]
+        ED --> R1["StoreTemplateResolver<br/>(Priority=100)"]
+        R1 -->|miss| R2["EmbeddedTemplateResolver<br/>(Priority=-100)"]
         R1 -->|hit| TD[TemplateDescriptor]
         R2 --> TD
     end
     subgraph "3. Render"
-        TD --> ENG["ITemplateEngine\n(Scriban)"]
+        TD --> ENG["ITemplateEngine<br/>(Scriban)"]
         ED --> ENG
-        GC["Global Contexts\nnow.*, context.*"] --> ENG
+        GC["Global Contexts<br/>now.*, context.*"] --> ENG
         ENG --> RC[RenderedTextResult]
     end
 ```
@@ -308,7 +308,7 @@ flowchart LR
         ENRICH --> RESOLVE[Resolver Chain]
         RESOLVE --> ENGINE[ITemplateEngine]
     end
-    ENGINE -->|TextRenderedContent| RENDERER["IDocumentRenderer\n(PuppeteerSharp)"]
+    ENGINE -->|TextRenderedContent| RENDERER["IDocumentRenderer<br/>(PuppeteerSharp)"]
     ENGINE -->|BinaryRenderedContent| RESULT
     RENDERER --> RESULT[DocumentResult]
 ```
@@ -411,12 +411,12 @@ Templates stored in the EF Core store follow a strict lifecycle:
 ```mermaid
 stateDiagram-v2
     [*] --> Draft : SaveDraftAsync
-    Draft --> PendingReview : Workflow bridge\n(optional)
+    Draft --> PendingReview : Workflow bridge<br/>(optional)
     PendingReview --> Published : Approve
     PendingReview --> Draft : Reject
-    Draft --> Published : PublishAsync\n(without Workflow)
-    Published --> Archived : New version published\nor UnpublishAsync
-    Archived --> [*] : Preserved forever\n(ISO 27001)
+    Draft --> Published : PublishAsync<br/>(without Workflow)
+    Published --> Archived : New version published<br/>or UnpublishAsync
+    Archived --> [*] : Preserved forever<br/>(ISO 27001)
 ```
 
 | Status | Description | Deletable? |

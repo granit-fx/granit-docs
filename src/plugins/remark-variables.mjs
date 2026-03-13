@@ -7,12 +7,14 @@
  */
 import {
   PACKAGE_COUNT,
+  FRONTEND_PACKAGE_COUNT,
   PATTERN_COUNT,
   ADR_COUNT,
 } from "../data/constants.ts";
 
 const variables = {
   PACKAGE_COUNT: String(PACKAGE_COUNT),
+  FRONTEND_PACKAGE_COUNT: String(FRONTEND_PACKAGE_COUNT),
   PATTERN_COUNT: String(PATTERN_COUNT),
   ADR_COUNT: String(ADR_COUNT),
 };

@@ -3,9 +3,7 @@ title: "ADR-005: Wolverine + Cronos — Messaging, CQRS and Scheduling"
 description: "Selection of Wolverine for messaging and CQRS with PostgreSQL transport, and Cronos for cron scheduling"
 sidebar:
   order: 5
-  badge:
-    text: Accepted
-    variant: success
+  label: "005 - Wolverine + Cronos"
 ---
 
 > **Date:** 2026-02-22

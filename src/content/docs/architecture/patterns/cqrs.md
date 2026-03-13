@@ -16,15 +16,15 @@ dependencies explicit and code easier to audit.
 ```mermaid
 flowchart LR
     subgraph Read["Query side"]
-        EP_R["Endpoint / Handler\nread-only"]
+        EP_R["Endpoint / Handler<br/>read-only"]
         Reader["IXxxReader"]
-        DB_R[(Database\nAsNoTracking)]
+        DB_R[(Database<br/>AsNoTracking)]
     end
 
     subgraph Write["Command side"]
-        EP_W["Endpoint / Handler\nwrite"]
+        EP_W["Endpoint / Handler<br/>write"]
         Writer["IXxxWriter"]
-        DB_W[(Database\nSaveChangesAsync)]
+        DB_W[(Database<br/>SaveChangesAsync)]
     end
 
     EP_R --> Reader --> DB_R

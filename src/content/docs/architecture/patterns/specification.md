@@ -18,18 +18,18 @@ criteria -- all translated to SQL by EF Core.
 flowchart LR
     subgraph Declaration["Declaration (whitelist)"]
         QD["QueryDefinition of Patient"]
-        QB["QueryDefinitionBuilder\n.Column() .GlobalSearch()\n.FilterGroup() .DefaultSort()"]
+        QB["QueryDefinitionBuilder<br/>.Column() .GlobalSearch()<br/>.FilterGroup() .DefaultSort()"]
     end
 
     subgraph Execution["Execution (expression trees)"]
-        QR["QueryRequest\n(page, sort, filter, presets)"]
-        FEB["FilterExpressionBuilder\nExpression of Func T bool"]
-        QE["QueryEngine\nApplyFilters then Sort then Paginate"]
+        QR["QueryRequest<br/>(page, sort, filter, presets)"]
+        FEB["FilterExpressionBuilder<br/>Expression of Func T bool"]
+        QE["QueryEngine<br/>ApplyFilters then Sort then Paginate"]
     end
 
     subgraph Output["Result"]
         PR["PagedResult of T"]
-        Meta["QueryMetadata\n(columns, operators, presets)"]
+        Meta["QueryMetadata<br/>(columns, operators, presets)"]
     end
 
     QD --> QB

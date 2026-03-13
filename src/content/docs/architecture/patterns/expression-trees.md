@@ -22,11 +22,11 @@ flowchart TD
     AGC["ApplyGranitConventions()"] --> SCAN[Scan DbContext entities]
     SCAN --> CHECK{Which interfaces implemented?}
 
-    CHECK -->|ISoftDeletable| E1["Expression: !e.IsDeleted\nor !proxy.SoftDeleteEnabled"]
-    CHECK -->|IActive| E2["Expression: e.IsActive\nor !proxy.ActiveEnabled"]
-    CHECK -->|IMultiTenant| E3["Expression: e.TenantId == proxy.CurrentTenantId\nor !proxy.MultiTenantEnabled"]
+    CHECK -->|ISoftDeletable| E1["Expression: !e.IsDeleted<br/>or !proxy.SoftDeleteEnabled"]
+    CHECK -->|IActive| E2["Expression: e.IsActive<br/>or !proxy.ActiveEnabled"]
+    CHECK -->|IMultiTenant| E3["Expression: e.TenantId == proxy.CurrentTenantId<br/>or !proxy.MultiTenantEnabled"]
 
-    E1 --> COMBINE["Expression.AndAlso()\nCombine all conditions"]
+    E1 --> COMBINE["Expression.AndAlso()<br/>Combine all conditions"]
     E2 --> COMBINE
     E3 --> COMBINE
 

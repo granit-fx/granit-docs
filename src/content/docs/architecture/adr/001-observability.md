@@ -3,9 +3,7 @@ title: "ADR-001: Observability Stack — Serilog + OpenTelemetry"
 description: "Adoption of Serilog and OpenTelemetry for structured logging, distributed tracing, and metrics with data sovereignty compliance"
 sidebar:
   order: 1
-  badge:
-    text: Accepted
-    variant: success
+  label: "001 - Observability Stack"
 ---
 
 > **Date:** 2026-02-21

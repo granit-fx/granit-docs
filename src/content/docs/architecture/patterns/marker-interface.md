@@ -50,8 +50,8 @@ classDiagram
         +ErrorCode : string
     }
 
-    note for ISoftDeletable "SoftDeleteInterceptor\nQuery filter"
-    note for IMultiTenant "AuditedEntityInterceptor\nQuery filter"
+    note for ISoftDeletable "SoftDeleteInterceptor<br/>Query filter"
+    note for IMultiTenant "AuditedEntityInterceptor<br/>Query filter"
     note for IDomainEvent "Local queue Wolverine"
     note for IIntegrationEvent "Outbox Wolverine"
     note for IUserFriendlyException "Message exposed to client"

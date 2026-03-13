@@ -3,9 +3,7 @@ title: "ADR-003: Testing Stack — xUnit v3, NSubstitute and Bogus"
 description: "Selection of xUnit v3, NSubstitute, and Bogus as the foundational testing stack"
 sidebar:
   order: 3
-  badge:
-    text: Accepted
-    variant: success
+  label: "003 - Testing Stack"
 ---
 
 > **Date:** 2026-02-21

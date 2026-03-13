@@ -1,331 +1,548 @@
 ---
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import {
+  PACKAGE_COUNT,
+  CULTURE_COUNT,
+  PATTERN_COUNT,
+  ADR_COUNT,
+} from "../data/constants";
 
-const programCs = `<span class="kw">var</span> builder = WebApplication.CreateBuilder(args);
-
-builder.AddGranit&lt;<span class="tp">AppModule</span>&gt;();
-
-<span class="kw">var</span> app = builder.Build();
-app.UseGranit();
-app.Run();`;
-
-const appModuleCs = `[<span class="attr">DependsOn</span>(<span class="kw">typeof</span>(<span class="tp">GranitPersistenceModule</span>))]
-[<span class="attr">DependsOn</span>(<span class="kw">typeof</span>(<span class="tp">GranitSecurityModule</span>))]
-[<span class="attr">DependsOn</span>(<span class="kw">typeof</span>(<span class="tp">GranitObservabilityModule</span>))]
-<span class="kw">public class</span> <span class="tp">AppModule</span> : <span class="attr">GranitModule</span>
-{
-    <span class="kw">public override void</span> ConfigureServices(
-        <span class="attr">ServiceConfigurationContext</span> context)
-    {
-        context.Services.AddGranitDbContext&lt;<span class="tp">AppDbContext</span>&gt;(
-            options =&gt; options.UseNpgsql(
-                context.Configuration
-                    .GetConnectionString(<span class="str">&quot;Default&quot;</span>)));
+// Server-side syntax highlight (token collector avoids self-matching)
+function hl(code: string): string {
+  const tokens: Array<[number, number, string]> = [];
+  function collect(re: RegExp, cls: string, gi = 0) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(code)) !== null) {
+      const s = gi > 0 ? m.index + m[0].indexOf(m[gi]) : m.index;
+      const t = gi > 0 ? m[gi] : m[0];
+      tokens.push([s, s + t.length, cls]);
     }
-}`;
+  }
+  collect(/\/\/(.*)$/gm, "cmt", 0);
+  collect(/\b(var|typeof|public|sealed|static|readonly|class|override|void|new|using|namespace|return|get|set|async|await|true|false|null)\b/g, "kw", 1);
+  collect(/\b(string|int|long|bool|double|float|decimal|byte|char|object|Guid|DateTime)\b/g, "tp", 1);
+  collect(/\b(AppModule|AppDbContext|GranitModule|ServiceConfigurationContext|WebApplication)\b/g, "tp", 1);
+  collect(/\.(AddGranit\w*|AddKeycloak|UseNpgsql|UseGranit|CreateBuilder|Build|Run|GetConnectionString|AddSmtp|AddGranitLocalization)\b/g, "mth", 1);
+  collect(/"([^"]*)"/g, "str", 0);
+  tokens.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+  const kept: typeof tokens = [];
+  let le = 0;
+  for (const t of tokens) { if (t[0] >= le) { kept.push(t); le = t[1]; } }
+  const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let r = '', p = 0;
+  for (const [s, e, c] of kept) { r += esc(code.slice(p, s)) + `<span class="${c}">${esc(code.slice(s, e))}</span>`; p = e; }
+  r += esc(code.slice(p));
+  r = r.replace(/&lt;(AppModule|AppDbContext|GranitModule)&gt;/g, '&lt;<span class="tp">$1</span>&gt;');
+  r = r.replace(/=&gt;/g, '<span class="kw">=&gt;</span>');
+  return r;
+}
+
+const modules = [
+  { id: "persistence", label: "Persistence", dependsOn: "GranitPersistenceModule",
+    code: `context.Services.AddGranitDbContext<AppDbContext>(\n            options => options.UseNpgsql(\n                context.Configuration\n                    .GetConnectionString("Default")));` },
+  { id: "security", label: "Security", dependsOn: "GranitSecurityModule",
+    code: `context.Services.AddGranitAuthentication()\n            .AddKeycloak(context.Configuration);` },
+  { id: "observability", label: "Observability", dependsOn: "GranitObservabilityModule",
+    code: `context.Services.AddGranitObservability(\n            context.Configuration);` },
+  { id: "notifications", label: "Notifications", dependsOn: "GranitNotificationsModule",
+    code: `context.Services.AddGranitNotifications()\n            .AddSmtp(context.Configuration);` },
+  { id: "localization", label: "Localization", dependsOn: "GranitLocalizationModule",
+    code: `context.Services.AddGranitLocalization(\n            options => options.DefaultCulture = "en");` },
+];
+
+const defaultActive = [true, true, true, false, false];
+
+// Build all 32 AppModule.cs source strings
+function buildModuleCode(activeIndices: number[]): string {
+  const attrs = activeIndices.map(i => `[DependsOn(typeof(${modules[i].dependsOn}))]`).join("\n");
+  const body = activeIndices.length > 0
+    ? activeIndices.map(i => `        ${modules[i].code}`).join("\n\n")
+    : "        // Pick modules above to see the code";
+  return (attrs ? attrs + "\n" : "") +
+    "public class AppModule : GranitModule\n{\n    public override void ConfigureServices(\n        ServiceConfigurationContext context)\n    {\n" +
+    body + "\n    }\n}";
+}
+
+const combos: Record<string, string> = {};
+for (let mask = 0; mask < (1 << modules.length); mask++) {
+  const key = modules.map((_, i) => (mask >> i) & 1 ? "1" : "0").join("");
+  const activeIndices = modules.map((_, i) => i).filter(i => (mask >> i) & 1);
+  combos[key] = hl(buildModuleCode(activeIndices));
+}
+
+const defaultKey = defaultActive.map(a => a ? "1" : "0").join("");
+const programHtml = hl(`var builder = WebApplication.CreateBuilder(args);\n\nbuilder.AddGranit<AppModule>();\n\nvar app = builder.Build();\napp.UseGranit();\napp.Run();`);
 ---
 
 <StarlightPage
-  frontmatter={{ title: "Granit", template: "splash", hero: { tagline: "" } }}
+  frontmatter={{
+    title: "Granit — Open-Source Modular Framework for .NET and React",
+    template: "splash",
+    hero: { title: "", tagline: "" },
+  }}
   headings={[]}
 >
-  <style>
-    /* Theme-aware landing page — uses Starlight CSS custom properties */
-    .landing-section { margin-inline: auto; max-width: 72rem; padding-inline: 1rem; }
-    .landing-hero { padding-block: 3rem 4rem; text-align: center; }
-    @media (min-width: 640px) { .landing-hero { padding-block: 5rem 6rem; } }
+  <style is:global>
+    /* ── Layout ── */
+    .lp { margin-inline: auto; max-width: 72rem; padding-inline: 1.5rem; }
 
-    .landing-badge {
+    /* ── Hero: split layout ── */
+    .lp-hero {
+      display: grid; gap: 3rem; align-items: center;
+      padding-block: 2rem 3rem;
+    }
+    @media (min-width: 960px) {
+      .lp-hero { grid-template-columns: 1fr 1fr; padding-block: 3rem 4rem; }
+    }
+    .lp-hero-text { max-width: 32rem; }
+    .lp-eyebrow {
+      font-size: 1.25rem; font-weight: 600;
+      color: var(--sl-color-accent); margin-bottom: 0.75rem;
+    }
+    .lp-h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 800; line-height: 1.08;
+      color: var(--sl-color-white); margin: 0;
+    }
+    .lp-sub {
+      margin-top: 1.25rem; font-size: 1.125rem;
+      line-height: 1.6; color: var(--sl-color-gray-2);
+    }
+    /* Syntax highlighting — Night Owl inspired */
+    .kw { color: #c792ea; }
+    .tp { color: #82aaff; }
+    .attr { color: #ffcb6b; }
+    .str { color: #c3e88d; }
+    .mth { color: #89ddff; }
+    .cmt { color: #637777; font-style: italic; }
+
+    .lp-actions {
+      margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.75rem;
+    }
+    .lp-btn {
       display: inline-flex; align-items: center; gap: 0.5rem;
-      border: 1px solid var(--sl-color-gray-5); border-radius: 9999px;
-      background: var(--sl-color-gray-6); padding: 0.375rem 1rem;
-      font-size: 0.875rem; color: var(--sl-color-gray-2);
+      border-radius: 0.5rem; padding: 0.75rem 1.5rem;
+      font-weight: 600; font-size: 0.9375rem;
+      text-decoration: none; transition: all 0.2s;
     }
-    .landing-badge-dot {
-      display: inline-block; width: 0.5rem; height: 0.5rem;
-      border-radius: 9999px; background: var(--sl-color-accent);
+    .lp-btn-primary {
+      background: var(--sl-color-accent);
+      color: var(--sl-color-accent-text-over);
     }
-
-    .landing-h1 {
-      margin-top: 1.5rem; font-size: 2.25rem; font-weight: 800;
-      line-height: 1.1; color: var(--sl-color-white);
+    .lp-btn-primary:hover { opacity: 0.85; }
+    .lp-btn-outline {
+      border: 1px solid var(--sl-color-gray-5);
+      color: var(--sl-color-gray-2);
     }
-    @media (min-width: 640px) { .landing-h1 { font-size: 3.75rem; } }
-
-    .landing-h1-accent {
-      background: linear-gradient(to right, var(--sl-color-accent), var(--sl-color-gray-2));
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    .lp-btn-outline:hover {
+      border-color: var(--sl-color-gray-3);
+      color: var(--sl-color-white);
     }
 
-    .landing-subtitle {
-      margin-top: 1.5rem; max-width: 40rem; margin-inline: auto;
-      font-size: 1.125rem; color: var(--sl-color-gray-2);
+    /* Hero visual */
+    .lp-hero-visual {
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lp-hero-visual img {
+      width: 100%; max-width: 520px; height: auto;
+    }
+    /* ── Accent banner ── */
+    .lp-banner {
+      border-radius: 0.75rem; padding: 2rem 2.5rem;
+      background: var(--sl-color-accent);
+      color: var(--sl-color-accent-text-over);
+    }
+    .lp-banner h2 {
+      font-size: 1.75rem; font-weight: 700; margin: 0 0 0.5rem;
+      color: #fff;
+    }
+    .lp-banner p {
+      font-size: 1.125rem; line-height: 1.6; margin: 0;
+      color: #fff; opacity: 0.9;
     }
 
-    .landing-actions {
-      margin-top: 2.5rem; display: flex; flex-wrap: wrap;
-      justify-content: center; gap: 1rem;
-    }
-    .landing-btn-primary {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      border-radius: 0.5rem; background: var(--sl-color-accent);
-      padding: 0.75rem 1.5rem; font-weight: 600; color: var(--sl-color-accent-text-over);
-      text-decoration: none; transition: opacity 0.2s;
-    }
-    .landing-btn-primary:hover { opacity: 0.85; }
-    .landing-btn-secondary {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem;
-      padding: 0.75rem 1.5rem; font-weight: 600; color: var(--sl-color-gray-2);
-      text-decoration: none; transition: border-color 0.2s, color 0.2s;
-    }
-    .landing-btn-secondary:hover {
-      border-color: var(--sl-color-gray-3); color: var(--sl-color-white);
+    /* ── Section titles ── */
+    .lp-section { padding-block: 0.5rem 4rem; }
+    .lp-h2 {
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 800; color: var(--sl-color-white);
+      margin: 0 0 3rem;
     }
 
-    /* Terminal */
-    .landing-terminal {
-      max-width: 56rem; margin-inline: auto; padding-inline: 1rem;
-      padding-bottom: 4rem;
+    /* ── Feature grid (2-col like Aspire) ── */
+    .lp-features {
+      display: grid; gap: 2.5rem;
     }
-    .terminal-window {
-      overflow: hidden; border-radius: 0.75rem;
-      border: 1px solid var(--sl-color-gray-5); background: var(--sl-color-gray-6);
+    @media (min-width: 640px) {
+      .lp-features { grid-template-columns: 1fr 1fr; }
     }
-    .terminal-bar {
+    .lp-feature { display: flex; flex-direction: column; gap: 0.75rem; }
+    .lp-feature-header {
       display: flex; align-items: center; gap: 0.5rem;
-      border-bottom: 1px solid var(--sl-color-gray-5); padding: 0.75rem 1rem;
     }
-    .terminal-dot { width: 0.75rem; height: 0.75rem; border-radius: 9999px; }
-    .terminal-body {
-      padding: 1.5rem; font-family: var(--sl-font-mono);
-      font-size: 0.875rem; line-height: 1.75;
+    .lp-feature-icon {
+      flex-shrink: 0; width: 1.5rem; height: 1.5rem;
+      color: var(--sl-color-accent);
     }
-    .terminal-comment { color: var(--sl-color-gray-3); }
-    .terminal-prompt { color: var(--sl-color-accent); }
-    .terminal-cmd { color: var(--sl-color-white); }
+    .lp-feature-icon svg { width: 100%; height: 100%; }
+    .lp-feature-title {
+      font-size: 1.0625rem; font-weight: 700;
+      color: var(--sl-color-white); margin: 0;
+      text-decoration: none;
+    }
+    .lp-feature-title:hover {
+      color: var(--sl-color-accent-high);
+    }
+    .lp-feature-desc {
+      font-size: 0.9375rem; color: var(--sl-color-gray-2);
+      line-height: 1.5; margin: 0;
+    }
 
-    /* Code showcase */
-    .landing-code { padding-bottom: 5rem; }
-    .landing-h2 {
-      text-align: center; font-size: 1.875rem; font-weight: 700;
-      color: var(--sl-color-white); margin-bottom: 1rem;
+    /* ── Module builder ── */
+    .lp-builder-intro {
+      text-align: center; max-width: 40rem; margin-inline: auto;
+      margin-bottom: 2rem; color: var(--sl-color-gray-2);
     }
-    @media (min-width: 640px) { .landing-h2 { font-size: 2.25rem; } }
-    .landing-lead {
-      max-width: 40rem; margin-inline: auto; text-align: center;
-      color: var(--sl-color-gray-2); margin-bottom: 3rem;
+    .lp-toggles {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.75rem; margin-bottom: 2.5rem;
     }
-    .landing-code-grid {
-      display: grid; gap: 2rem;
+    .lp-toggle {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid var(--sl-color-gray-5); border-radius: 0.75rem;
+      background: var(--sl-color-gray-6); padding: 0.75rem 1.5rem;
+      font-size: 0.875rem; color: var(--sl-color-gray-3);
+      white-space: nowrap; height: 2.75rem; box-sizing: border-box;
+      cursor: pointer; transition: all 0.2s; user-select: none;
+      font-family: inherit; margin: 0;
     }
-    @media (min-width: 1024px) { .landing-code-grid { grid-template-columns: 1fr 1fr; } }
-    .code-panel {
-      overflow: hidden; border-radius: 0.75rem;
-      border: 1px solid var(--sl-color-gray-5); background: var(--sl-color-gray-6);
+    .lp-toggle:hover {
+      border-color: var(--sl-color-gray-3); color: var(--sl-color-gray-2);
     }
-    .code-panel-header {
+    .lp-toggle[data-active="true"] {
+      border-color: var(--sl-color-accent);
+      background: var(--sl-color-accent);
+      color: #fff;
+    }
+    .lp-toggle[data-active="true"] .lp-toggle-icon { color: #fff; }
+    .lp-toggle-icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 1.25rem; height: 1.25rem; flex-shrink: 0;
+      overflow: hidden;
+      color: var(--sl-color-accent); transition: color 0.2s;
+    }
+    .lp-toggle-icon svg { width: 1.25rem; height: 1.25rem; display: block; }
+    .lp-code-panel {
+      border-radius: 0.75rem; overflow: hidden;
+      border: 1px solid var(--sl-color-gray-5);
+      background: #1e1e2e;
+    }
+    :root[data-theme="light"] .lp-code-panel {
+      background: #f6f7f9;
+    }
+    :root[data-theme="light"] .lp-code-content code {
+      color: #24292e;
+    }
+    :root[data-theme="light"] .kw { color: #d73a49; }
+    :root[data-theme="light"] .tp { color: #6f42c1; }
+    :root[data-theme="light"] .str { color: #22863a; }
+    :root[data-theme="light"] .mth { color: #005cc5; }
+    :root[data-theme="light"] .cmt { color: #6a737d; }
+    :root[data-theme="light"] .attr { color: #e36209; }
+    .lp-code-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--sl-color-gray-5);
+      align-items: stretch;
+    }
+    .lp-code-tab {
+      padding: 0.5rem 1rem; font-size: 0.75rem; font-family: var(--sl-font-mono);
+      color: var(--sl-color-gray-3); background: transparent; border: none;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s; margin: 0 0 -1px 0;
+      line-height: 1.5;
+    }
+    .lp-code-tab:hover { color: var(--sl-color-gray-1); }
+    .lp-code-tab[aria-selected="true"] {
+      color: var(--sl-color-accent-high); border-bottom-color: var(--sl-color-accent);
+    }
+    .lp-code-content > div[data-panel] {
+      display: none; min-height: 14rem;
+    }
+    .lp-code-content > div[data-visible="true"] {
+      display: block;
+    }
+    .lp-code-content pre {
+      margin: 0; padding: 1.25rem 1.5rem; font-size: 0.8125rem;
+      line-height: 1.75; overflow-x: auto;
+      border: none; background: transparent; border-radius: 0;
+    }
+    .lp-code-content code {
+      color: #d6deeb; white-space: pre;
+      background: transparent; border: none; padding: 0;
+    }
+
+    /* ── Stats ── */
+    .lp-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; text-align: center; padding-block: 3rem;
+      border-top: 1px solid var(--sl-color-gray-5);
       border-bottom: 1px solid var(--sl-color-gray-5);
-      padding: 0.5rem 1rem; font-size: 0.875rem; color: var(--sl-color-gray-3);
     }
-    .code-panel pre {
-      padding: 1rem; font-size: 0.875rem; line-height: 1.75;
-      overflow-x: auto; margin: 0;
+    @media (max-width: 480px) {
+      .lp-stats { grid-template-columns: repeat(2, 1fr); }
     }
-    .code-panel code { color: var(--sl-color-gray-2); }
-    .code-panel .kw { color: var(--sl-color-accent); }
-    .code-panel .tp { color: var(--sl-color-accent-high); }
-    .code-panel .attr { color: var(--sl-color-accent-high); }
-    .code-panel .str { color: #e9c46a; }
+    .lp-stat-num {
+      font-size: 2rem; font-weight: 800;
+      color: var(--sl-color-accent);
+    }
+    .lp-stat-label {
+      font-size: 0.8125rem; color: var(--sl-color-gray-3);
+      margin-top: 0.125rem;
+    }
 
-    /* Bento grid */
-    .landing-grid { padding-bottom: 5rem; }
-    .bento-grid {
-      display: grid; gap: 1rem;
-    }
-    @media (min-width: 640px) { .bento-grid { grid-template-columns: 1fr 1fr; } }
-    @media (min-width: 1024px) { .bento-grid { grid-template-columns: 1fr 1fr 1fr; } }
-    .bento-card {
+    /* ── Compliance ── */
+    .lp-compliance {
+      display: grid; gap: 2.5rem; align-items: center;
       border-radius: 0.75rem; border: 1px solid var(--sl-color-gray-5);
-      background: var(--sl-color-gray-6); padding: 1.5rem;
-      transition: border-color 0.2s;
+      background: var(--sl-color-gray-6); padding: 2.5rem;
     }
-    .bento-card:hover { border-color: var(--sl-color-accent); }
-    .bento-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
-    .bento-title {
-      font-size: 1.125rem; font-weight: 600; color: var(--sl-color-white);
-      margin-bottom: 0.5rem;
+    @media (min-width: 960px) {
+      .lp-compliance { grid-template-columns: 1fr 1fr; }
     }
-    .bento-desc { font-size: 0.875rem; color: var(--sl-color-gray-2); }
-
-    /* Compliance banner */
-    .compliance-banner {
-      border-radius: 0.75rem; border: 1px solid var(--sl-color-gray-5);
-      background: var(--sl-color-gray-6); padding: 2rem;
+    .lp-compliance h2 {
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--sl-color-white); margin: 0 0 0.75rem;
     }
-    @media (min-width: 640px) { .compliance-banner { padding: 3rem; } }
-    .compliance-grid {
-      display: grid; gap: 2rem; align-items: center;
+    .lp-compliance > div:first-child p {
+      color: var(--sl-color-gray-2); line-height: 1.6; margin: 0;
     }
-    @media (min-width: 1024px) { .compliance-grid { grid-template-columns: 1fr 1fr; } }
-    .compliance-badges { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; }
-    .compliance-badge {
+    .lp-badges {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem; text-align: center;
+    }
+    .lp-badge {
       border-radius: 0.5rem; border: 1px solid var(--sl-color-gray-5);
-      background: var(--sl-color-bg); padding: 1rem;
+      background: var(--sl-color-bg); padding: 1.5rem 0.75rem;
+      margin: 0; display: flex; flex-direction: column;
+      align-items: center; gap: 0.75rem;
     }
-    .compliance-badge-title { font-size: 1.5rem; font-weight: 700; color: var(--sl-color-accent); }
-    .compliance-badge-sub { margin-top: 0.25rem; font-size: 0.75rem; color: var(--sl-color-gray-3); }
+    .lp-badge-icon {
+      width: 2.5rem; height: 2.5rem; color: var(--sl-color-accent);
+    }
+    .lp-badge-icon svg { width: 100%; height: 100%; }
+    .lp-badge-title {
+      font-size: 1.25rem; font-weight: 800;
+      color: var(--sl-color-accent);
+    }
+    .lp-badge-sub {
+      font-size: 0.75rem; color: var(--sl-color-gray-3);
+      margin-top: -0.25rem;
+    }
 
-    /* CTA */
-    .landing-cta { padding-bottom: 5rem; text-align: center; }
-    .landing-cta p { margin-top: 1rem; max-width: 36rem; margin-inline: auto; color: var(--sl-color-gray-2); }
-    .landing-cta .landing-actions { margin-top: 2rem; }
+    /* ── CTA ── */
+    .lp-cta {
+      text-align: center; padding-block: 4rem 5rem;
+    }
+    .lp-cta p {
+      max-width: 36rem; margin: 1rem auto 0;
+      color: var(--sl-color-gray-2); line-height: 1.6;
+    }
+    .lp-cta .lp-actions { margin-top: 2rem; justify-content: center; }
   </style>
 
-  <!-- Hero -->
-  <section class="landing-section landing-hero">
-    <div class="landing-badge">
-      <span class="landing-badge-dot"></span>
-      Apache-2.0 &middot; .NET 10 &middot; GDPR &amp; ISO 27001 ready
+  <!-- ════════ Hero ════════ -->
+  <section class="lp lp-hero">
+    <div class="lp-hero-text">
+      <div class="lp-eyebrow">Granit</div>
+      <h1 class="lp-h1">Solid by design,<br />modular by nature.</h1>
+      <p class="lp-sub">
+        Orchestrate auth, persistence, messaging, and {PACKAGE_COUNT - 4}+ more modules
+        effortlessly — no boilerplate, no rewrites, no limits. Extend Granit to power any project.
+      </p>
+      <div class="lp-actions">
+        <a href="/getting-started/" class="lp-btn lp-btn-primary">Get Granit</a>
+        <a href="/reference/" class="lp-btn lp-btn-outline">Explore Docs</a>
+      </div>
     </div>
-
-    <h1 class="landing-h1">
-      Build production apps,<br />
-      <span class="landing-h1-accent">not boilerplate.</span>
-    </h1>
-
-    <p class="landing-subtitle">
-      Granit is a rock-solid modular framework for .NET and React.
-      93 packages covering auth, persistence, messaging, documents, workflow,
-      observability — wired together with a topological module system.
-    </p>
-
-    <div class="landing-actions">
-      <a href="/getting-started/" class="landing-btn-primary">
-        Get Started
-        <svg style="width:1rem;height:1rem" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-      </a>
-      <a href="/reference/" class="landing-btn-secondary">Module Reference</a>
+    <div class="lp-hero-visual">
+      <img src="/hero-layers.svg" alt="Granit framework layers: Core, Persistence, Messaging, Documents, Observability" width="520" height="440" />
     </div>
   </section>
 
-  <!-- Quick Start CLI -->
-  <section class="landing-terminal">
-    <div class="terminal-window">
-      <div class="terminal-bar">
-        <span class="terminal-dot" style="background:#ef4444"></span>
-        <span class="terminal-dot" style="background:#eab308"></span>
-        <span class="terminal-dot" style="background:#22c55e"></span>
-        <span style="margin-left:0.5rem;font-size:0.875rem;color:var(--sl-color-gray-3)">Terminal</span>
-      </div>
-      <div class="terminal-body">
-        <p class="terminal-comment"># Install the template</p>
-        <p><span class="terminal-prompt">$</span> <span class="terminal-cmd">dotnet new install Granit.Templates</span></p>
-        <p style="margin-top:0.75rem" class="terminal-comment"># Create a new project</p>
-        <p><span class="terminal-prompt">$</span> <span class="terminal-cmd">dotnet new granit-app -n MyApp</span></p>
-        <p style="margin-top:0.75rem" class="terminal-comment"># Run with full observability</p>
-        <p><span class="terminal-prompt">$</span> <span class="terminal-cmd">dotnet new granit-app -n MyApp</span></p>
-        <p style="margin-top:0.5rem" class="terminal-comment">info: Granit.Core.Modularity.ModuleLoader[0]</p>
-        <p class="terminal-comment">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Loaded 12 modules in topological order</p>
-        <p class="terminal-comment">info: Microsoft.Hosting.Lifetime[14]</p>
-        <p class="terminal-comment">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Now listening on: https://localhost:5001</p>
-      </div>
+  <!-- ════════ Banner ════════ -->
+  <section class="lp" style="padding-bottom:4rem">
+    <div class="lp-banner">
+      <h2>Free and open source</h2>
+      <p>
+        Granit is Apache-2.0 licensed, GDPR &amp; ISO 27001 ready out of the box.
+        Build production apps on a framework designed for compliance from day one.
+      </p>
     </div>
   </section>
 
-  <!-- Code Showcase -->
-  <section class="landing-section landing-code">
-    <h2 class="landing-h2">Declare modules, not plumbing</h2>
-    <p class="landing-lead">
-      Each module declares its dependencies. Granit resolves the graph, wires DI,
-      runs interceptors, and applies query filters — automatically.
-    </p>
-
-    <div class="landing-code-grid">
-      <div class="code-panel">
-        <div class="code-panel-header">Program.cs</div>
-        <pre><code set:html={programCs} /></pre>
-      </div>
-      <div class="code-panel">
-        <div class="code-panel-header">AppModule.cs</div>
-        <pre><code set:html={appModuleCs} /></pre>
-      </div>
-    </div>
-  </section>
-
-  <!-- Bento Grid -->
-  <section class="landing-section landing-grid">
-    <h2 class="landing-h2">Everything you need, nothing you don't</h2>
-    <p class="landing-lead">
-      93 NuGet packages organized into cohesive modules.
-      Pick what you need — dependencies resolve automatically.
-    </p>
-
-    <div class="bento-grid">
-      {[
-        { icon: "\u{1F9F1}", title: "Module System", desc: "Topological dependency resolution, lifecycle hooks, conditional modules. Inspired by ABP, built for .NET 10." },
-        { icon: "\u{1F4BE}", title: "Persistence & Audit", desc: "EF Core interceptors for audit trails, soft delete, domain events, and entity versioning. Zero manual WHERE clauses." },
-        { icon: "\u{1F510}", title: "Security & Identity", desc: "JWT + Keycloak authentication, policy-based authorization, Vault integration, GDPR privacy helpers." },
-        { icon: "\u{1F4E8}", title: "Messaging & Events", desc: "Wolverine message bus with transactional outbox, webhooks, 6-channel notification engine." },
-        { icon: "\u{1F3E2}", title: "Multi-Tenancy", desc: "Shared database, schema-per-tenant, or database-per-tenant. Transparent query filters, zero code changes." },
-        { icon: "\u{1F4CA}", title: "Observability", desc: "Serilog + OpenTelemetry out of the box. Structured logs, traces, metrics — all via OTLP to Grafana." },
-        { icon: "\u{1F4C4}", title: "Documents & Templates", desc: "Scriban template engine, HTML-to-PDF, Excel generation. Versioned templates with workflow integration." },
-        { icon: "\u{1F504}", title: "Data Exchange", desc: "Structured import pipeline (Extract, Map, Validate, Execute) and export presets with background jobs." },
-        { icon: "\u{1F30D}", title: "Localization", desc: "17 cultures out of the box, source-generated type-safe keys, runtime override store." },
-      ].map(({ icon, title, desc }) => (
-        <div class="bento-card">
-          <div class="bento-icon">{icon}</div>
-          <div class="bento-title">{title}</div>
-          <p class="bento-desc">{desc}</p>
+  <!-- ════════ Why Granit ════════ -->
+  <section class="lp lp-section">
+    <h2 class="lp-h2">Why developers choose Granit</h2>
+    <div class="lp-features">
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" /></svg></div>
+          <a href="/architecture/patterns/module-system/" class="lp-feature-title">Modular by default</a>
         </div>
+        <p class="lp-feature-desc">Topological dependency resolution, lifecycle hooks, and conditional modules. Pick what you need — the graph resolves automatically.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg></div>
+          <a href="/reference/modules/persistence/" class="lp-feature-title">Persistence & audit</a>
+        </div>
+        <p class="lp-feature-desc">EF Core interceptors for audit trails, soft delete, and entity versioning. Zero manual WHERE clauses, ever.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg></div>
+          <a href="/reference/modules/security/" class="lp-feature-title">Security built in</a>
+        </div>
+        <p class="lp-feature-desc">JWT + Keycloak authentication, policy-based authorization, Vault integration, and GDPR privacy helpers.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg></div>
+          <a href="/reference/modules/observability/" class="lp-feature-title">Observability from the start</a>
+        </div>
+        <p class="lp-feature-desc">Serilog + OpenTelemetry deliver logs, traces, and metrics automatically — debug faster with zero setup.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" /></svg></div>
+          <a href="/concepts/multi-tenancy/" class="lp-feature-title">Multi-tenancy, SaaS-ready</a>
+        </div>
+        <p class="lp-feature-desc">Shared database, schema-per-tenant, or database-per-tenant. Transparent query filters, no code changes.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature-header">
+          <div class="lp-feature-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg></div>
+          <a href="/reference/modules/notifications/" class="lp-feature-title">Messaging & notifications</a>
+        </div>
+        <p class="lp-feature-desc">Wolverine message bus with transactional outbox, webhooks, and a 6-channel notification engine.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ Stats ════════ -->
+  <div class="lp">
+    <div class="lp-stats">
+      <div>
+        <div class="lp-stat-num">{PACKAGE_COUNT}</div>
+        <div class="lp-stat-label">NuGet packages</div>
+      </div>
+      <div>
+        <div class="lp-stat-num">{CULTURE_COUNT}</div>
+        <div class="lp-stat-label">cultures</div>
+      </div>
+      <div>
+        <div class="lp-stat-num">{PATTERN_COUNT}</div>
+        <div class="lp-stat-label">design patterns</div>
+      </div>
+      <div>
+        <div class="lp-stat-num">{ADR_COUNT}</div>
+        <div class="lp-stat-label">ADRs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ Interactive builder ════════ -->
+  <section class="lp lp-section">
+    <h2 class="lp-h2" style="text-align:center">Pick your modules, see the code</h2>
+    <p class="lp-builder-intro">
+      Toggle the modules you need — the code updates in real time.
+      Each module declares its dependencies. Granit resolves the graph automatically.
+    </p>
+
+    <div class="lp-toggles" id="module-toggles">
+      <button class="lp-toggle" data-module="persistence" data-active="true">
+        <div class="lp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg></div>
+        Persistence
+      </button>
+      <button class="lp-toggle" data-module="security" data-active="true">
+        <div class="lp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg></div>
+        Security
+      </button>
+      <button class="lp-toggle" data-module="observability" data-active="true">
+        <div class="lp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg></div>
+        Observability
+      </button>
+      <button class="lp-toggle" data-module="notifications" data-active="false">
+        <div class="lp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg></div>
+        Notifications
+      </button>
+      <button class="lp-toggle" data-module="localization" data-active="false">
+        <div class="lp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5a17.92 17.92 0 01-8.716-2.247m0 0A8.966 8.966 0 013 12c0-1.264.26-2.467.732-3.558" /></svg></div>
+        Localization
+      </button>
+    </div>
+
+    <div class="lp-code-panel" id="code-panel">
+      <div class="lp-code-tabs" role="tablist">
+        <button class="lp-code-tab" role="tab" aria-selected="true" data-tab="module">AppModule.cs</button>
+        <button class="lp-code-tab" role="tab" aria-selected="false" data-tab="program">Program.cs</button>
+      </div>
+      <div class="lp-code-content">
+        <div data-visible="true" data-panel="module" id="code-module">
+          <pre><code><Fragment set:html={combos[defaultKey]} /></code></pre>
+        </div>
+        <div data-visible="false" data-panel="program" id="code-program">
+          <pre><code><Fragment set:html={programHtml} /></code></pre>
+        </div>
+      </div>
+      {Object.entries(combos).map(([key, html]) => (
+        <template data-combo={key}><pre><code><Fragment set:html={html} /></code></pre></template>
       ))}
     </div>
   </section>
 
-  <!-- Compliance Banner -->
-  <section class="landing-section" style="padding-bottom:5rem">
-    <div class="compliance-banner">
-      <div class="compliance-grid">
-        <div>
-          <h2 style="font-size:1.5rem;font-weight:700;color:var(--sl-color-white)">
-            Compliance built in, not bolted on
-          </h2>
-          <p style="margin-top:1rem;color:var(--sl-color-gray-2)">
-            Every module is designed with GDPR, ISO 27001, and ISO 9001 in mind.
-            Audit trails, encryption, right to erasure, tenant isolation —
-            architectural constraints, not afterthoughts.
-          </p>
+  <!-- ════════ Compliance ════════ -->
+  <section class="lp" style="padding-bottom:4rem">
+    <div class="lp-compliance">
+      <div>
+        <h2>Compliance built in, not bolted on</h2>
+        <p>
+          Every module is designed with GDPR, ISO 27001, and ISO 9001 in mind.
+          Audit trails, encryption, right to erasure, tenant isolation —
+          architectural constraints, not afterthoughts.
+        </p>
+      </div>
+      <div class="lp-badges">
+        <div class="lp-badge">
+          <div class="lp-badge-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg></div>
+          <div class="lp-badge-title">GDPR</div>
+          <div class="lp-badge-sub">Art. 17, 18, 25</div>
         </div>
-        <div class="compliance-badges">
-          <div class="compliance-badge">
-            <div class="compliance-badge-title">GDPR</div>
-            <div class="compliance-badge-sub">Art. 17, 18, 25</div>
-          </div>
-          <div class="compliance-badge">
-            <div class="compliance-badge-title">27001</div>
-            <div class="compliance-badge-sub">Annex A</div>
-          </div>
-          <div class="compliance-badge">
-            <div class="compliance-badge-title">9001</div>
-            <div class="compliance-badge-sub">Clause 7-10</div>
-          </div>
+        <div class="lp-badge">
+          <div class="lp-badge-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg></div>
+          <div class="lp-badge-title">ISO 27001</div>
+          <div class="lp-badge-sub">Annex A</div>
+        </div>
+        <div class="lp-badge">
+          <div class="lp-badge-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg></div>
+          <div class="lp-badge-title">ISO 9001</div>
+          <div class="lp-badge-sub">Clause 7-10</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- CTA -->
-  <section class="landing-section landing-cta">
-    <h2 class="landing-h2">Ready to build on solid ground?</h2>
+  <!-- ════════ CTA ════════ -->
+  <section class="lp lp-cta">
+    <h2 class="lp-h2">Ready to build on solid ground?</h2>
     <p>
       Start with the getting started guide, explore the module reference,
       or dive into the architecture decisions that shaped Granit.
     </p>
-    <div class="landing-actions">
-      <a href="/getting-started/" class="landing-btn-primary">Get Started</a>
-      <a href="https://gitlab.com/digital-dynamics/granit-dotnet" class="landing-btn-secondary">View on GitLab</a>
+    <div class="lp-actions">
+      <a href="/getting-started/" class="lp-btn lp-btn-primary">Get Started</a>
+      <a href="https://gitlab.com/digital-dynamics/granit-dotnet" class="lp-btn lp-btn-outline">View on GitLab</a>
     </div>
   </section>
+
+  <script is:inline src="/landing.js"></script>
 </StarlightPage>

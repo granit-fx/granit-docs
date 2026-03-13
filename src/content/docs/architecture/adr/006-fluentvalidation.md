@@ -3,9 +3,7 @@ title: "ADR-006: FluentValidation — Business Validation Framework"
 description: "Adoption of FluentValidation for composable business validation with Wolverine pipeline integration"
 sidebar:
   order: 6
-  badge:
-    text: Accepted
-    variant: success
+  label: "006 - FluentValidation"
 ---
 
 > **Date:** 2026-02-24

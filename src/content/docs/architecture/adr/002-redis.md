@@ -3,9 +3,7 @@ title: "ADR-002: Redis via StackExchange.Redis — Distributed Cache"
 description: "Selection of Redis via StackExchange.Redis as the distributed cache backend for L1+L2 caching"
 sidebar:
   order: 2
-  badge:
-    text: Accepted
-    variant: success
+  label: "002 - Redis Distributed Cache"
 ---
 
 > **Date:** 2026-02-21
