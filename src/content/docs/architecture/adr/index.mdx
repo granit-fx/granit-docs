@@ -11,10 +11,19 @@ made during the development of Granit.
 Each ADR follows a consistent template: Context, Decision, Evaluated Alternatives,
 Justification, and Consequences.
 
+<style>{`
+  table th:first-child,
+  table td:first-child { white-space: nowrap; min-width: 3rem; }
+  table th:nth-child(3),
+  table td:nth-child(3) { white-space: nowrap; }
+  table th:nth-child(4),
+  table td:nth-child(4) { white-space: nowrap; }
+`}</style>
+
 ## ADR index
 
 | # | Title | Status | Date | Scope |
-| - | ----- | ------ | ---- | ----- |
+| --- | ----- | ------ | ---- | ----- |
 | [001](001-observability/) | Observability Stack — Serilog + OpenTelemetry | Accepted | 2026-02-21 | Granit.Observability |
 | [002](002-redis/) | Redis via StackExchange.Redis — Distributed Cache | Accepted | 2026-02-21 | Granit.Caching |
 | [003](003-testing-stack/) | Testing Stack — xUnit v3, NSubstitute and Bogus | Accepted | 2026-02-21 | granit-dotnet |
