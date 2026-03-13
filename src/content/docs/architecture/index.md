@@ -8,5 +8,23 @@ sidebar:
 This section documents the architectural decisions and design patterns used
 throughout the Granit framework.
 
-- **[Patterns](./patterns/)** — 51 design patterns with their implementation in Granit
-- **[ADRs](./adr/)** — Architecture Decision Records documenting key technical choices
+## Sections
+
+- **[Pattern Library](./patterns/)** — 51 design patterns with their concrete
+  implementation in Granit, organized by category (architecture, cloud/SaaS,
+  GoF, data, concurrency, .NET idioms, security)
+- **[ADRs](./adr/)** — 16 Architecture Decision Records documenting key
+  technology choices (Serilog, Redis, Wolverine, Scriban, ClosedXML, etc.)
+
+## Design principles
+
+Granit is built on a set of explicit architectural principles:
+
+- **Convention over configuration** -- sensible defaults, explicit overrides
+- **Module isolation** -- each module owns its DbContext, its DI registrations,
+  and its public API surface
+- **CQRS everywhere** -- `IReader` and `IWriter` interfaces are never merged
+- **Soft dependencies** -- modules access cross-cutting concerns (tenancy, time,
+  user context) via `Granit.Core` interfaces, not direct package references
+- **Compliance by design** -- GDPR, ISO 27001, and ISO 9001 constraints are
+  architectural decisions, not afterthoughts

@@ -45,10 +45,12 @@ export default defineConfig({
         {
           label: "Concepts",
           autogenerate: { directory: "concepts" },
+          collapsed: true,
         },
         {
           label: "Guides",
           autogenerate: { directory: "guides" },
+          collapsed: true,
         },
         {
           label: "Reference",
@@ -57,6 +59,7 @@ export default defineConfig({
             {
               label: ".NET Modules",
               autogenerate: { directory: "reference/modules" },
+              collapsed: true,
             },
             {
               label: "Frontend SDK",
