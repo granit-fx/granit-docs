@@ -1,0 +1,97 @@
+---
+title: Bundles
+description: Meta-packages that group related modules — Essentials, Api, Documents, Notifications, SaaS — for quick onboarding
+sidebar:
+  order: 10
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+## The problem
+
+Granit ships 93 packages. That level of granularity is great for control, but overwhelming when you just want to start a new project. You should not have to know the full module graph to get a working API up.
+
+**Bundles** solve this. A bundle is a meta-package that pulls in a curated set of related modules. One package reference, one `Add*()` call, and the entire group is wired.
+
+## Available bundles
+
+| Bundle | Includes | Use case |
+|--------|----------|----------|
+| **Essentials** | Core, Timing, Guids, Validation, ExceptionHandling, Observability | Every project |
+| **Api** | Essentials + ApiVersioning, ApiDocumentation, Cors, Idempotency, Cookies | REST API projects |
+| **Documents** | Templating.Scriban, DocumentGeneration.Pdf, DocumentGeneration.Excel | Document generation |
+| **Notifications** | Notifications + Email.Smtp, Sms, Push, SignalR | Multi-channel notifications |
+| **SaaS** | Api + MultiTenancy, Settings, Features, Localization, BackgroundJobs, Caching.Hybrid | Full SaaS platform |
+
+Each bundle is a NuGet meta-package with no code of its own. It only declares dependencies on the modules it groups.
+
+## Usage
+
+Reference the bundle package and call the corresponding method on the Granit builder:
+
+<Tabs>
+  <TabItem label="Single bundle">
+    ```csharp
+    builder.AddGranit<AppModule>(granit => granit
+        .AddSaaS());
+    ```
+  </TabItem>
+  <TabItem label="Multiple bundles">
+    ```csharp
+    builder.AddGranit<AppModule>(granit => granit
+        .AddApi()
+        .AddNotifications()
+        .AddDocuments());
+    ```
+  </TabItem>
+</Tabs>
+
+## GranitBuilder fluent API
+
+Bundles are built on the same `GranitBuilder` fluent API that individual modules use. If a bundle groups more than you need, skip it and pick modules directly:
+
+```csharp
+builder.AddGranit<AppModule>(granit => granit
+    .AddEssentials()
+    .AddModule<GranitTemplatingScribanModule>()
+    .AddModule<GranitDocumentGenerationPdfModule>());
+```
+
+This gives you full control without losing the ergonomics of the builder pattern.
+
+## Bundles are additive
+
+You can combine any number of bundles in a single call. Deduplication is automatic: the module dependency graph tracks what is already registered and skips duplicates. Calling `.AddSaaS()` (which includes Api, which includes Essentials) and then `.AddNotifications()` works without conflict.
+
+```csharp
+// SaaS already includes Api and Essentials — no duplicates
+builder.AddGranit<AppModule>(granit => granit
+    .AddSaaS()
+    .AddNotifications()
+    .AddDocuments());
+```
+
+## When NOT to use bundles
+
+Bundles are convenience, not requirement. If your project only needs two or three specific packages, reference them directly:
+
+```xml
+<PackageReference Include="Granit.Core" />
+<PackageReference Include="Granit.Observability" />
+<PackageReference Include="Granit.ExceptionHandling" />
+```
+
+This keeps your dependency footprint minimal and avoids pulling in modules you will never configure.
+
+:::note[Good to know]
+Unused modules registered through a bundle have near-zero runtime cost. They register services but those services are never resolved if you do not call them. The overhead is limited to startup DI registration time.
+:::
+
+:::tip[Pro tip]
+Start with the SaaS bundle for greenfield projects. You can always remove modules later — the `DependsOn` graph ensures nothing breaks silently. If a module you remove is required by another, the framework throws at startup with a clear error.
+:::
+
+## Further reading
+
+- [Module System](./module-system/) — how `DependsOn` and the module graph work
+- [Reference overview](../reference/) — per-module API documentation

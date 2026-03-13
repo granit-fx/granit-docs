@@ -102,7 +102,55 @@ export default defineConfig({
         },
       ],
       customCss: ["./src/styles/tailwind.css"],
-      head: [],
+      head: [
+        {
+          tag: "script",
+          attrs: { type: "module" },
+          content: `
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+            function initMermaid() {
+              const isDark = document.documentElement.dataset.theme === 'dark'
+                || window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+              // Convert code blocks to mermaid-renderable elements
+              document.querySelectorAll('code.language-mermaid').forEach(code => {
+                const pre = code.parentElement;
+                const div = document.createElement('pre');
+                div.classList.add('mermaid');
+                div.textContent = code.textContent;
+                div.setAttribute('data-original', code.textContent);
+                pre.parentElement.replaceChild(div, pre);
+              });
+
+              mermaid.initialize({
+                startOnLoad: false,
+                theme: isDark ? 'dark' : 'default',
+                securityLevel: 'loose',
+              });
+              mermaid.run();
+            }
+
+            // Run on page load
+            initMermaid();
+
+            // Re-render on Starlight theme toggle
+            const observer = new MutationObserver(() => {
+              const nowDark = document.documentElement.dataset.theme === 'dark';
+              mermaid.initialize({ theme: nowDark ? 'dark' : 'default', securityLevel: 'loose' });
+              document.querySelectorAll('.mermaid[data-processed]').forEach(el => {
+                el.removeAttribute('data-processed');
+                el.innerHTML = el.getAttribute('data-original') || el.textContent;
+              });
+              mermaid.run();
+            });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            // Re-render on Astro page navigation (View Transitions)
+            document.addEventListener('astro:page-load', () => initMermaid());
+          `,
+        },
+      ],
       lastUpdated: true,
       pagination: true,
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
