@@ -15,21 +15,17 @@ and provider comparison.
 
 | Category | Modules | Description |
 |----------|---------|-------------|
-| Core & Utilities | Core, Timing, Guids, Validation | Foundation types and module system |
-| Security | Security, Authentication, Authorization, Vault, Encryption, Privacy | Identity, claims, encryption |
-| Data & Persistence | Persistence, Caching, MultiTenancy, Settings, Features, ReferenceData | EF Core, caching, data management |
-| API & Web | ApiVersioning, ApiDocumentation, ExceptionHandling, Idempotency, Cors, Cookies | HTTP layer |
-| Messaging | Wolverine, Webhooks, Notifications | Async messaging and events |
-| Documents | Templating, DocumentGeneration | Templates and PDF/Excel rendering |
-| Data Exchange | DataExchange | Import/export (CSV, Excel) |
-| Workflow | Workflow | FSM engine, publication lifecycle |
-| Diagnostics | Observability, Diagnostics, Timeline | Logging, tracing, audit |
-| Storage | BlobStorage, Imaging | File storage and image processing |
-| Scheduling | BackgroundJobs | Recurring and delayed jobs |
-| Localization | Localization | i18n (17 cultures) |
-
-## See also
-
-- [Dependency Graph](./dependency-graph.md)
-- [Configuration Keys](./configuration-keys.md)
-- [API Reference](/api/) (auto-generated from XML docs)
+| Core & Utilities | [Core & Utilities](./modules/core/) | Foundation types, module system, Timing, Guids, Validation |
+| Security | [Security & Identity](./modules/security/), [Privacy](./modules/privacy/), [Vault & Encryption](./modules/vault-encryption/) | Authentication, authorization, encryption, GDPR |
+| Identity | [Identity](./modules/identity/) | Keycloak/EntraID integration, user cache |
+| Data & Persistence | [Persistence](./modules/persistence/), [Caching](./modules/caching/), [Multi-Tenancy](./modules/multi-tenancy/) | EF Core interceptors, HybridCache, tenant isolation |
+| Settings & Features | [Settings & Features](./modules/settings-features/) | Application settings, feature flags, reference data |
+| API & Web | [API & Web](./modules/api-web/) | Versioning, OpenAPI docs, idempotency, CORS, cookies |
+| Messaging | [Wolverine](./modules/wolverine/), [Webhooks & Timeline](./modules/webhooks-timeline/), [Notifications](./modules/notifications/) | Message bus, outbox, webhooks, 6-channel notifications |
+| Documents | [Templating & DocumentGeneration](./modules/templating/) | Scriban templates, HTML-to-PDF, Excel generation |
+| Data Exchange | [DataExchange](./modules/data-exchange/) | Import pipeline (CSV, Excel), export presets |
+| Workflow | [Workflow](./modules/workflow/) | FSM engine, publication lifecycle |
+| Diagnostics | [Observability & Diagnostics](./modules/observability/) | Serilog, OpenTelemetry, health checks |
+| Storage | [BlobStorage & Imaging](./modules/blob-storage/) | S3-compatible storage, image processing |
+| Scheduling | [BackgroundJobs](./modules/background-jobs/) | Recurring and delayed jobs (Wolverine + Cronos) |
+| Localization | [Localization](./modules/localization/) | i18n (17 cultures), source-generated keys |
