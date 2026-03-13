@@ -3,6 +3,7 @@ import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightImageZoom from "starlight-image-zoom";
+import astroMermaid from "astro-mermaid";
 
 export default defineConfig({
   vite: {
@@ -127,15 +128,10 @@ export default defineConfig({
         },
       ],
       customCss: ["./src/styles/tailwind.css"],
-      head: [
-        {
-          tag: "script",
-          attrs: { type: "module", src: "/mermaid-init.js" },
-        },
-      ],
       lastUpdated: true,
       pagination: true,
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
     }),
+    astroMermaid({ autoTheme: true }),
   ],
 });
