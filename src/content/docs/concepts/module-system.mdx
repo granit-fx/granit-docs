@@ -9,7 +9,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## The problem
 
-ASP.NET Core gives you dependency injection but no concept of a **module**. When a framework grows to 93 packages, you hit real problems fast:
+ASP.NET Core gives you dependency injection but no concept of a **module**. When a framework grows to %%PACKAGE_COUNT%% packages, you hit real problems fast:
 
 - **Ordering** -- packages must register services in the right sequence (a caching module before a module that depends on it).
 - **Lifecycle** -- some setup happens at DI registration time, other setup happens after `builder.Build()` (middleware, endpoints).

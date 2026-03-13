@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-Granit follows [Semantic Versioning 2.0.0](https://semver.org/). All 93 packages
+Granit follows [Semantic Versioning 2.0.0](https://semver.org/). All %%PACKAGE_COUNT%% packages
 share a single version number and are released together from the monorepo. This
 section documents breaking changes and provides upgrade guides between major
 versions.

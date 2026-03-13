@@ -5,7 +5,7 @@ sidebar:
   order: 32
 ---
 
-This page documents the dependency graph across all 93 Granit source packages. Arrows
+This page documents the dependency graph across all %%PACKAGE_COUNT%% Granit source packages. Arrows
 indicate the direction of dependency: `A --> B` means "A depends on B". `Granit.Core`
 is the root and has zero dependencies.
 
@@ -474,7 +474,7 @@ in the repository.
 
 ## Graph properties
 
-- **93 source packages**, zero circular dependencies
+- **%%PACKAGE_COUNT%% source packages**, zero circular dependencies
 - **Maximum depth**: 5 levels (e.g., Core to Security to Wolverine to Notifications to
   Email to Smtp, or Core to Timing to Notifications to MobilePush to MobilePush.Fcm)
 - **Leaf packages**: `*.EntityFrameworkCore` and `*.S3` packages are almost always leaves

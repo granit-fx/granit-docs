@@ -102,7 +102,7 @@ No additional CI variables are required for authentication.
 
 ## NuGet cache strategy
 
-The `bin/obj` directories across 93 packages exceed 500 MB, making artifact
+The `bin/obj` directories across %%PACKAGE_COUNT%% packages exceed 500 MB, making artifact
 sharing impractical. Each job compiles independently but shares the NuGet
 package cache, keyed by `Directory.Packages.props`. Restore completes in
 5-10 seconds with a warm cache.
@@ -155,7 +155,7 @@ Before any merge request is approved, the following gates must pass:
 :::caution[Blocking gates]
 Tests passing, format clean, and documentation updated are **blocking** requirements.
 Do not merge without satisfying all gates. See the full
-[Definition of Done](/granit-dotnet/guides/conventions/) for details.
+[Definition of Done](/contributing/definition-of-done/) for details.
 :::
 
 ## Troubleshooting

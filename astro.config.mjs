@@ -4,8 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightImageZoom from "starlight-image-zoom";
 import astroMermaid from "astro-mermaid";
+import { remarkVariables } from "./src/plugins/remark-variables.mjs";
 
 export default defineConfig({
+  markdown: {
+    remarkPlugins: [remarkVariables],
+  },
   vite: {
     plugins: [tailwindcss()],
   },
@@ -30,7 +34,10 @@ export default defineConfig({
           "https://gitlab.com/digital-dynamics/granit-dotnet/-/edit/develop/docs-site/",
       },
       plugins: [
-        // starlightLinksValidator(),  // Re-enable when content is populated
+        starlightLinksValidator({
+          errorOnRelativeLinks: false,
+          exclude: ["/api/**"],
+        }),
         starlightImageZoom(),
       ],
       defaultLocale: "root",

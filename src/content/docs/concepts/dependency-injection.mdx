@@ -195,7 +195,7 @@ Many .NET frameworks split every package into `Foo` and `Foo.Abstractions`. The 
 is that consumers depend only on the interfaces, not the implementations.
 
 Granit does not do this. Interfaces and implementations live in the same package. With
-93 packages, splitting would mean 186 packages — doubling the dependency graph
+%%PACKAGE_COUNT%% packages, splitting would mean 186 packages — doubling the dependency graph
 complexity, NuGet restore time, and cognitive overhead, for minimal benefit.
 
 The trade-off works because:

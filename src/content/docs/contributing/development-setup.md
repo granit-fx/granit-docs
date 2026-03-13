@@ -101,6 +101,6 @@ pnpm dev
 
 ## Next steps
 
-- Read the [Coding Standards](./coding-standards.md) before writing code
-- Check the [Module Structure](./module-structure.md) if you are creating a new package
-- Review the [Definition of Done](./definition-of-done.md) before pushing
+- Read the [Coding Standards](./coding-standards/) before writing code
+- Check the [Module Structure](./module-structure/) if you are creating a new package
+- Review the [Definition of Done](./definition-of-done/) before pushing

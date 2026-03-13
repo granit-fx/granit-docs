@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Widen the content area — Starlight defaults are too narrow for tables */
+:root {
+  --sl-content-width: 55rem;
+}
+
+/* Allow tables to use full width without horizontal scroll */
+.sl-markdown-content table {
+  display: table;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.sl-markdown-content td,
+.sl-markdown-content th {
+  word-break: break-word;
+}
