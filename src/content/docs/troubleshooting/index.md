@@ -1,13 +1,27 @@
 ---
 title: Troubleshooting
-description: Common errors, anti-patterns, and FAQ
+description: Common errors, anti-patterns, and frequently asked questions for Granit
 sidebar:
   order: 0
-  badge:
-    text: Coming Soon
-    variant: caution
-draft: true
 ---
 
-This section will cover common errors, anti-patterns to avoid, and frequently
-asked questions.
+This section covers the most common issues encountered when building with Granit,
+patterns to avoid, and answers to frequently asked questions.
+
+## Section contents
+
+- [Common Errors](./common-errors/) -- module loading failures, DbContext
+  misconfiguration, validator registration, multi-tenancy, authentication, and
+  caching issues with solutions
+- [Anti-patterns](./anti-patterns/) -- code patterns that compile but cause
+  runtime issues, performance problems, or violate Granit conventions
+- [FAQ](./faq/) -- answers to the most frequently asked questions about Granit's
+  architecture, requirements, and capabilities
+
+## Getting help
+
+If your issue is not covered here:
+
+1. Search existing [GitLab issues](https://gitlab.com/digital-dynamics/granit-dotnet/-/issues)
+2. Check the [Reference documentation](/reference/) for the specific module
+3. Open a new issue using the **Bug** template with reproduction steps
