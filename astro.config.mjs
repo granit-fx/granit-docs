@@ -165,7 +165,10 @@ export default defineConfig({
               {
                 label: "Architecture",
                 items: [
-                  { label: "Overview", link: "/architecture/" },
+                  {
+                    label: "Overview",
+                    link: "/architecture/frontend-overview/",
+                  },
                   {
                     label: "Patterns",
                     autogenerate: {
