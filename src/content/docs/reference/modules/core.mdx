@@ -107,7 +107,7 @@ sequenceDiagram
     participant M2 as GranitPersistenceModule
     participant M3 as AppModule
 
-    Host->>ML: AddGranit~AppModule~()
+    Host->>ML: AddGranit(AppModule)
     ML->>ML: Discover [DependsOn] graph
     ML->>ML: Topological sort (Kahn)
     ML->>M1: ConfigureServices()
