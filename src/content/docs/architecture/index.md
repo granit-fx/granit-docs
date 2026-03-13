@@ -26,5 +26,5 @@ Granit is built on a set of explicit architectural principles:
 - **CQRS everywhere** -- `IReader` and `IWriter` interfaces are never merged
 - **Soft dependencies** -- modules access cross-cutting concerns (tenancy, time,
   user context) via `Granit.Core` interfaces, not direct package references
-- **Compliance by design** -- GDPR, ISO 27001, and ISO 9001 constraints are
+- **Compliance by design** -- GDPR and ISO 27001 constraints are
   architectural decisions, not afterthoughts

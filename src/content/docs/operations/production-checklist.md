@@ -7,7 +7,7 @@ sidebar:
 
 This checklist covers the mandatory verifications before deploying a Granit
 application to production. Every item maps to a compliance requirement
-(GDPR, ISO 27001, ISO 9001) or an operational best practice.
+(GDPR, ISO 27001) or an operational best practice.
 
 ## Security hardening
 
@@ -96,7 +96,7 @@ application to production. Every item maps to a compliance requirement
 - [ ] Cache hit ratio acceptable (> 80% for frequently accessed data)
 - [ ] Database query plans reviewed for critical paths
 
-## ISO 9001 quality management
+## Operational readiness
 
 - [ ] Runbook written covering operational procedures (startup, shutdown, incident response)
 - [ ] Deployment architecture documented (network diagram, component inventory)

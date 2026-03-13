@@ -126,7 +126,7 @@ dotnet test tests/Granit.Caching.Tests/Granit.Caching.Tests.csproj
 
 ## What compliance standards does Granit support?
 
-Granit is designed with **GDPR**, **ISO 27001**, and **ISO 9001** compliance
+Granit is designed with **GDPR** and **ISO 27001** compliance
 built into its architecture:
 
 - **GDPR**: Data minimization, right to erasure (`ISoftDeletable`,
@@ -134,8 +134,6 @@ built into its architecture:
   at rest via `Granit.Vault`
 - **ISO 27001**: Audit trails (`AuditedEntityInterceptor`, `Granit.Timeline`),
   encryption in transit and at rest, secret management via HashiCorp Vault
-- **ISO 9001**: Traceability through OpenTelemetry distributed tracing,
-  structured logging, and the timeline module
 
 See [Compliance](/concepts/compliance/) for detailed mapping of Granit features
 to compliance requirements.

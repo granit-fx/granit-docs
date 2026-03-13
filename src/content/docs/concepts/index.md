@@ -28,7 +28,7 @@ modules to use and how to configure them for your application.
 ## Security and compliance
 
 - [Security Model](./security-model/) -- authentication, authorization, encryption
-- [Compliance](./compliance/) -- GDPR, ISO 27001, ISO 9001 enforcement
+- [Compliance](./compliance/) -- GDPR, ISO 27001 enforcement
 
 ## Architecture decisions
 
