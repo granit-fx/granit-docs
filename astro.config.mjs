@@ -32,9 +32,9 @@ export default defineConfig({
         // starlightLinksValidator(),  // Re-enable when content is populated
         starlightImageZoom(),
       ],
-      defaultLocale: "en",
+      defaultLocale: "root",
       locales: {
-        en: { label: "English", lang: "en" },
+        root: { label: "English", lang: "en" },
         // fr: { label: 'Français', lang: 'fr' },  // Enable when French translation starts
       },
       sidebar: [
@@ -64,6 +64,28 @@ export default defineConfig({
             {
               label: "Frontend SDK",
               autogenerate: { directory: "reference/frontend" },
+            },
+            {
+              label: "Cross-cutting",
+              items: [
+                {
+                  label: "Configuration Keys",
+                  link: "/reference/configuration-keys/",
+                },
+                {
+                  label: "HTTP Conventions",
+                  link: "/reference/http-conventions/",
+                },
+                {
+                  label: "Dependency Graph",
+                  link: "/reference/dependency-graph/",
+                },
+                {
+                  label: "Provider Compatibility",
+                  link: "/reference/provider-compatibility/",
+                },
+              ],
+              collapsed: true,
             },
           ],
         },

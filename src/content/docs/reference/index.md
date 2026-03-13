@@ -29,3 +29,10 @@ and provider comparison.
 | Storage | [BlobStorage & Imaging](./modules/blob-storage/) | S3-compatible storage, image processing |
 | Scheduling | [BackgroundJobs](./modules/background-jobs/) | Recurring and delayed jobs (Wolverine + Cronos) |
 | Localization | [Localization](./modules/localization/) | i18n (17 cultures), source-generated keys |
+
+## Cross-cutting references
+
+- [Configuration Keys](./configuration-keys/) -- all appsettings sections and Options classes
+- [HTTP Conventions](./http-conventions/) -- status codes, Problem Details, DTO naming
+- [Dependency Graph](./dependency-graph/) -- package relationships and module dependencies
+- [Provider Compatibility](./provider-compatibility/) -- database, cache, storage support matrix
