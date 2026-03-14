@@ -6,6 +6,7 @@ authors:
 tags:
   - best-practice
   - code-quality
+description: "Manual null checks are noisy and inconsistent. .NET provides built-in guard methods that are cleaner, faster, and throw the right exceptions every time."
 excerpt: >
   Manual null checks are noisy and inconsistent. .NET provides built-in guard
   methods that are cleaner, faster, and throw the right exceptions every time.

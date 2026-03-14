@@ -6,6 +6,7 @@ authors:
 tags:
   - best-practice
   - testing
+description: "DateTime.Now makes your code untestable and timezone-fragile. Here is how to replace it with TimeProvider and IClock for deterministic, test-friendly time."
 excerpt: >
   DateTime.Now makes your code untestable and timezone-fragile. Here is how to
   replace it with TimeProvider and IClock for deterministic, test-friendly time.

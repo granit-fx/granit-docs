@@ -6,6 +6,7 @@ authors:
 tags:
   - tutorial
   - persistence
+description: "Build a complete CRUD module with Granit in under 10 minutes — from entity definition to validated endpoints with full audit trail and soft delete."
 excerpt: >
   Build a complete CRUD module with Granit in under 10 minutes — from entity
   definition to validated endpoints with full audit trail and soft delete.

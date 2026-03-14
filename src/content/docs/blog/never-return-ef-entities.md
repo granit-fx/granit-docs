@@ -6,6 +6,7 @@ authors:
 tags:
   - best-practice
   - api
+description: "Returning EF Core entities directly from your endpoints leaks internal structure, creates circular references, and exposes sensitive data. Use response records instead."
 excerpt: >
   Returning EF Core entities directly from your endpoints leaks internal structure,
   creates circular references, and exposes sensitive data. Use response records instead.

@@ -6,6 +6,7 @@ authors:
 tags:
   - best-practice
   - performance
+description: "new Regex(..., RegexOptions.Compiled) allocates at startup and hides patterns from the JIT. Source-generated regex is faster, safer, and enforced at build time."
 excerpt: >
   new Regex(..., RegexOptions.Compiled) allocates at startup and hides patterns
   from the JIT. Source-generated regex is faster, safer, and enforced at build time.
