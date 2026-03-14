@@ -1,6 +1,6 @@
 ---
 title: Reference
-description: Complete reference documentation for all 93 Granit packages
+description: Complete reference documentation for all 97 Granit packages
 sidebar:
   order: 0
 ---
@@ -26,7 +26,7 @@ and provider comparison.
 | Data Exchange | [DataExchange](./modules/data-exchange/) | Import pipeline (CSV, Excel), export presets |
 | Workflow | [Workflow](./modules/workflow/) | FSM engine, publication lifecycle |
 | Diagnostics | [Observability & Diagnostics](./modules/observability/) | Serilog, OpenTelemetry, health checks |
-| Storage | [BlobStorage & Imaging](./modules/blob-storage/) | S3-compatible storage, image processing |
+| Storage | [BlobStorage & Imaging](./modules/blob-storage/) | Multi-provider storage (S3, Azure, FileSystem, Database), image processing |
 | Scheduling | [BackgroundJobs](./modules/background-jobs/) | Recurring and delayed jobs (Wolverine + Cronos) |
 | Localization | [Localization](./modules/localization/) | i18n (17 cultures), source-generated keys |
 
@@ -36,3 +36,4 @@ and provider comparison.
 - [HTTP Conventions](./http-conventions/) -- status codes, Problem Details, DTO naming
 - [Dependency Graph](./dependency-graph/) -- package relationships and module dependencies
 - [Provider Compatibility](./provider-compatibility/) -- database, cache, storage support matrix
+- [Tech Stack](./tech-stack/) -- third-party libraries, licenses, and ADR links

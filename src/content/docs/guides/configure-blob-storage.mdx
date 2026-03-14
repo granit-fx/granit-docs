@@ -1,15 +1,19 @@
 ---
 title: Configure blob storage
-description: Set up S3-compatible file storage with presigned URLs, validation pipeline, multi-tenant isolation, and GDPR-compliant deletion
+description: Set up multi-provider file storage (S3, Azure, FileSystem, Database) with presigned URLs, validation pipeline, multi-tenant isolation, and GDPR-compliant deletion
 sidebar:
   order: 7
 ---
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Granit.BlobStorage provides sovereign, Direct-to-Cloud file storage where the
-application server never handles file bytes -- only metadata and presigned URLs
-flow between the client, the server, and S3-compatible object storage.
+Granit.BlobStorage provides sovereign, Direct-to-Cloud file storage with a unified
+API across multiple providers. Cloud providers (S3, Azure Blob) use native presigned
+URLs where the server never handles file bytes. Server-side providers (FileSystem,
+Database) use `Granit.BlobStorage.Proxy` for token-based upload/download endpoints.
+
+This guide covers the S3 provider setup. For other providers, see the
+[BlobStorage reference](/reference/modules/blob-storage/).
 
 ## Prerequisites
 
