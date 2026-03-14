@@ -41,6 +41,11 @@ export default defineConfig({
           label: "GitHub",
           href: "https://github.com/granit-fx/granit-dotnet",
         },
+        {
+          icon: "discord",
+          label: "Discord",
+          href: "https://discord.gg/tZbD5neS",
+        },
       ],
       editLink: {
         baseUrl:
