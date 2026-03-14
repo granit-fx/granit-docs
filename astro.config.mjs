@@ -7,6 +7,7 @@ import starlightLlmsTxt from "starlight-llms-txt";
 import starlightKbd from "starlight-kbd";
 import starlightScrollToTop from "starlight-scroll-to-top";
 import starlightSidebarTopics from "starlight-sidebar-topics";
+import starlightBlog from "starlight-blog";
 import astroMermaid from "astro-mermaid";
 import rehypeExternalLinks from "rehype-external-links";
 import { remarkVariables } from "./src/plugins/remark-variables.mjs";
@@ -46,6 +47,25 @@ export default defineConfig({
           "https://github.com/granit-fx/granit-dotnet/edit/develop/docs-site/",
       },
       plugins: [
+        starlightBlog({
+          title: "Blog",
+          prefix: "blog",
+          postCount: 10,
+          recentPostCount: 5,
+          prevNextLinksOrder: "reverse-chronological",
+          authors: {
+            jfmeyers: {
+              name: "JF Meyers",
+              title: "Framework Author",
+              picture: "https://github.com/jfmeyers.png",
+              url: "https://github.com/jfmeyers",
+            },
+          },
+          metrics: {
+            readingTime: true,
+            words: "rounded",
+          },
+        }),
         starlightSidebarTopics([
           {
             label: "Start",
@@ -191,10 +211,14 @@ export default defineConfig({
               },
             ],
           },
-        ]),
+        ],
+          {
+            exclude: ["/blog", "/blog/**/*"],
+          },
+        ),
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ["/api/**"],
+          exclude: ["/api/**", "/blog/**"],
         }),
         starlightImageZoom(),
         starlightLlmsTxt(),
@@ -285,6 +309,10 @@ export default defineConfig({
             name: "theme-color",
             content: "#7c3aed",
           },
+        },
+        {
+          tag: "script",
+          content: `document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("a.author[href]").forEach(function(a){a.setAttribute("target","_blank");a.setAttribute("rel","noopener noreferrer")})})`,
         },
       ],
       customCss: ["./src/styles/tailwind.css"],
