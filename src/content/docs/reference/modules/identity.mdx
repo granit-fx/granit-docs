@@ -1,14 +1,14 @@
 ---
 title: Granit.Identity
-description: Identity provider abstractions, Keycloak Admin API, user cache with GDPR support, REST endpoints
+description: Identity provider abstractions, Keycloak Admin API, Cognito User Pool API, user cache with GDPR support, REST endpoints
 sidebar:
   order: 4
 ---
 
 import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
 
-Granit.Identity provides a provider-agnostic identity management layer. Keycloak (or any
-OIDC provider) handles authentication — Granit.Identity handles everything else: user
+Granit.Identity provides a provider-agnostic identity management layer. Keycloak, Cognito,
+or any OIDC provider handles authentication — Granit.Identity handles everything else: user
 lookup, role management, session control, password operations, and a local user cache
 with GDPR erasure and pseudonymization built in.
 
@@ -17,6 +17,7 @@ with GDPR erasure and pseudonymization built in.
 <FileTree>
 - Granit.Identity/ Abstractions (7 interfaces), null defaults
   - Granit.Identity.Keycloak Keycloak Admin API implementation
+  - Granit.Identity.Cognito AWS Cognito User Pool API implementation
   - Granit.Identity.EntityFrameworkCore User cache (cache-aside, login-time sync)
   - Granit.Identity.Endpoints Minimal API endpoints (CRUD, sync, GDPR, webhook)
 </FileTree>
@@ -25,6 +26,7 @@ with GDPR erasure and pseudonymization built in.
 |---------|------|------------|
 | `Granit.Identity` | Abstractions, null defaults | — |
 | `Granit.Identity.Keycloak` | Keycloak Admin API implementation | `Granit.Identity` |
+| `Granit.Identity.Cognito` | AWS Cognito User Pool API implementation | `Granit.Identity` |
 | `Granit.Identity.EntityFrameworkCore` | EF Core user cache | `Granit.Identity`, `Granit.Persistence` |
 | `Granit.Identity.Endpoints` | REST endpoints for user cache | `Granit.Identity`, `Granit.Authorization` |
 
@@ -34,6 +36,7 @@ with GDPR erasure and pseudonymization built in.
 graph TD
     I[Granit.Identity] --> C[Granit.Core]
     IK[Granit.Identity.Keycloak] --> I
+    IC[Granit.Identity.Cognito] --> I
     IEF[Granit.Identity.EntityFrameworkCore] --> I
     IEF --> P[Granit.Persistence]
     IE[Granit.Identity.Endpoints] --> I
@@ -47,6 +50,28 @@ graph TD
 
 ```csharp
 [DependsOn(typeof(GranitIdentityKeycloakModule))]
+[DependsOn(typeof(GranitIdentityEntityFrameworkCoreModule))]
+[DependsOn(typeof(GranitIdentityEndpointsModule))]
+public class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>();
+        context.Services.AddGranitIdentityEndpoints();
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        context.App.MapIdentityUserCacheEndpoints();
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Cognito + User cache">
+
+```csharp
+[DependsOn(typeof(GranitIdentityCognitoModule))]
 [DependsOn(typeof(GranitIdentityEntityFrameworkCoreModule))]
 [DependsOn(typeof(GranitIdentityEndpointsModule))]
 public class AppModule : GranitModule
@@ -79,7 +104,7 @@ or modules that only need the interfaces.
 <TabItem label="Custom provider">
 
 ```csharp
-context.Services.AddIdentityProvider<EntraIdIdentityProvider>();
+context.Services.AddIdentityProvider<MyCustomIdentityProvider>();
 ```
 
 </TabItem>
@@ -253,10 +278,56 @@ Keycloak Admin REST API.
 - `realm-management:view-users`
 - `realm-management:manage-users`
 
+### Health check
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddGranitKeycloakCheck();
+```
+
+Verifies Keycloak connectivity by requesting a `client_credentials` token. Tagged
+`["readiness", "startup"]`. Returns Unhealthy on 401/403, Degraded on 5xx.
+
 ### OpenTelemetry
 
 All Keycloak Admin API calls are traced via `IdentityKeycloakActivitySource`.
 Activity names follow the pattern `Granit.Identity.Keycloak.{Operation}`.
+
+## Cognito provider
+
+`Granit.Identity.Cognito` implements the full `IIdentityProvider` against the
+AWS Cognito User Pool API via `AWSSDK.CognitoIdentityProvider`.
+
+### Configuration
+
+```json
+{
+  "CognitoAdmin": {
+    "UserPoolId": "eu-west-1_XXXXXXXXX",
+    "Region": "eu-west-1",
+    "AccessKeyId": "",
+    "SecretAccessKey": "",
+    "TimeoutSeconds": 30
+  }
+}
+```
+
+`AccessKeyId` and `SecretAccessKey` are optional — when omitted, the SDK uses the
+default credential chain (IAM role, environment variables, `~/.aws/credentials`).
+
+### Cognito-specific behavior
+
+- **Groups as roles** — Cognito has no native "roles" concept. Groups serve as both
+  roles and groups. `GetRolesAsync` and `GetGroupsAsync` return the same data.
+- **No individual session termination** — Cognito supports `AdminUserGlobalSignOut`
+  (terminate all sessions) but not individual session termination.
+  `IIdentityProviderCapabilities.SupportsIndividualSessionTermination` returns `false`.
+- **No device activity** — `GetUserDeviceActivityAsync` returns an empty list.
+
+### OpenTelemetry
+
+All Cognito User Pool API calls are traced via `IdentityCognitoActivitySource`.
+Activity names follow the pattern `cognito.{operation}`.
 
 ## Endpoints
 
@@ -305,14 +376,15 @@ Both operations emit Wolverine domain events (`IdentityUserDeletedEvent`,
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitIdentityModule`, `GranitIdentityKeycloakModule`, `GranitIdentityEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule` | — |
+| Module | `GranitIdentityModule`, `GranitIdentityKeycloakModule`, `GranitIdentityCognitoModule`, `GranitIdentityEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule` | — |
 | Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentitySessionManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
 | Lookup | `IUserLookupService`, `IUserCacheStats`, `IIdentityProviderCapabilities` | `Granit.Identity` |
 | Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `IdentitySession`, `IdentityDeviceActivity` | `Granit.Identity` |
 | Keycloak | `KeycloakIdentityProvider`, `KeycloakAdminOptions` | `Granit.Identity.Keycloak` |
+| Cognito | `CognitoIdentityProvider`, `CognitoAdminOptions` | `Granit.Identity.Cognito` |
 | EF Core | `UserCacheEntry`, `IUserCacheDbContext`, `UserCacheOptions` | `Granit.Identity.EntityFrameworkCore` |
 | Endpoints | `IdentityEndpointsOptions`, `IdentityWebhookOptions` | `Granit.Identity.Endpoints` |
-| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapIdentityUserCacheEndpoints()` | — |
+| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapIdentityUserCacheEndpoints()` | — |
 
 ## See also
 

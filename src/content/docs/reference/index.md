@@ -17,7 +17,7 @@ and provider comparison.
 |----------|---------|-------------|
 | Core & Utilities | [Core & Utilities](./modules/core/) | Foundation types, module system, Timing, Guids, Validation |
 | Security | [Security & Identity](./modules/security/), [Privacy](./modules/privacy/), [Vault & Encryption](./modules/vault-encryption/) | Authentication, authorization, encryption, GDPR |
-| Identity | [Identity](./modules/identity/) | Keycloak/EntraID integration, user cache |
+| Identity | [Identity](./modules/identity/) | Keycloak/EntraID/Cognito integration, user cache |
 | Data & Persistence | [Persistence](./modules/persistence/), [Caching](./modules/caching/), [Multi-Tenancy](./modules/multi-tenancy/) | EF Core interceptors, HybridCache, tenant isolation |
 | Settings & Features | [Settings & Features](./modules/settings-features/) | Application settings, feature flags, reference data |
 | API & Web | [API & Web](./modules/api-web/) | Versioning, OpenAPI docs, idempotency, CORS, cookies |

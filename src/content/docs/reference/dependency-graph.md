@@ -100,8 +100,8 @@ flowchart TD
 | Domain | Packages |
 |--------|----------|
 | Utilities | Timing, Guids, Diagnostics, Validation, Validation.Europe, ExceptionHandling, Observability, MultiTenancy, Privacy, Cors, Bulkhead, RateLimiting, Querying |
-| Identity | Identity, Identity.Keycloak, Identity.EntraId, Identity.EntityFrameworkCore, Identity.Endpoints |
-| Security | Security, Encryption, Vault, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
+| Identity | Identity, Identity.Keycloak, Identity.EntraId, Identity.Cognito, Identity.EntityFrameworkCore, Identity.Endpoints |
+| Security | Security, Encryption, Vault, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.Cognito, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
 | Configuration | Settings (3), Features (2), ReferenceData (3) |
 | Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies, Cookies.Klaro, Cookies.Endpoints, Idempotency, Webhooks (3) |
 | Storage | BlobStorage (7), Imaging (2) |

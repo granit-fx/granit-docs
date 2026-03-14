@@ -8,8 +8,9 @@ sidebar:
 import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
 
 Granit.Security provides the authentication and authorization stack for the framework.
-JWT Bearer validation, Keycloak claims transformation, dynamic RBAC permissions with
-per-role caching, back-channel logout — all wired through the module system.
+JWT Bearer validation, claims transformation for Keycloak, Entra ID, and AWS Cognito,
+dynamic RBAC permissions with per-role caching, back-channel logout — all wired through
+the module system.
 
 ## Package structure
 
@@ -17,6 +18,8 @@ per-role caching, back-channel logout — all wired through the module system.
 - Granit.Security/ Base abstractions (ICurrentUserService, ActorKind)
   - Granit.Authentication.JwtBearer/ Generic JWT Bearer, back-channel logout
     - Granit.Authentication.Keycloak Keycloak claims transformation
+    - Granit.Authentication.EntraId Entra ID roles parsing
+    - Granit.Authentication.Cognito Cognito groups → roles
   - Granit.Authorization/ Dynamic RBAC, permission definitions, policy provider
     - Granit.Authorization.EntityFrameworkCore EF Core permission grant store
 </FileTree>
@@ -26,6 +29,8 @@ per-role caching, back-channel logout — all wired through the module system.
 | `Granit.Security` | `ICurrentUserService`, `ActorKind` | `Granit.Core` |
 | `Granit.Authentication.JwtBearer` | JWT Bearer middleware, back-channel logout | `Granit.Security` |
 | `Granit.Authentication.Keycloak` | Keycloak claims transformation | `Granit.Authentication.JwtBearer` |
+| `Granit.Authentication.EntraId` | Entra ID roles parsing | `Granit.Authentication.JwtBearer` |
+| `Granit.Authentication.Cognito` | Cognito groups → roles | `Granit.Authentication.JwtBearer` |
 | `Granit.Authorization` | RBAC permissions, dynamic policy provider | `Granit.Security`, `Granit.Caching` |
 | `Granit.Authorization.EntityFrameworkCore` | EF Core permission grant store | `Granit.Authorization`, `Granit.Persistence` |
 
@@ -36,6 +41,8 @@ graph TD
     S[Granit.Security] --> C[Granit.Core]
     JWT[Granit.Authentication.JwtBearer] --> S
     KC[Granit.Authentication.Keycloak] --> JWT
+    EID[Granit.Authentication.EntraId] --> JWT
+    CG[Granit.Authentication.Cognito] --> JWT
     AZ[Granit.Authorization] --> S
     AZ --> CA[Granit.Caching]
     AZEF[Granit.Authorization.EntityFrameworkCore] --> AZ
@@ -63,6 +70,47 @@ public class AppModule : GranitModule { }
     "ClientId": "my-client",
     "AdminRole": "admin",
     "RoleClaimsSource": "realm_access"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Entra ID">
+
+```csharp
+[DependsOn(typeof(GranitAuthenticationEntraIdModule))]
+[DependsOn(typeof(GranitAuthorizationModule))]
+public class AppModule : GranitModule { }
+```
+
+```json
+{
+  "Authentication": {
+    "Authority": "https://login.microsoftonline.com/{tenant-id}/v2.0",
+    "Audience": "api://{client-id}"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="AWS Cognito">
+
+```csharp
+[DependsOn(typeof(GranitAuthenticationCognitoModule))]
+[DependsOn(typeof(GranitAuthorizationModule))]
+public class AppModule : GranitModule { }
+```
+
+```json
+{
+  "Authentication": {
+    "Authority": "https://cognito-idp.{region}.amazonaws.com/{userPoolId}",
+    "Audience": "{clientId}"
+  },
+  "Cognito": {
+    "UserPoolId": "eu-west-1_XXXXXXXXX",
+    "ClientId": "my-client-id",
+    "Region": "eu-west-1"
   }
 }
 ```
@@ -214,6 +262,32 @@ calls it directly. It is excluded from OpenAPI documentation by default.
 }
 // After transformation → ClaimTypes.Role: "admin", "doctor", "manage-patients"
 ```
+
+### Entra ID claims transformation
+
+`GranitAuthenticationEntraIdModule` post-configures JWT Bearer with Entra ID-specific behavior:
+
+- Extracts roles from the v1.0 `roles` claim and the v2.0 `wids` claim
+- Maps them to standard `ClaimTypes.Role` claims
+
+### Cognito claims transformation
+
+`GranitAuthenticationCognitoModule` post-configures JWT Bearer with Cognito-specific behavior:
+
+- Extracts groups from the `cognito:groups` claim (multiple claims with same type)
+- Maps them to standard `ClaimTypes.Role` claims
+
+```csharp
+// Cognito JWT payload — groups appear as repeated claims
+// "cognito:groups": "admin"
+// "cognito:groups": "doctors"
+// After transformation → ClaimTypes.Role: "admin", "doctors"
+```
+
+:::note
+Cognito has no native "roles" concept. **Groups serve as roles** — a user's group memberships
+become their role claims after transformation.
+:::
 
 ## Authorization
 
@@ -371,14 +445,16 @@ All grant changes are audit-logged via `AuditedEntity` (ISO 27001 — 3-year ret
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitSecurityModule`, `GranitJwtBearerModule`, `GranitAuthenticationKeycloakModule`, `GranitAuthorizationModule`, `GranitAuthorizationEntityFrameworkCoreModule` | — |
+| Module | `GranitSecurityModule`, `GranitJwtBearerModule`, `GranitAuthenticationKeycloakModule`, `GranitAuthenticationEntraIdModule`, `GranitAuthenticationCognitoModule`, `GranitAuthorizationModule`, `GranitAuthorizationEntityFrameworkCoreModule` | — |
 | Abstractions | `ICurrentUserService`, `ActorKind` | `Granit.Security` |
 | Authentication | `CurrentUserService`, `IRevokedSessionStore`, `BackChannelLogoutTokenValidator` | `Granit.Authentication.JwtBearer` |
 | Claims | `KeycloakClaimsTransformation` | `Granit.Authentication.Keycloak` |
+| Claims | `EntraIdClaimsTransformation` | `Granit.Authentication.EntraId` |
+| Claims | `CognitoClaimsTransformation` | `Granit.Authentication.Cognito` |
 | Authorization | `IPermissionDefinitionProvider`, `IPermissionDefinitionManager`, `IPermissionChecker`, `IPermissionGrantStore`, `PermissionAttribute` | `Granit.Authorization` |
-| Authorization options | `GranitAuthorizationOptions`, `JwtBearerAuthOptions`, `KeycloakOptions` | — |
+| Authorization options | `GranitAuthorizationOptions`, `JwtBearerAuthOptions`, `KeycloakOptions`, `CognitoOptions` | — |
 | EF Core | `PermissionGrant`, `IPermissionGrantDbContext`, `IPermissionManagerReader`, `IPermissionManagerWriter` | `Granit.Authorization.EntityFrameworkCore` |
-| Extensions | `AddGranitJwtBearer()`, `AddGranitKeycloak()`, `AddGranitAuthorization()`, `AddGranitAuthorizationEntityFrameworkCore<T>()`, `MapBackChannelLogout()` | — |
+| Extensions | `AddGranitJwtBearer()`, `AddGranitKeycloak()`, `AddGranitCognito()`, `AddGranitAuthorization()`, `AddGranitAuthorizationEntityFrameworkCore<T>()`, `MapBackChannelLogout()` | — |
 
 ## See also
 

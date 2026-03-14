@@ -83,14 +83,14 @@ interface IdentityProviderCapabilities {
 }
 ```
 
-| Capability | Keycloak | Entra ID |
-|-----------|----------|----------|
-| Individual session termination | Yes | No |
-| Native password reset email | Yes | Yes |
-| Group hierarchy | Yes | Yes |
-| Custom attributes | Yes (unlimited) | Yes (limited) |
-| Credential verification | Yes (ROPC) | Varies |
-| User creation | Yes | Yes |
+| Capability | Keycloak | Entra ID | Cognito |
+|-----------|----------|----------|---------|
+| Individual session termination | Yes | No | No |
+| Native password reset email | Yes | Yes | No |
+| Group hierarchy | Yes | Yes | No |
+| Custom attributes | Yes (unlimited) | Yes (limited) | Yes (limited) |
+| Credential verification | Yes (ROPC) | Varies | Yes |
+| User creation | Yes | Yes | Yes |
 
 ### `fetchIdentityCapabilities(client, basePath)`
 
@@ -194,6 +194,6 @@ buildIdentityQueryKey(config, 'capabilities');
 
 ## See also
 
-- [Granit.Identity module](/reference/modules/security/) — .NET identity provider abstractions and Keycloak implementation
-- [Authentication](./authentication/) — Keycloak session that provides the JWT for identity operations
+- [Granit.Identity module](/reference/modules/identity/) — .NET identity provider abstractions, Keycloak and Cognito implementations
+- [Authentication](./authentication/) — Keycloak/Cognito session that provides the JWT for identity operations
 - [Authorization](./authorization/) — Permission management complements identity capabilities

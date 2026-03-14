@@ -70,6 +70,22 @@ Add a `JwtBearer` section to `appsettings.Development.json`:
     }
     ```
   </TabItem>
+  <TabItem label="AWS Cognito">
+    ```json
+    {
+      "JwtBearer": {
+        "Authority": "https://cognito-idp.{region}.amazonaws.com/{userPoolId}",
+        "Audience": "{clientId}",
+        "RequireHttpsMetadata": true
+      },
+      "Cognito": {
+        "UserPoolId": "{userPoolId}",
+        "ClientId": "{clientId}",
+        "Region": "{region}"
+      }
+    }
+    ```
+  </TabItem>
 </Tabs>
 
 :::tip[Pro tip]

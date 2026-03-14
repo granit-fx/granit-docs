@@ -655,6 +655,18 @@ public static class BlobValidatedHandler
 }
 ```
 
+## Health check
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddGranitS3Check();
+```
+
+Verifies S3 connectivity by listing one object in the default bucket (`ListObjectsV2`
+with `MaxKeys=1`). Tagged `["readiness", "startup"]`. Returns Unhealthy on access
+denied or unreachable endpoint. Error messages are sanitized — credentials, bucket
+names, and endpoint URLs are never exposed.
+
 ## Configuration reference
 
 <Tabs>

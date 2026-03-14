@@ -28,7 +28,7 @@ This page documents the current support status for each infrastructure dimension
 | Database | PostgreSQL | SQL Server, SQLite (via EF Core) |
 | Cache | Memory (`IDistributedCache`) | Redis (StackExchange.Redis), HybridCache (L1+L2) |
 | Blob storage | S3-compatible (MinIO, AWS S3) | -- |
-| Identity provider | Keycloak | Entra ID (Azure AD), custom (`IIdentityProvider`) |
+| Identity provider | Keycloak | Entra ID (Azure AD), AWS Cognito, custom (`IIdentityProvider`) |
 | Messaging | PostgreSQL (Wolverine) | SQL Server (Wolverine), RabbitMQ (Wolverine) |
 | Observability | Grafana LGTM (Loki/Tempo/Mimir) | Any OTLP-compatible backend |
 
@@ -132,9 +132,11 @@ There is no local filesystem provider. For local development, use MinIO in a con
 |---------|----------|--------|
 | Granit.Authentication.Keycloak | Keycloak | Supported |
 | Granit.Authentication.EntraId | Microsoft Entra ID (Azure AD) | Supported |
+| Granit.Authentication.Cognito | AWS Cognito | Supported |
 | Granit.Authentication.JwtBearer | Any OIDC/JWT issuer | Supported (base layer) |
 | Granit.Identity.Keycloak | Keycloak Admin API | Supported |
 | Granit.Identity.EntraId | Microsoft Graph API | Supported |
+| Granit.Identity.Cognito | AWS Cognito User Pool API | Supported |
 | Granit.Identity (abstractions) | Custom via `IIdentityProvider` | Implement your own |
 
 ### Authentication vs. identity
@@ -144,7 +146,7 @@ There is no local filesystem provider. For local development, use MinIO in a con
 - **Identity** packages implement `IIdentityProvider` for user lookup, role management,
   and cache synchronization via the Admin APIs of each provider.
 
-Both Keycloak and Entra ID have dedicated packages for both layers.
+Keycloak, Entra ID, and AWS Cognito all have dedicated packages for both layers.
 
 ## Messaging transports
 

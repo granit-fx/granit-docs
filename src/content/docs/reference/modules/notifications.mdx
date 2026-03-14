@@ -888,6 +888,26 @@ No dependency on FCM or US cloud providers -- European sovereignty by design.
 }
 ```
 
+## Health checks
+
+Notification channel providers register opt-in health checks:
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddGranitSmtpCheck()
+    .AddGranitSesCheck()
+    .AddGranitBrevoCheck();
+```
+
+| Provider | Extension | Probe | Tags |
+|----------|-----------|-------|------|
+| SMTP | `AddGranitSmtpCheck()` | EHLO handshake via MailKit | readiness |
+| SES | `AddGranitSesCheck()` | `GetAccount()` — Degraded if sending paused | readiness, startup |
+| Brevo | `AddGranitBrevoCheck()` | `GET /account` | readiness |
+
+All checks sanitize error messages — credentials, hostnames, and API keys are never
+exposed in the health check response.
+
 ## OpenTelemetry
 
 All fan-out and delivery operations are traced via `ActivitySource`:

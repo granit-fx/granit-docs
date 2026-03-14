@@ -118,6 +118,16 @@ Wolverine__RetryDelays__1=00:00:30
 | `RequireHttpsMetadata` | `bool` | `true` | Require HTTPS for OIDC metadata. |
 | `AdminRole` | `string` | `"admin"` | Admin App Role name. |
 
+### Cognito authentication -- `CognitoOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Cognito` | |
+| **Package** | -- | `Granit.Authentication.Cognito` | |
+| `UserPoolId` | `string` | `""` | Cognito User Pool ID. |
+| `ClientId` | `string` | `""` | Cognito app client ID. |
+| `Region` | `string` | `""` | AWS region (e.g. `eu-west-1`). |
+
 ### API key authentication -- `ApiKeyOptions`
 
 | Key | Type | Default | Description |
@@ -225,6 +235,18 @@ Wolverine__RetryDelays__1=00:00:30
 | `TimeoutSeconds` | `int` | `30` | Microsoft Graph request timeout. |
 | `GraphBaseUrl` | `string` | `"https://graph.microsoft.com"` | Graph API base URL. |
 | `RopcClientId` | `string?` | `null` | Public client for ROPC credential verification. |
+
+### Cognito Admin API -- `CognitoAdminOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `CognitoAdmin` | |
+| **Package** | -- | `Granit.Identity.Cognito` | |
+| `UserPoolId` | `string` | `""` | Cognito User Pool ID. |
+| `Region` | `string` | `""` | AWS region (e.g. `eu-west-1`). |
+| `AccessKeyId` | `string?` | `null` | AWS access key (optional — uses default credential chain if omitted). |
+| `SecretAccessKey` | `string?` | `null` | AWS secret key (from Vault). |
+| `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
 
 ### User cache -- `UserCacheOptions`
 
