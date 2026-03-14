@@ -23,7 +23,7 @@ const PLACEHOLDER_RE = /%%(\w+)%%/g;
 
 function replaceInNode(node) {
   if (node.type === "text" && PLACEHOLDER_RE.test(node.value)) {
-    node.value = node.value.replace(
+    node.value = node.value.replaceAll(
       PLACEHOLDER_RE,
       (match, key) => variables[key] ?? match,
     );
