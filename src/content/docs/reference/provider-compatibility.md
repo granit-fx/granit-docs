@@ -31,6 +31,7 @@ This page documents the current support status for each infrastructure dimension
 | Identity provider | Keycloak | Entra ID (Azure AD), AWS Cognito, custom (`IIdentityProvider`) |
 | Messaging | PostgreSQL (Wolverine) | SQL Server (Wolverine), RabbitMQ (Wolverine) |
 | Observability | Grafana LGTM (Loki/Tempo/Mimir) | Any OTLP-compatible backend |
+| Encryption | HashiCorp Vault Transit | Azure Key Vault (`Granit.Vault.Azure`), AWS KMS (`Granit.Vault.Aws`) |
 
 ## Database providers
 
@@ -178,10 +179,14 @@ The following modules integrate with Wolverine for asynchronous processing:
 | Package | Channel | External dependency |
 |---------|---------|---------------------|
 | Granit.Notifications.Email.Smtp | Email (SMTP) | Any SMTP server (MailKit) |
+| Granit.Notifications.Email.AzureCommunicationServices | Email (Azure) | Azure Communication Services |
 | Granit.Notifications.Brevo | Email, SMS, WhatsApp | Brevo Transactional API |
 | Granit.Notifications.Sms | SMS (abstractions) | Requires a provider (Brevo) |
+| Granit.Notifications.Sms.AzureCommunicationServices | SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.WhatsApp | WhatsApp (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.WebPush | Web Push | VAPID keys (Lib.Net.Http.WebPush) |
+| Granit.Notifications.MobilePush.Fcm | Mobile Push (FCM) | Firebase Cloud Messaging |
+| Granit.Notifications.MobilePush.AzureNotificationHubs | Mobile Push (Azure) | Azure Notification Hubs |
 | Granit.Notifications.SignalR | Real-time (WebSocket) | Redis backplane for multi-pod |
 
 ### Provider coverage
@@ -192,6 +197,9 @@ email-only scenarios.
 
 The SMS and WhatsApp abstraction packages define `ISmsSender` and `IWhatsAppSender`
 interfaces. Additional providers can be implemented against these interfaces.
+
+Azure Communication Services provides email and SMS through two dedicated packages.
+Azure Notification Hubs provides multi-platform mobile push.
 
 ## Observability backends
 
@@ -223,7 +231,9 @@ Some modules require specific infrastructure services regardless of provider cho
 
 | Module | Requires |
 |--------|----------|
-| Granit.Vault | HashiCorp Vault (VaultSharp) |
+| Granit.Vault.HashiCorp | HashiCorp Vault (VaultSharp) |
+| Granit.Vault.Azure | Azure Key Vault (DefaultAzureCredential) |
+| Granit.Vault.Aws | AWS KMS + Secrets Manager |
 | Granit.Idempotency | Redis (StackExchange.Redis) |
 | Granit.RateLimiting | Redis (StackExchange.Redis) |
 | Granit.Notifications.SignalR | Redis backplane (for multi-pod deployments) |

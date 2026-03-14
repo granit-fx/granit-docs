@@ -137,6 +137,28 @@ during host configuration. `AddGranitObservability()` reads the registry and cal
 GranitActivitySourceRegistry.Register("Granit.Workflow");
 ```
 
+### Registered activity sources
+
+Modules that create spans register their `ActivitySource` name at startup. The table below
+lists every source and the span names it emits.
+
+| ActivitySource | Span names |
+|----------------|------------|
+| `Granit.Vault` | `vault.encrypt`, `vault.decrypt`, `vault.get-secret`, `vault.check-rotation` |
+| `Granit.Vault.Azure` | `akv.encrypt`, `akv.decrypt`, `akv.get-secret`, `akv.check-rotation` |
+| `Granit.Wolverine` | `wolverine.send`, `wolverine.handle` |
+| `Granit.Notifications` | `notification.dispatch`, `notification.deliver` |
+| `Granit.Notifications.Email.Smtp` | `smtp.send` |
+| `Granit.Notifications.Email.Ses` | `ses.send` |
+| `Granit.Notifications.Email.AzureCommunicationServices` | `acs-email.send` |
+| `Granit.Notifications.Sms.AzureCommunicationServices` | `acs-sms.send` |
+| `Granit.Notifications.MobilePush.AzureNotificationHubs` | `anh.send` |
+| `Granit.Notifications.Brevo` | `brevo.send` |
+| `Granit.Notifications.Zulip` | `zulip.send` |
+| `Granit.Workflow` | `workflow.transition` |
+| `Granit.BlobStorage` | `blob.upload`, `blob.download`, `blob.delete` |
+| `Granit.DataExchange` | `import.execute`, `export.execute` |
+
 ## Kubernetes health probes
 
 `MapGranitHealthChecks()` registers three endpoints, all `AllowAnonymous` (the kubelet
@@ -176,6 +198,10 @@ for Kubernetes probes.
 | `Granit.Notifications.Email.Ses` | `AddGranitSesHealthCheck()` | `GetAccount()` (Degraded if sending paused) | readiness, startup |
 | `Granit.Notifications.Brevo` | `AddGranitBrevoHealthCheck()` | `GET /account` | readiness |
 | `Granit.Notifications.Zulip` | `AddGranitZulipHealthCheck()` | `GET /api/v1/users/me` | readiness |
+| `Granit.Vault.Azure` | `AddGranitAzureKeyVaultHealthCheck()` | GetKey probe | readiness |
+| `Granit.Notifications.Email.AzureCommunicationServices` | `AddGranitAcsEmailHealthCheck()` | Send probe | readiness |
+| `Granit.Notifications.Sms.AzureCommunicationServices` | `AddGranitAcsSmsHealthCheck()` | Send probe | readiness |
+| `Granit.Notifications.MobilePush.AzureNotificationHubs` | `AddGranitAzureNotificationHubsHealthCheck()` | Hub description | readiness |
 
 ### Defensive timeout
 
@@ -195,7 +221,11 @@ builder.Services.AddHealthChecks()
     .AddGranitKeycloakHealthCheck()
     .AddGranitSesHealthCheck()
     .AddGranitBrevoHealthCheck()
-    .AddGranitZulipHealthCheck();
+    .AddGranitZulipHealthCheck()
+    .AddGranitAzureKeyVaultHealthCheck()
+    .AddGranitAcsEmailHealthCheck()
+    .AddGranitAcsSmsHealthCheck()
+    .AddGranitAzureNotificationHubsHealthCheck();
 ```
 
 ### JSON response format

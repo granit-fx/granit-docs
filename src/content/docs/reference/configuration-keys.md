@@ -167,12 +167,12 @@ Wolverine__RetryDelays__1=00:00:30
 | `RoutePrefix` | `string` | `"auth"` | Route prefix. |
 | `TagName` | `string` | `"Authorization"` | OpenAPI tag. |
 
-### Vault -- `VaultOptions`
+### Vault -- `HashiCorpVaultOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
 | **Section** | -- | `Vault` | |
-| **Package** | -- | `Granit.Vault` | |
+| **Package** | -- | `Granit.Vault.HashiCorp` | |
 | `Address` | `string` | `""` | Vault server URL. |
 | `AuthMethod` | `string` | `"Kubernetes"` | `"Kubernetes"` or `"Token"`. |
 | `Token` | `string?` | `null` | Vault token (dev only). |
@@ -191,8 +191,21 @@ Wolverine__RetryDelays__1=00:00:30
 | **Package** | -- | `Granit.Encryption` | |
 | `PassPhrase` | `string` | `""` | AES key derivation passphrase (from Vault). |
 | `KeySize` | `int` | `256` | AES key size in bits. |
-| `ProviderName` | `string` | `"Aes"` | `"Aes"` or `"Vault"`. |
+| `ProviderName` | `string` | `"Aes"` | `"Aes"`, `"Vault"`, or `"AzureKeyVault"`. |
 | `VaultKeyName` | `string` | `"string-encryption"` | Transit key name (when provider is `Vault`). |
+
+### Azure Key Vault -- `AzureKeyVaultOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Vault:Azure` | |
+| **Package** | -- | `Granit.Vault.Azure` | |
+| `VaultUri` | `string` | `""` | Azure Key Vault URI (e.g. `https://my-vault.vault.azure.net/`). |
+| `EncryptionKeyName` | `string` | `"string-encryption"` | Key name for encrypt/decrypt operations. |
+| `EncryptionAlgorithm` | `string` | `"RSA-OAEP-256"` | Algorithm: `RSA-OAEP-256`, `RSA-OAEP`, or `RSA1_5`. |
+| `DatabaseSecretName` | `string?` | `null` | Secret name for DB credentials. Omit to disable credential rotation. |
+| `RotationCheckIntervalMinutes` | `int` | `5` | Secret version polling interval (minutes). |
+| `TimeoutSeconds` | `int` | `30` | Azure SDK operation timeout. |
 
 ### Privacy -- `GranitPrivacyOptions`
 
@@ -688,6 +701,38 @@ Each entry in `Policies`:
 | `ServiceAccountJson` | `string` | `""` | Service account JSON key (from Vault). |
 | `BaseAddress` | `string` | `"https://fcm.googleapis.com/"` | FCM API base address. |
 | `TimeoutSeconds` | `int` | `30` | Request timeout. |
+
+### ACS Email -- `AcsEmailOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `AzureCommunicationServices:Email` | |
+| **Package** | -- | `Granit.Notifications.Email.AzureCommunicationServices` | |
+| `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
+| `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
+| `SenderAddress` | `string` | `""` | Sender email address (must be verified in ACS). |
+| `TimeoutSeconds` | `int` | `120` | Send operation timeout (ACS emails can take time). |
+
+### ACS SMS -- `AcsSmsOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `AzureCommunicationServices:Sms` | |
+| **Package** | -- | `Granit.Notifications.Sms.AzureCommunicationServices` | |
+| `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
+| `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
+| `FromPhoneNumber` | `string` | `""` | Sender phone number in E.164 format (must start with `+`). |
+| `TimeoutSeconds` | `int` | `30` | Send operation timeout. |
+
+### Azure Notification Hubs -- `AzureNotificationHubsOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Notifications:AzureNotificationHubs` | |
+| **Package** | -- | `Granit.Notifications.MobilePush.AzureNotificationHubs` | |
+| `ConnectionString` | `string` | `""` | Notification Hub connection string. |
+| `HubName` | `string` | `""` | Notification Hub name. |
+| `TimeoutSeconds` | `int` | `30` | Send operation timeout. |
 
 ### SignalR channel -- `SignalRChannelOptions`
 

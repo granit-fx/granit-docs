@@ -15,8 +15,10 @@ and Vault Transit encryption via `ITransitEncryptionService` -- so sensitive dat
 
 - A .NET 10 project with `Granit.Core`
 - `Granit.Encryption` for AES-256 field-level encryption
-- `Granit.Vault` for HashiCorp Vault Transit encryption (production)
-- A running HashiCorp Vault instance with Transit engine enabled (production only)
+- `Granit.Vault` for vault abstractions (`ITransitEncryptionService`, `IDatabaseCredentialProvider`)
+- `Granit.Vault.HashiCorp` for HashiCorp Vault Transit encryption (production)
+- `Granit.Vault.Azure` for Azure Key Vault encryption (production, Azure environments)
+- A running HashiCorp Vault or Azure Key Vault instance (production only)
 
 ## Step 1 -- Install the packages
 
@@ -31,10 +33,20 @@ dotnet add package Granit.Encryption
 <TabItem label="Vault Transit (production)">
 
 ```bash
-dotnet add package Granit.Vault
+dotnet add package Granit.Vault.HashiCorp
 ```
 
-`Granit.Vault` depends on `Granit.Encryption` -- both are installed automatically.
+`Granit.Vault.HashiCorp` depends on `Granit.Vault` and `Granit.Encryption` -- all are installed automatically.
+
+</TabItem>
+<TabItem label="Azure Key Vault (production)">
+
+```bash
+dotnet add package Granit.Vault.Azure
+```
+
+`Granit.Vault.Azure` depends on `Granit.Vault` and `Granit.Encryption` -- all are installed automatically.
+Uses `DefaultAzureCredential` (Managed Identity in production, `az login` locally).
 
 </TabItem>
 </Tabs>
@@ -68,7 +80,7 @@ keys to be rotated and stored securely.
 ### Vault Transit provider (production)
 
 ```csharp
-[DependsOn(typeof(GranitVaultModule))]
+[DependsOn(typeof(GranitVaultHashiCorpModule))]
 public sealed class AppModule : GranitModule { }
 ```
 
@@ -91,7 +103,8 @@ The `ProviderName` setting selects the active provider:
 | Provider | `ProviderName` | Latency | When to use |
 |----------|----------------|---------|-------------|
 | `AesStringEncryptionProvider` | `"Aes"` | < 1 ms | Settings, cache, high-frequency operations |
-| `VaultStringEncryptionProvider` | `"Vault"` | 10--20 ms | High-security operations, infrequent writes |
+| `VaultStringEncryptionProvider` | `"Vault"` | 10--20 ms | High-security operations, HashiCorp Vault |
+| `AzureKeyVaultStringEncryptionProvider` | `"AzureKeyVault"` | 10--30 ms | High-security operations, Azure environments |
 
 ## Step 3 -- Encrypt fields before persistence
 
@@ -257,6 +270,7 @@ public sealed class AppSettingDefinitionProvider : ISettingDefinitionProvider
 |-------|-----------|-------|----------------|
 | Field-level (AES) | `IStringEncryptionService` | Individual entity properties | Passphrase via PBKDF2 |
 | Field-level (Vault Transit) | `ITransitEncryptionService` | Individual entity properties | Vault-managed, auto-rotation |
+| Field-level (Azure Key Vault) | `IStringEncryptionService` | Individual entity properties | Azure Key Vault RSA-OAEP-256 |
 | Cache | `[CacheEncrypted]` | Entire cached object | Local AES-256 key |
 | Settings | `IsEncrypted = true` | Setting values in database | `IStringEncryptionService` |
 

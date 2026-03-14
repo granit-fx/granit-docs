@@ -95,7 +95,9 @@ The privacy module aggregates all registered providers to produce a complete dat
 Two encryption strategies are available, both accessible through `IStringEncryptionService`:
 
 - **Granit.Encryption** -- AES-256-CBC with a local key. Suitable for development and non-production environments.
-- **Granit.Vault** -- HashiCorp Vault Transit engine. The encryption key never leaves Vault. Required for production under ISO 27001.
+- **Granit.Vault** -- Abstraction layer (`ITransitEncryptionService`, `IDatabaseCredentialProvider`). Provider packages supply the implementations.
+- **Granit.Vault.HashiCorp** -- HashiCorp Vault Transit engine. The encryption key never leaves Vault. Required for production under ISO 27001.
+- **Granit.Vault.Azure** -- Azure Key Vault RSA-OAEP-256 encryption. The encryption key never leaves Azure Key Vault. Alternative production backend for Azure-hosted environments.
 
 ```csharp
 public class PatientService(IStringEncryptionService encryption)
@@ -135,6 +137,7 @@ Application code never sets these fields. The interceptor runs inside the `SaveC
 |----------------|---------------|----------|
 | `AesStringEncryptionService` | Local config key (AES-256-CBC) | Development, testing |
 | `VaultTransitEncryptionService` | HashiCorp Vault Transit | Production (key never leaves Vault) |
+| `AzureKeyVaultStringEncryptionProvider` | Azure Key Vault RSA-OAEP-256 | Production on Azure (key never leaves Key Vault) |
 
 The Vault module is conditionally loaded -- it disables itself in `Development` environment, falling back to the local AES implementation automatically.
 
@@ -193,7 +196,9 @@ Which Granit modules enforce which compliance requirements:
 | Granit.Persistence | Soft delete | Processing restriction | -- | Audit interceptor | -- |
 | Granit.Privacy | Data export | -- | Privacy by design | -- | -- |
 | Granit.Encryption | -- | -- | Pseudonymization | -- | AES-256-CBC |
-| Granit.Vault | -- | -- | Pseudonymization | -- | Transit engine |
+| Granit.Vault | -- | -- | Pseudonymization | -- | Abstraction layer |
+| Granit.Vault.HashiCorp | -- | -- | Pseudonymization | -- | Transit engine |
+| Granit.Vault.Azure | -- | -- | Pseudonymization | -- | Azure Key Vault RSA |
 | Granit.MultiTenancy | -- | -- | Data isolation | Tenant isolation | -- |
 | Granit.Security | -- | -- | -- | Actor attribution | -- |
 | Granit.Authorization | -- | -- | -- | Permission audit | -- |

@@ -47,7 +47,7 @@ Every Granit application gets **GDPR** and **ISO 27001** compliance out of the b
 
 - **Audit trail**: `AuditedEntityInterceptor` records who created and modified every entity, when, and from which tenant context. No opt-in required — if your entity inherits from `AuditedEntity`, it is audited.
 - **Soft delete**: `SoftDeleteInterceptor` converts `DELETE` operations into `IsDeleted = true` updates and applies global query filters so deleted records are invisible to normal queries. This satisfies the right to erasure while preserving referential integrity for audit purposes.
-- **Encryption at rest**: `Granit.Vault` integrates with HashiCorp Vault's Transit engine for field-level encryption. Sensitive data — national identification numbers, health records, financial details — is encrypted before it reaches the database.
+- **Encryption at rest**: `Granit.Vault.HashiCorp` integrates with HashiCorp Vault's Transit engine, and `Granit.Vault.Azure` with Azure Key Vault, for field-level encryption. Sensitive data — national identification numbers, health records, financial details — is encrypted before it reaches the database.
 - **Privacy markers**: `IProcessingRestrictable` lets you freeze processing on a per-record basis, satisfying GDPR Article 18 (right to restriction of processing).
 - **Tenant isolation**: Multi-tenant query filters ensure that tenant A never sees tenant B's data, even if a developer forgets to filter manually.
 
@@ -78,7 +78,9 @@ Granit is organized into package groups. You can install a single package or pul
     | `Granit.Authentication.JwtBearer` | JWT Bearer middleware with Keycloak token validation |
     | `Granit.Authentication.Keycloak` | Claims transformation for Keycloak tokens |
     | `Granit.Authorization` | Policy-based authorization with EF Core store |
-    | `Granit.Vault` | HashiCorp Vault integration — Transit encryption, dynamic database credentials |
+    | `Granit.Vault` | Vault abstractions — transit encryption, dynamic credentials |
+    | `Granit.Vault.HashiCorp` | HashiCorp Vault — Transit encryption, dynamic DB credentials |
+    | `Granit.Vault.Azure` | Azure Key Vault — RSA-OAEP-256 encryption, dynamic credentials from Key Vault Secrets |
     | `Granit.Privacy` | GDPR privacy helpers (processing restriction, data minimization) |
     | `Granit.Identity` | Identity provider abstractions (`IIdentityProvider`, `IUserLookupService`) |
     | `Granit.Identity.Keycloak` | Keycloak Admin API implementation with cache-aside user sync |
@@ -106,10 +108,11 @@ Granit is organized into package groups. You can install a single package or pul
     | `Granit.Wolverine` | Wolverine integration with PostgreSQL transactional outbox |
     | `Granit.Webhooks` | Webhook subscriptions with reliable delivery and retry |
     | `Granit.Notifications` | Notification engine with fan-out and delivery tracking |
-    | `Granit.Notifications.Email` | Email via SMTP or Brevo |
-    | `Granit.Notifications.Sms` | SMS delivery |
+    | `Granit.Notifications.Email` | Email via SMTP, Brevo, or Azure Communication Services |
+    | `Granit.Notifications.Sms` | SMS via Brevo or Azure Communication Services |
     | `Granit.Notifications.WhatsApp` | WhatsApp Business API |
-    | `Granit.Notifications.Push` | Web Push and Mobile Push (FCM) |
+    | `Granit.Notifications.WebPush` | Web Push notifications (VAPID) |
+    | `Granit.Notifications.MobilePush` | Mobile Push — FCM, Azure Notification Hubs |
     | `Granit.Notifications.SignalR` | Real-time notifications via SignalR |
   </TabItem>
 
@@ -229,7 +232,7 @@ This initial release is the foundation. The roadmap includes:
 
 - **Publication to nuget.org** for frictionless package installation
 - **Project templates** (`dotnet new granit-api`, `dotnet new granit-module`) for quick scaffolding
-- **Additional identity providers** beyond Keycloak (Entra ID, Auth0)
+- **Additional identity providers** beyond Keycloak (Entra ID, Cognito — now available)
 - **GraphQL support** alongside the existing Minimal API and REST patterns
 - **Performance benchmarks** published on every release to track regression
 

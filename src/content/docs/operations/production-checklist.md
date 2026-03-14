@@ -12,8 +12,8 @@ application to production. Every item maps to a compliance requirement
 ## Security hardening
 
 - [ ] No plaintext secrets in code, configuration files, or unencrypted environment variables
-- [ ] HashiCorp Vault configured and reachable (Kubernetes authentication)
-- [ ] PostgreSQL credentials are dynamic via Vault (no static passwords)
+- [ ] HashiCorp Vault or Azure Key Vault configured and reachable
+- [ ] PostgreSQL credentials are dynamic via Vault or Key Vault Secrets (no static passwords)
 - [ ] HTTPS enforced -- no HTTP endpoints in production
 - [ ] JWT Bearer configured with `RequireHttpsMetadata: true`
 - [ ] RBAC permissions defined and assigned per tenant
@@ -27,7 +27,7 @@ application to production. Every item maps to a compliance requirement
 - [ ] Audit trail enabled: `AuditedEntityInterceptor` registered in every DbContext
 - [ ] `CreatedBy`, `ModifiedBy` populated automatically via `ICurrentUserService`
 - [ ] Log retention configured to 3 years minimum in Loki (cold storage for archive)
-- [ ] Encryption at rest enabled for sensitive data (Vault Transit via `ITransitEncryptionService`)
+- [ ] Encryption at rest enabled for sensitive data (Vault Transit or Azure Key Vault via `IStringEncryptionService`)
 - [ ] Encryption in transit: TLS between all components
 - [ ] Access traceability: every request associated with `UserId` and `TenantId` in logs
 - [ ] Authentication events logged (login, logout, token refresh, failed attempts)
@@ -118,5 +118,5 @@ After the first production deployment, verify:
 - [ ] Logs appear in Grafana/Loki with correct `ServiceName` and `Environment`
 - [ ] Traces appear in Grafana/Tempo for HTTP requests
 - [ ] Metrics appear in Grafana/Mimir (request rate, error rate)
-- [ ] Vault lease renewal succeeds (check logs for renewal confirmation)
+- [ ] Vault lease renewal (or Azure Key Vault secret rotation) succeeds (check logs for confirmation)
 - [ ] At least one end-to-end request completes successfully (smoke test)

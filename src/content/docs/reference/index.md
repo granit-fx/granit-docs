@@ -21,7 +21,8 @@ and provider comparison.
 | Data & Persistence | [Persistence](./modules/persistence/), [Caching](./modules/caching/), [Multi-Tenancy](./modules/multi-tenancy/) | EF Core interceptors, HybridCache, tenant isolation |
 | Settings & Features | [Settings & Features](./modules/settings-features/) | Application settings, feature flags, reference data |
 | API & Web | [API & Web](./modules/api-web/) | Versioning, OpenAPI docs, idempotency, CORS, cookies |
-| Messaging | [Wolverine](./modules/wolverine/), [Webhooks & Timeline](./modules/webhooks-timeline/), [Notifications](./modules/notifications/) | Message bus, outbox, webhooks, 6-channel notifications |
+| Messaging | [Wolverine](./modules/wolverine/), [Webhooks](./modules/webhooks/), [Notifications](./modules/notifications/) | Message bus, outbox, webhooks, 6-channel notifications |
+| Audit | [Timeline](./modules/timeline/) | Entity activity stream (chatter), follow/notify |
 | Documents | [Templating & DocumentGeneration](./modules/templating/) | Scriban templates, HTML-to-PDF, Excel generation |
 | Data Exchange | [DataExchange](./modules/data-exchange/) | Import pipeline (CSV, Excel), export presets |
 | Workflow | [Workflow](./modules/workflow/) | FSM engine, publication lifecycle |

@@ -39,7 +39,10 @@ For test-only dependencies, see [Testing stack (ADR-003)](/architecture/adr/003-
 
 | Library | License | Role | ADR |
 |---------|---------|------|-----|
-| [VaultSharp](https://github.com/rajanadar/VaultSharp) | Apache-2.0 | HashiCorp Vault client (transit encryption, dynamic credentials) | — |
+| [VaultSharp](https://github.com/rajanadar/VaultSharp) | Apache-2.0 | HashiCorp Vault client — used by `Granit.Vault.HashiCorp` (transit encryption, dynamic credentials) | — |
+| [Azure.Security.KeyVault.Keys](https://learn.microsoft.com/en-us/dotnet/api/azure.security.keyvault.keys) | MIT | Azure Key Vault key operations (encrypt/decrypt) | — |
+| [Azure.Security.KeyVault.Secrets](https://learn.microsoft.com/en-us/dotnet/api/azure.security.keyvault.secrets) | MIT | Azure Key Vault secret management (DB credentials) | — |
+| [Azure.Identity](https://learn.microsoft.com/en-us/dotnet/api/azure.identity) | MIT | DefaultAzureCredential for Azure SDK authentication | — |
 | [Microsoft.AspNetCore.Authentication.JwtBearer](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/) | MIT | JWT Bearer authentication middleware | — |
 
 ## Validation
@@ -90,6 +93,9 @@ For test-only dependencies, see [Testing stack (ADR-003)](/architecture/adr/003-
 | Library | License | Role | ADR |
 |---------|---------|------|-----|
 | [MailKit](https://github.com/jstedfast/MailKit) | MIT | SMTP email delivery | — |
+| [Azure.Communication.Email](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email) | MIT | Azure Communication Services email sending | — |
+| [Azure.Communication.Sms](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/sms/send) | MIT | Azure Communication Services SMS sending | — |
+| [Microsoft.Azure.NotificationHubs](https://learn.microsoft.com/en-us/azure/notification-hubs/) | MIT | Azure Notification Hubs push notifications | — |
 | [Microsoft.AspNetCore.SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/) | MIT | Real-time WebSocket notifications | — |
 | [Lib.Net.Http.WebPush](https://github.com/nicoriff/Lib.Net.Http.WebPush) | MIT | Web Push notifications (VAPID) | — |
 

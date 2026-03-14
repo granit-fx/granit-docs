@@ -101,14 +101,14 @@ flowchart TD
 |--------|----------|
 | Utilities | Timing, Guids, Diagnostics, Validation, Validation.Europe, ExceptionHandling, Observability, MultiTenancy, Privacy, Cors, Bulkhead, RateLimiting, Querying |
 | Identity | Identity, Identity.Keycloak, Identity.EntraId, Identity.Cognito, Identity.EntityFrameworkCore, Identity.Endpoints |
-| Security | Security, Encryption, Vault, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.Cognito, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
+| Security | Security, Encryption, Vault, Vault.HashiCorp, Vault.Azure, Vault.Aws, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.Cognito, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
 | Configuration | Settings (3), Features (2), ReferenceData (3) |
 | Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies, Cookies.Klaro, Cookies.Endpoints, Idempotency, Webhooks (3) |
 | Storage | BlobStorage (7), Imaging (2) |
 | Background Jobs | BackgroundJobs (4) |
 | Localization | Localization, Localization.EntityFrameworkCore, Localization.Endpoints, Localization.SourceGenerator |
 | Templating | Templating, Templating.Scriban, Templating.EF, Templating.Endpoints, Templating.Workflow, DocumentGeneration, DocumentGeneration.Pdf, DocumentGeneration.Excel |
-| Notifications | Notifications, Notifications.EF, Notifications.Endpoints, Notifications.Wolverine, Email, Email.Smtp, Sms, WhatsApp, WebPush, SignalR, Sse, Zulip, Brevo, MobilePush, MobilePush.Fcm |
+| Notifications | Notifications, Notifications.EF, Notifications.Endpoints, Notifications.Wolverine, Email, Email.Smtp, Email.AzureCommunicationServices, Sms, Sms.AzureCommunicationServices, WhatsApp, WebPush, SignalR, Sse, Zulip, Brevo, MobilePush, MobilePush.Fcm, MobilePush.AzureNotificationHubs |
 | Workflow | Workflow, Workflow.EF, Workflow.Endpoints, Workflow.Notifications |
 | Timeline | Timeline, Timeline.EF, Timeline.Endpoints, Timeline.Notifications |
 | DataExchange | DataExchange, DataExchange.Csv, DataExchange.Excel, DataExchange.EF, DataExchange.Endpoints, DataExchange.Wolverine |
@@ -167,6 +167,9 @@ flowchart TD
     CORE --> CACHE
 
     ENCR --> VAULT["Vault"]
+    VAULT --> VAULT_HC["Vault.HashiCorp"]
+    VAULT --> VAULT_AZ["Vault.Azure"]
+    VAULT --> VAULT_AW["Vault.Aws"]
     TIMING --> GUIDS
 
     SEC --> JWT
@@ -199,7 +202,9 @@ flowchart TD
 
     style KC fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style ENTRA fill:#e8f5e9,stroke:#43a047,color:#1b5e20
-    style VAULT fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style VAULT_HC fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style VAULT_AZ fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style VAULT_AW fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style CACHE_REDIS fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style WOL_PG fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style WOL_SQL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
@@ -313,6 +318,10 @@ flowchart LR
     NOTIF_SMS --> NOTIF_BREVO
     NOTIF_WA --> NOTIF_BREVO
 
+    NOTIF_EMAIL --> NOTIF_ACS_EMAIL["Notifications.Email.AzureCommunicationServices"]
+    NOTIF_SMS --> NOTIF_ACS_SMS["Notifications.Sms.AzureCommunicationServices"]
+    NOTIF_MP --> NOTIF_ANH["Notifications.MobilePush.AzureNotificationHubs"]
+
     style NOTIF_EMAIL fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     style NOTIF_SMS fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     style NOTIF_WA fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
@@ -320,6 +329,9 @@ flowchart LR
 
     style NOTIF_SMTP fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style NOTIF_BREVO fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_ACS_EMAIL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_ACS_SMS fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style NOTIF_ANH fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style NOTIF_SR fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style NOTIF_SSE fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style NOTIF_ZULIP fill:#e8f5e9,stroke:#43a047,color:#1b5e20

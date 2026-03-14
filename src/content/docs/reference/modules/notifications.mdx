@@ -24,11 +24,14 @@ for durable outbox-backed dispatch with exponential backoff retry.
   - Granit.Notifications.Wolverine Durable outbox dispatch via IMessageBus
   - Granit.Notifications.Email/ Email channel abstraction (Keyed Services)
     - Granit.Notifications.Email.Smtp MailKit SMTP provider
+    - Granit.Notifications.Email.AzureCommunicationServices Azure Communication Services email
   - Granit.Notifications.Sms SMS channel abstraction (Keyed Services)
+    - Granit.Notifications.Sms.AzureCommunicationServices Azure Communication Services SMS
   - Granit.Notifications.WhatsApp WhatsApp Business API channel
   - Granit.Notifications.Brevo Unified Brevo provider (Email + SMS + WhatsApp)
   - Granit.Notifications.MobilePush/ Mobile push abstraction + token store
     - Granit.Notifications.MobilePush.Fcm Firebase Cloud Messaging provider
+    - Granit.Notifications.MobilePush.AzureNotificationHubs Azure Notification Hubs push
   - Granit.Notifications.SignalR Real-time SignalR channel + Redis backplane
   - Granit.Notifications.WebPush W3C Web Push (VAPID, RFC 8030)
   - Granit.Notifications.Sse Server-Sent Events channel (.NET 10)
@@ -43,11 +46,14 @@ for durable outbox-backed dispatch with exponential backoff retry.
 | `Granit.Notifications.Wolverine` | Durable outbox-backed dispatch via `IMessageBus` | `Granit.Notifications`, `Granit.Wolverine` |
 | `Granit.Notifications.Email` | Email channel abstraction, Keyed Services resolution | `Granit.Notifications` |
 | `Granit.Notifications.Email.Smtp` | MailKit SMTP provider (Keyed Service `"Smtp"`) | `Granit.Notifications.Email` |
+| `Granit.Notifications.Email.AzureCommunicationServices` | Azure Communication Services email provider (Keyed Service `"AzureCommunicationServices"`) | `Granit.Notifications.Email` |
 | `Granit.Notifications.Brevo` | Unified Brevo provider (Email + SMS + WhatsApp) | `Granit.Notifications.Email`, `Granit.Notifications.Sms`, `Granit.Notifications.WhatsApp` |
 | `Granit.Notifications.Sms` | SMS channel abstraction, Keyed Services resolution | `Granit.Notifications` |
+| `Granit.Notifications.Sms.AzureCommunicationServices` | Azure Communication Services SMS provider (Keyed Service `"AzureCommunicationServices"`) | `Granit.Notifications.Sms` |
 | `Granit.Notifications.WhatsApp` | WhatsApp Business API channel | `Granit.Notifications` |
 | `Granit.Notifications.MobilePush` | Mobile push abstraction + device token store | `Granit.Notifications` |
 | `Granit.Notifications.MobilePush.Fcm` | Firebase Cloud Messaging (FCM HTTP v1 API) | `Granit.Notifications.MobilePush` |
+| `Granit.Notifications.MobilePush.AzureNotificationHubs` | Azure Notification Hubs push provider (Keyed Service `"AzureNotificationHubs"`) | `Granit.Notifications.MobilePush` |
 | `Granit.Notifications.SignalR` | Real-time SignalR channel + Redis backplane | `Granit.Notifications` |
 | `Granit.Notifications.WebPush` | W3C Web Push (VAPID, RFC 8030/8291/8292) | `Granit.Notifications` |
 | `Granit.Notifications.Sse` | Server-Sent Events channel (.NET 10 native SSE) | `Granit.Notifications` |
@@ -75,14 +81,17 @@ graph TD
 
     EM[Granit.Notifications.Email] --> N
     SMTP[Granit.Notifications.Email.Smtp] --> EM
+    ACSEM[Granit.Notifications.Email.AzureCommunicationServices] --> EM
     BR[Granit.Notifications.Brevo] --> EM
     BR --> SMS[Granit.Notifications.Sms]
     BR --> WA[Granit.Notifications.WhatsApp]
 
     SMS --> N
+    ACSSMS[Granit.Notifications.Sms.AzureCommunicationServices] --> SMS
     WA --> N
     MP --> N
     FCM[Granit.Notifications.MobilePush.Fcm] --> MP
+    ANH[Granit.Notifications.MobilePush.AzureNotificationHubs] --> MP
     SR[Granit.Notifications.SignalR] --> N
     WP[Granit.Notifications.WebPush] --> N
     SSE[Granit.Notifications.Sse] --> N
@@ -365,10 +374,10 @@ public static class NotificationChannels
 | Channel | Registration | Provider resolution |
 |---------|-------------|---------------------|
 | InApp | Built-in (auto-registered) | N/A |
-| Email | `AddGranitNotificationsEmail()` | Keyed Service: `"Smtp"`, `"Brevo"` |
-| SMS | `AddGranitNotificationsSms()` | Keyed Service: `"Brevo"` |
+| Email | `AddGranitNotificationsEmail()` | Keyed Service: `"Smtp"`, `"Brevo"`, `"AzureCommunicationServices"` |
+| SMS | `AddGranitNotificationsSms()` | Keyed Service: `"Brevo"`, `"AzureCommunicationServices"` |
 | WhatsApp | `AddGranitNotificationsWhatsApp()` | Keyed Service: `"Brevo"` |
-| Mobile Push | `AddGranitNotificationsMobilePush()` | Keyed Service: `"Fcm"` |
+| Mobile Push | `AddGranitNotificationsMobilePush()` | Keyed Service: `"Fcm"`, `"AzureNotificationHubs"` |
 | SignalR | `AddGranitNotificationsSignalR()` | Direct (`NotificationHub`) |
 | Web Push | `AddGranitNotificationsPush()` | VAPID (Lib.Net.Http.WebPush) |
 | SSE | `AddGranitNotificationsSse()` | Native .NET 10 SSE |
@@ -826,6 +835,58 @@ as a wake-up signal only -- the app fetches details from the API after
 receiving the push (ISO 27001 compliance).
 :::
 
+### Azure Communication Services — Email
+
+```json
+{
+  "AzureCommunicationServices": {
+    "Email": {
+      "ConnectionString": "endpoint=...;accesskey=...",
+      "SenderAddress": "noreply@mydomain.com",
+      "TimeoutSeconds": 120
+    }
+  }
+}
+```
+
+:::note
+`ConnectionString` or `Endpoint` must be provided. When using `Endpoint`, authentication
+uses `DefaultAzureCredential` (Managed Identity in production).
+:::
+
+### Azure Communication Services — SMS
+
+```json
+{
+  "AzureCommunicationServices": {
+    "Sms": {
+      "ConnectionString": "endpoint=...;accesskey=...",
+      "FromPhoneNumber": "+15551234567",
+      "TimeoutSeconds": 30
+    }
+  }
+}
+```
+
+### Azure Notification Hubs — Mobile Push
+
+```json
+{
+  "Notifications": {
+    "AzureNotificationHubs": {
+      "ConnectionString": "Endpoint=sb://...",
+      "HubName": "my-notification-hub",
+      "TimeoutSeconds": 30
+    }
+  }
+}
+```
+
+:::caution
+Like FCM, push data payloads via Azure Notification Hubs must NOT contain PII or
+health data. The push serves as a wake-up signal only (ISO 27001 compliance).
+:::
+
 ### SignalR
 
 ```json
@@ -897,6 +958,9 @@ builder.Services.AddHealthChecks()
     .AddGranitSmtpHealthCheck()
     .AddGranitSesHealthCheck()
     .AddGranitBrevoHealthCheck()
+    .AddGranitAcsEmailHealthCheck()
+    .AddGranitAcsSmsHealthCheck()
+    .AddGranitAzureNotificationHubsHealthCheck()
     .AddGranitZulipHealthCheck();
 ```
 
@@ -905,6 +969,9 @@ builder.Services.AddHealthChecks()
 | SMTP | `AddGranitSmtpHealthCheck()` | EHLO handshake via MailKit | readiness |
 | SES | `AddGranitSesHealthCheck()` | `GetAccount()` — Degraded if sending paused | readiness, startup |
 | Brevo | `AddGranitBrevoHealthCheck()` | `GET /account` | readiness |
+| ACS Email | `AddGranitAcsEmailHealthCheck()` | `SendAsync` probe | readiness |
+| ACS SMS | `AddGranitAcsSmsHealthCheck()` | `SendAsync` probe | readiness |
+| Azure Notification Hubs | `AddGranitAzureNotificationHubsHealthCheck()` | Hub description retrieval | readiness |
 | Zulip | `AddGranitZulipHealthCheck()` | `GET /api/v1/users/me` (Bot auth) | readiness |
 
 All checks sanitize error messages — credentials, hostnames, and API keys are never
@@ -938,8 +1005,8 @@ Tags: `notifications.type`, `notifications.channel`, `notifications.delivery_id`
 | Entity tracking | `ITrackedEntity`, `TrackedPropertyConfig`, `EntityStateChangedData`, `EntityReference` | `Granit.Notifications` |
 | Messages | `NotificationTrigger`, `DeliverNotificationCommand` | `Granit.Notifications` |
 | Handlers | `NotificationFanoutHandler`, `NotificationDeliveryHandler` | `Granit.Notifications` |
-| Options | `NotificationsOptions`, `EmailChannelOptions`, `SmtpOptions`, `BrevoOptions`, `SmsChannelOptions`, `MobilePushChannelOptions`, `FcmOptions`, `SignalRChannelOptions`, `PushChannelOptions`, `SseChannelOptions`, `ZulipChannelOptions`, `ZulipBotOptions` | various |
-| Email | `IEmailSender`, `EmailMessage` | `Granit.Notifications.Email` |
+| Options | `NotificationsOptions`, `EmailChannelOptions`, `SmtpOptions`, `BrevoOptions`, `AcsEmailOptions`, `SmsChannelOptions`, `AcsSmsOptions`, `MobilePushChannelOptions`, `FcmOptions`, `AzureNotificationHubsOptions`, `SignalRChannelOptions`, `PushChannelOptions`, `SseChannelOptions`, `ZulipChannelOptions`, `ZulipBotOptions` | various |
+| Email | `IEmailSender`, `EmailMessage` | `Granit.Notifications.Email`, `Granit.Notifications.Email.AzureCommunicationServices` |
 | SMS | `ISmsSender`, `SmsMessage` | `Granit.Notifications.Sms` |
 | WhatsApp | `IWhatsAppSender`, `WhatsAppMessage` | `Granit.Notifications.WhatsApp` |
 | Mobile Push | `IMobilePushSender`, `MobilePushMessage`, `IMobilePushTokenReader`, `IMobilePushTokenWriter`, `MobilePushTokenInfo`, `MobilePlatform` | `Granit.Notifications.MobilePush` |
@@ -949,7 +1016,7 @@ Tags: `notifications.type`, `notifications.channel`, `notifications.delivery_id`
 | Zulip | `IZulipSender`, `ZulipMessage` | `Granit.Notifications.Zulip` |
 | Exceptions | `NotificationDeliveryException` | `Granit.Notifications` |
 | Endpoints | `NotificationEndpointsOptions`, `MobilePushTokenEndpoints` | `Granit.Notifications.Endpoints` |
-| Extensions | `AddGranitNotifications()`, `AddGranitNotificationsEntityFrameworkCore()`, `AddGranitNotificationsEmail()`, `AddGranitNotificationsEmailSmtp()`, `AddGranitNotificationsBrevo()`, `AddGranitNotificationsSms()`, `AddGranitNotificationsWhatsApp()`, `AddGranitNotificationsMobilePush()`, `AddGranitNotificationsMobilePushFcm()`, `AddGranitNotificationsSignalR()`, `AddGranitNotificationsPush()`, `AddGranitNotificationsSse()`, `AddGranitNotificationsZulip()`, `AddNotificationDefinitions<T>()`, `MapGranitNotificationEndpoints()`, `MapMobilePushTokenEndpoints()` | various |
+| Extensions | `AddGranitNotifications()`, `AddGranitNotificationsEntityFrameworkCore()`, `AddGranitNotificationsEmail()`, `AddGranitNotificationsEmailSmtp()`, `AddGranitNotificationsEmailAcs()`, `AddGranitNotificationsBrevo()`, `AddGranitNotificationsSms()`, `AddGranitNotificationsSmsAcs()`, `AddGranitNotificationsWhatsApp()`, `AddGranitNotificationsMobilePush()`, `AddGranitNotificationsMobilePushFcm()`, `AddGranitNotificationsMobilePushAzureNotificationHubs()`, `AddGranitNotificationsSignalR()`, `AddGranitNotificationsPush()`, `AddGranitNotificationsSse()`, `AddGranitNotificationsZulip()`, `AddNotificationDefinitions<T>()`, `MapGranitNotificationEndpoints()`, `MapMobilePushTokenEndpoints()` | various |
 
 ## See also
 
