@@ -261,7 +261,7 @@ The `LocalCacheExpiration` setting bounds the stale-data window between pods.
 
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddGranitRedisCheck(degradedThreshold: TimeSpan.FromMilliseconds(100));
+    .AddGranitRedisHealthCheck(degradedThreshold: TimeSpan.FromMilliseconds(100));
 ```
 
 | Latency | Status | Effect |
@@ -316,7 +316,7 @@ Tagged `["readiness"]` — integrates with Kubernetes readiness probes.
 | Abstractions | `ICacheService<T>`, `ICacheService<T, TKey>`, `ICacheValueEncryptor` | `Granit.Caching` |
 | Attributes | `[CacheName]`, `[CacheEncrypted]` | `Granit.Caching` |
 | Options | `CachingOptions`, `CacheEncryptionOptions`, `RedisCachingOptions`, `HybridCachingOptions` | — |
-| Extensions | `AddGranitCaching()`, `AddGranitCachingRedis()`, `AddGranitCachingHybrid()`, `AddGranitRedisCheck()` | — |
+| Extensions | `AddGranitCaching()`, `AddGranitCachingRedis()`, `AddGranitCachingHybrid()`, `AddGranitRedisHealthCheck()` | — |
 
 ## See also
 

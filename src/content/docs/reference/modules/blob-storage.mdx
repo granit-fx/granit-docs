@@ -659,7 +659,7 @@ public static class BlobValidatedHandler
 
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddGranitS3Check();
+    .AddGranitS3HealthCheck();
 ```
 
 Verifies S3 connectivity by listing one object in the default bucket (`ListObjectsV2`

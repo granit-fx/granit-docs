@@ -894,19 +894,22 @@ Notification channel providers register opt-in health checks:
 
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddGranitSmtpCheck()
-    .AddGranitSesCheck()
-    .AddGranitBrevoCheck();
+    .AddGranitSmtpHealthCheck()
+    .AddGranitSesHealthCheck()
+    .AddGranitBrevoHealthCheck()
+    .AddGranitZulipHealthCheck();
 ```
 
 | Provider | Extension | Probe | Tags |
 |----------|-----------|-------|------|
-| SMTP | `AddGranitSmtpCheck()` | EHLO handshake via MailKit | readiness |
-| SES | `AddGranitSesCheck()` | `GetAccount()` — Degraded if sending paused | readiness, startup |
-| Brevo | `AddGranitBrevoCheck()` | `GET /account` | readiness |
+| SMTP | `AddGranitSmtpHealthCheck()` | EHLO handshake via MailKit | readiness |
+| SES | `AddGranitSesHealthCheck()` | `GetAccount()` — Degraded if sending paused | readiness, startup |
+| Brevo | `AddGranitBrevoHealthCheck()` | `GET /account` | readiness |
+| Zulip | `AddGranitZulipHealthCheck()` | `GET /api/v1/users/me` (Bot auth) | readiness |
 
 All checks sanitize error messages — credentials, hostnames, and API keys are never
-exposed in the health check response.
+exposed in the health check response. Every check enforces a 10-second defensive timeout
+via `.WaitAsync()` to prevent blocking Kubernetes probe cycles.
 
 ## OpenTelemetry
 
