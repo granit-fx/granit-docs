@@ -98,6 +98,13 @@ const programHtml = hl(`var builder = WebApplication.CreateBuilder(args);\n\nbui
     .lp-eyebrow {
       font-size: 1.25rem; font-weight: 600;
       color: var(--sl-color-accent); margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 0.625rem;
+    }
+    .lp-eyebrow-badge {
+      font-size: 0.75rem; font-weight: 700;
+      padding: 0.125rem 0.5rem; border-radius: 9999px;
+      background: var(--sl-color-accent); color: #fff;
+      letter-spacing: 0.02em;
     }
     .lp-h1 {
       font-size: clamp(2.5rem, 5vw, 3.5rem);
@@ -374,11 +381,11 @@ const programHtml = hl(`var builder = WebApplication.CreateBuilder(args);\n\nbui
   <!-- ════════ Hero ════════ -->
   <section class="lp lp-hero">
     <div class="lp-hero-text">
-      <div class="lp-eyebrow">Granit</div>
+      <div class="lp-eyebrow">Granit <span class="lp-eyebrow-badge">.NET 10</span></div>
       <h1 class="lp-h1">Solid by design,<br />modular by nature.</h1>
       <p class="lp-sub">
-        Orchestrate auth, persistence, messaging, and {PACKAGE_COUNT - 4}+ more modules
-        effortlessly — no boilerplate, no rewrites, no limits. Extend Granit to power any project.
+        A modular <span style="color:var(--sl-color-accent);font-weight:600">.NET 10</span> framework — orchestrate auth, persistence, messaging, and {PACKAGE_COUNT - 4}+ more modules
+        effortlessly. No boilerplate, no rewrites, no limits.
       </p>
       <div class="lp-actions">
         <a href="/getting-started/" class="lp-btn lp-btn-primary">Getting Started</a>

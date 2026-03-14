@@ -29,7 +29,7 @@ export default defineConfig({
     starlight({
       title: "Granit",
       description:
-        "Rock-solid, production-ready modular framework for .NET and React",
+        "Rock-solid, production-ready modular framework for .NET 10 — auth, persistence, messaging, GDPR & ISO 27001 compliance out of the box.",
       logo: {
         src: "./src/assets/granit-icon.svg",
         replacesTitle: false,
@@ -48,9 +48,9 @@ export default defineConfig({
       plugins: [
         starlightSidebarTopics([
           {
-            label: "Docs",
+            label: "Start",
             link: "/getting-started/",
-            icon: "document",
+            icon: "rocket",
             items: [
               {
                 label: "Getting Started",
@@ -121,6 +121,10 @@ export default defineConfig({
                       {
                         label: "Provider Compatibility",
                         link: "/reference/provider-compatibility/",
+                      },
+                      {
+                        label: "Tech Stack",
+                        link: "/reference/tech-stack/",
                       },
                     ],
                     collapsed: true,
@@ -244,7 +248,21 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             property: "og:image",
-            content: "https://granit-fx.dev/og-image.svg",
+            content: "https://granit-fx.dev/og-image.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:width",
+            content: "1200",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:height",
+            content: "630",
           },
         },
         {
@@ -258,7 +276,14 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             name: "twitter:image",
-            content: "https://granit-fx.dev/og-image.svg",
+            content: "https://granit-fx.dev/og-image.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "theme-color",
+            content: "#7c3aed",
           },
         },
       ],

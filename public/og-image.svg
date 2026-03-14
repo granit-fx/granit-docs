@@ -6,6 +6,6 @@
   <rect x="0" y="580" width="1200" height="50" fill="url(#g)"/>
   <text x="100" y="260" font-family="system-ui,-apple-system,sans-serif" font-size="72" font-weight="800" fill="white">Granit</text>
   <text x="100" y="340" font-family="system-ui,-apple-system,sans-serif" font-size="32" fill="#a78bfa">Solid by design. Modular by nature.</text>
-  <text x="100" y="420" font-family="system-ui,-apple-system,sans-serif" font-size="22" fill="#9ca3af">Production-ready modular framework for .NET and React</text>
+  <text x="100" y="420" font-family="system-ui,-apple-system,sans-serif" font-size="22" fill="#9ca3af">Production-ready modular framework for .NET 10</text>
   <text x="100" y="470" font-family="system-ui,-apple-system,sans-serif" font-size="18" fill="#6b7280">GDPR · ISO 27001 · Apache-2.0</text>
 </svg>
