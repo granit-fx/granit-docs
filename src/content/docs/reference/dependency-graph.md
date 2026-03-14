@@ -1,6 +1,6 @@
 ---
 title: Dependency Graph
-description: Package dependency visualization and module relationship map for all 93 Granit packages
+description: Package dependency visualization and module relationship map for all 97 Granit packages
 sidebar:
   order: 32
 ---
@@ -43,7 +43,7 @@ flowchart TD
         LOC["Localization (4)"]
         WEB["Web, API, Webhooks (9)"]
         CONFIG["Configuration (8)"]
-        STORAGE["Storage (5)"]
+        STORAGE["Storage (9)"]
     end
 
     subgraph Business
@@ -104,7 +104,7 @@ flowchart TD
 | Security | Security, Encryption, Vault, Auth.JwtBearer, Auth.Keycloak, Auth.EntraId, Auth.ApiKeys (3), Authorization, Authorization.EF, Authorization.Endpoints |
 | Configuration | Settings (3), Features (2), ReferenceData (3) |
 | Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies, Cookies.Klaro, Cookies.Endpoints, Idempotency, Webhooks (3) |
-| Storage | BlobStorage (3), Imaging (2) |
+| Storage | BlobStorage (7), Imaging (2) |
 | Background Jobs | BackgroundJobs (4) |
 | Localization | Localization, Localization.EntityFrameworkCore, Localization.Endpoints, Localization.SourceGenerator |
 | Templating | Templating, Templating.Scriban, Templating.EF, Templating.Endpoints, Templating.Workflow, DocumentGeneration, DocumentGeneration.Pdf, DocumentGeneration.Excel |
@@ -274,8 +274,12 @@ flowchart TD
 | Package | Depends on |
 |---------|------------|
 | `Granit.BlobStorage` | `Guids` |
-| `Granit.BlobStorage.EntityFrameworkCore` | `BlobStorage` |
 | `Granit.BlobStorage.S3` | `BlobStorage` |
+| `Granit.BlobStorage.AzureBlob` | `BlobStorage` |
+| `Granit.BlobStorage.FileSystem` | `BlobStorage` |
+| `Granit.BlobStorage.Database` | `BlobStorage`, `Persistence` |
+| `Granit.BlobStorage.Proxy` | `BlobStorage` |
+| `Granit.BlobStorage.EntityFrameworkCore` | `BlobStorage`, `Persistence` |
 | `Granit.Imaging` | `Core` |
 | `Granit.Imaging.MagickNet` | `Imaging` |
 

@@ -1,24 +1,49 @@
 ---
 title: Granit.BlobStorage & Imaging
-description: S3-compatible blob storage with presigned URLs, validation pipeline, tenant isolation, image processing (WebP/AVIF, EXIF stripping)
+description: Multi-provider blob storage (S3, Azure, FileSystem, Database) with presigned URLs, proxy endpoints, validation pipeline, tenant isolation, image processing (WebP/AVIF, EXIF stripping)
 sidebar:
   order: 16
 ---
 
 import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
 
-Granit.BlobStorage provides a Direct-to-Cloud blob storage layer where the application
-server never streams file bytes. Clients upload and download directly to/from S3 via
-presigned URLs. A post-upload validation pipeline (magic bytes, size) ensures integrity
-before marking blobs as valid. Granit.Imaging adds a fluent image processing pipeline
-(resize, crop, compress, format conversion, EXIF stripping) powered by Magick.NET.
+Granit.BlobStorage provides a multi-provider blob storage layer with a unified
+`IBlobStorage` API. Cloud providers (S3, Azure Blob) use native presigned URLs for
+Direct-to-Cloud uploads where the application server never touches file bytes.
+Server-side providers (FileSystem, Database) use `Granit.BlobStorage.Proxy` to expose
+token-based upload/download endpoints with identical client-side flow. A post-upload
+validation pipeline (magic bytes, size) ensures integrity before marking blobs as valid.
+Granit.Imaging adds a fluent image processing pipeline (resize, crop, compress, format
+conversion, EXIF stripping) powered by Magick.NET.
+
+## Why Direct-to-Cloud?
+
+Traditional file upload architectures stream bytes through the application server,
+which creates several problems at scale:
+
+| Problem | Traditional upload | Granit Direct-to-Cloud |
+|---------|--------------------|------------------------|
+| **Server memory** | Entire file buffered in RAM | Server handles only metadata (< 1 KB) |
+| **Bandwidth costs** | Bytes transit through your servers twice (in + out) | Client uploads directly to storage; server bandwidth near zero |
+| **Horizontal scaling** | Upload throughput limited by server capacity | Unlimited -- storage provider handles all I/O |
+| **Timeout risk** | Large uploads blocked by server timeouts | Upload goes directly to storage with its own timeout window |
+| **Infrastructure cost** | Need large instances for file processing | Minimal compute -- only metadata and validation |
+
+For cloud providers (S3, Azure Blob), bytes never touch the application server.
+For server-side providers (FileSystem, Database), `Granit.BlobStorage.Proxy` streams
+bytes through thin proxy endpoints without RAM buffering, keeping the architecture
+consistent while minimizing server resource usage.
 
 ## Package structure
 
 <FileTree>
 - Granit.BlobStorage/ Core abstractions, validation pipeline, domain model
-  - Granit.BlobStorage.S3 S3 client, presigned URLs, key strategy
-  - Granit.BlobStorage.EntityFrameworkCore Isolated DbContext, EF persistence
+  - Granit.BlobStorage.S3 S3 client, native presigned URLs
+  - Granit.BlobStorage.AzureBlob Azure Blob Storage client, SAS tokens
+  - Granit.BlobStorage.FileSystem Local file system storage
+  - Granit.BlobStorage.Database EF Core database storage (small files)
+  - Granit.BlobStorage.Proxy Token-based proxy endpoints for server-side providers
+  - Granit.BlobStorage.EntityFrameworkCore Isolated DbContext, EF persistence (metadata)
 - Granit.Imaging/ Image processing abstractions, fluent pipeline API
   - Granit.Imaging.MagickNet Magick.NET implementation (JPEG/PNG/WebP/AVIF/GIF/BMP/TIFF)
 </FileTree>
@@ -26,10 +51,29 @@ before marking blobs as valid. Granit.Imaging adds a fluent image processing pip
 | Package | Role | Depends on |
 |---------|------|------------|
 | `Granit.BlobStorage` | `IBlobStorage`, `IBlobValidator`, `BlobDescriptor` domain | `Granit.Core` |
-| `Granit.BlobStorage.S3` | S3 presigned URLs, `PrefixBlobKeyStrategy` | `Granit.BlobStorage`, `Granit.Timing` |
+| `Granit.BlobStorage.S3` | S3 native presigned URLs, `PrefixBlobKeyStrategy` | `Granit.BlobStorage` |
+| `Granit.BlobStorage.AzureBlob` | Azure Blob SAS tokens, Managed Identity support | `Granit.BlobStorage` |
+| `Granit.BlobStorage.FileSystem` | Local file system storage, path traversal protection | `Granit.BlobStorage` |
+| `Granit.BlobStorage.Database` | EF Core database storage (small files, 10 MB default) | `Granit.BlobStorage`, `Granit.Persistence` |
+| `Granit.BlobStorage.Proxy` | Token-based proxy endpoints for FileSystem/Database | `Granit.BlobStorage` |
 | `Granit.BlobStorage.EntityFrameworkCore` | `BlobStorageDbContext`, `EfBlobDescriptorStore` | `Granit.BlobStorage`, `Granit.Persistence` |
 | `Granit.Imaging` | `IImageProcessor`, `IImagePipeline` fluent API | `Granit.Core` |
 | `Granit.Imaging.MagickNet` | `MagickNetImageProcessor` (singleton) | `Granit.Imaging` |
+
+## Provider comparison
+
+| Provider | Presigned URLs | Max file size | Use case |
+|----------|---------------|---------------|----------|
+| **S3** | Native (AWS SigV4) | Unlimited | Production cloud storage |
+| **Azure Blob** | Native (SAS tokens) | Unlimited | Azure-hosted deployments |
+| **FileSystem** | Via Proxy | Disk capacity | Development, on-premise |
+| **Database** | Via Proxy | 10 MB (configurable) | Small files, regulated environments |
+
+Cloud providers (S3, Azure) generate native presigned/SAS URLs -- the application
+server never touches file bytes. Server-side providers (FileSystem, Database) require
+`Granit.BlobStorage.Proxy` which exposes ephemeral token-based endpoints that stream
+bytes through to the underlying storage. The client-side upload/download flow is
+identical regardless of provider.
 
 ## Dependency graph
 
@@ -37,9 +81,13 @@ before marking blobs as valid. Granit.Imaging adds a fluent image processing pip
 graph TD
     BS[Granit.BlobStorage] --> CO[Granit.Core]
     S3[Granit.BlobStorage.S3] --> BS
-    S3 --> T[Granit.Timing]
+    AZ[Granit.BlobStorage.AzureBlob] --> BS
+    FS[Granit.BlobStorage.FileSystem] --> BS
+    DB[Granit.BlobStorage.Database] --> BS
+    DB --> P[Granit.Persistence]
+    PX[Granit.BlobStorage.Proxy] --> BS
     EF[Granit.BlobStorage.EntityFrameworkCore] --> BS
-    EF --> P[Granit.Persistence]
+    EF --> P
     IM[Granit.Imaging] --> CO
     MN[Granit.Imaging.MagickNet] --> IM
 ```
@@ -47,7 +95,7 @@ graph TD
 ## Setup
 
 <Tabs>
-<TabItem label="Production (S3 + EF Core)">
+<TabItem label="S3 (production)">
 
 ```csharp
 [DependsOn(
@@ -79,7 +127,112 @@ builder.AddGranitBlobStorageEntityFrameworkCore(options =>
 ```
 
 </TabItem>
-<TabItem label="Development (MinIO)">
+<TabItem label="Azure Blob">
+
+```csharp
+[DependsOn(
+    typeof(GranitBlobStorageAzureBlobModule),
+    typeof(GranitBlobStorageEntityFrameworkCoreModule))]
+public class AppModule : GranitModule { }
+```
+
+```csharp
+builder.AddGranitBlobStorageAzureBlob();
+builder.AddGranitBlobStorageEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
+```
+
+```json
+{
+  "BlobStorage": {
+    "ConnectionString": "<from-vault>",
+    "DefaultContainer": "myapp-blobs",
+    "TenantIsolation": "Prefix"
+  }
+}
+```
+
+For Managed Identity (recommended in production), omit `ConnectionString` and set:
+
+```json
+{
+  "BlobStorage": {
+    "UseManagedIdentity": true,
+    "ServiceUri": "https://myaccount.blob.core.windows.net",
+    "DefaultContainer": "myapp-blobs"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="FileSystem (dev)">
+
+```csharp
+[DependsOn(
+    typeof(GranitBlobStorageFileSystemModule),
+    typeof(GranitBlobStorageProxyModule),
+    typeof(GranitBlobStorageEntityFrameworkCoreModule))]
+public class AppModule : GranitModule { }
+```
+
+```csharp
+builder.AddGranitBlobStorageFileSystem();
+builder.AddGranitBlobStorageProxy();
+builder.AddGranitBlobStorageEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
+
+var app = builder.Build();
+app.MapGranitBlobProxyEndpoints();
+```
+
+```json
+{
+  "BlobStorage": {
+    "BasePath": "./blobs",
+    "Proxy": {
+      "BaseUrl": "https://api.example.com",
+      "RoutePrefix": "/api/blobs"
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Database">
+
+```csharp
+[DependsOn(
+    typeof(GranitBlobStorageDatabaseModule),
+    typeof(GranitBlobStorageProxyModule),
+    typeof(GranitBlobStorageEntityFrameworkCoreModule))]
+public class AppModule : GranitModule { }
+```
+
+```csharp
+builder.AddGranitBlobStorageDatabase(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
+builder.AddGranitBlobStorageProxy();
+builder.AddGranitBlobStorageEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
+
+var app = builder.Build();
+app.MapGranitBlobProxyEndpoints();
+```
+
+```json
+{
+  "BlobStorage": {
+    "MaxBlobSizeBytes": 10485760,
+    "Proxy": {
+      "BaseUrl": "https://api.example.com",
+      "RoutePrefix": "/api/blobs"
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="MinIO (dev)">
 
 ```csharp
 [DependsOn(
@@ -111,31 +264,31 @@ builder.AddGranitBlobStorageEntityFrameworkCore(options =>
 </Tabs>
 
 :::caution
-Never store `AccessKey` or `SecretKey` in `appsettings.json` for production.
-Inject credentials from `Granit.Vault` with dynamic rotation.
+Never store `AccessKey`, `SecretKey`, or `ConnectionString` in `appsettings.json`
+for production. Inject credentials from `Granit.Vault` with dynamic rotation.
 :::
 
 ## Presigned upload flow
 
-The application server never touches file bytes. The client uploads directly to S3
-via a presigned URL, then the server validates the file post-upload:
+Cloud providers (S3, Azure) use native presigned URLs. The application server never
+touches file bytes:
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant API as Application Server
-    participant S3 as S3 / MinIO
+    participant ST as Storage (S3 / Azure)
     participant V as Validation Pipeline
 
     C->>API: POST /upload (fileName, contentType, maxBytes)
     API->>API: Create BlobDescriptor (Pending)
-    API->>S3: Generate presigned PUT URL
-    S3-->>API: PresignedUploadTicket
+    API->>ST: Generate presigned/SAS URL
+    ST-->>API: PresignedUploadTicket
     API-->>C: { blobId, uploadUrl, headers, expiresAt }
-    C->>S3: PUT file (presigned URL + required headers)
-    S3-->>C: 200 OK
+    C->>ST: PUT file (presigned URL + required headers)
+    ST-->>C: 200 OK
     C->>API: POST /upload/{blobId}/confirm
-    API->>S3: HEAD object (size, metadata)
+    API->>ST: HEAD object (size, metadata)
     API->>V: Run validators (magic bytes, size)
     alt All validators pass
         V-->>API: Valid
@@ -143,11 +296,36 @@ sequenceDiagram
         API-->>C: 200 OK
     else Validation fails
         V-->>API: Rejected
-        API->>S3: DELETE object
+        API->>ST: DELETE object
         API->>API: BlobDescriptor → Rejected
         API-->>C: 422 (rejection reason)
     end
 ```
+
+### Proxy upload flow (FileSystem / Database)
+
+Server-side providers use `Granit.BlobStorage.Proxy` which generates ephemeral
+token-based URLs. The upload is streamed through the proxy endpoint:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as Application Server
+    participant PX as Proxy Endpoints
+    participant ST as Storage (FS / DB)
+
+    C->>API: POST /upload (fileName, contentType, maxBytes)
+    API->>API: Create BlobDescriptor (Pending)
+    API->>PX: Generate proxy token
+    PX-->>API: PresignedUploadTicket (token-based URL)
+    API-->>C: { blobId, uploadUrl, headers, expiresAt }
+    C->>PX: PUT /api/blobs/upload/{token} (stream body)
+    PX->>ST: SaveAsync (stream-through, no RAM buffering)
+    ST-->>PX: Saved
+    PX-->>C: 204 No Content
+```
+
+Proxy tokens are single-use, TTL-bound, and backed by `IDistributedCache`.
 
 ## IBlobStorage
 
@@ -207,7 +385,7 @@ The returned `PresignedUploadTicket` contains everything the frontend needs:
 | Property | Description |
 |----------|-------------|
 | `BlobId` | Stable identifier for polling status and requesting downloads |
-| `UploadUrl` | Presigned S3 PUT URL |
+| `UploadUrl` | Presigned URL (S3/Azure) or proxy token URL (FileSystem/Database) |
 | `HttpMethod` | Always `"PUT"` |
 | `ExpiresAt` | UTC expiry of the presigned URL |
 | `RequiredHeaders` | Headers the client must include verbatim (e.g. `Content-Type`) |
@@ -241,7 +419,7 @@ await blobStorage.DeleteAsync(
     cancellationToken);
 ```
 
-The S3 object is physically deleted (crypto-shredding). The `BlobDescriptor` record is
+The storage object is physically deleted (crypto-shredding). The `BlobDescriptor` record is
 **retained** in the database for the ISO 27001 3-year audit trail.
 
 ## BlobDescriptor lifecycle
@@ -249,14 +427,14 @@ The S3 object is physically deleted (crypto-shredding). The `BlobDescriptor` rec
 ```mermaid
 stateDiagram-v2
     [*] --> Pending : InitiateUploadAsync
-    Pending --> Uploading : S3 upload notification
+    Pending --> Uploading : Upload notification
     Uploading --> Valid : All validators pass
     Uploading --> Rejected : Validation fails
     Valid --> Deleted : DeleteAsync (GDPR erasure)
 ```
 
-| Status | S3 object | DB record | Description |
-|--------|-----------|-----------|-------------|
+| Status | Storage object | DB record | Description |
+|--------|---------------|-----------|-------------|
 | `Pending` | Not yet uploaded | Exists | Upload ticket issued, waiting for client |
 | `Uploading` | Uploaded | Exists | Validation pipeline running |
 | `Valid` | Present | Exists | Ready for download |
@@ -286,16 +464,16 @@ public class BlobCommandHandler(IBlobDescriptorWriter writer) { }
 
 ## Validation pipeline
 
-Validators run **after** the file lands on S3. The `BlobValidationContext` provides
-partial S3 access (range GET for magic bytes, HEAD for metadata) without buffering the
+Validators run **after** the file lands on storage. The `BlobValidationContext` provides
+partial access (range read for magic bytes, HEAD for metadata) without buffering the
 full file in the application server.
 
 ### Built-in validators
 
 | Validator | Order | Check |
 |-----------|-------|-------|
-| `MagicBytesValidator` | 10 | Reads first 261 bytes via range GET; compares magic-byte signature against declared `Content-Type`. Detects PDF, JPEG, PNG, GIF, TIFF, DICOM, ZIP. |
-| `MaxSizeValidator` | 20 | Compares S3 HEAD size against `MaxAllowedBytes` declared at upload time. |
+| `MagicBytesValidator` | 10 | Reads first 261 bytes via range read; compares magic-byte signature against declared `Content-Type`. Detects PDF, JPEG, PNG, GIF, TIFF, DICOM, ZIP. |
+| `MaxSizeValidator` | 20 | Compares actual size against `MaxAllowedBytes` declared at upload time. |
 
 The pipeline is **fail-fast**: processing stops at the first failing validator.
 
@@ -329,22 +507,31 @@ builder.Services.AddSingleton<IBlobValidator, AntivirusValidator>();
 
 ## Tenant isolation
 
-The `PrefixBlobKeyStrategy` (default) builds S3 object keys with a tenant prefix:
+All providers use the same tenant-prefixed object key strategy:
 
 ```
 {tenantId}/{containerName}/{yyyy}/{MM}/{blobId}
 ```
 
-The date components distribute keys across a wider key-space prefix, reducing S3
+The date components distribute keys across a wider key-space prefix, reducing
 hot-spot partitions on large buckets.
 
-| Strategy | Key format | Isolation level | Bucket limits |
-|----------|-----------|-----------------|---------------|
-| `Prefix` (default) | `{tenantId}/{container}/{yyyy}/{MM}/{blobId}` | Key-prefix | None |
-| `Bucket` | `{container}/{yyyy}/{MM}/{blobId}` | IAM-level (one bucket per tenant) | Subject to cloud provider limits |
+| Strategy | Key format | Isolation level | Provider support |
+|----------|-----------|-----------------|-----------------|
+| `Prefix` (default) | `{tenantId}/{container}/{yyyy}/{MM}/{blobId}` | Key-prefix | All providers |
+| `Container` | `{container}/{yyyy}/{MM}/{blobId}` | One container/bucket per tenant | S3, Azure only |
 
 Single-tenant deployments (no `ICurrentTenant`) omit the tenant prefix:
 `{containerName}/{yyyy}/{MM}/{blobId}`.
+
+### Per-provider isolation details
+
+| Provider | Isolation mechanism |
+|----------|-------------------|
+| **S3** | Tenant prefix in S3 object key. `Bucket` strategy uses one S3 bucket per tenant. |
+| **Azure Blob** | Tenant prefix in blob name. `Container` strategy uses one Azure container per tenant. |
+| **FileSystem** | Tenant prefix in directory path: `{BasePath}/{tenantId}/...` |
+| **Database** | Tenant prefix in `ObjectKey` column + `IMultiTenant` EF Core query filter |
 
 ## Domain events
 
@@ -470,6 +657,9 @@ public static class BlobValidatedHandler
 
 ## Configuration reference
 
+<Tabs>
+<TabItem label="S3">
+
 ```json
 {
   "BlobStorage": {
@@ -488,21 +678,101 @@ public static class BlobValidatedHandler
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `ServiceUrl` | — | S3-compatible endpoint URL (required) |
-| `AccessKey` | — | S3 access key (required, inject from Vault) |
-| `SecretKey` | — | S3 secret key (required, inject from Vault) |
+| `ServiceUrl` | -- | S3-compatible endpoint URL (required) |
+| `AccessKey` | -- | S3 access key (required, inject from Vault) |
+| `SecretKey` | -- | S3 secret key (required, inject from Vault) |
 | `Region` | `"us-east-1"` | S3 region for request signing |
-| `DefaultBucket` | — | S3 bucket name (required) |
+| `DefaultBucket` | -- | S3 bucket name (required) |
 | `ForcePathStyle` | `true` | Path-style URLs (`host/bucket/key`); required for MinIO |
 | `TenantIsolation` | `Prefix` | `Prefix` (shared bucket) or `Bucket` (one per tenant) |
-| `UploadUrlExpiry` | `00:15:00` | Presigned upload URL TTL |
-| `DownloadUrlExpiry` | `00:05:00` | Presigned download URL TTL |
+
+</TabItem>
+<TabItem label="Azure Blob">
+
+```json
+{
+  "BlobStorage": {
+    "ConnectionString": "<from-vault>",
+    "DefaultContainer": "myapp-blobs",
+    "TenantIsolation": "Prefix"
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `ConnectionString` | -- | Azure Storage connection string (from Vault) |
+| `DefaultContainer` | -- | Default blob container name (required) |
+| `UseManagedIdentity` | `false` | Use Azure Managed Identity instead of connection string |
+| `ServiceUri` | -- | Storage account URI (required when `UseManagedIdentity = true`) |
+| `TenantIsolation` | `Prefix` | `Prefix` (shared container) or `Container` (one per tenant) |
+
+</TabItem>
+<TabItem label="FileSystem">
+
+```json
+{
+  "BlobStorage": {
+    "BasePath": "./blobs"
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `BasePath` | -- | Root directory for blob storage (required) |
+
+</TabItem>
+<TabItem label="Database">
+
+```json
+{
+  "BlobStorage": {
+    "MaxBlobSizeBytes": 10485760
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `MaxBlobSizeBytes` | `10485760` (10 MB) | Maximum blob size accepted by the provider |
+
+</TabItem>
+<TabItem label="Proxy">
+
+```json
+{
+  "BlobStorage": {
+    "Proxy": {
+      "BaseUrl": "https://api.example.com",
+      "RoutePrefix": "/api/blobs",
+      "MaxUploadBytes": 104857600
+    }
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `BaseUrl` | -- | Public URL of the API server (required) |
+| `RoutePrefix` | `"/api/blobs"` | Route prefix for proxy endpoints |
+| `MaxUploadBytes` | `104857600` (100 MB) | Maximum upload size through proxy |
+
+</TabItem>
+</Tabs>
+
+### Common options (all providers)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `UploadUrlExpiry` | `00:15:00` | Presigned upload URL / proxy token TTL |
+| `DownloadUrlExpiry` | `00:05:00` | Presigned download URL / proxy token TTL |
 
 ## Public API summary
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitBlobStorageModule`, `GranitBlobStorageEntityFrameworkCoreModule`, `GranitImagingModule`, `GranitImagingMagickNetModule` | — |
+| Module | `GranitBlobStorageModule`, `GranitBlobStorageS3Module`, `GranitBlobStorageAzureBlobModule`, `GranitBlobStorageFileSystemModule`, `GranitBlobStorageDatabaseModule`, `GranitBlobStorageProxyModule`, `GranitBlobStorageEntityFrameworkCoreModule` | -- |
 | Storage | `IBlobStorage`, `IBlobKeyStrategy` | `Granit.BlobStorage` |
 | Persistence (CQRS) | `IBlobDescriptorReader`, `IBlobDescriptorWriter`, `IBlobDescriptorStore` | `Granit.BlobStorage` |
 | Domain | `BlobDescriptor`, `BlobStatus`, `BlobUploadRequest` | `Granit.BlobStorage` |
@@ -510,13 +780,19 @@ public static class BlobValidatedHandler
 | Validation | `IBlobValidator`, `BlobValidationResult`, `BlobValidationContext`, `MagicBytesValidator`, `MaxSizeValidator` | `Granit.BlobStorage` |
 | Events | `BlobValidated`, `BlobRejected`, `BlobDeleted` | `Granit.BlobStorage` |
 | S3 options | `S3BlobOptions`, `BlobTenantIsolation` | `Granit.BlobStorage.S3` |
+| Azure options | `AzureBlobOptions` | `Granit.BlobStorage.AzureBlob` |
+| FileSystem options | `FileSystemBlobOptions` | `Granit.BlobStorage.FileSystem` |
+| Database options | `DatabaseBlobOptions` | `Granit.BlobStorage.Database` |
+| Proxy options | `ProxyBlobOptions` | `Granit.BlobStorage.Proxy` |
 | Imaging | `IImageProcessor`, `IImagePipeline`, `ImageResult`, `ImageFormat`, `ImageSize` | `Granit.Imaging` |
 | Imaging types | `ResizeMode`, `CropRectangle`, `WatermarkPosition` | `Granit.Imaging` |
-| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageEntityFrameworkCore()`, `AddGranitImagingMagickNet()` | — |
+| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageAzureBlob()`, `AddGranitBlobStorageFileSystem()`, `AddGranitBlobStorageDatabase()`, `AddGranitBlobStorageProxy()`, `AddGranitBlobStorageEntityFrameworkCore()`, `AddGranitImagingMagickNet()`, `MapGranitBlobProxyEndpoints()` | -- |
 
 ## See also
 
-- [Persistence module](./persistence/) — EF Core interceptors, query filters
-- [Security module](./security/) — Authorization, tenant isolation
-- [Privacy module](./privacy/) — GDPR compliance patterns
-- [Background Jobs module](./background-jobs/) — Orphan cleanup, retention jobs
+- [Configure blob storage](/guides/configure-blob-storage/) -- Step-by-step guide
+- [Pre-signed URL pattern](/architecture/patterns/pre-signed-url/) -- Architectural pattern
+- [Persistence module](./persistence/) -- EF Core interceptors, query filters
+- [Security module](./security/) -- Authorization, tenant isolation
+- [Privacy module](./privacy/) -- GDPR compliance patterns
+- [Background Jobs module](./background-jobs/) -- Orphan cleanup, retention jobs

@@ -849,6 +849,56 @@ Extends `BlobStorageOptions` with S3-specific settings. Bound from the same
 | `ForcePathStyle` | `bool` | `true` | Use path-style URLs (required for MinIO). |
 | `TenantIsolation` | `BlobTenantIsolation` | `Prefix` | `Prefix` or `BucketPerTenant`. |
 
+### Blob storage Azure -- `AzureBlobOptions`
+
+Extends `BlobStorageOptions` with Azure Blob-specific settings. Bound from the
+same `BlobStorage` section.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `BlobStorage` | |
+| **Package** | -- | `Granit.BlobStorage.AzureBlob` | |
+| `ConnectionString` | `string` | `""` | Azure Storage connection string (from Vault). |
+| `DefaultContainer` | `string` | `""` | Default blob container name. |
+| `UseManagedIdentity` | `bool` | `false` | Use Azure Managed Identity instead of connection string. |
+| `ServiceUri` | `string` | `""` | Storage account URI (required when `UseManagedIdentity = true`). |
+| `TenantIsolation` | `BlobTenantIsolation` | `Prefix` | `Prefix` or `Container` (one per tenant). |
+
+### Blob storage FileSystem -- `FileSystemBlobOptions`
+
+Extends `BlobStorageOptions` with local file system settings. Bound from the
+same `BlobStorage` section.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `BlobStorage` | |
+| **Package** | -- | `Granit.BlobStorage.FileSystem` | |
+| `BasePath` | `string` | `""` | Root directory for blob storage (required). |
+
+### Blob storage Database -- `DatabaseBlobOptions`
+
+Extends `BlobStorageOptions` with database storage settings. Bound from the
+same `BlobStorage` section.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `BlobStorage` | |
+| **Package** | -- | `Granit.BlobStorage.Database` | |
+| `MaxBlobSizeBytes` | `long` | `10485760` (10 MB) | Maximum blob size accepted by the provider. |
+
+### Blob storage Proxy -- `ProxyBlobOptions`
+
+Configuration for the proxy endpoint provider used by FileSystem and Database
+providers. Bound from the `BlobStorage:Proxy` section.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `BlobStorage:Proxy` | |
+| **Package** | -- | `Granit.BlobStorage.Proxy` | |
+| `BaseUrl` | `string` | `""` | Public URL of the API server (required). |
+| `RoutePrefix` | `string` | `"/api/blobs"` | Route prefix for proxy endpoints. |
+| `MaxUploadBytes` | `long` | `104857600` (100 MB) | Maximum upload size through proxy. |
+
 ---
 
 ## Scheduling and jobs
