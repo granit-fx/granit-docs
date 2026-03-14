@@ -1,6 +1,6 @@
 ---
 title: Granit.Identity
-description: Identity provider abstractions, Keycloak Admin API, Cognito User Pool API, user cache with GDPR support, REST endpoints
+description: Identity provider abstractions, Keycloak Admin API, Cognito User Pool API, Google Cloud Identity Platform (Firebase Auth), user cache with GDPR support, REST endpoints
 sidebar:
   order: 4
 ---
@@ -8,7 +8,8 @@ sidebar:
 import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
 
 Granit.Identity provides a provider-agnostic identity management layer. Keycloak, Cognito,
-or any OIDC provider handles authentication — Granit.Identity handles everything else: user
+Google Cloud Identity Platform (Firebase Auth), or any OIDC provider handles authentication
+— Granit.Identity handles everything else: user
 lookup, role management, session control, password operations, and a local user cache
 with GDPR erasure and pseudonymization built in.
 
@@ -18,6 +19,7 @@ with GDPR erasure and pseudonymization built in.
 - Granit.Identity/ Abstractions (7 interfaces), null defaults
   - Granit.Identity.Keycloak Keycloak Admin API implementation
   - Granit.Identity.Cognito AWS Cognito User Pool API implementation
+  - Granit.Identity.GoogleCloud Google Cloud Identity Platform (Firebase Auth) implementation
   - Granit.Identity.EntityFrameworkCore User cache (cache-aside, login-time sync)
   - Granit.Identity.Endpoints Minimal API endpoints (CRUD, sync, GDPR, webhook)
 </FileTree>
@@ -27,6 +29,8 @@ with GDPR erasure and pseudonymization built in.
 | `Granit.Identity` | Abstractions, null defaults | — |
 | `Granit.Identity.Keycloak` | Keycloak Admin API implementation | `Granit.Identity` |
 | `Granit.Identity.Cognito` | AWS Cognito User Pool API implementation | `Granit.Identity` |
+| `Granit.Identity.GoogleCloud` | Firebase Auth implementation (Firebase Admin SDK) | `Granit.Identity` |
+| `Granit.Authentication.GoogleCloud` | JWT Bearer for Firebase Auth + claims transformation | `Granit.Authentication.JwtBearer` |
 | `Granit.Identity.EntityFrameworkCore` | EF Core user cache | `Granit.Identity`, `Granit.Persistence` |
 | `Granit.Identity.Endpoints` | REST endpoints for user cache | `Granit.Identity`, `Granit.Authorization` |
 
@@ -37,6 +41,8 @@ graph TD
     I[Granit.Identity] --> C[Granit.Core]
     IK[Granit.Identity.Keycloak] --> I
     IC[Granit.Identity.Cognito] --> I
+    IGC[Granit.Identity.GoogleCloud] --> I
+    AGC[Granit.Authentication.GoogleCloud] --> JB[Granit.Authentication.JwtBearer]
     IEF[Granit.Identity.EntityFrameworkCore] --> I
     IEF --> P[Granit.Persistence]
     IE[Granit.Identity.Endpoints] --> I
@@ -72,6 +78,29 @@ public class AppModule : GranitModule
 
 ```csharp
 [DependsOn(typeof(GranitIdentityCognitoModule))]
+[DependsOn(typeof(GranitIdentityEntityFrameworkCoreModule))]
+[DependsOn(typeof(GranitIdentityEndpointsModule))]
+public class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>();
+        context.Services.AddGranitIdentityEndpoints();
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        context.App.MapIdentityUserCacheEndpoints();
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Google Cloud (Firebase Auth)">
+
+```csharp
+[DependsOn(typeof(GranitIdentityGoogleCloudModule))]
+[DependsOn(typeof(GranitAuthenticationGoogleCloudModule))]
 [DependsOn(typeof(GranitIdentityEntityFrameworkCoreModule))]
 [DependsOn(typeof(GranitIdentityEndpointsModule))]
 public class AppModule : GranitModule
@@ -329,6 +358,92 @@ default credential chain (IAM role, environment variables, `~/.aws/credentials`)
 All Cognito User Pool API calls are traced via `IdentityCognitoActivitySource`.
 Activity names follow the pattern `cognito.{operation}`.
 
+## Google Cloud Identity Platform provider
+
+`Granit.Identity.GoogleCloud` implements the full `IIdentityProvider` against the
+Firebase Auth API via Firebase Admin SDK v3.
+
+### Configuration
+
+```json
+{
+  "Identity": {
+    "GoogleCloud": {
+      "ProjectId": "my-firebase-project",
+      "RolesClaimKey": "roles",
+      "TimeoutSeconds": 30
+    }
+  }
+}
+```
+
+For Workload Identity (recommended in GKE), omit `CredentialFilePath` —
+Application Default Credentials are used automatically.
+
+### Google Cloud-specific behavior
+
+- **Roles via custom claims** — Firebase Auth has no native roles. User roles are
+  stored as a JSON array in custom claims (configurable key, default `"roles"`).
+  `GetRolesAsync` returns an empty list; `GetUserRolesAsync` extracts from claims.
+- **Groups not supported** — Firebase Auth does not support groups.
+  `AddUserToGroupAsync` and `RemoveUserFromGroupAsync` throw `NotSupportedException`.
+- **No individual session termination** — Firebase supports
+  `RevokeRefreshTokens` (terminate all sessions) but not individual session
+  termination. `IIdentityProviderCapabilities.SupportsIndividualSessionTermination`
+  returns `false`.
+- **Credential verification** — `VerifyUserCredentialsAsync` validates email/password
+  via the Firebase Auth REST API.
+
+### Health check
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddGranitGoogleCloudIdentityHealthCheck();
+```
+
+Verifies that `ProjectId` is configured. Tagged `["readiness"]`.
+
+### OpenTelemetry
+
+All Firebase Auth API calls are traced via `IdentityGoogleCloudActivitySource`.
+Activity names follow the pattern `firebase.{operation}`.
+
+## Google Cloud Authentication
+
+`Granit.Authentication.GoogleCloud` configures JWT Bearer authentication for
+Firebase Auth tokens and transforms custom claims into standard `ClaimTypes.Role`.
+
+### Configuration
+
+```json
+{
+  "GoogleCloudAuth": {
+    "ProjectId": "my-firebase-project",
+    "RequireHttpsMetadata": true,
+    "AdminRole": "admin",
+    "RolesClaimKey": "roles"
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `ProjectId` | — | GCP project ID (derives OIDC authority) |
+| `RequireHttpsMetadata` | `true` | Require HTTPS for OIDC metadata discovery |
+| `AdminRole` | `"admin"` | Role name for the "Admin" authorization policy |
+| `RolesClaimKey` | `"roles"` | Custom claims key containing roles |
+
+The module derives the OIDC authority as `https://securetoken.google.com/{ProjectId}`
+and configures JWT Bearer validation with `Audience = ProjectId`,
+`NameClaimType = "email"`.
+
+### Claims transformation
+
+`GoogleCloudClaimsTransformation` maps Firebase custom claims to
+`ClaimTypes.Role`. Supports JSON array format (`["admin","editor"]`) and
+single string values. Existing `ClaimTypes.Role` claims are preserved without
+duplication.
+
 ## Endpoints
 
 `Granit.Identity.Endpoints` exposes user cache management as Minimal API endpoints.
@@ -376,15 +491,17 @@ Both operations emit Wolverine domain events (`IdentityUserDeletedEvent`,
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitIdentityModule`, `GranitIdentityKeycloakModule`, `GranitIdentityCognitoModule`, `GranitIdentityEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule` | — |
+| Module | `GranitIdentityModule`, `GranitIdentityKeycloakModule`, `GranitIdentityCognitoModule`, `GranitIdentityGoogleCloudModule`, `GranitAuthenticationGoogleCloudModule`, `GranitIdentityEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule` | — |
 | Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentitySessionManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
 | Lookup | `IUserLookupService`, `IUserCacheStats`, `IIdentityProviderCapabilities` | `Granit.Identity` |
 | Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `IdentitySession`, `IdentityDeviceActivity` | `Granit.Identity` |
 | Keycloak | `KeycloakIdentityProvider`, `KeycloakAdminOptions` | `Granit.Identity.Keycloak` |
 | Cognito | `CognitoIdentityProvider`, `CognitoAdminOptions` | `Granit.Identity.Cognito` |
+| Google Cloud | `GoogleCloudIdentityProvider`, `GoogleCloudIdentityOptions` | `Granit.Identity.GoogleCloud` |
+| Google Cloud Auth | `GoogleCloudClaimsTransformation`, `GoogleCloudAuthenticationOptions` | `Granit.Authentication.GoogleCloud` |
 | EF Core | `UserCacheEntry`, `IUserCacheDbContext`, `UserCacheOptions` | `Granit.Identity.EntityFrameworkCore` |
 | Endpoints | `IdentityEndpointsOptions`, `IdentityWebhookOptions` | `Granit.Identity.Endpoints` |
-| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapIdentityUserCacheEndpoints()` | — |
+| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapIdentityUserCacheEndpoints()` | — |
 
 ## See also
 

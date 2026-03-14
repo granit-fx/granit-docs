@@ -1,6 +1,6 @@
 ---
 title: Granit.BlobStorage & Imaging
-description: Multi-provider blob storage (S3, Azure, FileSystem, Database) with presigned URLs, proxy endpoints, validation pipeline, tenant isolation, image processing (WebP/AVIF, EXIF stripping)
+description: Multi-provider blob storage (S3, Azure, Google Cloud Storage, FileSystem, Database) with presigned URLs, proxy endpoints, validation pipeline, tenant isolation, image processing (WebP/AVIF, EXIF stripping)
 sidebar:
   order: 16
 ---
@@ -8,7 +8,7 @@ sidebar:
 import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
 
 Granit.BlobStorage provides a multi-provider blob storage layer with a unified
-`IBlobStorage` API. Cloud providers (S3, Azure Blob) use native presigned URLs for
+`IBlobStorage` API. Cloud providers (S3, Azure Blob, Google Cloud Storage) use native presigned URLs for
 Direct-to-Cloud uploads where the application server never touches file bytes.
 Server-side providers (FileSystem, Database) use `Granit.BlobStorage.Proxy` to expose
 token-based upload/download endpoints with identical client-side flow. A post-upload
@@ -40,6 +40,7 @@ consistent while minimizing server resource usage.
 - Granit.BlobStorage/ Core abstractions, validation pipeline, domain model
   - Granit.BlobStorage.S3 S3 client, native presigned URLs
   - Granit.BlobStorage.AzureBlob Azure Blob Storage client, SAS tokens
+  - Granit.BlobStorage.GoogleCloud Google Cloud Storage client, signed URLs
   - Granit.BlobStorage.FileSystem Local file system storage
   - Granit.BlobStorage.Database EF Core database storage (small files)
   - Granit.BlobStorage.Proxy Token-based proxy endpoints for server-side providers
@@ -53,6 +54,7 @@ consistent while minimizing server resource usage.
 | `Granit.BlobStorage` | `IBlobStorage`, `IBlobValidator`, `BlobDescriptor` domain | `Granit.Core` |
 | `Granit.BlobStorage.S3` | S3 native presigned URLs, `PrefixBlobKeyStrategy` | `Granit.BlobStorage` |
 | `Granit.BlobStorage.AzureBlob` | Azure Blob SAS tokens, Managed Identity support | `Granit.BlobStorage` |
+| `Granit.BlobStorage.GoogleCloud` | Google Cloud Storage signed URLs, Workload Identity support | `Granit.BlobStorage` |
 | `Granit.BlobStorage.FileSystem` | Local file system storage, path traversal protection | `Granit.BlobStorage` |
 | `Granit.BlobStorage.Database` | EF Core database storage (small files, 10 MB default) | `Granit.BlobStorage`, `Granit.Persistence` |
 | `Granit.BlobStorage.Proxy` | Token-based proxy endpoints for FileSystem/Database | `Granit.BlobStorage` |
@@ -66,10 +68,11 @@ consistent while minimizing server resource usage.
 |----------|---------------|---------------|----------|
 | **S3** | Native (AWS SigV4) | Unlimited | Production cloud storage |
 | **Azure Blob** | Native (SAS tokens) | Unlimited | Azure-hosted deployments |
+| **Google Cloud** | Native (V4 signed URLs) | Unlimited | GCP-hosted deployments |
 | **FileSystem** | Via Proxy | Disk capacity | Development, on-premise |
 | **Database** | Via Proxy | 10 MB (configurable) | Small files, regulated environments |
 
-Cloud providers (S3, Azure) generate native presigned/SAS URLs -- the application
+Cloud providers (S3, Azure, Google Cloud) generate native presigned/SAS/signed URLs -- the application
 server never touches file bytes. Server-side providers (FileSystem, Database) require
 `Granit.BlobStorage.Proxy` which exposes ephemeral token-based endpoints that stream
 bytes through to the underlying storage. The client-side upload/download flow is
@@ -82,6 +85,7 @@ graph TD
     BS[Granit.BlobStorage] --> CO[Granit.Core]
     S3[Granit.BlobStorage.S3] --> BS
     AZ[Granit.BlobStorage.AzureBlob] --> BS
+    GC[Granit.BlobStorage.GoogleCloud] --> BS
     FS[Granit.BlobStorage.FileSystem] --> BS
     DB[Granit.BlobStorage.Database] --> BS
     DB --> P[Granit.Persistence]
@@ -163,6 +167,37 @@ For Managed Identity (recommended in production), omit `ConnectionString` and se
   }
 }
 ```
+
+</TabItem>
+<TabItem label="Google Cloud">
+
+```csharp
+[DependsOn(
+    typeof(GranitBlobStorageGoogleCloudModule),
+    typeof(GranitBlobStorageEntityFrameworkCoreModule),
+    typeof(GranitImagingMagickNetModule))]
+public class AppModule : GranitModule { }
+```
+
+```csharp
+builder.AddGranitBlobStorageGoogleCloud();
+builder.AddGranitBlobStorageEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
+```
+
+```json
+{
+  "BlobStorage": {
+    "ProjectId": "my-gcp-project",
+    "DefaultBucket": "myapp-blobs",
+    "TenantIsolation": "Prefix",
+    "UploadUrlExpiry": "00:15:00",
+    "DownloadUrlExpiry": "00:05:00"
+  }
+}
+```
+
+For Workload Identity (recommended in GKE), omit `CredentialFilePath` — Application Default Credentials are used automatically.
 
 </TabItem>
 <TabItem label="FileSystem (dev)">
@@ -530,6 +565,7 @@ Single-tenant deployments (no `ICurrentTenant`) omit the tenant prefix:
 |----------|-------------------|
 | **S3** | Tenant prefix in S3 object key. `Bucket` strategy uses one S3 bucket per tenant. |
 | **Azure Blob** | Tenant prefix in blob name. `Container` strategy uses one Azure container per tenant. |
+| **Google Cloud** | Tenant prefix in GCS object name. `Bucket` strategy uses one GCS bucket per tenant. |
 | **FileSystem** | Tenant prefix in directory path: `{BasePath}/{tenantId}/...` |
 | **Database** | Tenant prefix in `ObjectKey` column + `IMultiTenant` EF Core query filter |
 
@@ -667,6 +703,16 @@ with `MaxKeys=1`). Tagged `["readiness", "startup"]`. Returns Unhealthy on acces
 denied or unreachable endpoint. Error messages are sanitized — credentials, bucket
 names, and endpoint URLs are never exposed.
 
+### Google Cloud Storage
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddGranitGoogleCloudStorageHealthCheck();
+```
+
+Verifies GCS connectivity by listing one object in the default bucket. Tagged
+`["readiness", "startup"]`. Returns Unhealthy on access denied or unreachable endpoint.
+
 ## Configuration reference
 
 <Tabs>
@@ -718,6 +764,27 @@ names, and endpoint URLs are never exposed.
 | `UseManagedIdentity` | `false` | Use Azure Managed Identity instead of connection string |
 | `ServiceUri` | -- | Storage account URI (required when `UseManagedIdentity = true`) |
 | `TenantIsolation` | `Prefix` | `Prefix` (shared container) or `Container` (one per tenant) |
+
+</TabItem>
+<TabItem label="Google Cloud">
+
+```json
+{
+  "BlobStorage": {
+    "ProjectId": "my-gcp-project",
+    "DefaultBucket": "myapp-blobs",
+    "CredentialFilePath": null,
+    "TenantIsolation": "Prefix"
+  }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `ProjectId` | -- | GCP project ID (required) |
+| `DefaultBucket` | -- | Default GCS bucket name (required) |
+| `CredentialFilePath` | `null` | Service account key JSON; ADC when null (Workload Identity) |
+| `TenantIsolation` | `Prefix` | `Prefix` (shared bucket) or `Bucket` (one per tenant) |
 
 </TabItem>
 <TabItem label="FileSystem">
@@ -784,7 +851,7 @@ names, and endpoint URLs are never exposed.
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitBlobStorageModule`, `GranitBlobStorageS3Module`, `GranitBlobStorageAzureBlobModule`, `GranitBlobStorageFileSystemModule`, `GranitBlobStorageDatabaseModule`, `GranitBlobStorageProxyModule`, `GranitBlobStorageEntityFrameworkCoreModule` | -- |
+| Module | `GranitBlobStorageModule`, `GranitBlobStorageS3Module`, `GranitBlobStorageAzureBlobModule`, `GranitBlobStorageGoogleCloudModule`, `GranitBlobStorageFileSystemModule`, `GranitBlobStorageDatabaseModule`, `GranitBlobStorageProxyModule`, `GranitBlobStorageEntityFrameworkCoreModule` | -- |
 | Storage | `IBlobStorage`, `IBlobKeyStrategy` | `Granit.BlobStorage` |
 | Persistence (CQRS) | `IBlobDescriptorReader`, `IBlobDescriptorWriter`, `IBlobDescriptorStore` | `Granit.BlobStorage` |
 | Domain | `BlobDescriptor`, `BlobStatus`, `BlobUploadRequest` | `Granit.BlobStorage` |
@@ -793,12 +860,13 @@ names, and endpoint URLs are never exposed.
 | Events | `BlobValidated`, `BlobRejected`, `BlobDeleted` | `Granit.BlobStorage` |
 | S3 options | `S3BlobOptions`, `BlobTenantIsolation` | `Granit.BlobStorage.S3` |
 | Azure options | `AzureBlobOptions` | `Granit.BlobStorage.AzureBlob` |
+| Google Cloud options | `GoogleCloudStorageOptions` | `Granit.BlobStorage.GoogleCloud` |
 | FileSystem options | `FileSystemBlobOptions` | `Granit.BlobStorage.FileSystem` |
 | Database options | `DatabaseBlobOptions` | `Granit.BlobStorage.Database` |
 | Proxy options | `ProxyBlobOptions` | `Granit.BlobStorage.Proxy` |
 | Imaging | `IImageProcessor`, `IImagePipeline`, `ImageResult`, `ImageFormat`, `ImageSize` | `Granit.Imaging` |
 | Imaging types | `ResizeMode`, `CropRectangle`, `WatermarkPosition` | `Granit.Imaging` |
-| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageAzureBlob()`, `AddGranitBlobStorageFileSystem()`, `AddGranitBlobStorageDatabase()`, `AddGranitBlobStorageProxy()`, `AddGranitBlobStorageEntityFrameworkCore()`, `AddGranitImagingMagickNet()`, `MapGranitBlobProxyEndpoints()` | -- |
+| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageAzureBlob()`, `AddGranitBlobStorageGoogleCloud()`, `AddGranitBlobStorageFileSystem()`, `AddGranitBlobStorageDatabase()`, `AddGranitBlobStorageProxy()`, `AddGranitBlobStorageEntityFrameworkCore()`, `AddGranitImagingMagickNet()`, `MapGranitBlobProxyEndpoints()` | -- |
 
 ## See also
 

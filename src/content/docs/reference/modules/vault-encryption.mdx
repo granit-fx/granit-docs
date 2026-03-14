@@ -1,6 +1,6 @@
 ---
 title: Granit.Vault & Encryption
-description: HashiCorp Vault and Azure Key Vault transit encryption, dynamic credentials, AES-256 string encryption
+description: HashiCorp Vault, Azure Key Vault, AWS KMS, and Google Cloud KMS transit encryption, dynamic credentials, AES-256 string encryption
 sidebar:
   order: 21
 ---
@@ -12,8 +12,8 @@ default provider. Granit.Vault is the abstraction layer defining `ITransitEncryp
 and `IDatabaseCredentialProvider`. Provider packages implement those interfaces:
 Granit.Vault.HashiCorp wraps VaultSharp for HashiCorp Vault Transit encryption and dynamic
 database credentials, Granit.Vault.Azure uses Azure Key Vault for RSA-OAEP-256 encryption
-and dynamic credentials via Key Vault Secrets, and Granit.Vault.Aws targets AWS KMS and
-Secrets Manager. All provider modules are automatically disabled in Development environments
+and dynamic credentials via Key Vault Secrets, Granit.Vault.Aws targets AWS KMS and
+Secrets Manager, and Granit.Vault.GoogleCloud uses Google Cloud KMS for symmetric encryption and Secret Manager for dynamic database credentials. All provider modules are automatically disabled in Development environments
 so no external vault server is required locally.
 
 ## Package structure
@@ -24,6 +24,7 @@ so no external vault server is required locally.
     - Granit.Vault.HashiCorp HashiCorp Vault provider — VaultSharp client, Transit encryption, dynamic database credentials
     - Granit.Vault.Azure Azure Key Vault provider (RSA-OAEP-256), dynamic credentials
     - Granit.Vault.Aws AWS KMS + Secrets Manager provider
+    - Granit.Vault.GoogleCloud Google Cloud KMS encryption, Secret Manager credentials
 </FileTree>
 
 | Package | Role | Depends on |
@@ -33,6 +34,7 @@ so no external vault server is required locally.
 | `Granit.Vault.HashiCorp` | HashiCorp Vault provider — VaultSharp client, Transit encryption, dynamic database credentials | `Granit.Vault` |
 | `Granit.Vault.Azure` | Azure Key Vault encryption (RSA-OAEP-256), dynamic credentials from Key Vault Secrets | `Granit.Vault` |
 | `Granit.Vault.Aws` | AWS KMS encryption, dynamic credentials from Secrets Manager | `Granit.Vault` |
+| `Granit.Vault.GoogleCloud` | Google Cloud KMS symmetric encryption, dynamic credentials from Secret Manager | `Granit.Vault` |
 
 ## Dependency graph
 
@@ -41,6 +43,7 @@ graph TD
     VH[Granit.Vault.HashiCorp] --> V[Granit.Vault]
     VA[Granit.Vault.Azure] --> V
     VAW[Granit.Vault.Aws] --> V
+    VGC[Granit.Vault.GoogleCloud] --> V
     V --> E[Granit.Encryption]
     E --> C[Granit.Core]
 ```
@@ -350,11 +353,98 @@ Uses `DefaultAzureCredential` — Managed Identity in Kubernetes, `az login` loc
 Granit.Vault.Azure registers a health check that retrieves the configured key to
 verify connectivity and key availability, tagged `["readiness"]`.
 
+---
+
+## Granit.Vault.GoogleCloud
+
+### Setup
+
+```csharp
+[DependsOn(typeof(GranitVaultGoogleCloudModule))]
+public class AppModule : GranitModule { }
+```
+
+:::note
+`GranitVaultGoogleCloudModule` is **automatically disabled** in `Development` environments.
+Applications fall back to the local AES provider when Cloud KMS is not
+available — no configuration needed for local development.
+:::
+
+### Google Cloud KMS encryption
+
+Uses Cloud KMS `CryptoKeyVersion` for symmetric AES-256-GCM encrypt/decrypt operations.
+Registered as an `IStringEncryptionProvider` with key `"CloudKms"`.
+
+### Dynamic database credentials
+
+`SecretManagerCredentialProvider` reads database credentials from a Secret Manager
+secret (JSON: `{"username": "...", "password": "..."}`) and polls for version
+changes at a configurable interval. Credential rotation is detected automatically.
+
+### Authentication
+
+<Tabs>
+<TabItem label="Workload Identity (production)">
+
+```json
+{
+  "Vault": {
+    "GoogleCloud": {
+      "ProjectId": "my-project",
+      "Location": "europe-west1",
+      "KeyRing": "my-keyring",
+      "CryptoKey": "string-encryption"
+    }
+  }
+}
+```
+
+Uses Application Default Credentials — Workload Identity in GKE, `gcloud auth` locally.
+
+</TabItem>
+<TabItem label="Configuration reference">
+
+```json
+{
+  "Vault": {
+    "GoogleCloud": {
+      "ProjectId": "my-project",
+      "Location": "europe-west1",
+      "KeyRing": "my-keyring",
+      "CryptoKey": "string-encryption",
+      "DatabaseSecretName": "db-credentials",
+      "RotationCheckIntervalMinutes": 5,
+      "CredentialFilePath": null,
+      "TimeoutSeconds": 30
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `Vault:GoogleCloud:ProjectId` | — | GCP project ID (required) |
+| `Vault:GoogleCloud:Location` | — | Cloud KMS location, e.g. `"europe-west1"` (required) |
+| `Vault:GoogleCloud:KeyRing` | — | Cloud KMS key ring name (required) |
+| `Vault:GoogleCloud:CryptoKey` | — | Cloud KMS crypto key for transit encryption (required) |
+| `Vault:GoogleCloud:DatabaseSecretName` | `null` | Secret Manager secret name for DB credentials (omit to disable) |
+| `Vault:GoogleCloud:RotationCheckIntervalMinutes` | `5` | Secret rotation polling interval |
+| `Vault:GoogleCloud:CredentialFilePath` | `null` | Service account key JSON; ADC when null |
+| `Vault:GoogleCloud:TimeoutSeconds` | `30` | API call timeout |
+
+### Health check
+
+`AddGranitCloudKmsHealthCheck` registers a health check that verifies KMS key
+accessibility, tagged `["readiness"]`.
+
 ## Public API summary
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Modules | `GranitEncryptionModule`, `GranitVaultHashiCorpModule`, `GranitVaultAzureModule`, `GranitVaultAwsModule` | — |
+| Modules | `GranitEncryptionModule`, `GranitVaultHashiCorpModule`, `GranitVaultAzureModule`, `GranitVaultAwsModule`, `GranitVaultGoogleCloudModule` | — |
 | Encryption | `IStringEncryptionService` (`Encrypt` / `Decrypt`) | `Granit.Encryption` |
 | Provider | `IStringEncryptionProvider`, `AesStringEncryptionProvider` | `Granit.Encryption` |
 | Transit | `ITransitEncryptionService` (`EncryptAsync` / `DecryptAsync`) | `Granit.Vault` |
@@ -364,7 +454,9 @@ verify connectivity and key availability, tagged `["readiness"]`.
 | Options | `StringEncryptionOptions` | `Granit.Encryption` |
 | Azure Provider | `AzureKeyVaultStringEncryptionProvider`, `IAzureKeyVaultTransitEncryptionService`, `IAzureDatabaseCredentialProvider` | `Granit.Vault.Azure` |
 | Azure Options | `AzureKeyVaultOptions` | `Granit.Vault.Azure` |
-| Extensions | `AddGranitEncryption()`, `AddGranitVaultHashiCorp()`, `AddGranitVaultAzure()`, `AddGranitVaultAws()` | — |
+| Google Cloud Provider | `CloudKmsTransitEncryptionService`, `CloudKmsStringEncryptionProvider`, `SecretManagerCredentialProvider` | `Granit.Vault.GoogleCloud` |
+| Google Cloud Options | `GoogleCloudVaultOptions` | `Granit.Vault.GoogleCloud` |
+| Extensions | `AddGranitEncryption()`, `AddGranitVaultHashiCorp()`, `AddGranitVaultAzure()`, `AddGranitVaultAws()`, `AddGranitVaultGoogleCloud()` | — |
 
 ## See also
 
