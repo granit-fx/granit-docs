@@ -14,6 +14,9 @@ import { remarkVariables } from "./src/plugins/remark-variables.mjs";
 
 export default defineConfig({
   site: "https://granit-fx.dev",
+  build: {
+    assets: "assets",
+  },
   markdown: {
     remarkPlugins: [remarkVariables],
     rehypePlugins: [
