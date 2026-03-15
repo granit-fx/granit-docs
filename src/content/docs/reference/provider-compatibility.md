@@ -188,6 +188,7 @@ The following modules integrate with Wolverine for asynchronous processing:
 | Granit.Notifications.Email.AzureCommunicationServices | Email (Azure) | Azure Communication Services |
 | Granit.Notifications.Brevo | Email, SMS, WhatsApp | Brevo Transactional API |
 | Granit.Notifications.Email.SendGrid | Email (SendGrid) | SendGrid API (Twilio) |
+| Granit.Notifications.Email.Scaleway | Email (Scaleway) | Scaleway Transactional Email |
 | Granit.Notifications.Sms | SMS (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.Sms.AzureCommunicationServices | SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.WhatsApp | WhatsApp (abstractions) | Requires a provider (Brevo) |

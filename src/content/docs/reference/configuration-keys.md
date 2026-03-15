@@ -626,7 +626,7 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Notifications:Email` | |
 | **Package** | -- | `Granit.Notifications.Email` | |
-| `Provider` | `string` | `"Smtp"` | Keyed service provider (`"Smtp"`, `"Brevo"`, `"AzureCommunicationServices"`, `"SendGrid"`). |
+| `Provider` | `string` | `"Smtp"` | Keyed service provider (`"Smtp"`, `"Brevo"`, `"AzureCommunicationServices"`, `"Scaleway"`, `"SendGrid"`). |
 | `SenderAddress` | `string` | `""` | Default sender email. |
 | `SenderName` | `string` | `""` | Default sender display name. |
 
@@ -654,6 +654,20 @@ Each entry in `Policies`:
 | `DefaultSenderName` | `string` | `""` | Default sender name. |
 | `DefaultSmsSenderId` | `string` | `""` | Default SMS sender ID. |
 | `BaseUrl` | `string` | `"https://api.brevo.com/v3"` | Brevo API base URL. |
+| `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
+
+### Scaleway TEM -- `ScalewayEmailOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Notifications:Email:Scaleway` | |
+| **Package** | -- | `Granit.Notifications.Email.Scaleway` | |
+| `SecretKey` | `string` | `""` | Scaleway API secret key (from Vault). |
+| `ProjectId` | `string` | `""` | Scaleway project ID. |
+| `DefaultSenderEmail` | `string` | `""` | Default sender email (must be verified in Scaleway TEM). |
+| `DefaultSenderName` | `string` | `""` | Default sender display name. |
+| `Region` | `string` | `"fr-par"` | Scaleway region. |
+| `BaseUrl` | `string` | `"https://api.scaleway.com"` | Scaleway API base URL. |
 | `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
 
 ### SendGrid -- `SendGridEmailOptions`
