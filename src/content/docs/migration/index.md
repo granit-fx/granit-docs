@@ -37,7 +37,7 @@ issues and guarantees that cross-package contracts remain consistent.
 ### Pre-release versions
 
 Pre-release packages use the `-preview.N` suffix (e.g., `2.0.0-preview.1`).
-These are published to the GitLab Package Registry for early testing. Public API
+These are published to GitHub Packages for early testing. Public API
 may change between preview releases without notice.
 
 ## Breaking change policy

@@ -32,7 +32,7 @@ PostgreSQL containers in integration tests.
 - **Advantage**: real PostgreSQL container started on demand, complete
   isolation per test, automatic cleanup, .NET fluent API, xUnit support
   via `IAsyncLifetime`
-- **CI**: compatible with GitLab CI (Docker-in-Docker or service container)
+- **CI**: compatible with GitHub Actions (service containers) and GitLab CI
 
 ### Option 2: EF Core InMemory
 

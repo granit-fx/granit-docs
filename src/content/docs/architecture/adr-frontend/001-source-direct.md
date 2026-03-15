@@ -41,7 +41,7 @@ No `dist/` directory is generated or committed. Consumer applications resolve
 imports via Vite aliases pointing to the sources.
 
 A `publishConfig` with `dist/` exports and a `tsup` build step is provided
-for npm publication to the GitLab private registry.
+for npm publication to GitHub Packages.
 
 ## Alternatives considered
 

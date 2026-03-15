@@ -43,7 +43,7 @@ in **English**:
 feat(vault): add Transit AES-256 encryption
 fix(persistence): handle audit interceptor on detached entities
 docs(guide): create coding conventions guide
-chore(ci): update GitLab CI pipeline
+chore(ci): update GitHub Actions pipeline
 refactor(notifications): extract channel dispatcher
 test(security): add JWT rotation tests
 perf(caching): reduce Redis roundtrips for hybrid cache
@@ -126,7 +126,7 @@ A maintainer will review your MR against this checklist:
 | Code (identifiers, XML docs, comments) | English |
 | Commits (Conventional Commits) | English |
 | Documentation (`docs/**/*.md`) | English |
-| GitLab issues (title, description) | French |
+| GitHub issues (title, description) | French |
 | Localization files (`Localization/**/*.json`) | 17 cultures |
 
 Code must never contain French diacritics. French diacritics

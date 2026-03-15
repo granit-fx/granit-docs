@@ -1,24 +1,24 @@
 ---
 title: Frontend CI/CD
-description: GitLab CI pipeline, quality gates, and release workflow for granit-front.
+description: GitHub Actions CI pipeline, quality gates, and release workflow for granit-front.
 sidebar:
   order: 20
 ---
 
 ## Pipeline overview
 
-The granit-front pipeline runs on merge requests, `develop`, `main`, and
+The granit-front pipeline runs on pull requests, `develop`, `main`, and
 semantic tags (`v*.*.*`).
 
 ```mermaid
 flowchart LR
-    Q[quality] --> S[gitlab-security] --> T[test] --> A[analysis]
+    Q[quality] --> S[security] --> T[test] --> A[analysis]
 ```
 
 | Stage | Jobs | Description |
 | --- | --- | --- |
 | **quality** | `lint`, `typecheck` | ESLint (0 warnings) + TypeScript strict |
-| **gitlab-security** | `secret_detection`, `sast`, `semgrep-sast` | Secret scanning, SAST |
+| **security** | `gitleaks`, `codeql`, `trivy` | Secret scanning, SAST, vulnerability scanning |
 | **test** | `test` | Vitest with v8 coverage |
 | **analysis** | `audit:npm`, `sonarqube` | Dependency audit + SonarQube |
 
@@ -42,6 +42,7 @@ pnpm lint
 ESLint with `--max-warnings 0`. Zero warnings tolerated.
 
 Notable rules:
+
 - `no-console` as error (except in `@granit/logger`)
 - `@typescript-eslint/consistent-type-imports` — `import type` required
 - `import/order` — imports sorted by group
@@ -57,11 +58,14 @@ no unused parameters.
 
 ## Security jobs
 
-**Secret detection** — GitLab template `Secret-Detection.gitlab-ci.yml`. A
-detected secret **blocks the pipeline** (`allow_failure: false`).
+**Secret detection** — Gitleaks via GitHub Actions. A detected secret
+**blocks the pipeline** (`continue-on-error: false`).
 
-**SAST** — Static analysis via GitLab SAST templates and Semgrep. Semgrep is
-**blocking** (`allow_failure: false`).
+**SAST** — Static analysis via CodeQL. CodeQL is **blocking**
+(`continue-on-error: false`).
+
+**Vulnerability scanning** — Trivy scans for known vulnerabilities.
+Trivy is **blocking** (`continue-on-error: false`).
 
 ## Test job
 
@@ -73,7 +77,7 @@ Vitest single-run with coverage. Generated artifacts:
 
 | Artifact | Retention | Usage |
 | --- | --- | --- |
-| `coverage/cobertura-coverage.xml` | 1 week | MR coverage widget |
+| `coverage/cobertura-coverage.xml` | 1 week | PR coverage widget |
 | `coverage/` (HTML + lcov) | 1 week | Local browsing + SonarQube |
 
 ## Analysis jobs
@@ -85,7 +89,7 @@ pnpm audit --audit-level moderate
 ```
 
 Checks known vulnerabilities in dependencies (moderate and above).
-`allow_failure: true` — informational, does not block the pipeline.
+`continue-on-error: true` — informational, does not block the pipeline.
 
 ### SonarQube
 
@@ -94,7 +98,7 @@ Conditional — runs only when `SONAR_HOST_URL` and `SONAR_TOKEN` are set.
 - **Sources**: `packages/`
 - **Coverage**: `coverage/lcov.info`
 - **Exclusions**: `**/*.test.ts`, `**/*.test.tsx`, `**/*.d.ts`
-- `allow_failure: true`
+- `continue-on-error: true`
 
 ## Branch workflow
 
@@ -142,7 +146,7 @@ Releases follow semantic versioning (`vMAJOR.MINOR.PATCH`):
 
 1. Create a `release/X.Y` branch from `develop`
 2. Verify the pipeline passes (lint + tsc + tests + security)
-3. Merge into `main` via MR (1 approval minimum)
+3. Merge into `main` via PR (1 approval minimum)
 4. Tag on `main`: `vX.Y.Z`
 5. Merge `main` back into `develop`
 

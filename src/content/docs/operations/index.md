@@ -21,7 +21,7 @@ on European sovereign infrastructure.
 | [Deployment](./deployment/) | Kubernetes deployment, Docker, health probes, scaling |
 | [Configuration](./configuration/) | Vault secrets, environment variables, appsettings layering |
 | [Observability](./observability/) | LGTM stack, Serilog, OpenTelemetry, Grafana dashboards |
-| [CI/CD](./ci-cd/) | GitLab CI pipeline, build, test, pack, publish |
+| [CI/CD](./ci-cd/) | GitHub Actions pipeline, build, test, pack, publish |
 | [Production checklist](./production-checklist/) | Go-live verification for security, GDPR, ISO 27001 |
 
 ## Sovereign infrastructure

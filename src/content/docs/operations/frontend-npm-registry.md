@@ -1,13 +1,13 @@
 ---
 title: Frontend npm Registry
-description: Hybrid publication strategy for @granit/* packages — local source-direct and GitLab npm registry.
+description: Hybrid publication strategy for @granit/* packages — local source-direct and GitHub Packages npm registry.
 sidebar:
   order: 21
 ---
 
 ## Overview
 
-The `@granit/*` packages are published on the **GitLab npm package registry**.
+The `@granit/*` packages are published on the **GitHub Packages npm registry**.
 A hybrid strategy keeps local development performant (hot-reload) while
 supporting Docker builds and standalone CI/CD.
 
@@ -20,7 +20,7 @@ graph LR
 
     subgraph "Docker / CI"
         CI[Dockerfile]
-        CI -->|"npm install"| REG["GitLab npm Registry<br/>(compiled packages)"]
+        CI -->|"npm install"| REG["GitHub Packages<br/>(compiled packages)"]
     end
 
     subgraph "Publication"
@@ -34,7 +34,7 @@ graph LR
 | Context | Resolution | Source | Hot-reload |
 | --- | --- | --- | --- |
 | Local development | `link:` + Vite aliases | TypeScript source | Yes |
-| Docker / CI | GitLab npm registry | Compiled JavaScript + `.d.ts` | No |
+| Docker / CI | GitHub Packages npm registry | Compiled JavaScript + `.d.ts` | No |
 
 ### Local development
 
@@ -55,7 +55,7 @@ framework code.
 
 In Docker, the `granit-front` directory does not exist. The Dockerfile:
 
-1. Copies `.npmrc` (scope `@granit` → GitLab registry)
+1. Copies `.npmrc` (scope `@granit` → GitHub Packages registry)
 2. Replaces `link:` dependencies with `*` (registry resolution)
 3. Injects the authentication token via `--build-arg NPM_TOKEN`
 4. Installs compiled packages from the registry
@@ -81,17 +81,17 @@ The CI pipeline runs:
 1. `quality` — lint + typecheck
 2. `test` — unit tests
 3. `build` — `tsup` (ESM + `.d.ts`) for each package
-4. `publish` — `pnpm -r publish` to the GitLab registry
+4. `publish` — `pnpm -r publish` to the GitHub Packages registry
 
-Authentication uses `CI_JOB_TOKEN` (automatic, no secret to configure).
+Authentication uses `GITHUB_TOKEN` (automatic, no secret to configure).
 
 ### Manual publication
 
 For manual publication (not recommended in production):
 
 ```bash
-# Create a deploy token in GitLab > Settings > Repository > Deploy tokens
-# Scope: write_package_registry
+# Create a personal access token (PAT) in GitHub > Settings > Personal access tokens
+# Scope: write:packages
 
 pnpm build
 pnpm -r publish --no-git-checks --access restricted
@@ -104,7 +104,7 @@ pnpm -r publish --no-git-checks --access restricted
 Each consuming application needs an `.npmrc`:
 
 ```ini
-@granit:registry=https://gitlab.digitaldynamics.be/api/v4/projects/9/packages/npm/
+@granit:registry=https://npm.pkg.github.com
 ```
 
 ### Conditional Vite aliases
@@ -126,11 +126,11 @@ const useLocalGranit = fs.existsSync(GRANIT);
 
 ```bash
 docker build \
-  --build-arg NPM_TOKEN=<deploy-token-or-ci-job-token> \
+  --build-arg NPM_TOKEN=<pat-or-github-token> \
   -t guava-admin .
 ```
 
-In CI, `CI_JOB_TOKEN` is used automatically.
+In CI, `GITHUB_TOKEN` is used automatically.
 
 ## Package build configuration
 
@@ -159,7 +159,7 @@ exports (source) from published exports (compiled):
         "import": "./dist/index.js"
       }
     },
-    "registry": "https://gitlab.digitaldynamics.be/api/v4/projects/9/packages/npm/"
+    "registry": "https://npm.pkg.github.com"
   }
 }
 ```
@@ -173,16 +173,16 @@ exports (source) from published exports (compiled):
 
 ```bash
 npm view @granit/logger \
-  --registry=https://gitlab.digitaldynamics.be/api/v4/projects/9/packages/npm/
+  --registry=https://npm.pkg.github.com
 ```
 
-Or check in GitLab: **granit-front > Packages and registries > Package registry**.
+Or check in GitHub: **granit-fx/granit-front > Packages**.
 
 ### Authentication error (401/403)
 
 - Verify `.npmrc` contains the correct `_authToken`
-- In CI: `CI_JOB_TOKEN` is automatic, no configuration needed
-- Locally: use a deploy token with `read_package_registry` scope
+- In CI: `GITHUB_TOKEN` is automatic, no configuration needed
+- Locally: use a personal access token (PAT) with `read:packages` scope
 
 ### Docker build fails on @granit/* packages
 

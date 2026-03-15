@@ -181,7 +181,7 @@ describes *what it does* on its own.
 
 ### TODOs -- attribution and traceability required
 
-Every `TODO` must include the **author** and a **GitLab issue number**:
+Every `TODO` must include the **author** and a **GitHub issue number**:
 
 ```csharp
 // TODO(JDO): Refactor this once we migrate to .NET 11 (Issue #452)

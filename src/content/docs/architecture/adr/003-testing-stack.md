@@ -24,7 +24,7 @@ Requirements:
   with a clear API and no license issues
 - **Test data**: realistic and localized (FR) data generation
 - **Coverage**: code coverage collection for CI (Cobertura/OpenCover)
-- **CI**: result export in JUnit XML format for GitLab
+- **CI**: result export in TRX/JUnit format for CI integration
 
 ## Decision
 
@@ -144,7 +144,7 @@ Requirements:
 - Zero license risk (no SponsorLink, no commercial license)
 - Native CancellationToken xUnit v3: interruptible tests, faster CI
 - Realistic and localized test data (French names, SIRET, etc.)
-- Cobertura coverage for SonarQube and GitLab CI
+- Cobertura coverage for SonarQube/SonarCloud and CI
 
 ### Negative
 
