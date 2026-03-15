@@ -83,6 +83,9 @@ const programHtml = hl(`var builder = WebApplication.CreateBuilder(args);\n\nbui
   headings={[]}
 >
   <style is:global>
+    /* Override starlight-blog hiding the first content-panel */
+    .content-panel:first-of-type { display: block !important; }
+
     /* ── Layout ── */
     .lp { margin-inline: auto; max-width: 72rem; padding-inline: 1.5rem; }
 
