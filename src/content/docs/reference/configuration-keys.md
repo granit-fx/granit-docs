@@ -626,7 +626,7 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Notifications:Email` | |
 | **Package** | -- | `Granit.Notifications.Email` | |
-| `Provider` | `string` | `"Smtp"` | Keyed service provider (`"Smtp"` or `"Brevo"`). |
+| `Provider` | `string` | `"Smtp"` | Keyed service provider (`"Smtp"`, `"Brevo"`, `"AzureCommunicationServices"`, `"SendGrid"`). |
 | `SenderAddress` | `string` | `""` | Default sender email. |
 | `SenderName` | `string` | `""` | Default sender display name. |
 
@@ -656,13 +656,38 @@ Each entry in `Policies`:
 | `BaseUrl` | `string` | `"https://api.brevo.com/v3"` | Brevo API base URL. |
 | `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
 
+### SendGrid -- `SendGridEmailOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Notifications:Email:SendGrid` | |
+| **Package** | -- | `Granit.Notifications.Email.SendGrid` | |
+| `ApiKey` | `string` | `""` | SendGrid API key (from Vault). |
+| `DefaultSenderEmail` | `string` | `""` | Default sender email (must be verified in SendGrid). |
+| `DefaultSenderName` | `string` | `""` | Default sender display name. |
+| `SandboxMode` | `bool` | `false` | Enable SendGrid sandbox mode (no actual delivery). |
+| `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
+
+### Twilio -- `TwilioOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Notifications:Twilio` | |
+| **Package** | -- | `Granit.Notifications.Twilio` | |
+| `AccountSid` | `string` | `""` | Twilio Account SID. |
+| `AuthToken` | `string` | `""` | Twilio Auth Token (from Vault). |
+| `DefaultSmsFrom` | `string` | `""` | Default SMS sender number (E.164 format) or Messaging Service SID. |
+| `DefaultWhatsAppFrom` | `string` | `""` | Default WhatsApp sender (e.g. `whatsapp:+14155238886`). |
+| `MessagingServiceSid` | `string?` | `null` | Twilio Messaging Service SID (overrides `DefaultSmsFrom` when set). |
+| `TimeoutSeconds` | `int` | `30` | HTTP request timeout. |
+
 ### SMS channel -- `SmsChannelOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
 | **Section** | -- | `Notifications:Sms` | |
 | **Package** | -- | `Granit.Notifications.Sms` | |
-| `Provider` | `string` | `""` | Keyed service provider (e.g. `"Brevo"`). |
+| `Provider` | `string` | `""` | Keyed service provider (`"Brevo"`, `"AzureCommunicationServices"`, `"AwsSns"`, `"Twilio"`). |
 | `SenderId` | `string?` | `null` | Default sender ID. |
 
 ### WhatsApp channel -- `WhatsAppChannelOptions`
@@ -671,7 +696,7 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Notifications:WhatsApp` | |
 | **Package** | -- | `Granit.Notifications.WhatsApp` | |
-| `Provider` | `string` | `""` | Keyed service provider (e.g. `"Brevo"`). |
+| `Provider` | `string` | `""` | Keyed service provider (`"Brevo"`, `"Twilio"`). |
 
 ### Web Push (VAPID) -- `PushChannelOptions`
 

@@ -187,6 +187,7 @@ The following modules integrate with Wolverine for asynchronous processing:
 | Granit.Notifications.Email.AwsSes | Email (AWS) | Amazon Simple Email Service |
 | Granit.Notifications.Email.AzureCommunicationServices | Email (Azure) | Azure Communication Services |
 | Granit.Notifications.Brevo | Email, SMS, WhatsApp | Brevo Transactional API |
+| Granit.Notifications.Email.SendGrid | Email (SendGrid) | SendGrid API (Twilio) |
 | Granit.Notifications.Sms | SMS (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.Sms.AzureCommunicationServices | SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.WhatsApp | WhatsApp (abstractions) | Requires a provider (Brevo) |
@@ -195,13 +196,15 @@ The following modules integrate with Wolverine for asynchronous processing:
 | Granit.Notifications.MobilePush.AzureNotificationHubs | Mobile Push (Azure) | Azure Notification Hubs |
 | Granit.Notifications.Sms.AwsSns | SMS (AWS) | Amazon SNS |
 | Granit.Notifications.MobilePush.AwsSns | Mobile Push (AWS) | Amazon SNS platform applications |
+| Granit.Notifications.Twilio | SMS, WhatsApp (Twilio) | Twilio Messaging API |
 | Granit.Notifications.SignalR | Real-time (WebSocket) | Redis backplane for multi-pod |
 
 ### Provider coverage
 
-Brevo is currently the only provider that implements all three external channels (email,
-SMS, WhatsApp) through a single integration. The SMTP provider is an alternative for
-email-only scenarios.
+Brevo and Twilio are multi-channel providers. Brevo implements email, SMS, and WhatsApp
+through a single integration. Twilio covers SMS and WhatsApp via the Twilio Messaging API,
+while SendGrid (a Twilio company) provides a dedicated email provider. The SMTP provider
+is an alternative for email-only scenarios.
 
 The SMS and WhatsApp abstraction packages define `ISmsSender` and `IWhatsAppSender`
 interfaces. Additional providers can be implemented against these interfaces.

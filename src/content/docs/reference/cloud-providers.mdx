@@ -27,8 +27,8 @@ for the full matrix.
 | Identity | ✓ | ✓ | ✓ |
 | Vault / Encryption | ✓ | ✓ | ✓ |
 | Blob Storage | ✓ | ✓ | ✓ |
-| Notifications — Email | ✓ | ✓ | ✗ |
-| Notifications — SMS | ✓ | ✓ | ✗ |
+| Notifications — Email | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> |
+| Notifications — SMS | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> |
 | Notifications — Mobile Push | ✓ | ✓ | ✓ |
 | **Total packages** | **7** | **7** | **5** |
 
@@ -150,6 +150,22 @@ JSON keys.
 
 ---
 
+## Cloud-agnostic providers
+
+In addition to cloud-specific packages, Granit offers providers that work with any
+cloud platform:
+
+| Package | Channel(s) | Service |
+| ------- | ---------- | ------- |
+| `Granit.Notifications.Brevo` | Email + SMS + WhatsApp | Brevo (formerly Sendinblue) |
+| `Granit.Notifications.Email.SendGrid` | Email | SendGrid (Twilio) |
+| `Granit.Notifications.Twilio` | SMS + WhatsApp | Twilio Messaging |
+| `Granit.Notifications.Email.Smtp` | Email | Any SMTP server |
+| `Granit.Notifications.WebPush` | Web Push | VAPID (standard) |
+| `Granit.Notifications.SignalR` | Real-time | SignalR (WebSocket) |
+
+---
+
 ## Feature comparison
 
 ### Identity and Authentication
@@ -168,7 +184,7 @@ JSON keys.
 | Capability | AWS KMS | Azure Key Vault | Google Cloud KMS |
 | ---------- | :-----: | :-------------: | :--------------: |
 | Encrypt / Decrypt | ✓ | ✓ | ✓ |
-| Dynamic DB credentials | ✓ | ✗ | ✓ |
+| Dynamic DB credentials | ✓ | <span style="color: var(--sl-color-red);">✗</span> | ✓ |
 | Secret storage | ✓ | ✓ | ✓ |
 | Key rotation | ✓ | ✓ | ✓ |
 | Tenant-isolated keys | ✓ | ✓ | ✓ |
@@ -187,12 +203,13 @@ JSON keys.
 
 | Channel | AWS | Azure | Google Cloud |
 | ------- | :-: | :---: | :----------: |
-| Email | ✓ (SES) | ✓ (ACS) | ✗ |
-| SMS | ✓ (SNS) | ✓ (ACS) | ✗ |
+| Email | ✓ (SES) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> |
+| SMS | ✓ (SNS) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> |
 | Mobile Push | ✓ (SNS) | ✓ (ANH) | ✓ (FCM) |
 
 :::tip
 Google Cloud covers mobile push via Firebase Cloud Messaging
 (`Granit.Notifications.MobilePush.GoogleFcm`). For email and SMS, use
-Brevo or SMTP — these are provider-independent.
+the cloud-agnostic providers: `Granit.Notifications.Email.SendGrid` for email
+and `Granit.Notifications.Twilio` for SMS — see [Cloud-agnostic providers](#cloud-agnostic-providers).
 :::
