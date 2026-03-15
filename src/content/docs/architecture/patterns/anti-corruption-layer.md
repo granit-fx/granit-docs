@@ -29,7 +29,7 @@ flowchart LR
         KC_MAP["ToIdentityUser()"]
         S3_ADP["S3BlobClient"]
         BR_ADP["BrevoNotificationProvider"]
-        FCM_ADP["FcmMobilePushSender"]
+        FCM_ADP["GoogleFcmMobilePushSender"]
         MK_ADP["MailKitEmailSender"]
     end
 
@@ -99,7 +99,7 @@ from proprietary JSON structures (`realm_access.roles`,
 | AWS S3 SDK | `Granit.BlobStorage.S3` | `GetPreSignedUrlRequest` from `BlobUploadRequest` |
 | MailKit SMTP | `Granit.Notifications.Email.Smtp` | `MimeMessage` from `EmailMessage` |
 | Brevo API | `Granit.Notifications.Brevo` | JSON payload from `EmailMessage` / `SmsMessage` / `WhatsAppMessage` |
-| Firebase FCM | `Granit.Notifications.MobilePush.Fcm` | `FcmPayload` from `MobilePushMessage` |
+| Firebase FCM | `Granit.Notifications.MobilePush.GoogleFcm` | `FcmPayload` from `MobilePushMessage` |
 | ImageMagick | `Granit.Imaging.MagickNet` | `MagickFormat` to/from `ImageFormat` (bidirectional) |
 | Import systems | `Granit.DataExchange.EntityFrameworkCore` | External ID (Odoo `__export__`) to internal Entity ID |
 
@@ -121,7 +121,7 @@ from proprietary JSON structures (`realm_access.roles`,
 | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | S3 adapter |
 | `src/Granit.Notifications.Email.Smtp/Internal/MailKitEmailSender.cs` | SMTP adapter |
 | `src/Granit.Notifications.Brevo/Internal/BrevoNotificationProvider.cs` | Multi-channel Brevo |
-| `src/Granit.Notifications.MobilePush.Fcm/Internal/FcmMobilePushSender.cs` | FCM adapter |
+| `src/Granit.Notifications.MobilePush.GoogleFcm/Internal/GoogleFcmMobilePushSender.cs` | FCM adapter |
 | `src/Granit.Imaging.MagickNet/Internal/MagickFormatMapper.cs` | Image format mapping |
 
 ## Rationale

@@ -108,7 +108,7 @@ flowchart TD
 | Background Jobs | BackgroundJobs (4) |
 | Localization | Localization, Localization.EntityFrameworkCore, Localization.Endpoints, Localization.SourceGenerator |
 | Templating | Templating, Templating.Scriban, Templating.EF, Templating.Endpoints, Templating.Workflow, DocumentGeneration, DocumentGeneration.Pdf, DocumentGeneration.Excel |
-| Notifications | Notifications, Notifications.EF, Notifications.Endpoints, Notifications.Wolverine, Email, Email.Smtp, Email.AzureCommunicationServices, Sms, Sms.AzureCommunicationServices, WhatsApp, WebPush, SignalR, Sse, Zulip, Brevo, MobilePush, MobilePush.Fcm, MobilePush.AzureNotificationHubs |
+| Notifications | Notifications, Notifications.EF, Notifications.Endpoints, Notifications.Wolverine, Email, Email.Smtp, Email.AzureCommunicationServices, Sms, Sms.AzureCommunicationServices, WhatsApp, WebPush, SignalR, Sse, Zulip, Brevo, MobilePush, MobilePush.GoogleFcm, MobilePush.AzureNotificationHubs |
 | Workflow | Workflow, Workflow.EF, Workflow.Endpoints, Workflow.Notifications |
 | Timeline | Timeline, Timeline.EF, Timeline.Endpoints, Timeline.Notifications |
 | DataExchange | DataExchange, DataExchange.Csv, DataExchange.Excel, DataExchange.EF, DataExchange.Endpoints, DataExchange.Wolverine |
@@ -312,7 +312,7 @@ flowchart LR
     NOTIF --> NOTIF_ZULIP["Notifications.Zulip"]
 
     NOTIF --> NOTIF_MP["Notifications.MobilePush"]
-    NOTIF_MP --> NOTIF_FCM["Notifications.MobilePush.Fcm"]
+    NOTIF_MP --> NOTIF_FCM["Notifications.MobilePush.GoogleFcm"]
 
     NOTIF_EMAIL --> NOTIF_BREVO["Notifications.Brevo"]
     NOTIF_SMS --> NOTIF_BREVO
@@ -561,7 +561,7 @@ in the repository.
 
 - **%%PACKAGE_COUNT%% source packages**, zero circular dependencies
 - **Maximum depth**: 5 levels (e.g., Core to Security to Wolverine to Notifications to
-  Email to Smtp, or Core to Timing to Notifications to MobilePush to MobilePush.Fcm)
+  Email to Smtp, or Core to Timing to Notifications to MobilePush to MobilePush.GoogleFcm)
 - **Leaf packages**: `*.EntityFrameworkCore` and `*.S3` packages are almost always leaves
 - **Root packages with no dependencies**: `Granit.Core`, `Granit.Analyzers`,
   `Granit.Localization.SourceGenerator`

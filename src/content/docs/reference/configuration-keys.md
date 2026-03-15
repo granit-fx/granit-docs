@@ -689,14 +689,14 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Notifications:MobilePush` | |
 | **Package** | -- | `Granit.Notifications.MobilePush` | |
-| `Provider` | `string` | `"Fcm"` | Keyed service provider. |
+| `Provider` | `string` | `"GoogleFcm"` | Keyed service provider. |
 
-### Firebase Cloud Messaging -- `FcmOptions`
+### Firebase Cloud Messaging -- `GoogleFcmOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:MobilePush:Fcm` | |
-| **Package** | -- | `Granit.Notifications.MobilePush.Fcm` | |
+| **Section** | -- | `Notifications:MobilePush:GoogleFcm` | |
+| **Package** | -- | `Granit.Notifications.MobilePush.GoogleFcm` | |
 | `ProjectId` | `string` | `""` | Firebase project ID. |
 | `ServiceAccountJson` | `string` | `""` | Service account JSON key (from Vault). |
 | `BaseAddress` | `string` | `"https://fcm.googleapis.com/"` | FCM API base address. |

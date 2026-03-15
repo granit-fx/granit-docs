@@ -27,11 +27,11 @@ This page documents the current support status for each infrastructure dimension
 |----------------|-------------------|------------------------|
 | Database | PostgreSQL | SQL Server, SQLite (via EF Core) |
 | Cache | Memory (`IDistributedCache`) | Redis (StackExchange.Redis), HybridCache (L1+L2) |
-| Blob storage | S3-compatible (MinIO, AWS S3) | -- |
-| Identity provider | Keycloak | Entra ID (Azure AD), AWS Cognito, custom (`IIdentityProvider`) |
+| Blob storage | S3-compatible (MinIO, AWS S3) | Azure Blob, Google Cloud Storage |
+| Identity provider | Keycloak | Entra ID (Azure AD), AWS Cognito, Google Cloud Identity Platform, custom (`IIdentityProvider`) |
 | Messaging | PostgreSQL (Wolverine) | SQL Server (Wolverine), RabbitMQ (Wolverine) |
 | Observability | Grafana LGTM (Loki/Tempo/Mimir) | Any OTLP-compatible backend |
-| Encryption | HashiCorp Vault Transit | Azure Key Vault (`Granit.Vault.Azure`), AWS KMS (`Granit.Vault.Aws`) |
+| Encryption | HashiCorp Vault Transit | Azure Key Vault (`Granit.Vault.Azure`), AWS KMS (`Granit.Vault.Aws`), Google Cloud KMS (`Granit.Vault.GoogleCloud`) |
 
 ## Database providers
 
@@ -120,6 +120,8 @@ from provider upgrades:
 | Package | Provider | Status |
 |---------|----------|--------|
 | Granit.BlobStorage.S3 | Any S3-compatible API (MinIO, AWS S3, Scaleway, etc.) | Supported |
+| Granit.BlobStorage.AzureBlob | Azure Blob Storage | Supported |
+| Granit.BlobStorage.GoogleCloud | Google Cloud Storage | Supported |
 
 Granit.BlobStorage uses a Direct-to-Cloud architecture with presigned URLs. The
 `Granit.BlobStorage.S3` package implements this via AWSSDK.S3. Any service that
@@ -134,10 +136,12 @@ There is no local filesystem provider. For local development, use MinIO in a con
 | Granit.Authentication.Keycloak | Keycloak | Supported |
 | Granit.Authentication.EntraId | Microsoft Entra ID (Azure AD) | Supported |
 | Granit.Authentication.Cognito | AWS Cognito | Supported |
+| Granit.Authentication.GoogleCloud | Google Cloud Identity Platform (Firebase Auth) | Supported |
 | Granit.Authentication.JwtBearer | Any OIDC/JWT issuer | Supported (base layer) |
 | Granit.Identity.Keycloak | Keycloak Admin API | Supported |
 | Granit.Identity.EntraId | Microsoft Graph API | Supported |
 | Granit.Identity.Cognito | AWS Cognito User Pool API | Supported |
+| Granit.Identity.GoogleCloud | Firebase Admin SDK | Supported |
 | Granit.Identity (abstractions) | Custom via `IIdentityProvider` | Implement your own |
 
 ### Authentication vs. identity
@@ -147,7 +151,8 @@ There is no local filesystem provider. For local development, use MinIO in a con
 - **Identity** packages implement `IIdentityProvider` for user lookup, role management,
   and cache synchronization via the Admin APIs of each provider.
 
-Keycloak, Entra ID, and AWS Cognito all have dedicated packages for both layers.
+Keycloak, Entra ID, AWS Cognito, and Google Cloud Identity Platform all have
+dedicated packages for both layers.
 
 ## Messaging transports
 
@@ -179,14 +184,17 @@ The following modules integrate with Wolverine for asynchronous processing:
 | Package | Channel | External dependency |
 |---------|---------|---------------------|
 | Granit.Notifications.Email.Smtp | Email (SMTP) | Any SMTP server (MailKit) |
+| Granit.Notifications.Email.AwsSes | Email (AWS) | Amazon Simple Email Service |
 | Granit.Notifications.Email.AzureCommunicationServices | Email (Azure) | Azure Communication Services |
 | Granit.Notifications.Brevo | Email, SMS, WhatsApp | Brevo Transactional API |
 | Granit.Notifications.Sms | SMS (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.Sms.AzureCommunicationServices | SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.WhatsApp | WhatsApp (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.WebPush | Web Push | VAPID keys (Lib.Net.Http.WebPush) |
-| Granit.Notifications.MobilePush.Fcm | Mobile Push (FCM) | Firebase Cloud Messaging |
+| Granit.Notifications.MobilePush.GoogleFcm | Mobile Push (FCM) | Firebase Cloud Messaging |
 | Granit.Notifications.MobilePush.AzureNotificationHubs | Mobile Push (Azure) | Azure Notification Hubs |
+| Granit.Notifications.Sms.AwsSns | SMS (AWS) | Amazon SNS |
+| Granit.Notifications.MobilePush.AwsSns | Mobile Push (AWS) | Amazon SNS platform applications |
 | Granit.Notifications.SignalR | Real-time (WebSocket) | Redis backplane for multi-pod |
 
 ### Provider coverage
@@ -200,6 +208,10 @@ interfaces. Additional providers can be implemented against these interfaces.
 
 Azure Communication Services provides email and SMS through two dedicated packages.
 Azure Notification Hubs provides multi-platform mobile push.
+Amazon SNS provides SMS and mobile push through two dedicated packages.
+
+See also: [Cloud Providers](/reference/cloud-providers/) for all packages organized
+by cloud provider.
 
 ## Observability backends
 
@@ -234,7 +246,10 @@ Some modules require specific infrastructure services regardless of provider cho
 | Granit.Vault.HashiCorp | HashiCorp Vault (VaultSharp) |
 | Granit.Vault.Azure | Azure Key Vault (DefaultAzureCredential) |
 | Granit.Vault.Aws | AWS KMS + Secrets Manager |
+| Granit.Vault.GoogleCloud | Google Cloud KMS + Secret Manager |
 | Granit.Idempotency | Redis (StackExchange.Redis) |
 | Granit.RateLimiting | Redis (StackExchange.Redis) |
 | Granit.Notifications.SignalR | Redis backplane (for multi-pod deployments) |
 | Granit.BlobStorage.S3 | S3-compatible object storage |
+| Granit.BlobStorage.AzureBlob | Azure Blob Storage |
+| Granit.BlobStorage.GoogleCloud | Google Cloud Storage |

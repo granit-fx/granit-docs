@@ -149,7 +149,7 @@ lists every source and the span names it emits.
 | `Granit.Wolverine` | `wolverine.send`, `wolverine.handle` |
 | `Granit.Notifications` | `notification.dispatch`, `notification.deliver` |
 | `Granit.Notifications.Email.Smtp` | `smtp.send` |
-| `Granit.Notifications.Email.Ses` | `ses.send` |
+| `Granit.Notifications.Email.AwsSes` | `ses.send` |
 | `Granit.Notifications.Email.AzureCommunicationServices` | `acs-email.send` |
 | `Granit.Notifications.Sms.AzureCommunicationServices` | `acs-sms.send` |
 | `Granit.Notifications.MobilePush.AzureNotificationHubs` | `anh.send` |
@@ -195,7 +195,7 @@ for Kubernetes probes.
 | `Granit.Identity.EntraId` | `AddGranitEntraIdHealthCheck()` | `client_credentials` token request | readiness, startup |
 | `Granit.BlobStorage.S3` | `AddGranitS3HealthCheck()` | `ListObjectsV2(MaxKeys=1)` | readiness, startup |
 | `Granit.Notifications.Email.Smtp` | `AddGranitSmtpHealthCheck()` | EHLO handshake via MailKit | readiness |
-| `Granit.Notifications.Email.Ses` | `AddGranitSesHealthCheck()` | `GetAccount()` (Degraded if sending paused) | readiness, startup |
+| `Granit.Notifications.Email.AwsSes` | `AddGranitAwsSesHealthCheck()` | `GetAccount()` (Degraded if sending paused) | readiness, startup |
 | `Granit.Notifications.Brevo` | `AddGranitBrevoHealthCheck()` | `GET /account` | readiness |
 | `Granit.Notifications.Zulip` | `AddGranitZulipHealthCheck()` | `GET /api/v1/users/me` | readiness |
 | `Granit.Vault.Azure` | `AddGranitAzureKeyVaultHealthCheck()` | GetKey probe | readiness |
@@ -219,7 +219,7 @@ builder.Services.AddHealthChecks()
     .AddGranitDbContextHealthCheck<AppDbContext>()
     .AddGranitRedisHealthCheck(degradedThreshold: TimeSpan.FromMilliseconds(100))
     .AddGranitKeycloakHealthCheck()
-    .AddGranitSesHealthCheck()
+    .AddGranitAwsSesHealthCheck()
     .AddGranitBrevoHealthCheck()
     .AddGranitZulipHealthCheck()
     .AddGranitAzureKeyVaultHealthCheck()

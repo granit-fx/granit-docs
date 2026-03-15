@@ -144,6 +144,10 @@ export default defineConfig({
                         link: "/reference/dependency-graph/",
                       },
                       {
+                        label: "Cloud Providers",
+                        link: "/reference/cloud-providers/",
+                      },
+                      {
                         label: "Provider Compatibility",
                         link: "/reference/provider-compatibility/",
                       },

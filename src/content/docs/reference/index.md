@@ -36,5 +36,6 @@ and provider comparison.
 - [Configuration Keys](./configuration-keys/) -- all appsettings sections and Options classes
 - [HTTP Conventions](./http-conventions/) -- status codes, Problem Details, DTO naming
 - [Dependency Graph](./dependency-graph/) -- package relationships and module dependencies
+- [Cloud Providers](./cloud-providers/) -- packages by cloud provider (AWS, Azure, Google Cloud)
 - [Provider Compatibility](./provider-compatibility/) -- database, cache, storage support matrix
 - [Tech Stack](./tech-stack/) -- third-party libraries, licenses, and ADR links

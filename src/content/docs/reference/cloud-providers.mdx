@@ -1,0 +1,198 @@
+---
+title: Cloud Providers
+description: All Granit packages organized by cloud provider — AWS, Azure, and Google Cloud
+sidebar:
+  order: 35
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Granit is cloud-agnostic by design. Each module defines provider-neutral abstractions
+(`IIdentityProvider`, `IBlobStorageProvider`, `IEncryptionService`, etc.) and ships
+dedicated provider packages for major cloud platforms. Switch providers by changing
+a single NuGet reference and DI registration — no application code changes needed.
+
+:::note
+This page covers the three major cloud providers (AWS, Azure, Google Cloud).
+Other providers (Keycloak, HashiCorp Vault, Brevo, etc.) are documented in
+their respective module pages — see [Provider Compatibility](/reference/provider-compatibility/)
+for the full matrix.
+:::
+
+## At a glance
+
+| Domain | [AWS](#aws) | [Azure](#azure) | [Google Cloud](#google-cloud) |
+| ------ | :---------: | :-------------: | :---------------------------: |
+| Authentication | ✓ | ✓ | ✓ |
+| Identity | ✓ | ✓ | ✓ |
+| Vault / Encryption | ✓ | ✓ | ✓ |
+| Blob Storage | ✓ | ✓ | ✓ |
+| Notifications — Email | ✓ | ✓ | ✗ |
+| Notifications — SMS | ✓ | ✓ | ✗ |
+| Notifications — Mobile Push | ✓ | ✓ | ✓ |
+| **Total packages** | **7** | **7** | **5** |
+
+## Setup
+
+<Tabs>
+<TabItem label="AWS">
+
+```csharp
+// Program.cs — AWS provider stack
+builder.AddGranitAuthenticationCognito();
+builder.AddGranitIdentityCognito();
+builder.AddGranitVaultAws();
+builder.AddGranitBlobStorageS3();
+builder.AddGranitNotificationsEmailAwsSes();
+builder.AddGranitNotificationsSmsAwsSns();
+builder.AddGranitNotificationsMobilePushAwsSns();
+```
+
+</TabItem>
+<TabItem label="Azure">
+
+```csharp
+// Program.cs — Azure provider stack
+builder.AddGranitAuthenticationEntraId();
+builder.AddGranitIdentityEntraId();
+builder.AddGranitVaultAzure();
+builder.AddGranitBlobStorageAzureBlob();
+builder.AddGranitNotificationsEmailAzureCommunicationServices();
+builder.AddGranitNotificationsSmsAzureCommunicationServices();
+builder.AddGranitNotificationsMobilePushAzureNotificationHubs();
+```
+
+</TabItem>
+<TabItem label="Google Cloud">
+
+```csharp
+// Program.cs — Google Cloud provider stack
+builder.AddGranitAuthenticationGoogleCloud();
+builder.AddGranitIdentityGoogleCloud();
+builder.AddGranitVaultGoogleCloud();
+builder.AddGranitBlobStorageGoogleCloud();
+builder.AddGranitNotificationsMobilePushGoogleFcm();
+```
+
+</TabItem>
+</Tabs>
+
+---
+
+## AWS
+
+Amazon Web Services packages use the official AWS SDK for .NET.
+
+| Package | Module | What it does |
+| ------- | ------ | ------------ |
+| `Granit.Authentication.Cognito` | Authentication | JWT validation + claims transformation for Cognito User Pools |
+| `Granit.Identity.Cognito` | Identity | `IIdentityProvider` via Cognito User Pool Admin API |
+| `Granit.Vault.Aws` | Vault | `IEncryptionService` via AWS KMS + dynamic credentials via Secrets Manager |
+| `Granit.BlobStorage.S3` | Blob Storage | `IBlobStorageProvider` via S3-compatible API (also works with MinIO, Scaleway, etc.) |
+| `Granit.Notifications.Email.AwsSes` | Notifications | `IEmailSender` via Amazon Simple Email Service |
+| `Granit.Notifications.Sms.AwsSns` | Notifications | `ISmsSender` via Amazon SNS |
+| `Granit.Notifications.MobilePush.AwsSns` | Notifications | `IMobilePushSender` via Amazon SNS platform applications |
+
+**See also:**
+[Identity](/reference/modules/identity/) —
+[Vault & Encryption](/reference/modules/vault-encryption/) —
+[Blob Storage](/reference/modules/blob-storage/) —
+[Notifications](/reference/modules/notifications/)
+
+---
+
+## Azure
+
+Microsoft Azure packages use `DefaultAzureCredential` for authentication
+(Managed Identity, Azure CLI, etc.).
+
+| Package | Module | What it does |
+| ------- | ------ | ------------ |
+| `Granit.Authentication.EntraId` | Authentication | JWT validation + claims transformation for Microsoft Entra ID (Azure AD) |
+| `Granit.Identity.EntraId` | Identity | `IIdentityProvider` via Microsoft Graph API |
+| `Granit.Vault.Azure` | Vault | `IEncryptionService` via Azure Key Vault |
+| `Granit.BlobStorage.AzureBlob` | Blob Storage | `IBlobStorageProvider` via Azure Blob Storage |
+| `Granit.Notifications.Email.AzureCommunicationServices` | Notifications | `IEmailSender` via Azure Communication Services |
+| `Granit.Notifications.Sms.AzureCommunicationServices` | Notifications | `ISmsSender` via Azure Communication Services |
+| `Granit.Notifications.MobilePush.AzureNotificationHubs` | Notifications | `IMobilePushSender` via Azure Notification Hubs |
+
+:::note
+AWS and Azure both cover all three notification channels (email, SMS,
+and mobile push) through dedicated packages.
+:::
+
+**See also:**
+[Identity](/reference/modules/identity/) —
+[Vault & Encryption](/reference/modules/vault-encryption/) —
+[Blob Storage](/reference/modules/blob-storage/) —
+[Notifications](/reference/modules/notifications/)
+
+---
+
+## Google Cloud
+
+Google Cloud packages use Application Default Credentials (ADC) or service account
+JSON keys.
+
+| Package | Module | What it does |
+| ------- | ------ | ------------ |
+| `Granit.Authentication.GoogleCloud` | Authentication | JWT validation + claims transformation for Google Cloud Identity Platform (Firebase Auth) |
+| `Granit.Identity.GoogleCloud` | Identity | `IIdentityProvider` via Firebase Admin SDK |
+| `Granit.Vault.GoogleCloud` | Vault | `IEncryptionService` via Cloud KMS + dynamic credentials via Secret Manager |
+| `Granit.BlobStorage.GoogleCloud` | Blob Storage | `IBlobStorageProvider` via Google Cloud Storage |
+| `Granit.Notifications.MobilePush.GoogleFcm` | Notifications | `IMobilePushSender` via Firebase Cloud Messaging |
+
+**See also:**
+[Identity](/reference/modules/identity/) —
+[Vault & Encryption](/reference/modules/vault-encryption/) —
+[Blob Storage](/reference/modules/blob-storage/) —
+[Notifications](/reference/modules/notifications/)
+
+---
+
+## Feature comparison
+
+### Identity and Authentication
+
+| Capability | AWS (Cognito) | Azure (Entra ID) | Google Cloud |
+| ---------- | :-----------: | :---------------: | :----------: |
+| JWT validation | ✓ | ✓ | ✓ |
+| Claims transformation | ✓ | ✓ | ✓ |
+| User CRUD | ✓ | ✓ | ✓ |
+| Role management | ✓ | ✓ | ✓ (custom claims) |
+| User cache sync | ✓ | ✓ | ✓ |
+| Health check | ✓ | ✓ | ✓ |
+
+### Vault and Encryption
+
+| Capability | AWS KMS | Azure Key Vault | Google Cloud KMS |
+| ---------- | :-----: | :-------------: | :--------------: |
+| Encrypt / Decrypt | ✓ | ✓ | ✓ |
+| Dynamic DB credentials | ✓ | ✗ | ✓ |
+| Secret storage | ✓ | ✓ | ✓ |
+| Key rotation | ✓ | ✓ | ✓ |
+| Tenant-isolated keys | ✓ | ✓ | ✓ |
+| Health check | ✓ | ✓ | ✓ |
+
+### Blob Storage
+
+| Capability | AWS S3 | Azure Blob | Google Cloud Storage |
+| ---------- | :----: | :--------: | :------------------: |
+| Presigned upload | ✓ | ✓ | ✓ |
+| Presigned download | ✓ | ✓ | ✓ |
+| Tenant isolation | ✓ | ✓ | ✓ |
+| Health check | ✓ | ✓ | ✓ |
+
+### Notifications
+
+| Channel | AWS | Azure | Google Cloud |
+| ------- | :-: | :---: | :----------: |
+| Email | ✓ (SES) | ✓ (ACS) | ✗ |
+| SMS | ✓ (SNS) | ✓ (ACS) | ✗ |
+| Mobile Push | ✓ (SNS) | ✓ (ANH) | ✓ (FCM) |
+
+:::tip
+Google Cloud covers mobile push via Firebase Cloud Messaging
+(`Granit.Notifications.MobilePush.GoogleFcm`). For email and SMS, use
+Brevo or SMTP — these are provider-independent.
+:::
