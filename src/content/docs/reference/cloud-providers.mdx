@@ -21,16 +21,16 @@ for the full matrix.
 
 ## At a glance
 
-| Domain | [AWS](#aws) | [Azure](#azure) | [Google Cloud](#google-cloud) |
-| ------ | :---------: | :-------------: | :---------------------------: |
-| Authentication | ✓ | ✓ | ✓ |
-| Identity | ✓ | ✓ | ✓ |
-| Vault / Encryption | ✓ | ✓ | ✓ |
-| Blob Storage | ✓ | ✓ | ✓ |
-| Notifications — Email | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> |
-| Notifications — SMS | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> |
-| Notifications — Mobile Push | ✓ | ✓ | ✓ |
-| **Total packages** | **7** | **7** | **5** |
+| Domain | [AWS](#aws) | [Azure](#azure) | [Google Cloud](#google-cloud) | [Alibaba Cloud](#alibaba-cloud) |
+| ------ | :---------: | :-------------: | :---------------------------: | :-----------------------------: |
+| Authentication | ✓ | ✓ | ✓ | planned |
+| Identity | ✓ | ✓ | ✓ | planned |
+| Vault / Encryption | ✓ | ✓ | ✓ | planned |
+| Blob Storage | ✓ | ✓ | ✓ | planned |
+| Notifications — Email | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> | planned |
+| Notifications — SMS | ✓ | ✓ | <span style="color: var(--sl-color-red);">✗</span> | planned |
+| Notifications — Mobile Push | ✓ | ✓ | ✓ | planned |
+| **Total packages** | **7** | **7** | **5** | **0** |
 
 ## Setup
 
@@ -150,6 +150,28 @@ JSON keys.
 
 ---
 
+## Alibaba Cloud
+
+:::caution[Planned]
+Alibaba Cloud provider packages are planned but not yet implemented. Alibaba Cloud
+offers mature equivalents for all domains: RAM/IDaaS (identity), KMS (encryption),
+OSS (S3-compatible storage), DirectMail (email), SMS Service, and Push Notifications.
+
+Contributions welcome — see [CONTRIBUTING.md](https://github.com/digital-dynamics/granit-dotnet/blob/main/CONTRIBUTING.md).
+:::
+
+| Domain | Alibaba Cloud service | Status |
+| ------ | -------------------- | ------ |
+| Authentication | IDaaS | planned |
+| Identity | RAM + IDaaS | planned |
+| Vault / Encryption | KMS | planned |
+| Blob Storage | OSS (S3-compatible) | planned |
+| Notifications — Email | DirectMail | planned |
+| Notifications — SMS | Short Message Service | planned |
+| Notifications — Mobile Push | Push Notifications | planned |
+
+---
+
 ## Cloud-agnostic providers
 
 In addition to cloud-specific packages, Granit offers providers that work with any
@@ -171,42 +193,42 @@ cloud platform:
 
 ### Identity and Authentication
 
-| Capability | AWS (Cognito) | Azure (Entra ID) | Google Cloud |
-| ---------- | :-----------: | :---------------: | :----------: |
-| JWT validation | ✓ | ✓ | ✓ |
-| Claims transformation | ✓ | ✓ | ✓ |
-| User CRUD | ✓ | ✓ | ✓ |
-| Role management | ✓ | ✓ | ✓ (custom claims) |
-| User cache sync | ✓ | ✓ | ✓ |
-| Health check | ✓ | ✓ | ✓ |
+| Capability | AWS (Cognito) | Azure (Entra ID) | Google Cloud | Alibaba Cloud |
+| ---------- | :-----------: | :---------------: | :----------: | :-----------: |
+| JWT validation | ✓ | ✓ | ✓ | planned |
+| Claims transformation | ✓ | ✓ | ✓ | planned |
+| User CRUD | ✓ | ✓ | ✓ | planned |
+| Role management | ✓ | ✓ | ✓ (custom claims) | planned |
+| User cache sync | ✓ | ✓ | ✓ | planned |
+| Health check | ✓ | ✓ | ✓ | planned |
 
 ### Vault and Encryption
 
-| Capability | AWS KMS | Azure Key Vault | Google Cloud KMS |
-| ---------- | :-----: | :-------------: | :--------------: |
-| Encrypt / Decrypt | ✓ | ✓ | ✓ |
-| Dynamic DB credentials | ✓ | <span style="color: var(--sl-color-red);">✗</span> | ✓ |
-| Secret storage | ✓ | ✓ | ✓ |
-| Key rotation | ✓ | ✓ | ✓ |
-| Tenant-isolated keys | ✓ | ✓ | ✓ |
-| Health check | ✓ | ✓ | ✓ |
+| Capability | AWS KMS | Azure Key Vault | Google Cloud KMS | Alibaba Cloud KMS |
+| ---------- | :-----: | :-------------: | :--------------: | :---------------: |
+| Encrypt / Decrypt | ✓ | ✓ | ✓ | planned |
+| Dynamic DB credentials | ✓ | <span style="color: var(--sl-color-red);">✗</span> | ✓ | planned |
+| Secret storage | ✓ | ✓ | ✓ | planned |
+| Key rotation | ✓ | ✓ | ✓ | planned |
+| Tenant-isolated keys | ✓ | ✓ | ✓ | planned |
+| Health check | ✓ | ✓ | ✓ | planned |
 
 ### Blob Storage
 
-| Capability | AWS S3 | Azure Blob | Google Cloud Storage |
-| ---------- | :----: | :--------: | :------------------: |
-| Presigned upload | ✓ | ✓ | ✓ |
-| Presigned download | ✓ | ✓ | ✓ |
-| Tenant isolation | ✓ | ✓ | ✓ |
-| Health check | ✓ | ✓ | ✓ |
+| Capability | AWS S3 | Azure Blob | Google Cloud Storage | Alibaba Cloud OSS |
+| ---------- | :----: | :--------: | :------------------: | :---------------: |
+| Presigned upload | ✓ | ✓ | ✓ | planned |
+| Presigned download | ✓ | ✓ | ✓ | planned |
+| Tenant isolation | ✓ | ✓ | ✓ | planned |
+| Health check | ✓ | ✓ | ✓ | planned |
 
 ### Notifications
 
-| Channel | AWS | Azure | Google Cloud |
-| ------- | :-: | :---: | :----------: |
-| Email | ✓ (SES) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> |
-| SMS | ✓ (SNS) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> |
-| Mobile Push | ✓ (SNS) | ✓ (ANH) | ✓ (FCM) |
+| Channel | AWS | Azure | Google Cloud | Alibaba Cloud |
+| ------- | :-: | :---: | :----------: | :-----------: |
+| Email | ✓ (SES) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> | planned |
+| SMS | ✓ (SNS) | ✓ (ACS) | <span style="color: var(--sl-color-red);">✗</span> | planned |
+| Mobile Push | ✓ (SNS) | ✓ (ANH) | ✓ (FCM) | planned |
 
 :::tip
 Google Cloud covers mobile push via Firebase Cloud Messaging
