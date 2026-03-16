@@ -1,0 +1,244 @@
+---
+title: Use reference data
+description: Manage multilingual reference data entities with CRUD endpoints, EF Core persistence, caching, and seeding
+sidebar:
+  order: 18
+---
+
+Granit.ReferenceData provides a generic framework for managing lookup tables
+(countries, currencies, document types) with built-in i18n support for 14 languages,
+ISO 27001 audit trail, automatic inactive-entry filtering, and in-memory caching.
+
+## Prerequisites
+
+- A .NET 10 project referencing `Granit.Core`
+- An EF Core `DbContext` for persistence
+- Familiarity with EF Core entity configurations
+
+## Step 1 -- Install packages
+
+```bash
+dotnet add package Granit.ReferenceData
+dotnet add package Granit.ReferenceData.EntityFrameworkCore
+dotnet add package Granit.ReferenceData.Endpoints
+```
+
+## Step 2 -- Define a reference data entity
+
+Every reference data type inherits from `ReferenceDataEntity`, which provides:
+
+- `Code` -- unique business key (e.g., `"BE"`, `"EUR"`)
+- 14 label properties (`LabelEn`, `LabelFr`, `LabelNl`, `LabelDe`, `LabelEs`,
+  `LabelIt`, `LabelPt`, `LabelZh`, `LabelJa`, `LabelPl`, `LabelTr`, `LabelKo`,
+  `LabelSv`, `LabelCs`)
+- `Label` -- virtual `[NotMapped]` property that resolves automatically based on
+  `CultureInfo.CurrentUICulture`, falling back to `LabelEn`
+- `IsActive`, `SortOrder`, `ValidFrom`, `ValidTo`
+- Full audit columns (`CreatedAt`, `CreatedBy`, `ModifiedAt`, `ModifiedBy`)
+
+Add domain-specific properties to the subclass:
+
+```csharp
+using Granit.ReferenceData;
+
+namespace MyApp.Domain;
+
+public sealed class Country : ReferenceDataEntity
+{
+    public string Alpha3Code { get; set; } = string.Empty;
+    public string CallingCode { get; set; } = string.Empty;
+}
+```
+
+:::note[Good to know]
+Translation properties are optional. An application using only French and English can
+leave other label properties empty -- the `Label` property falls back to `LabelEn`
+automatically. Regional variants (fr-CA, en-GB, pt-BR) use `TwoLetterISOLanguageName`
+fallback: fr-CA resolves to `LabelFr`, en-GB to `LabelEn`, pt-BR to `LabelPt`.
+:::
+
+## Step 3 -- Configure EF Core persistence
+
+Create a configuration class inheriting from `ReferenceDataEntityTypeConfiguration<T>`.
+The base class configures the primary key, unique index on `Code`, label columns,
+audit columns, and the `IsActive` filter.
+
+```csharp
+using Granit.ReferenceData.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using MyApp.Domain;
+
+namespace MyApp.Persistence;
+
+public sealed class CountryConfiguration
+    : ReferenceDataEntityTypeConfiguration<Country>
+{
+    public CountryConfiguration() : base("ref_countries") { }
+
+    protected override void ConfigureEntity(EntityTypeBuilder<Country> builder)
+    {
+        builder.Property(e => e.Alpha3Code)
+               .HasMaxLength(3)
+               .IsRequired();
+
+        builder.Property(e => e.CallingCode)
+               .HasMaxLength(10);
+    }
+}
+```
+
+Apply the configuration in your `DbContext`:
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    base.OnModelCreating(modelBuilder);
+
+    modelBuilder.ConfigureReferenceData(new CountryConfiguration());
+    modelBuilder.ConfigureReferenceData(new CurrencyConfiguration());
+
+    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
+}
+```
+
+## Step 4 -- Register the store
+
+Register the EF Core store for each reference data type. This replaces the in-memory
+default and adds cache-aside behavior:
+
+```csharp
+services.AddReferenceDataStore<Country, AppDbContext>();
+services.AddReferenceDataStore<Currency, AppDbContext>();
+```
+
+This registers:
+
+- `IReferenceDataStoreReader<T>` / `IReferenceDataStoreWriter<T>` (Scoped) -- EF Core store with memory cache
+- `IDataSeedContributor` -- bridge for typed seeders
+
+## Step 5 -- Seed initial data
+
+Implement `IReferenceDataSeeder<T>` for idempotent data seeding. Seeders are ordered
+by the `Order` property and executed via the `IDataSeedContributor` pipeline:
+
+```csharp
+using Granit.ReferenceData;
+using MyApp.Domain;
+
+namespace MyApp.Persistence;
+
+public sealed class CountrySeeder : IReferenceDataSeeder<Country>
+{
+    public int Order => 1;
+
+    public async Task SeedAsync(
+        IReferenceDataStoreReader<Country> storeReader,
+        IReferenceDataStoreWriter<Country> storeWriter,
+        CancellationToken cancellationToken)
+    {
+        var existing = await storeReader.GetByCodeAsync(
+            "BE", cancellationToken);
+
+        if (existing is null)
+        {
+            await storeWriter.CreateAsync(new Country
+            {
+                Code = "BE",
+                LabelEn = "Belgium",
+                LabelFr = "Belgique",
+                LabelNl = "Belgi\u00eb",
+                LabelDe = "Belgien",
+                Alpha3Code = "BEL",
+                CallingCode = "+32"
+            }, cancellationToken);
+        }
+    }
+}
+```
+
+Register the seeder:
+
+```csharp
+services.AddTransient<IReferenceDataSeeder<Country>, CountrySeeder>();
+```
+
+## Step 6 -- Map CRUD endpoints
+
+`Granit.ReferenceData.Endpoints` exposes Minimal API endpoints for reading and
+administering reference data:
+
+```csharp
+app.MapReferenceDataEndpoints<Country>();
+app.MapReferenceDataEndpoints<Currency>(opts =>
+{
+    opts.RoutePrefix = "api/ref";
+    opts.AdminPolicyName = "Custom.Admin";
+});
+```
+
+The entity name is converted to kebab-case for the route segment:
+`Country` becomes `/reference-data/country`.
+
+### Available endpoints
+
+**Read (public):**
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/{prefix}/{entity}` | Filtered and paginated list |
+| `GET` | `/{prefix}/{entity}/{code}` | Single entry by code |
+
+Query parameters: `activeOnly` (default `true`), `search`, `sortBy`, `descending`,
+`skip`, `take`.
+
+**Admin (protected by `ReferenceData.Admin` policy):**
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/{prefix}/{entity}` | Create an entry |
+| `PUT` | `/{prefix}/{entity}/{code}` | Update an entry |
+| `DELETE` | `/{prefix}/{entity}/{code}` | Deactivate an entry |
+
+## Step 7 -- Query reference data in code
+
+Use `IReferenceDataStoreReader<T>` to query reference data with filtering and pagination:
+
+```csharp
+using Granit.ReferenceData;
+using MyApp.Domain;
+
+namespace MyApp.Services;
+
+public sealed class CountryService(
+    IReferenceDataStoreReader<Country> storeReader)
+{
+    public async Task<ReferenceDataResult<Country>> SearchAsync(
+        string? searchTerm,
+        CancellationToken cancellationToken) =>
+        await storeReader.GetAllAsync(
+            new ReferenceDataQuery(
+                ActiveOnly: true,
+                SearchTerm: searchTerm,
+                SortBy: "Code",
+                Skip: 0,
+                Take: 25),
+            cancellationToken);
+
+    public async Task<Country?> GetByCodeAsync(
+        string code,
+        CancellationToken cancellationToken) =>
+        await storeReader.GetByCodeAsync(code, cancellationToken);
+}
+```
+
+:::tip[Pro tip]
+The store caches `GetByCodeAsync` results with a configurable TTL (default: 1 hour).
+The cache is invalidated automatically when you use `IReferenceDataStoreWriter<T>`.
+Configure the TTL via `ReferenceData:CacheTimeToLive` in `appsettings.json`.
+:::
+
+## Next steps
+
+- [Manage application settings](/dotnet/guides/manage-application-settings/) -- dynamic settings with cascading resolution
+- [Implement the audit timeline](/dotnet/guides/implement-audit-timeline/) -- track changes to reference data
+- [Create a module](/dotnet/guides/create-a-module/) -- package reference data types into a reusable module

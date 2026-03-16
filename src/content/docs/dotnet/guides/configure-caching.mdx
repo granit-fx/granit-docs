@@ -1,0 +1,292 @@
+---
+title: Configure caching
+description: Set up distributed caching with IDistributedCache, HybridCache, Redis, and AES-256 encryption
+sidebar:
+  order: 14
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Granit.Caching provides a typed cache abstraction (`ICacheService<T>`) that works
+identically across three providers: in-memory for development, Redis for production,
+and HybridCache (L1 memory + L2 Redis) for multi-pod Kubernetes deployments.
+Built-in stampede protection and optional AES-256 encryption for GDPR-sensitive data.
+
+## Prerequisites
+
+- A working Granit application
+- Redis server (for production setups)
+
+## Step 1 -- Install the package
+
+Choose the package matching your deployment target:
+
+<Tabs>
+<TabItem label="Development (in-memory)">
+
+```bash
+dotnet add package Granit.Caching
+```
+
+```csharp
+[DependsOn(typeof(GranitCachingModule))]
+public sealed class AppModule : GranitModule { }
+```
+
+No additional configuration needed. Uses `MemoryDistributedCache` internally.
+
+</TabItem>
+<TabItem label="Production (Redis)">
+
+```bash
+dotnet add package Granit.Caching.StackExchangeRedis
+```
+
+```csharp
+[DependsOn(typeof(GranitCachingRedisModule))]
+public sealed class AppModule : GranitModule { }
+```
+
+</TabItem>
+<TabItem label="Kubernetes (HybridCache)">
+
+```bash
+dotnet add package Granit.Caching.Hybrid
+```
+
+```csharp
+[DependsOn(typeof(GranitCachingHybridModule))]
+public sealed class AppModule : GranitModule { }
+```
+
+Hybrid pulls in `Caching.StackExchangeRedis` transitively.
+
+</TabItem>
+</Tabs>
+
+## Step 2 -- Configure appsettings.json
+
+<Tabs>
+<TabItem label="Development">
+
+```json
+{
+  "Cache": {
+    "KeyPrefix": "myapp"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Production (Redis)">
+
+```json
+{
+  "Cache": {
+    "KeyPrefix": "myapp",
+    "DefaultAbsoluteExpirationRelativeToNow": "01:00:00",
+    "DefaultSlidingExpiration": "00:20:00",
+    "EncryptValues": true,
+    "Encryption": {
+      "Key": "<base64-aes256-key-from-vault>"
+    },
+    "Redis": {
+      "IsEnabled": true,
+      "Configuration": "redis-service:6379",
+      "InstanceName": "myapp:"
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Kubernetes (HybridCache)">
+
+```json
+{
+  "Cache": {
+    "KeyPrefix": "myapp",
+    "EncryptValues": true,
+    "Encryption": {
+      "Key": "<base64-aes256-key-from-vault>"
+    },
+    "Redis": {
+      "IsEnabled": true,
+      "Configuration": "redis-service:6379",
+      "InstanceName": "myapp:"
+    },
+    "Hybrid": {
+      "LocalCacheExpiration": "00:00:30"
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::caution[Warning]
+The AES encryption key must be provided via Vault, never stored in plain text
+in `appsettings.json`. The example above uses a placeholder for illustration.
+:::
+
+## Step 3 -- Use ICacheService in your code
+
+### String key (simple)
+
+```csharp
+public sealed class UserService(ICacheService<UserCacheItem> cache)
+{
+    public async Task<UserCacheItem> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return await cache.GetOrAddAsync(
+            id.ToString(),
+            async ct => await LoadUserFromDatabaseAsync(id, ct),
+            cancellationToken: cancellationToken);
+    }
+}
+```
+
+### Typed key
+
+```csharp
+public sealed class UserService(ICacheService<UserCacheItem, Guid> cache)
+{
+    public async Task<UserCacheItem> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return await cache.GetOrAddAsync(
+            id,
+            async ct => await LoadUserFromDatabaseAsync(id, ct),
+            cancellationToken: cancellationToken);
+    }
+}
+```
+
+The business code is identical regardless of the provider (Memory, Redis, or Hybrid).
+
+## Step 4 -- Customize cache key naming
+
+Keys are built automatically using the format `{KeyPrefix}:{CacheName}:{userKey}`.
+
+| `KeyPrefix` | Cache item type | User key | Final key |
+|-------------|----------------|----------|-----------|
+| `myapp` | `UserCacheItem` | `d4e5f6` | `myapp:User:d4e5f6` |
+| `myapp` | `PatientCacheItem` | `p-001` | `myapp:Patient:p-001` |
+
+The convention automatically strips the `CacheItem` suffix from the type name.
+Use the `[CacheName]` attribute to override the convention:
+
+```csharp
+[CacheName("Session")]
+public sealed class SessionData
+{
+    public string UserId { get; init; } = default!;
+    public DateTimeOffset ExpiresAt { get; init; }
+}
+```
+
+This produces keys like `myapp:Session:abc` instead of `myapp:SessionData:abc`.
+
+## Step 5 -- Enable encryption for sensitive data
+
+### Global encryption
+
+Set `EncryptValues: true` in the `Cache` section to encrypt all cached values
+with AES-256-CBC.
+
+### Per-type control
+
+Use `[CacheEncrypted]` to control encryption independently of the global flag:
+
+```csharp
+// Always encrypted, even if EncryptValues = false
+[CacheEncrypted]
+public sealed class PatientCacheItem
+{
+    public string Name { get; init; } = default!;
+    public DateOnly DateOfBirth { get; init; }
+}
+
+// Never encrypted, even if EncryptValues = true
+[CacheEncrypted(false)]
+public sealed class PublicConfigCacheItem
+{
+    public string ThemeColor { get; init; } = default!;
+}
+
+// Follows the global EncryptValues flag
+public sealed class UserSessionCacheItem
+{
+    public string Token { get; init; } = default!;
+}
+```
+
+The attribute takes priority over the global `EncryptValues` flag.
+
+## Step 6 -- Cache invalidation
+
+Remove a cached entry explicitly:
+
+```csharp
+await cache.RemoveAsync("user-id", cancellationToken);
+```
+
+### Invalidation in multi-pod deployments
+
+With HybridCache, `RemoveAsync` clears the L2 (Redis) and the local L1 cache of
+the calling pod. Other pods' L1 caches expire naturally within the
+`LocalCacheExpiration` window (default: 30 seconds).
+
+:::tip[Pro tip]
+For data requiring strong consistency across pods, use the Redis-only provider
+(`Granit.Caching.StackExchangeRedis`) instead of HybridCache. The L1 cache
+introduces an eventual consistency window bounded by `LocalCacheExpiration`.
+:::
+
+## Configuration reference
+
+### CachingOptions (`Cache` section)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `KeyPrefix` | `string` | `"dd"` | Prefix for all cache keys |
+| `DefaultAbsoluteExpirationRelativeToNow` | `TimeSpan?` | `1h` | Default absolute expiration |
+| `DefaultSlidingExpiration` | `TimeSpan?` | `20min` | Default sliding expiration |
+| `EncryptValues` | `bool` | `false` | Enable AES-256 encryption globally |
+
+### RedisCachingOptions (`Cache:Redis` section)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IsEnabled` | `bool` | `true` | Disable Redis without changing the loaded module |
+| `Configuration` | `string` | `"localhost:6379"` | StackExchange.Redis connection string |
+| `InstanceName` | `string` | `"dd:"` | Redis key prefix for multi-app isolation |
+
+### HybridCachingOptions (`Cache:Hybrid` section)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `LocalCacheExpiration` | `TimeSpan` | `30s` | L1 cache TTL (bounds staleness across pods) |
+
+## Stampede protection
+
+`GetOrAddAsync` guarantees the factory executes only once, even under heavy
+concurrency (10+ simultaneous requests for the same missing key):
+
+1. Lock-free check (cache hit returns immediately)
+2. Acquire lock (`SemaphoreSlim` stored in a bounded `IMemoryCache`, TTL 30s)
+3. Double-check (another thread may have populated the cache)
+4. Execute the factory (guaranteed single execution)
+
+With HybridCache, stampede protection is built into the .NET runtime -- no
+additional `SemaphoreSlim` needed.
+
+## Next steps
+
+- [Configure multi-tenancy](/dotnet/guides/configure-multi-tenancy/) -- tenant-aware cache keys
+- [Add an endpoint](/dotnet/guides/add-an-endpoint/) -- use cached data in your API endpoints
+- [Caching reference](/dotnet/data/caching/) -- full architecture and service registration details
