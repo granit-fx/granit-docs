@@ -2,7 +2,7 @@
 title: "Core Concepts — Modules, DI & Architecture"
 description: Core design principles behind Granit — module system, EF Core persistence, Wolverine messaging, multi-tenancy, GDPR compliance, and the security model. The mental model for using the framework effectively.
 sidebar:
-  label: Concepts
+  label: Overview
   order: 0
 ---
 
@@ -19,7 +19,6 @@ and extend it without surprises.
 ```mermaid
 graph TD
     MS[Module System] --> DI[Dependency Injection]
-    MS --> Bundles
     DI --> Config[Configuration]
     DI --> P[Persistence]
     P --> CQRS[CQRS]
