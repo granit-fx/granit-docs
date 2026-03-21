@@ -76,7 +76,54 @@ payloads contain health data or PII, verify that encryption at rest is enabled a
 that your DPO has approved this configuration (GDPR/ISO 27001).
 :::
 
-## 4. Publish webhook events
+## 4. Register event types
+
+Declare the webhook event types your application supports by implementing
+`IWebhookEventTypeDefinitionProvider`. Providers are auto-discovered — no manual
+DI registration needed:
+
+```csharp
+using Granit.Webhooks.Definitions;
+
+internal sealed class AppWebhookEventTypeProvider : IWebhookEventTypeDefinitionProvider
+{
+    public void Define(IWebhookEventTypeDefinitionContext context)
+    {
+        // Convention-based: localization keys derived automatically
+        context.Add<AppLocalizationResource>("order.created", category: "Orders");
+        context.Add<AppLocalizationResource>("order.shipped", category: "Orders");
+        context.Add<AppLocalizationResource>("invoice.created", category: "Billing");
+    }
+}
+```
+
+Then add the corresponding keys to your localization JSON files (all 17 cultures):
+
+```json
+{
+  "culture": "en",
+  "texts": {
+    "WebhookEventType:order.created": "Order created",
+    "WebhookEventType:order.created:Description": "Fired when a new order is placed.",
+    "WebhookEventType:order.shipped": "Order shipped",
+    "WebhookEventType:order.shipped:Description": "Fired when an order ships.",
+    "WebhookEventType:invoice.created": "Invoice created",
+    "WebhookEventType:invoice.created:Description": "Fired when an invoice is generated.",
+    "WebhookEventTypeCategory:Orders": "Orders",
+    "WebhookEventTypeCategory:Billing": "Billing"
+  }
+}
+```
+
+At startup, all providers are aggregated into an immutable `IWebhookEventTypeRegistry`.
+This registry powers two features:
+
+- **Discovery endpoint** — `GET /event-types` returns localized labels based on
+  `Accept-Language` header
+- **Subscription validation** — creating a subscription with an unknown event type
+  is rejected with `Granit:Validation:UnknownWebhookEventType`
+
+## 5. Publish webhook events
 
 Inject `IWebhookPublisher` and call `PublishAsync` with an event type and payload:
 
@@ -102,7 +149,7 @@ The publisher serializes the payload, wraps it in a `WebhookTrigger`, and insert
 into the Wolverine outbox. The fan-out handler then resolves all active subscriptions
 matching the event type and dispatches one `SendWebhookCommand` per subscriber.
 
-## 5. Register webhook endpoints
+## 6. Register webhook endpoints
 
 Map the built-in configuration and redelivery endpoints:
 
