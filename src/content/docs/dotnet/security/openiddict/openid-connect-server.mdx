@@ -90,46 +90,17 @@ the standard OAuth 2.0 token endpoint pattern.
 
 ### Pushed Authorization Requests (PAR)
 
-The server supports Pushed Authorization Requests (RFC 9126). PAR moves
-authorization parameters from the browser URL to a back-channel POST request,
-preventing parameter tampering and PII leakage in URLs.
+The server supports [Pushed Authorization Requests (RFC 9126)](/dotnet/security/openiddict/advanced/pushed-authorization-requests/)
+— moving authorization parameters from the browser URL to a back-channel POST.
+The `/connect/par` endpoint is always available. Set `RequirePar: true` to enforce
+PAR for all authorization code flows. Required for **FAPI 2.0**.
 
-```text
-Client --> POST /connect/par (client_id, client_secret, all auth params)
-  <-- 201 Created { request_uri, expires_in }
-Client --> GET /connect/authorize?client_id=...&request_uri=...
-  --> Standard authorization code flow continues
-```
+### DPoP (Proof-of-Possession)
 
-The `/connect/par` endpoint is **always available** — clients can use it without
-any additional configuration. To **require** PAR for all authorization requests
-(rejecting direct requests without a `request_uri`), set `RequirePar`:
-
-```json
-{
-  "OpenIddict": {
-    "RequirePar": true
-  }
-}
-```
-
-When using the BFF module, enable PAR on the frontend configuration:
-
-```json
-{
-  "Bff": {
-    "Frontends": [
-      {
-        "Name": "main",
-        "UsePushedAuthorizationRequests": true
-      }
-    ]
-  }
-}
-```
-
-PAR is required by the **FAPI 2.0 Security Profile** for open banking,
-healthcare, and other high-security industries.
+The server supports [DPoP (RFC 9449)](/dotnet/security/openiddict/advanced/proof-of-possession-dpop/)
+— binding access tokens to a cryptographic key held by the client. Even if a token
+leaks, it cannot be replayed without the private key. OpenIddict validates DPoP proofs
+automatically. Set `UseDPoP: true` on a BFF frontend to enable. Required for **FAPI 2.0**.
 
 ## Scopes
 

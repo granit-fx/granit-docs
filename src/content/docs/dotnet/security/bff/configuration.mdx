@@ -83,6 +83,7 @@ Bind from the `Bff` configuration section. Section name constant: `GranitBffOpti
 | `PostLoginRedirectPath` | `string` | `"/"` | Path to redirect to after successful login. |
 | `PostLogoutRedirectPath` | `string` | `"/"` | Path to redirect to after logout. |
 | `UsePushedAuthorizationRequests` | `bool` | `false` | Use Pushed Authorization Requests (RFC 9126). When `true`, the BFF posts authorization parameters to `/connect/par` and redirects with only the `request_uri`. Requires the OIDC server to support PAR. |
+| `UseDPoP` | `bool` | `false` | Enable DPoP (RFC 9449) token binding. When `true`, the BFF generates an EC P-256 key pair per session and attaches DPoP proofs to token requests and proxied API calls. Prevents token replay attacks. |
 
 ### Configuration binding
 
@@ -486,7 +487,7 @@ builder.Services.AddDistributedSqlServerCache(options =>
 - **[Overview](/dotnet/security/bff/)** — why BFF and what problems it solves
 - **[Architecture](/dotnet/security/bff/architecture/)** — component diagram and flow sequences
 - **[Getting Started](/dotnet/security/bff/getting-started/)** — step-by-step setup
-- **[Security](/dotnet/security/bff/security/)** — cookie, CSRF, and session hardening
-- **[YARP Proxy](/dotnet/security/bff/yarp-proxy/)** — routing and transform pipeline
+- **[Security](/dotnet/security/bff/token-security/)** — cookie, CSRF, and session hardening
+- **[YARP Proxy](/dotnet/security/bff/reverse-proxy-yarp/)** — routing and transform pipeline
 - **[Authentication](/dotnet/security/authentication/)** — JWT Bearer authentication (API-to-API)
 - **[OpenIddict](/dotnet/security/openiddict/)** — self-hosted identity provider
