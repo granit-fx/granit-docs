@@ -17,6 +17,7 @@ import { Tabs, TabItem, Badge } from "@astrojs/starlight/components";
     "UseReferenceTokens": false,
     "EnableEntityCaching": false,
     "RequirePar": false,
+    "EnableTokenExchange": false,
 
     "Client": {
       "AutoRegisterExternalUsers": true,
@@ -103,6 +104,8 @@ environment variables. Never commit secrets to source control.
 | `UseReferenceTokens` | `bool` | `false` | Issue opaque reference tokens instead of self-contained JWTs. Reference tokens are validated against the database on every API request, enabling instant revocation. Required for SOC2 / ISO 27001 strict compliance. Trade-off: +1 DB round-trip per API call. |
 | `EnableEntityCaching` | `bool` | `false` | Enable OpenIddict's built-in entity caching. **Disable in multi-tenant deployments** -- the cache uses `ClientId` as the sole key, which causes cross-tenant pollution when two tenants have the same `ClientId`. |
 | `RequirePar` | `bool` | `false` | Require Pushed Authorization Requests (RFC 9126) for all authorization code flows. The `/connect/par` endpoint is always available; when `true`, direct authorization requests without a `request_uri` are rejected. Required for FAPI 2.0 compliance. |
+| `EnableTokenExchange` | `bool` | `false` | Enable OAuth 2.0 Token Exchange ([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)). Registers the `urn:ietf:params:oauth:grant-type:token-exchange` grant type for microservice delegation and impersonation flows. Clients must have the `gt:token_exchange` permission. |
+| `EnableFapi2Profile` | `bool` | `false` | Enable the [FAPI 2.0 Security Profile](/dotnet/security/openiddict/advanced/fapi-2-security-profile/). When `true`, enforces all server-side FAPI 2.0 constraints: `RequirePar` is set to `true`, authorization code lifetime is reduced to 60 seconds, and PKCE S256 remains enforced. BFF and resource server must also be configured separately (`UseDPoP`, `ClientAuthenticationMethod: PrivateKeyJwt`, `RequireDPoP`). |
 
 **Example:**
 
@@ -112,7 +115,8 @@ environment variables. Never commit secrets to source control.
     "Issuer": "https://auth.example.com",
     "UseReferenceTokens": false,
     "EnableEntityCaching": false,
-    "RequirePar": false
+    "RequirePar": false,
+    "EnableFapi2Profile": false
   }
 }
 ```
@@ -179,6 +183,7 @@ environment variables. Never commit secrets to source control.
 | `Permissions` | `string[]` | OpenIddict permissions (e.g., `ept:token`, `gt:authorization_code`, `scp:openid`). |
 | `RedirectUris` | `string[]` | Allowed redirect URIs after authorization. |
 | `PostLogoutRedirectUris` | `string[]` | Allowed redirect URIs after logout. |
+| `SigningKeyJwk` | `string?` | JWK Set containing the client's public key for `private_key_jwt` authentication (RFC 7523). |
 
 ### OidcScopeSeedDescriptor
 
@@ -362,6 +367,7 @@ by `GranitFeaturesModule`). Resolution order: Tenant > Plan > Default.
 | `OpenIddict.ExternalLogins` | `true` | External login providers (Google, Microsoft, GitHub). |
 | `OpenIddict.PkceRequired` | `true` | PKCE requirement for all authorization code flows. |
 | `OpenIddict.Passkeys` | `false` | WebAuthn/FIDO2 passwordless authentication. |
+| `OpenIddict.JarRequired` | `false` | Require JWT-Secured Authorization Requests (RFC 9101). |
 
 Feature constants are defined in `OpenIddictFeatureNames`:
 
@@ -373,6 +379,7 @@ public static class OpenIddictFeatureNames
     public const string ExternalLogins = "OpenIddict.ExternalLogins";
     public const string PkceRequired = "OpenIddict.PkceRequired";
     public const string Passkeys = "OpenIddict.Passkeys";
+    public const string JarRequired = "OpenIddict.JarRequired";
 }
 ```
 
@@ -452,7 +459,7 @@ These are build-time defaults. The `MaxLoginAttempts` runtime setting
 ## Related pages
 
 - [Overview](./index/)
-- [OIDC server configuration](./oidc-server/)
+- [OIDC server configuration](./openid-connect-server/)
 - [User management](./user-management/)
-- [Account API](./account-api/)
+- [Account API](./account-management-api/)
 - [Advanced features](./advanced/)

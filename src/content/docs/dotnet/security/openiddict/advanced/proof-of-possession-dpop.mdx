@@ -2,7 +2,7 @@
 title: "DPoP — Demonstrating Proof-of-Possession"
 description: "Bind OAuth 2.0 access tokens to cryptographic keys with DPoP (RFC 9449) — prevent token replay attacks even if tokens are leaked. EC P-256 key generation, proof JWT creation, and BFF integration."
 sidebar:
-  order: 3
+  order: 4
   label: DPoP
   badge:
     text: FAPI 2.0
@@ -190,9 +190,14 @@ When enabled, the BFF:
 
 ### Resource server
 
-Resource servers using `AddGranitOpenIddictAuthentication()` validate DPoP
+**OpenIddict resource servers** using `AddGranitOpenIddictAuthentication()` validate DPoP
 proofs automatically — the OpenIddict validation middleware handles both
 `Bearer` and `DPoP` token types transparently.
+
+**JWT Bearer resource servers** (Keycloak, Entra ID, Auth0) need
+`Granit.Authentication.DPoP` for IdP-agnostic proof validation.
+See [DPoP Resource Server Validation](/dotnet/security/openiddict/advanced/dpop-resource-server-validation/)
+for the full setup guide.
 
 ## Bearer vs DPoP comparison
 
@@ -248,6 +253,40 @@ compromise the server-side session store to extract both.
 | **Proof lifetime** | 30 seconds per proof JWT |
 | **Proof uniqueness** | `jti` claim (random GUID per proof) |
 
+## Nonce support (§8) — replay protection
+
+RFC 9449 §8 defines server-provided nonces for additional replay protection.
+When a server requires a nonce, the flow becomes:
+
+```mermaid
+sequenceDiagram
+    participant BFF
+    participant AS as Authorization Server
+
+    BFF->>AS: POST /connect/token + DPoP proof (no nonce)
+    AS-->>BFF: 400 use_dpop_nonce + DPoP-Nonce: abc123
+    BFF->>AS: POST /connect/token + DPoP proof (nonce: abc123)
+    AS-->>BFF: 200 OK + access_token + DPoP-Nonce: def456
+    Note over BFF: Stores "def456" for next request
+```
+
+The BFF handles this automatically:
+
+1. **First request** — sends a DPoP proof without nonce
+2. **`use_dpop_nonce` error** — server returns 400 with a `DPoP-Nonce` header
+3. **Single retry** — BFF rebuilds the proof with the server-provided nonce and retries
+4. **Success** — nonce is stored in `BffTokenSet.DPoPNonce` (distributed cache)
+5. **Subsequent requests** — stored nonce is included in all DPoP proofs (proxy + refresh)
+
+The nonce is updated whenever the server returns a new `DPoP-Nonce` header in
+token refresh responses.
+
+:::note
+Server-side nonce issuance is not yet implemented in `Granit.OpenIddict`.
+The BFF client-side support is ready and will work with any OIDC server that
+issues `DPoP-Nonce` headers (e.g., Duende IdentityServer, Auth0, Keycloak).
+:::
+
 ## FAPI 2.0 compliance
 
 DPoP is **mandatory** in the
@@ -281,7 +320,11 @@ PKCE is enforced by default (`RequireProofKeyForCodeExchange`).
 
 ## See also
 
+- [DPoP Resource Server Validation](/dotnet/security/openiddict/advanced/dpop-resource-server-validation/) — IdP-agnostic proof validation for JWT Bearer (Keycloak, Entra ID)
+- [Private Key JWT Authentication](/dotnet/security/openiddict/advanced/private-key-jwt-authentication/) — eliminate shared secrets
 - [PAR (Pushed Authorization Requests)](/dotnet/security/openiddict/advanced/pushed-authorization-requests/) — move parameters to back-channel
+- [FAPI 2.0 Security Profile](/dotnet/security/openiddict/advanced/fapi-2-security-profile/) — full conformance checklist
+- [OIDC Client Primitives](/dotnet/security/authentication-oidc/) — `IDPoPProofService`, typed requests
 - [OIDC Server Configuration](/dotnet/security/openiddict/openid-connect-server/) — endpoints and flows overview
 - [BFF Security](/dotnet/security/bff/token-security/) — token storage and encryption at rest
 - [BFF Configuration](/dotnet/security/bff/configuration/) — frontend options reference
