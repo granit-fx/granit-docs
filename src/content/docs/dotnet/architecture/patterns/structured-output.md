@@ -39,7 +39,7 @@ sequenceDiagram
 All `*.AI` packages that need typed LLM output use `CompleteAsync<T>()` from
 `Microsoft.Extensions.AI`. The C# type defines the schema; the runtime enforces it.
 
-### Querying.AI — QueryRequest from natural language
+### QueryEngine.AI — QueryRequest from natural language
 
 ```csharp
 // The target type drives the schema sent to the LLM
@@ -106,7 +106,7 @@ call works across all providers.
 
 | File | Role |
 |------|------|
-| `src/Granit.Querying.AI/AINaturalLanguageQueryTranslator.cs` | `CompleteAsync<QueryRequest>` |
+| `src/Granit.QueryEngine.AI/AINaturalLanguageQueryTranslator.cs` | `CompleteAsync<QueryRequest>` |
 | `src/Granit.DataExchange.AI/AIMappingSuggestionService.cs` | `CompleteAsync<MappingResponse>` |
 | `src/Granit.AI.Extraction/AIDocumentExtractor.cs` | `CompleteAsync<TSchema>` generic extraction |
 
