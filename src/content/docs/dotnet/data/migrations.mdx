@@ -135,6 +135,7 @@ Each Granit module exposes a `Configure*Module()` extension on `ModelBuilder`:
   Notifications, Privacy, ApiKeys, etc.) — call in the tenant-isolated `DbContext`.
 
 In SchemaPerTenant mode, the runner uses a **double-seed** flow:
+
 1. **Seed pass 1** (`IsHostOnly = true`): only host seeders run (tenant creation, OpenIddict).
    Tenant-scoped seeders skip via `context.IsHostOnly`.
 2. **Re-migrate per-tenant**: now that tenants exist, create schemas and apply migrations.
@@ -386,6 +387,7 @@ application has:
 
 - `Migrations/App/` — business entities + Granit modules (Settings, Workflow…)
 - `Migrations/Security/` — Authorization, Identity, ApiKeys
+
 :::
 
 ### When standard migrations are enough

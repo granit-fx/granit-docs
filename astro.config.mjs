@@ -133,11 +133,11 @@ export default defineConfig({
               items: [
                 {
                   label: "Getting Started",
-                  autogenerate: { directory: "dotnet/getting-started" },
+                  items: [{ autogenerate: { directory: "dotnet/getting-started" } }],
                 },
                 {
                   label: "Concepts",
-                  autogenerate: { directory: "dotnet/concepts" },
+                  items: [{ autogenerate: { directory: "dotnet/concepts" } }],
                   collapsed: true,
                 },
                 {
@@ -215,60 +215,60 @@ export default defineConfig({
                 },
                 {
                   label: "Operations",
-                  autogenerate: { directory: "dotnet/operations" },
+                  items: [{ autogenerate: { directory: "dotnet/operations" } }],
                   collapsed: true,
                 },
                 {
                   label: "Core",
-                  autogenerate: { directory: "dotnet/core" },
+                  items: [{ autogenerate: { directory: "dotnet/core" } }],
                 },
                 {
                   label: "Data",
-                  autogenerate: { directory: "dotnet/data" },
+                  items: [{ autogenerate: { directory: "dotnet/data" } }],
                   collapsed: true,
                 },
                 {
                   label: "Security",
-                  autogenerate: { directory: "dotnet/security" },
+                  items: [{ autogenerate: { directory: "dotnet/security" } }],
                   collapsed: true,
                 },
                 {
                   label: "Compliance",
-                  autogenerate: { directory: "dotnet/compliance" },
+                  items: [{ autogenerate: { directory: "dotnet/compliance" } }],
                   collapsed: true,
                 },
                 {
                   label: "API & Http",
-                  autogenerate: { directory: "dotnet/api" },
+                  items: [{ autogenerate: { directory: "dotnet/api" } }],
                 },
                 {
                   label: "Infrastructure",
-                  autogenerate: { directory: "dotnet/infrastructure" },
+                  items: [{ autogenerate: { directory: "dotnet/infrastructure" } }],
                   collapsed: true,
                 },
                 {
                   label: "HTTP",
-                  autogenerate: { directory: "dotnet/http" },
+                  items: [{ autogenerate: { directory: "dotnet/http" } }],
                   collapsed: true,
                 },
                 {
                   label: "IO",
-                  autogenerate: { directory: "dotnet/io" },
+                  items: [{ autogenerate: { directory: "dotnet/io" } }],
                   collapsed: true,
                 },
                 {
                   label: "Browsing",
-                  autogenerate: { directory: "dotnet/browsing" },
+                  items: [{ autogenerate: { directory: "dotnet/browsing" } }],
                   collapsed: true,
                 },
                 {
                   label: "SaaS & Commerce",
-                  autogenerate: { directory: "dotnet/saas" },
+                  items: [{ autogenerate: { directory: "dotnet/saas" } }],
                   collapsed: true,
                 },
                 {
                   label: "Business Features",
-                  autogenerate: { directory: "dotnet/business" },
+                  items: [{ autogenerate: { directory: "dotnet/business" } }],
                   collapsed: true,
                 },
                 {
@@ -374,19 +374,17 @@ export default defineConfig({
                     },
                     {
                       label: "Patterns",
-                      autogenerate: {
-                        directory: "dotnet/architecture/patterns",
-                      },
+                      items: [{ autogenerate: { directory: "dotnet/architecture/patterns" } }],
                       collapsed: true,
                     },
                     {
                       label: "ADRs",
-                      autogenerate: { directory: "dotnet/architecture/adr" },
+                      items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
                       collapsed: true,
                     },
                     {
                       label: "Spikes",
-                      autogenerate: { directory: "dotnet/architecture/spikes" },
+                      items: [{ autogenerate: { directory: "dotnet/architecture/spikes" } }],
                       collapsed: true,
                     },
                   ],
@@ -401,49 +399,49 @@ export default defineConfig({
               items: [
                 {
                   label: "Getting Started",
-                  autogenerate: { directory: "frontend/getting-started" },
+                  items: [{ autogenerate: { directory: "frontend/getting-started" } }],
                 },
                 {
                   label: "Guides",
-                  autogenerate: { directory: "frontend/guides" },
+                  items: [{ autogenerate: { directory: "frontend/guides" } }],
                   collapsed: true,
                 },
                 {
                   label: "Operations",
-                  autogenerate: { directory: "frontend/operations" },
+                  items: [{ autogenerate: { directory: "frontend/operations" } }],
                   collapsed: true,
                 },
                 {
                   label: "Core",
-                  autogenerate: { directory: "frontend/core" },
+                  items: [{ autogenerate: { directory: "frontend/core" } }],
                 },
                 {
                   label: "Data",
-                  autogenerate: { directory: "frontend/data" },
+                  items: [{ autogenerate: { directory: "frontend/data" } }],
                   collapsed: true,
                 },
                 {
                   label: "Security & Compliance",
-                  autogenerate: { directory: "frontend/security" },
+                  items: [{ autogenerate: { directory: "frontend/security" } }],
                   collapsed: true,
                 },
                 {
                   label: "API",
-                  autogenerate: { directory: "frontend/api" },
+                  items: [{ autogenerate: { directory: "frontend/api" } }],
                 },
                 {
                   label: "Infrastructure",
-                  autogenerate: { directory: "frontend/infrastructure" },
+                  items: [{ autogenerate: { directory: "frontend/infrastructure" } }],
                   collapsed: true,
                 },
                 {
                   label: "Observability",
-                  autogenerate: { directory: "frontend/observability" },
+                  items: [{ autogenerate: { directory: "frontend/observability" } }],
                   collapsed: true,
                 },
                 {
                   label: "Business Features",
-                  autogenerate: { directory: "frontend/business" },
+                  items: [{ autogenerate: { directory: "frontend/business" } }],
                   collapsed: true,
                 },
                 {
@@ -452,16 +450,12 @@ export default defineConfig({
                     { label: "Overview", link: "/frontend/architecture/" },
                     {
                       label: "Patterns",
-                      autogenerate: {
-                        directory: "frontend/architecture/patterns",
-                      },
+                      items: [{ autogenerate: { directory: "frontend/architecture/patterns" } }],
                       collapsed: true,
                     },
                     {
                       label: "ADRs",
-                      autogenerate: {
-                        directory: "frontend/architecture/adr",
-                      },
+                      items: [{ autogenerate: { directory: "frontend/architecture/adr" } }],
                       collapsed: true,
                     },
                   ],
@@ -475,16 +469,16 @@ export default defineConfig({
               items: [
                 {
                   label: "Contributing",
-                  autogenerate: { directory: "contributing" },
+                  items: [{ autogenerate: { directory: "contributing" } }],
                 },
                 {
                   label: "Migration",
-                  autogenerate: { directory: "migration" },
+                  items: [{ autogenerate: { directory: "migration" } }],
                   collapsed: true,
                 },
                 {
                   label: "Troubleshooting",
-                  autogenerate: { directory: "troubleshooting" },
+                  items: [{ autogenerate: { directory: "troubleshooting" } }],
                   collapsed: true,
                 },
               ],
@@ -496,7 +490,7 @@ export default defineConfig({
               items: [
                 {
                   label: "Tools",
-                  autogenerate: { directory: "tools" },
+                  items: [{ autogenerate: { directory: "tools" } }],
                 },
               ],
             },

@@ -87,6 +87,7 @@ public sealed class TenantReportMcpTools(IReportService reports, ICurrentTenant 
 ```
 
 **Behavior:**
+
 - `ICurrentTenant.IsAvailable == true` → tool is visible
 - `ICurrentTenant.IsAvailable == false` → tool is hidden from `tools/list`
 - No `[McpTenantScope]` → tool is always visible (tenant-agnostic)
@@ -115,6 +116,7 @@ whitelist. A class in `Granit.BlobStorage.Mcp` matches `"BlobStorage"`. A class 
 `Granit.Identity.Mcp` does not — it's hidden.
 
 **Rules:**
+
 - Empty `EnabledModules` (default) → all modules visible
 - Matching is case-insensitive on the namespace segment
 - A namespace matches if it contains `.{Module}.` or ends with `.{Module}`

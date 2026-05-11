@@ -104,6 +104,7 @@ public static async Task Handle(SendInvoiceNotificationCommand command)
 ```
 
 Timeline:
+
 1. Exception is thrown
 2. `BackgroundJobWorker` logs the error
 3. Message is discarded — **permanently lost**
@@ -125,6 +126,7 @@ public static async Task Handle(SendInvoiceNotificationCommand command)
 ```
 
 Timeline:
+
 1. Exception is thrown
 2. Wolverine marks the envelope as failed, schedules retry 1 (5s delay)
 3. Retry 1 fails → retry 2 (30s delay)
@@ -136,12 +138,14 @@ Timeline:
 </Tabs>
 
 :::caution[Channel dispatch is not durable — summary]
+
 | | Channel | Wolverine |
 |-|---------|-----------|
 | Handler throws | Message lost | Retry × N, then dead-letter |
 | App crashes mid-processing | Message lost | Redelivered after restart |
 | Multiple instances | In-process only, no coordination | PostgreSQL transport coordinates |
 | Observability | Log only | Dead-letter queue + admin UI |
+
 :::
 
 ## Adding Wolverine later

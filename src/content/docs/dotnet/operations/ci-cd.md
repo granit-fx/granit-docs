@@ -145,7 +145,7 @@ Independent job — no dependency on `build-and-test`. Runs on `develop` and `ma
 Builds the Astro Starlight site with **pnpm 10** and **Node.js 22**, then deploys
 to **Cloudflare Pages**:
 
-```
+```text
 project-name: granit-docs
 branch:       ${{ github.ref_name }}   (develop or main)
 ```

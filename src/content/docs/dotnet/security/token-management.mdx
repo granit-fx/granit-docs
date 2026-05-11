@@ -38,6 +38,7 @@ and first-class DPoP support.
 | Low-level token endpoint operations | `Granit.Oidc` | Any grant type | Custom flows, migration code |
 
 :::tip[Machine-to-machine vs on-behalf-of-a-user]
+
 - Calling another API **as this service** (scheduled job, webhook consumer,
   background worker) → stay on this page and use `AddClientCredentialsHttpClient`.
 - Calling another API **on behalf of an inbound user** → see
@@ -46,6 +47,7 @@ and first-class DPoP support.
 - Forwarding the caller's `Authorization` header verbatim is a confused-deputy
   vulnerability and is **not supported** — the former `AddAuthTokenPropagation`
   extension has been removed.
+
 :::
 
 ## Package structure

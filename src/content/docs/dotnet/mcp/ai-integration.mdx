@@ -147,9 +147,11 @@ Uses `[LoggerMessage]` source generators for zero-allocation structured logging.
 :::caution
 **Sampling is disabled by default.** Enable it only for trusted MCP servers that
 you control. An untrusted server could use sampling to:
+
 - Consume your LLM API credits (cost attack)
 - Extract information via crafted prompts (data exfiltration)
 - Flood your rate limits (denial of service)
+
 :::
 
 ## See also

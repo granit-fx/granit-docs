@@ -112,6 +112,7 @@ The React package below initializes the OpenTelemetry SDK and provides span hook
 ### `TracingProvider`
 
 Initializes the OpenTelemetry `WebTracerProvider` with:
+
 - Auto-instrumentations: `fetch`, `XMLHttpRequest`, `document-load`
 - OTLP HTTP exporter with gated startup (probes the collector — if unavailable, disables
   export for the session with a warning instead of continuous errors)

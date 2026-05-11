@@ -84,6 +84,7 @@ Each template type is a strongly-typed class that binds a name to a data model.
 
 <Tabs>
   <TabItem label="Text template (email)">
+
 ```csharp
 public sealed record WelcomeEmailData(string FirstName, string ActivationUrl);
 
@@ -92,8 +93,10 @@ public sealed class WelcomeEmailType : TextTemplateType<WelcomeEmailData>
     public override string Name => "Notifications.WelcomeEmail";
 }
 ```
+
   </TabItem>
   <TabItem label="Document template (PDF)">
+
 ```csharp
 public sealed record InvoiceData(
     string InvoiceNumber,
@@ -111,8 +114,10 @@ public sealed class InvoiceTemplateType : DocumentTemplateType<InvoiceData>
     // DefaultFormat = DocumentFormat.Pdf
 }
 ```
+
   </TabItem>
   <TabItem label="Excel template">
+
 ```csharp
 public sealed record ReportData(
     string ReportTitle,
@@ -125,6 +130,7 @@ public sealed class ExcelReportTemplateType : DocumentTemplateType<ReportData>
     public override DocumentFormat DefaultFormat => DocumentFormat.Excel;
 }
 ```
+
   </TabItem>
 </Tabs>
 

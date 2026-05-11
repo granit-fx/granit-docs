@@ -304,9 +304,11 @@ flowchart TD
 :::tip
 The semantic tier uses `ISemanticMappingService`, which defaults to a no-op. To enable AI
 mapping, register your implementation:
+
 ```csharp
 services.AddSemanticMappingService<OpenAiMappingService>();
 ```
+
 Only column header names and field metadata are sent to the AI provider — never row data (GDPR-safe).
 :::
 

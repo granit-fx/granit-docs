@@ -110,6 +110,7 @@ Target properties:
 ```
 
 The LLM **never** receives:
+
 - Row data (names, emails, amounts)
 - Database records
 - Tenant identifiers
@@ -160,7 +161,7 @@ Default is `false` — headers-only mode, fully GDPR-safe.
 `Granit.DataExchange.AI` is a pure **additive** package. The DataExchange module defines
 `ISemanticMappingService` with a null-object default:
 
-```
+```text
 Granit.DataExchange              → defines ISemanticMappingService
                                    registers NullSemanticMappingService (IsAvailable = false)
 

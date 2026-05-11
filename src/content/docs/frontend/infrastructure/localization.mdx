@@ -112,6 +112,7 @@ function createLocalization(config?: LocalizationConfig): i18n;
 Resolves the initial locale before backend data is available.
 
 Detection cascade:
+
 1. `localStorage` (`dd:locale`) — if present, use it
 2. `userLocale` from user settings — if provided, use it
 3. `navigator.language` — try exact match, then base code

@@ -54,14 +54,14 @@ under `src/Granit.{Module}/Metrics/`.
    inherits sensible defaults (`IsHigherBetter = true`, `RefreshHint = Dynamic`,
    `BaseFilter = null`, `PeriodSelector = null`).
 
-2. **Add a project reference** to `Granit.Analytics` in the module's `.csproj`,
+1. **Add a project reference** to `Granit.Analytics` in the module's `.csproj`,
    alongside the existing `Granit.QueryEngine.Abstractions` reference:
 
    ```xml
    <ProjectReference Include="..\Granit.Analytics\Granit.Analytics.csproj" />
    ```
 
-3. **Mark the dependency** on the module class:
+2. **Mark the dependency** on the module class:
 
    ```csharp
    [DependsOn(
@@ -71,7 +71,7 @@ under `src/Granit.{Module}/Metrics/`.
    public sealed class GranitInvoicingModule : GranitModule { … }
    ```
 
-4. **Register the metric** in your `AddGranit{Module}` extension:
+3. **Register the metric** in your `AddGranit{Module}` extension:
 
    ```csharp
    builder.Services.AddMetricDefinition<Invoice, int, UnpaidInvoiceCountMetricDefinition>();
@@ -80,7 +80,7 @@ under `src/Granit.{Module}/Metrics/`.
    The generic parameters are `<TEntity, TValue, TDefinition>`. The framework
    wires it as a singleton and indexes it by name for the HTTP surface to find.
 
-5. **Ship localization keys** for the metric title across the 18 cultures
+4. **Ship localization keys** for the metric title across the 18 cultures
    (`en, fr, de, nl, es, it, pt, zh, ja, pl, tr, ko, sv, cs, hi, fr-CA, en-GB,
    pt-BR`). Key shape: `Metric:{Name}` — same prefix as `Permission:`,
    `Column:`, `ExportHeader:`.
@@ -99,7 +99,7 @@ under `src/Granit.{Module}/Metrics/`.
    ships without complete coverage — the 18-culture rule is enforced
    mechanically, not by review.
 
-6. **Wire the host** to expose the HTTP endpoint. Once your module is loaded
+5. **Wire the host** to expose the HTTP endpoint. Once your module is loaded
    (`builder.AddGranitInvoicing()`), the metric is registered. The host adds
    the route group:
 
@@ -107,7 +107,7 @@ under `src/Granit.{Module}/Metrics/`.
    app.MapGranitAnalytics();   // exposes POST /api/{version}/analytics/metrics/{name}
    ```
 
-7. **Consume from the frontend** with the `<MetricCard>` component (story
+6. **Consume from the frontend** with the `<MetricCard>` component (story
    #1378 — wires through to `useMetric()`). Period and comparison are query
    parameters:
 
@@ -118,6 +118,7 @@ under `src/Granit.{Module}/Metrics/`.
      compareTo={{ token: 'previous_period' }}
    />
    ```
+
 </Steps>
 
 ## What the framework does for you

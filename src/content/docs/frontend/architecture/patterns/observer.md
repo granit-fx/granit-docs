@@ -31,6 +31,7 @@ graph TD
 ### Keycloak dual-callback design
 
 The hook supports two callback types:
+
 - **Specific observers**: `onTokenExpired?`, `onAuthRefreshError?`, `onAuthLogout?`
 - **Generic observer**: `onEvent?(event, error?)` — receives all events
 
