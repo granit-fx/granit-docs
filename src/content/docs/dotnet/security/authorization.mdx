@@ -254,9 +254,11 @@ Skip it when:
 
 :::caution[Permissions not evaluated at runtime]
 If `IPermissionChecker` returns false for everything, check that:
+
 1. `GranitAuthorizationEntityFrameworkCoreModule` is loaded (permissions need a store)
 2. Permissions are actually granted to the role via `IPermissionManagerWriter`
 3. The distributed cache is reachable — grants are cached per role
+
 :::
 
 :::caution[Permissions declared but not discovered]

@@ -312,6 +312,7 @@ function useKeycloakInit(config: KeycloakCoreConfig): KeycloakCoreResult;
 | `tokenParsed` | `Record<string, unknown> \| undefined` | Decoded JWT payload |
 
 **Automatic side effects:**
+
 - Registers Bearer token getter via `setTokenGetter()` on `@granit/api-client`
 - Registers 401 handler via `setOnUnauthorized()` — triggers `keycloak.logout()`
 - Refreshes token every 60 seconds via `setInterval`

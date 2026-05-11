@@ -61,7 +61,7 @@ GDPR Article 17 grants data subjects the right to erasure. The naive implementat
 
 Any entity implementing `ISoftDeletable` is never physically deleted during normal operations. The `SoftDeleteInterceptor` intercepts EF Core's `SaveChanges` call and converts every `DELETE` into an `UPDATE`:
 
-```
+```sql
 DELETE FROM Patients WHERE Id = @id
   -- intercepted --
 UPDATE Patients SET IsDeleted = true, DeletedAt = @now, DeletedBy = @userId WHERE Id = @id
@@ -100,7 +100,7 @@ The `using` block makes the intent explicit and auditable. The filter re-enables
 
 Soft delete is not erasure. GDPR Article 17 requires actual deletion when there is no legal basis for retention. Granit.Privacy provides a **deletion saga** that orchestrates hard deletion across all registered data providers:
 
-```
+```text
 User -> API: DELETE /privacy/my-data
 API -> Saga: PersonalDataDeletionRequestedEto
 Saga -> Identity: DeleteByIdAsync (hard delete)

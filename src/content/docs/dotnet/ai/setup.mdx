@@ -372,7 +372,7 @@ architecture diagrams, risks analysis, and GDPR considerations:
 Every AI integration follows the same pattern — the existing module defines an interface
 with a null-object default. The AI package replaces it via DI:
 
-```
+```text
 Granit.{Module}              → defines IService + NullService (no-op default)
                                 no reference to AI
 

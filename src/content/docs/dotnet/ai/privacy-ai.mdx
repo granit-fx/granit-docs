@@ -25,7 +25,7 @@ user-generated text.
 | `PiiType` | Examples |
 |-----------|---------|
 | `PersonName` | "Jean Dupont", "Dr. Smith" |
-| `Email` | "jean@example.com" |
+| `Email` | "`jean@example.com`" |
 | `PhoneNumber` | "+32 478 123 456", "(555) 867-5309" |
 | `Address` | "14 Rue de la Paix, Paris" |
 | `NationalId` | SSN, NISS, BSN, NIE — country-agnostic |
@@ -72,6 +72,7 @@ PII detection **sends the text to an AI model**. To stay within your GDPR perime
 - **Recommended**: Use a dedicated workspace pointing to **Ollama** (local inference — data never leaves your server)
 - **Acceptable**: Azure OpenAI with a signed **Data Processing Agreement**
 - **Avoid**: Public OpenAI API or Anthropic API for text that may contain personal data
+
 :::
 
 ## Using the detector

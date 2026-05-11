@@ -208,6 +208,7 @@ public class Country : Entity
     public string Name { get; set; } = string.Empty;
 }
 ```
+
 </TabItem>
 <TabItem label="CreationAuditedEntity">
 Tracks who created the record and when.
@@ -221,6 +222,7 @@ public class Appointment : CreationAuditedEntity
 }
 // Adds: CreatedAt, CreatedBy
 ```
+
 </TabItem>
 <TabItem label="AuditedEntity">
 Tracks creation and last modification.
@@ -233,6 +235,7 @@ public class Invoice : AuditedEntity
 }
 // Adds: CreatedAt, CreatedBy, ModifiedAt, ModifiedBy
 ```
+
 </TabItem>
 <TabItem label="FullAuditedEntity">
 Full audit trail with soft delete. Implements `ISoftDeletable`.
@@ -247,6 +250,7 @@ public class Patient : FullAuditedEntity
 // Adds: CreatedAt, CreatedBy, ModifiedAt, ModifiedBy,
 //        IsDeleted, DeletedAt, DeletedBy
 ```
+
 </TabItem>
 </Tabs>
 
@@ -509,6 +513,7 @@ tracing.
 
 :::caution[Module not loading]
 If a module's `ConfigureServices` is never called, check:
+
 1. The module is reachable via `[DependsOn]` from your root module
 2. The assembly containing the module is referenced (a `<ProjectReference>` or `<PackageReference>` exists)
 3. The module class is `public` and inherits from `GranitModule`
