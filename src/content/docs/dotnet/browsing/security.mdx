@@ -155,10 +155,6 @@ await page.RouteAsync(
 `RouteDecision` is a discriminated record with `Continue()`, `Abort(reason)`
 and `Fulfill(status, contentType, body, headers?)` factories.
 
-### Migration from the old `(string, RouteHandler)` API
-
-See [Migration: Browsing Pre-1.0 Hardening](/dotnet/browsing/migration-pre-1-0-hardening/).
-
 ## PDF viewer flow (`IPdfViewerCapability`)
 
 The PDF viewer renders an existing PDF by handing Chromium a `file://` URL.
@@ -334,7 +330,6 @@ deny — defense in depth.
 
 ## Related
 
-- [Migration: Browsing Pre-1.0 Hardening](/dotnet/browsing/migration-pre-1-0-hardening/) — old → new API.
 - [URL Safety](/dotnet/http/security/url-safety/) — the shared SSRF primitive.
 - [Secure Temp Files](/dotnet/io/temp-files/) — `file://` PDF viewer, HAR, trace.
 - [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/).

@@ -150,10 +150,8 @@ single per-page `RequestRouter` that runs sandbox handlers before user
 `ConsoleRedactor`, `PrivilegedFlagGuard`, and the five Browsing permissions
 are covered in [Browsing security](/dotnet/browsing/security/).
 
-The pre-1.0 hardening pass removed `BrowserPageOptions.BypassCsp`. Disabling
-CSP now requires both a sandbox with `ForceCsp = false` *and* the
-`Granit.Browsing.Pages.BypassCsp` permission on the caller's role — see the
-[migration guide](/dotnet/browsing/migration-pre-1-0-hardening/).
+Disabling CSP requires both a sandbox with `ForceCsp = false` *and* the
+`Granit.Browsing.Pages.BypassCsp` permission on the caller's role.
 
 ## Observability
 

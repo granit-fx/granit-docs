@@ -247,6 +247,21 @@ export default defineConfig({
                   collapsed: true,
                 },
                 {
+                  label: "HTTP",
+                  autogenerate: { directory: "dotnet/http" },
+                  collapsed: true,
+                },
+                {
+                  label: "IO",
+                  autogenerate: { directory: "dotnet/io" },
+                  collapsed: true,
+                },
+                {
+                  label: "Browsing",
+                  autogenerate: { directory: "dotnet/browsing" },
+                  collapsed: true,
+                },
+                {
                   label: "SaaS & Commerce",
                   autogenerate: { directory: "dotnet/saas" },
                   collapsed: true,
