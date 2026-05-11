@@ -94,6 +94,7 @@ flowchart LR
      },
    });
    ```
+
    </TabItem>
    <TabItem label="tsconfig.json">
    Add matching `paths` in **every** tsconfig (`tsconfig.app.json`, `tsconfig.test.json`,
@@ -113,6 +114,7 @@ flowchart LR
      }
    }
    ```
+
    </TabItem>
    </Tabs>
 
@@ -120,13 +122,16 @@ flowchart LR
 
    <Tabs>
    <TabItem label="src/lib/logger.ts">
+
    ```typescript
    import { createLogger } from '@granit/logger';
 
    export const logger = createLogger('[MyApp]');
    ```
+
    </TabItem>
    <TabItem label="src/lib/api.ts">
+
    ```typescript
    import { createApiClient } from '@granit/api-client';
 

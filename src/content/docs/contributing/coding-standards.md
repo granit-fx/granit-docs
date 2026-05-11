@@ -145,6 +145,7 @@ segments, no exceptions.
 
 - Group: `PermissionGroup:{Group}` (e.g., `PermissionGroup:BackgroundJobs`)
 - Permission: `Permission:{Group}.{Resource}.{Action}` (e.g., `Permission:BackgroundJobs.Jobs.Read`)
+
 ### Metrics and diagnostics naming
 
 Every module with observable operations SHOULD expose OpenTelemetry metrics via

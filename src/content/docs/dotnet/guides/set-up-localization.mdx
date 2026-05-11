@@ -135,6 +135,7 @@ from `GranitLocalizationResource` (`Granit:EntityNotFound`,
 
 <Tabs>
   <TabItem label="Module system (recommended)">
+
 ```csharp
 [DependsOn(typeof(GranitLocalizationModule))]
 public sealed class MyAppModule : GranitModule
@@ -160,8 +161,10 @@ public sealed class MyAppModule : GranitModule
     }
 }
 ```
+
   </TabItem>
   <TabItem label="Direct registration">
+
 ```csharp
 builder.Services.AddGranitLocalization();
 
@@ -177,6 +180,7 @@ builder.Services.Configure<GranitLocalizationOptions>(options =>
     options.Languages.Add(new LanguageInfo("fr", "Francais"));
 });
 ```
+
   </TabItem>
 </Tabs>
 

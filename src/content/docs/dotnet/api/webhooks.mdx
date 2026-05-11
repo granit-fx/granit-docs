@@ -195,7 +195,7 @@ The `eventId` is stable across retry attempts, allowing subscribers to deduplica
 
 Each delivery is signed with the subscription's secret using HMAC-SHA256 in Stripe format:
 
-```
+```http
 x-granit-signature: t=1710323400,v1=5d3b2a1c...
 ```
 

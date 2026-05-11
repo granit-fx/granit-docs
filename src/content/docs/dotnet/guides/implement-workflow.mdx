@@ -101,6 +101,7 @@ public sealed class Document : Entity, IWorkflowStateful<DocumentStatus>
     public bool IsPublished { get; set; }
 }
 ```
+
   </TabItem>
   <TabItem label="Workflow + versioning">
 Inherit from `VersionedWorkflowEntity` for entities that need both FSM and

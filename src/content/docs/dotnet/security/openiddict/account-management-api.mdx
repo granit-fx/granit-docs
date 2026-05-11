@@ -439,7 +439,7 @@ All 2FA endpoints require authentication. The `OpenIddict.TwoFactor` feature fla
 }
 ```
 
-2. **Get authenticator key**: `GET /api/account/two-factor/authenticator-key`
+1. **Get authenticator key**: `GET /api/account/two-factor/authenticator-key`
 
 ```json
 {
@@ -451,7 +451,7 @@ All 2FA endpoints require authentication. The `OpenIddict.TwoFactor` feature fla
 The frontend renders a QR code from `qrCodeUri` for the user to scan with their
 authenticator app (Google Authenticator, Authy, 1Password, etc.).
 
-3. **Enable 2FA**: `POST /api/account/two-factor/enable`
+1. **Enable 2FA**: `POST /api/account/two-factor/enable`
 
 **Request:**
 
@@ -476,7 +476,7 @@ authenticator app (Google Authenticator, Authy, 1Password, etc.).
 
 Returns `400 Bad Request` if the TOTP code is invalid.
 
-4. **Disable 2FA**: `POST /api/account/two-factor/disable`
+1. **Disable 2FA**: `POST /api/account/two-factor/disable`
 
 Requires password confirmation as step-up authentication (OWASP ASVS V2.8.1).
 Invalidates the security stamp, forcing re-authentication on all existing sessions.
@@ -492,7 +492,7 @@ Invalidates the security stamp, forcing re-authentication on all existing sessio
 Returns `204 No Content` on success. Returns `400 Bad Request` if the password is
 incorrect.
 
-5. **Regenerate recovery codes**: `POST /api/account/two-factor/recovery-codes`
+1. **Regenerate recovery codes**: `POST /api/account/two-factor/recovery-codes`
 
 Generates 10 new single-use recovery codes. **Previously generated codes are
 invalidated.** Requires password confirmation as step-up authentication.

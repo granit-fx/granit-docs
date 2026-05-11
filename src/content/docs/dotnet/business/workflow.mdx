@@ -375,6 +375,7 @@ services.AddGranitWorkflowEntityFrameworkCore<AppDbContext>();
 ```
 
 This registers:
+
 - `WorkflowTransitionInterceptor` (Scoped, ordered after `AuditedEntityInterceptor`)
 - `IWorkflowTransitionRecorder` → `EfWorkflowTransitionRecorder`
 - `IWorkflowHistoryQuery` → `DefaultWorkflowHistoryQuery`

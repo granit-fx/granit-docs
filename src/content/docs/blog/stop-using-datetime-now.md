@@ -126,7 +126,7 @@ No mocking framework needed for time. No `Thread.Sleep`. No "it works if you run
 
 Forgetting to use `IClock` is easy. Granit makes it hard. The **`DateTimeNowAnalyzer`** (diagnostic `GRSEC001`) flags any direct use of `DateTime.Now`, `DateTime.UtcNow`, or `DateTimeOffset.Now` in your source code.
 
-```
+```text
 GRSEC001: Use IClock or TimeProvider instead of DateTime.Now
 ```
 

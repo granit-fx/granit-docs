@@ -36,6 +36,7 @@ public class GranitUser : IdentityUser<Guid>, IMultiTenant
 ```
 
 :::caution[Design decisions]
+
 - **No `ISoftDeletable`**: incompatible with `UserManager<T>` internal reflection
   patterns. Uses manual `IsDeleted` field with a named query filter that supports
   `IDataFilter.Disable<ISoftDeletable>()` bypass via the same `bypass || real` pattern
@@ -44,6 +45,7 @@ public class GranitUser : IdentityUser<Guid>, IMultiTenant
   property. Adding a second concurrency mechanism would cause conflicts.
 - **Tenant-scoped**: Implements `IMultiTenant` with `Guid? TenantId` for GDPR-strict
   tenant isolation. Indexed on `TenantId`.
+
 :::
 
 ### GranitRole

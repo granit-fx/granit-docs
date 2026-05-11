@@ -42,6 +42,7 @@ All Granit metrics follow strict naming and tagging conventions:
 
 <Tabs>
 <TabItem label="Metrics class">
+
 ```csharp
 namespace Granit.MyModule.Diagnostics;
 
@@ -75,8 +76,10 @@ public sealed class MyModuleMetrics(IMeterFactory meterFactory)
     }
 }
 ```
+
 </TabItem>
 <TabItem label="DI registration">
+
 ```csharp
 public static IServiceCollection AddGranitMyModule(this IServiceCollection services)
 {
@@ -84,8 +87,10 @@ public static IServiceCollection AddGranitMyModule(this IServiceCollection servi
     return services;
 }
 ```
+
 </TabItem>
 <TabItem label="Unit test">
+
 ```csharp
 public sealed class MyModuleMetricsTests : IDisposable
 {
@@ -116,6 +121,7 @@ public sealed class MyModuleMetricsTests : IDisposable
     public void Dispose() => _sp.Dispose();
 }
 ```
+
 </TabItem>
 </Tabs>
 
