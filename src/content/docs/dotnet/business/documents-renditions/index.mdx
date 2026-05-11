@@ -262,6 +262,14 @@ Both are auto-registered through `GranitActivitySourceRegistry`, alongside the
 
 - [Documents](/dotnet/business/documents/) — the parent aggregate, ACL,
   quota, and trash semantics.
+- [Documents — Asset Metadata](/dotnet/business/documents-asset-metadata/) —
+  the sibling descriptive-metadata pipeline. Renditions produce visual
+  previews; Asset Metadata produces searchable EXIF / PDF info / Office /
+  audio-video fields. Both consume `DocumentVersionAddedEvent` and run
+  independently.
+- [Documents — Public Links](/dotnet/business/documents-public-links/) —
+  token-signed anonymous URLs for sharing the original or a rendition with
+  unauthenticated clients (TTL, max-uses, revocation, audit).
 - [Browsing](/dotnet/infrastructure/browsing/) — the headless-browser
   abstraction `Granit.Documents.Renditions.Pdf` depends on.
 - [ADR-052 — Granit.Documents module](/dotnet/architecture/adr/052-documents-module/).
