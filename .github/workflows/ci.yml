@@ -28,7 +28,7 @@ jobs:
           node-version: 22
 
       - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+        run: corepack enable
 
       - name: Get pnpm store dir
         id: pnpm-store
