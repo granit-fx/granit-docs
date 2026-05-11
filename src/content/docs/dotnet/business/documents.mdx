@@ -252,6 +252,13 @@ and are exposed through `/documents/{id}/renditions`. See
 [Documents — Renditions](/dotnet/business/documents-renditions/) for the
 provider matrix, sandboxing model, and configuration.
 
+Every version also carries searchable descriptive metadata — EXIF for
+photos, PDF info dictionary, Office core properties, audio / video tags —
+exposed through `/documents/{id}/metadata`. See
+[Documents — Asset Metadata](/dotnet/business/documents-asset-metadata/) for
+the extractor chain, the indexed-projection storage model, and the GDPR GPS
+scrub on upload.
+
 ## Related ADRs
 
 - [ADR-052 — Granit.Documents module](/dotnet/architecture/adr/052-documents-module/)
