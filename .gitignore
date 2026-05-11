@@ -1,0 +1,62 @@
+# =============================================================================
+# .gitignore - Granit Docs
+# =============================================================================
+
+# --- Node / Astro ---
+node_modules/
+dist/
+.astro/
+.output/
+
+# --- Build artefacts ---
+*.log
+*.log.*
+.cache/
+.tmp/
+tmp/
+temp/
+
+# --- pnpm ---
+.pnpm-store/
+.pnpm-debug.log*
+
+# --- Environment ---
+.env
+.env.*
+!.env.example
+
+# --- IDE ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# --- AI tools (Claude Code) ---
+# Commit settings.json and skills (shared), ignore local overrides
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Security (CRITICAL) ---
+# NEVER commit these files
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+credentials.json
+secrets.json
+token.json
+.dev.vars
+
+# --- Cloudflare Pages / Wrangler ---
+.wrangler/
+.dev.vars.*

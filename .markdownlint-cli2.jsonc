@@ -1,0 +1,14 @@
+{
+  // Merged from .markdownlint.json — this file takes priority over .markdownlint.json
+  "config": {
+    "MD013": false,
+    "MD024": { "siblings_only": true },
+    "MD033": false,
+    "MD041": false
+  },
+  "ignores": [
+    "node_modules/**",
+    "dist/**",
+    ".astro/**"
+  ]
+}
