@@ -100,7 +100,7 @@ based on the recipient's culture preference — no template per culture required
 
 Given a context for an invoice approval notification with `Culture = "fr"`:
 
-```
+```text
 Subject: Facture #INV-2026-042 approuvée
 Body:    Votre facture de 4 850,00 € soumise le 14 mars a été approuvée
          par Marie Dupont. Le paiement sera traité sous 48 heures.
@@ -181,6 +181,7 @@ public static async Task Handle(
 ```
 
 This pattern gives you:
+
 - Instant 202 response to the publishing call
 - LLM generation in the background with Wolverine retry on failure
 - SignalR/SSE push to the recipient when delivery completes

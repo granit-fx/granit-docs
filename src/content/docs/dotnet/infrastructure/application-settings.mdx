@@ -124,7 +124,7 @@ public sealed class AcmeSettingDefinitionProvider : ISettingDefinitionProvider
 Settings are resolved through a provider chain. The first provider that returns a
 non-null value wins:
 
-```
+```text
 User (U) → Tenant (T) → Global (G) → Configuration (appsettings.json) → Default (code)
 ```
 

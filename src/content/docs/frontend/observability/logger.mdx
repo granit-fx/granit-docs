@@ -188,6 +188,7 @@ function createOtlpTransport(options: OtlpTransportOptions): LogTransport;
 ```
 
 **OTLP mapping:**
+
 - Log levels map to OTLP severity numbers: `DEBUG=5`, `INFO=9`, `WARN=13`, `ERROR=17`
 - Resource attributes: `service.name`, `service.version`, `deployment.environment`
 - Log attributes: `logger.prefix`, context key-values, and `exception.*` for `Error` objects

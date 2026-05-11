@@ -332,10 +332,12 @@ Wolverine middleware automatically injected onto all handler chains whose messag
 `[RecurringJob]`. Never applied manually.
 
 **Before handler execution:**
+
 - Records execution start time in the store
 - Reads the `X-Triggered-By` envelope header and persists it for ISO 27001 audit
 
 **After handler execution:**
+
 - Computes the next cron occurrence
 - Calls `context.ScheduleAsync()` inside the **same database transaction** as the handler
 - Updates `NextExecutionAt` in the store
@@ -404,6 +406,7 @@ Both integrate with the Granit RBAC pipeline:
 3. Permission grant store query per role
 
 In production, grant permissions via:
+
 - Add the role to `GranitAuthorizationOptions.AdminRoles`
 - Call `IPermissionManagerWriter.SetAsync("BackgroundJobs.Jobs.Read", "my-role", tenantId, true)`
 - Call `IPermissionManagerWriter.SetAsync("BackgroundJobs.Jobs.Manage", "my-role", tenantId, true)`

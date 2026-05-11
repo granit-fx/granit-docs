@@ -272,22 +272,26 @@ Here is what happens when you call `SaveChangesAsync` on an entity that
 implements `IAuditedEntity`, `ISoftDeletable`, and `IMultiTenant`:
 
 **On insert:**
+
 1. `AuditedEntityInterceptor` sets `CreatedAt`, `CreatedBy`, `TenantId`.
 2. `SoftDeleteInterceptor` — no action (entity is not being deleted).
 3. Row is inserted.
 
 **On update:**
+
 1. `AuditedEntityInterceptor` sets `ModifiedAt`, `ModifiedBy`.
 2. `SoftDeleteInterceptor` — no action.
 3. Row is updated.
 
 **On delete:**
+
 1. `AuditedEntityInterceptor` sets `ModifiedAt`, `ModifiedBy`.
 2. `SoftDeleteInterceptor` changes state to `Modified`, sets `IsDeleted`,
    `DeletedAt`, `DeletedBy`.
 3. Row is updated (not deleted).
 
 **On query:**
+
 1. EF Core applies the combined query filter:
    `WHERE IsDeleted = false AND TenantId = @tenantId`
 2. Application code sees only active, non-deleted, tenant-scoped records.

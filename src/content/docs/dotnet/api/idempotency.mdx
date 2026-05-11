@@ -75,7 +75,7 @@ flowchart TD
 The Redis key is partitioned by tenant, user, HTTP method, and route to prevent
 cross-user key collisions:
 
-```
+```text
 {prefix}:{tenantId|global}:{userId|anon}:{method}:{routePattern}:{sha256(idempotencyKeyValue)}
 ```
 

@@ -15,12 +15,14 @@ once** at the specified time, carry a **typed payload**, and support **cancellat
 double-execution, a catch-up safety net for lost messages, and a full audit trail.
 
 :::tip[When to use Scheduling vs BackgroundJobs]
+
 | | BackgroundJobs | Scheduling |
 |---|---|---|
 | **Trigger** | Cron expression (recurring) | Specific date (one-shot) |
 | **Example** | "Every 1st Monday at 15h" | "On May 1st 2026, upgrade tenant X" |
 | **Payload** | None (job discovers work) | Typed payload (the work IS the message) |
 | **Cancellation** | Pause/resume | Cancel or reschedule specific instance |
+
 :::
 
 ## Package structure

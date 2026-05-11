@@ -87,6 +87,7 @@ function createApiClient(config: ApiClientConfig): AxiosInstance;
 ```
 
 The instance automatically:
+
 - Injects `Authorization: Bearer <token>` if a token getter is registered
 - Injects `X-Tenant-Id: <id>` if a tenant getter is registered
 - Calls the `onUnauthorized` callback on HTTP 401, then re-throws the error

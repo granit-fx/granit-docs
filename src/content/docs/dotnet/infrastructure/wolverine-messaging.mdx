@@ -165,9 +165,11 @@ follow the retry policy.
 
 :::caution
 Modules **without** `[WolverineHandlerModule]` must register validators manually:
+
 ```csharp
 services.AddGranitValidatorsFromAssemblyContaining<MyValidator>();
 ```
+
 Without registration, `FluentValidationEndpointFilter<T>` silently skips validation.
 :::
 
@@ -302,6 +304,7 @@ fallbacks when Wolverine is not installed:
 
 :::caution[Messages stuck in dead letter queue]
 If messages accumulate in the DLQ, check:
+
 1. The handler throws an unhandled exception — Wolverine retries then moves to DLQ
 2. `ValidationException` bypasses retries (by design) — fix the sender, not the handler
 3. The handler's DI dependencies are missing (module not loaded)
