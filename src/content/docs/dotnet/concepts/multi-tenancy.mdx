@@ -267,6 +267,49 @@ public class ReportService(ICurrentTenant currentTenant)
 }
 ```
 
+## Host vs Tenant side — the `MultiTenancySides` enum
+
+Multi-tenant applications expose two distinct admin surfaces: the **host** plane
+(platform operators creating tenants, viewing cross-tenant usage, paying for the
+infrastructure) and the **tenant** plane (a tenant's own admins managing their
+workspace). The same controller wired to both contexts would leak data; refusing to
+share any building blocks would force every endpoint to be written twice.
+
+Granit's answer is a single `[Flags]` enum, `MultiTenancySides`, declared in the
+foundation `Granit` assembly:
+
+```csharp
+[Flags]
+public enum MultiTenancySides
+{
+    Host   = 1 << 0,  // No tenant context active (cross-tenant operations)
+    Tenant = 1 << 1,  // A tenant context is active (per-tenant operations)
+    Both   = Host | Tenant,
+}
+```
+
+Every permission declaration carries a side. A `Host`-scoped permission can only be
+checked when `ICurrentTenant.IsAvailable` is `false`; a `Tenant`-scoped permission is
+only grantable inside an active tenant context. `Both` is for cross-side primitives
+(e.g. `Users.Read` in a self-service profile page).
+
+```csharp
+// In a permission definition provider
+group.AddPermission(
+    BillingPermissions.Administration.Read,
+    LocalizableString.Create(...),
+    MultiTenancySides.Host);  // Only platform admins, never tenant users
+```
+
+The same enum drives BFF frontend scoping (`BffFrontendOptions.MultiTenancySide`),
+OData host-feed validation
+([ADR-050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/);
+`MapGranitODataHostEndpoints` refuses non-host permissions), and authorization
+test harnesses. Because the enum lives in `Granit` (not `Granit.MultiTenancy`),
+declaring side-scoped permissions doesn't pull a runtime dependency on the
+multi-tenancy module — the framework filters gracefully when no tenant context
+provider is registered.
+
 ## Automatic tenant provisioning
 
 When a tenant is created at runtime, the framework automatically provisions its
