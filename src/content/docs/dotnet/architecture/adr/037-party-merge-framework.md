@@ -1,5 +1,5 @@
 ---
-title: "ADR-037: Party merge framework — Mergeable primitive + cross-module rewriters"
+title: "ADR-037: Party merge framework"
 description: "Generic merge framework (Granit.Mergeable) plus a per-module IReferenceRewriter<T> registry to fold a duplicate Party into a survivor across Invoicing / Subscriptions / CustomerBalance, with override-at-merge-time field choices, single-Postgres TransactionScope orchestration, and a tombstone follow-through pattern for in-flight references."
 sidebar:
   order: 37

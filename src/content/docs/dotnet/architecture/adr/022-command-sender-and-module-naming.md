@@ -1,5 +1,5 @@
 ---
-title: "ADR-022: ICommandSender and Module Naming — No Technology Suffix on Domain Modules"
+title: "ADR-022: ICommandSender + module naming"
 description: "Command dispatch is abstracted behind Granit.Commands.ICommandSender in the core Granit assembly. Business modules drop the .Wolverine suffix and rapatriate their handlers; adapter modules that carry genuine Wolverine-specific infrastructure keep the suffix; integration adapters get a descriptive suffix (.Privacy, .Provisioning) instead."
 sidebar:
   order: 22
