@@ -166,10 +166,16 @@ This provides end-to-end request visibility across services.
 
 ### Application metrics
 
-Granit modules emit business-level metrics (counters, histograms) covering
-AI, BackgroundJobs, BlobStorage, DataExchange, EventBus, Identity,
-Notifications, Privacy, Vault, Webhooks, and Workflow. All follow the
+Granit modules emit business-level metrics (counters, histograms) across the
+framework — AI, BackgroundJobs, BlobStorage, Caching, DataExchange, Events,
+Encryption, Identity, MultiTenancy, Notifications, OpenIddict, Privacy,
+RateLimiting, Templating, Vault, Webhooks, Wolverine, and more. All follow the
 `granit.{module}.{entity}.{action}` naming convention with `tenant_id` tagging.
+
+Beyond live OpenTelemetry counters, six **analytics satellites** in `granit-business`
+ship declarative `MetricDefinition` records consumed by `Granit.Analytics` and
+`Granit.Dashboards` — see [metrics reference](/dotnet/core/metrics/) for the
+distinction between in-process counters and declarative analytics.
 
 See the [Application metrics reference](/dotnet/core/metrics/) for the
 complete list of instruments, tags, and example PromQL queries.

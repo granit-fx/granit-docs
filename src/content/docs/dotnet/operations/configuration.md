@@ -26,19 +26,34 @@ environment variables injected from Vault. This is enforced by CI secret detecti
 scans and ISO 27001 audit requirements.
 :::
 
-## Vault integration (Granit.Vault)
+## Vault integration
+
+### Package layout
+
+`Granit.Vault` ships the abstractions only (`ISecretStore`, `ITransitEncryptionService`,
+`IDatabaseCredentialProvider`, `SecretMetadata`). Pick one provider per deployment:
+
+| Provider package | Backing service |
+| --- | --- |
+| `Granit.Vault.HashiCorp` | HashiCorp Vault (Kubernetes auth, Transit, Database, KV v2) |
+| `Granit.Vault.Azure` | Azure Key Vault |
+| `Granit.Vault.Aws` | AWS Secrets Manager + KMS |
+| `Granit.Vault.GoogleCloud` | Google Cloud Secret Manager + Cloud KMS |
+
+Examples below use `Granit.Vault.HashiCorp` because Kubernetes-native deployments on
+sovereign infrastructure are the canonical target.
 
 ### Architecture
 
-In production, Granit authenticates to Vault using the pod's Kubernetes
+In production, Granit authenticates to HashiCorp Vault using the pod's Kubernetes
 ServiceAccount. No static tokens or passwords are stored anywhere.
 
-The `Granit.Vault` package (built on VaultSharp 1.17+) provides:
+`Granit.Vault.HashiCorp` (built on VaultSharp 1.17+) provides:
 
 - **Kubernetes authentication**: automatic JWT-based login using the ServiceAccount token
 - **Dynamic PostgreSQL credentials**: ephemeral database users with short TTLs
 - **Transit encryption**: field-level encryption without exposing keys to the application
-- **Automatic lease renewal**: the `IVaultCredentialLeaseManager` renews leases before expiration
+- **Automatic lease renewal**: `VaultCredentialLeaseManager` renews leases before expiration
 
 ### Vault configuration
 
@@ -74,7 +89,7 @@ The `Granit.Vault` package (built on VaultSharp 1.17+) provides:
 2. Granit sends the JWT to Vault's Kubernetes auth endpoint (`POST /auth/kubernetes/login`).
 3. Vault verifies the JWT with the Kubernetes API server (TokenReview).
 4. Vault returns a client token (TTL 1h, renewable).
-5. `IVaultCredentialLeaseManager` renews the token automatically before expiration.
+5. `VaultCredentialLeaseManager` renews the token automatically before expiration.
 
 :::note[Token auth for development]
 For local development, set `AuthMethod` to `"Token"` and provide a `Token` value.
@@ -90,7 +105,7 @@ lifecycle is fully automated:
    Database engine.
 2. **Active**: EF Core uses the dynamic username/password for all database operations.
 3. **Renew**: when the lease reaches the renewal threshold (default 75% of TTL),
-   `IVaultCredentialLeaseManager` renews it transparently.
+   `VaultCredentialLeaseManager` renews it transparently.
 4. **Revoke**: on pod shutdown, credentials are revoked immediately to minimize
    the exposure window.
 
@@ -158,7 +173,8 @@ Connection strings for PostgreSQL and Redis follow the standard
 
 In production, the PostgreSQL connection string should **not** include username
 and password. Vault dynamic credentials are injected at runtime by the
-`IVaultCredentialLeaseManager`, which updates the connection string automatically.
+`IDatabaseCredentialProvider` (provider-backed by `VaultCredentialLeaseManager` on
+HashiCorp), which updates the connection string automatically.
 
 ## Multi-environment appsettings
 
