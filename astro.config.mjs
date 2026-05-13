@@ -67,9 +67,19 @@ export default defineConfig({
     "/architecture/adr/006-fluentvalidation/": "/dotnet/architecture/adr/006-fluentvalidation/",
     "/architecture/adr-frontend/005-keycloak/": "/frontend/architecture/adr/005-keycloak/",
 
+    // Business → Building Blocks split: modules that stayed in granit-dotnet
+    // (open-source, framework-shipped) moved out of "Business Features".
+    "/dotnet/business/workflow/": "/dotnet/building-blocks/workflow/",
+    "/dotnet/business/data-exchange/": "/dotnet/building-blocks/data-exchange/",
+    "/dotnet/business/data-lookup/": "/dotnet/building-blocks/data-lookup/",
+    "/dotnet/business/document-generation/": "/dotnet/building-blocks/document-generation/",
+    "/dotnet/business/query-engine/": "/dotnet/building-blocks/query-engine/",
+    "/dotnet/business/timeline/": "/dotnet/building-blocks/timeline/",
+    "/dotnet/business/templating/": "/dotnet/building-blocks/templating/",
+
     // Legacy /reference/modules/* — superseded by /dotnet/* layout.
     "/reference/modules/utilities/": "/dotnet/core/time-provider-clock/",
-    "/reference/modules/workflow/": "/dotnet/business/workflow/",
+    "/reference/modules/workflow/": "/dotnet/building-blocks/workflow/",
     "/reference/modules/localization/": "/dotnet/infrastructure/localization/",
     "/reference/modules/observability/": "/dotnet/core/observability/",
 
@@ -267,6 +277,11 @@ export default defineConfig({
                   collapsed: true,
                 },
                 {
+                  label: "Building Blocks",
+                  items: [{ autogenerate: { directory: "dotnet/building-blocks" } }],
+                  collapsed: true,
+                },
+                {
                   label: "Business Features",
                   items: [{ autogenerate: { directory: "dotnet/business" } }],
                   collapsed: true,
@@ -380,11 +395,6 @@ export default defineConfig({
                     {
                       label: "ADRs",
                       items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
-                      collapsed: true,
-                    },
-                    {
-                      label: "Spikes",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/spikes" } }],
                       collapsed: true,
                     },
                   ],

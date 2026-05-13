@@ -264,9 +264,9 @@ labels automatically.
 
 - [ADR-028: Unified Data Lookup](/dotnet/architecture/adr/028-unified-data-lookup/)
   — architectural rationale and alternatives evaluated.
-- [`/dotnet/business/data-lookup/`](/dotnet/business/data-lookup/) —
+- [`/dotnet/building-blocks/data-lookup/`](/dotnet/building-blocks/data-lookup/) —
   module reference with full API surface.
-- [`/dotnet/business/query-engine/`](/dotnet/business/query-engine/) —
+- [`/dotnet/building-blocks/query-engine/`](/dotnet/building-blocks/query-engine/) —
   how `FilterableField.Lookup` fits into the metadata pipeline.
 - [`/dotnet/business/reference-data/`](/dotnet/business/reference-data/) —
   auto-registered `ref-*` sources for code lists.

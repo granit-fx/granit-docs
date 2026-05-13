@@ -50,7 +50,7 @@ Use Granit.Templating when:
 Skip it when:
 
 - You generate **static, developer-controlled** text (e.g., internal log messages) -- string interpolation is simpler
-- You need **binary-first** output (PDF from scratch, not from HTML) -- go directly to [Document Generation](/dotnet/business/document-generation/)
+- You need **binary-first** output (PDF from scratch, not from HTML) -- go directly to [Document Generation](/dotnet/building-blocks/document-generation/)
 - Templates are **single-use** and never change -- the lifecycle overhead (Draft -> Published) is unnecessary
 
 ## Common pitfalls
@@ -84,7 +84,7 @@ error. Always register templates for your default culture at minimum.
 - [Post-Render Transformers](./post-render-transformers/) -- extensible HTML processing pipeline
 - [MJML Email Templates](./mjml-email-templates/) -- responsive email design without Node.js
 - [ADR-010: Scriban](/dotnet/architecture/adr/010-scriban-template-engine/) -- Why Scriban was chosen as the template engine
-- [Document Generation module](/dotnet/business/document-generation/) -- HTML-to-PDF (Chromium), Excel (ClosedXML), PDF/A-3b
+- [Document Generation module](/dotnet/building-blocks/document-generation/) -- HTML-to-PDF (Chromium), Excel (ClosedXML), PDF/A-3b
 - [Core module](/dotnet/core/module-system/) -- Module system, domain base types
 - [Persistence module](/dotnet/data/persistence/) -- `AuditedEntityInterceptor`, `ApplyGranitConventions`
 - [Notifications module](/dotnet/infrastructure/notifications/) -- Email, SMS, push channels that consume rendered templates
