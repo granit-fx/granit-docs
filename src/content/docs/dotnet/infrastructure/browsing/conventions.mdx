@@ -24,7 +24,7 @@ Every host registers an `IBrowserSandboxProfile`. The shipped
 
 Replace it for tighter rules, not looser ones. Loosening (`http`, private
 networks, no CSP) requires both a deliberate registration *and* the matching
-permission grant. See [Browsing security](/dotnet/browsing/security/).
+permission grant. See [Browsing security](/dotnet/infrastructure/browsing/security/).
 
 ## No per-call CSP bypass
 
@@ -66,7 +66,7 @@ A caller using `IHeadlessBrowser` MUST hold:
 
 `Granit.Browsing.Pages.BypassCsp` and `Granit.Browsing.Pages.UseFileScheme`
 are rare and require explicit grants. The full matrix lives in
-[Browsing security — Permissions matrix](/dotnet/browsing/security/#permissions-matrix).
+[Browsing security — Permissions matrix](/dotnet/infrastructure/browsing/security/#permissions-matrix).
 
 ## `EvaluateAsync` — parameterised always
 
@@ -111,5 +111,5 @@ a `CrossTenantPageAcquisitionException`.
 
 ## Related
 
-- [Browsing security](/dotnet/browsing/security/).
+- [Browsing security](/dotnet/infrastructure/browsing/security/).
 - [Browsing overview](/dotnet/infrastructure/browsing/).

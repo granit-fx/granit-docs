@@ -148,7 +148,7 @@ Both providers honour the profile through native interception, wrapped by a
 single per-page `RequestRouter` that runs sandbox handlers before user
 `RouteAsync` registrations. The full threat model, audit events,
 `ConsoleRedactor`, `PrivilegedFlagGuard`, and the five Browsing permissions
-are covered in [Browsing security](/dotnet/browsing/security/).
+are covered in [Browsing security](/dotnet/infrastructure/browsing/security/).
 
 Disabling CSP requires both a sandbox with `ForceCsp = false` *and* the
 `Granit.Browsing.Pages.BypassCsp` permission on the caller's role.

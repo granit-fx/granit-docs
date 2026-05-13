@@ -16,7 +16,7 @@ PDF-rasterisation workloads.
 - **`RequestRouter` adoption.** The Puppeteer `Request` event is now owned
   by a single `RequestRouter` per page. Sandbox handlers run first; user
   `RouteAsync` registrations run in order. See
-  [Browsing security — RequestRouter](/dotnet/browsing/security/#requestrouter--single-subscriber).
+  [Browsing security — RequestRouter](/dotnet/infrastructure/browsing/security/#requestrouter--single-subscriber).
 - **Integrity-pinned `BrowserFetcher`.** `PuppeteerChromiumProvisionService`
   refuses to run in production by default. When it does run (dev / staging
   via `Granit:Browsing:PuppeteerSharp:AllowFetcherInProduction = true` or a
@@ -76,7 +76,7 @@ ship a custom Chromium build under a non-standard path.
 
 ## Related
 
-- [Browsing security](/dotnet/browsing/security/).
-- [Browsing conventions](/dotnet/browsing/conventions/).
+- [Browsing security](/dotnet/infrastructure/browsing/security/).
+- [Browsing conventions](/dotnet/infrastructure/browsing/conventions/).
 - [Browsing overview](/dotnet/infrastructure/browsing/).
-- [Playwright provider](/dotnet/browsing/providers/playwright/).
+- [Playwright provider](/dotnet/infrastructure/browsing/providers/playwright/).

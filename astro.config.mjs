@@ -45,6 +45,12 @@ export default defineConfig({
     "/dotnet/api/webhooks/wolverine/": "/dotnet/api/webhooks/",
     "/dotnet/api/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
     "/dotnet/http/security/url-safety/": "/dotnet/http/url-safety/",
+    "/dotnet/browsing/": "/dotnet/infrastructure/browsing/",
+    "/dotnet/browsing/conventions/": "/dotnet/infrastructure/browsing/conventions/",
+    "/dotnet/browsing/security/": "/dotnet/infrastructure/browsing/security/",
+    "/dotnet/browsing/providers/playwright/": "/dotnet/infrastructure/browsing/providers/playwright/",
+    "/dotnet/browsing/providers/puppeteer-sharp/": "/dotnet/infrastructure/browsing/providers/puppeteer-sharp/",
+    "/dotnet/io/temp-files/": "/dotnet/infrastructure/io/temp-files/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
     "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",
@@ -294,16 +300,6 @@ export default defineConfig({
                 {
                   label: "HTTP",
                   items: [{ autogenerate: { directory: "dotnet/http" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "IO",
-                  items: [{ autogenerate: { directory: "dotnet/io" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "Browsing",
-                  items: [{ autogenerate: { directory: "dotnet/browsing" } }],
                   collapsed: true,
                 },
                 {
