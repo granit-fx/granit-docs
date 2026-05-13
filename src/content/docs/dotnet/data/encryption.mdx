@@ -20,7 +20,7 @@ with application-managed keys, so even a full database dump is useless without t
 The challenge is doing this without polluting every repository call with
 `Encrypt()`/`Decrypt()` logic. Granit makes it transparent: add `[Encrypted]` to a
 property, and EF Core handles the rest — encryption on write, decryption on read, no
-manual calls. When compliance requires key rotation, `IReEncryptionJob` re-encrypts
+manual calls. When compliance requires key rotation, `IReEncryptionService` re-encrypts
 all marked fields in batch without downtime.
 
 ## Package structure
@@ -28,15 +28,22 @@ all marked fields in batch without downtime.
 <FileTree>
 
 - Granit.Encryption/ IStringEncryptionService, AES-256-CBC default
-  - Granit.Encryption.EntityFrameworkCore/ [Encrypted] attribute, EncryptedStringConverter, ApplyEncryptionConventions
-  - Granit.Encryption.ReEncryption/ IReEncryptionJob, DefaultReEncryptionJob
+  - Granit.Encryption.EntityFrameworkCore/ [Encrypted] attribute, EncryptedStringConverter, ApplyEncryptionConventions, IReEncryptionService
 
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Encryption.EntityFrameworkCore` | `[Encrypted]` attribute, `EncryptedStringConverter`, `ApplyEncryptionConventions` extension | `Granit.Encryption`, `Granit.Persistence` |
-| `Granit.Encryption.ReEncryption` | `IReEncryptionJob`, `DefaultReEncryptionJob<TContext>`, `AddGranitEncryptionReEncryption<TContext>()` | `Granit.Encryption.EntityFrameworkCore` |
+| `Granit.Encryption` | `IStringEncryptionService` abstraction, in-memory AES-256-CBC default provider | `Granit` |
+| `Granit.Encryption.EntityFrameworkCore` | `[Encrypted]` attribute, `EncryptedStringConverter`, `ApplyEncryptionConventions` extension, `IReEncryptionService` + `AddGranitEncryptionReEncryption<TContext>()` | `Granit.Encryption`, `Granit.Persistence.EntityFrameworkCore` |
+
+:::caution[`[Encrypted]` requires an `IsolatedDbContext`]
+An architecture test (PR #2062) pins `[Encrypted]` properties to entities mapped on an
+`IsolatedDbContext` — i.e. a tenant-scoped DbContext registered via
+`AddGranitIsolatedDbContext<T>()`. Encrypted columns on a host-shared context would
+mix per-tenant keys with cross-tenant data; the rule fails the build before that
+mistake reaches production.
+:::
 
 ## Setup
 
@@ -48,11 +55,7 @@ all marked fields in batch without downtime.
    dotnet add package Granit.Encryption.EntityFrameworkCore
    ```
 
-   If you also need the re-encryption job:
-
-   ```bash
-   dotnet add package Granit.Encryption.ReEncryption
-   ```
+   The re-encryption service ships in the same package — no extra reference needed.
 
 2. **Register the module**
 
@@ -195,11 +198,11 @@ builder.Services.AddDbContextFactory<AppDbContext>(...);
 builder.Services.AddGranitEncryptionReEncryption<AppDbContext>();
 ```
 
-Inject `IReEncryptionJob` and run it — for example from a Wolverine scheduled job, a
+Inject `IReEncryptionService` and run it — for example from an admin endpoint, a
 hosted service, or a CLI command:
 
 ```csharp
-public sealed class KeyRotationJob(IReEncryptionJob reEncryption)
+public sealed class KeyRotationJob(IReEncryptionService reEncryption)
 {
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -216,7 +219,7 @@ public sealed class KeyRotationJob(IReEncryptionJob reEncryption)
 }
 ```
 
-`DefaultReEncryptionJob` loads entities in batches, marks every `[Encrypted]` property
+`DefaultReEncryptionService` loads entities in batches, marks every `[Encrypted]` property
 as modified, and saves. EF Core runs `IStringEncryptionService.Encrypt` on save —
 producing a new ciphertext encrypted with the current key version. The job is
 **idempotent**: running it multiple times is safe.
@@ -269,7 +272,7 @@ catch (RetiredKeyVersionException ex)
 sequenceDiagram
     participant SRE
     participant Vault
-    participant Job as IReEncryptionJob
+    participant Job as IReEncryptionService
     participant DB
 
     SRE->>Vault: vault write transit/keys/pii-data/rotate
@@ -317,10 +320,10 @@ public static ModelBuilder ApplyEncryptionConventions(
 Scans all entity types registered in the model and applies `EncryptedStringConverter`
 to every `string` property decorated with `[Encrypted]`.
 
-### `IReEncryptionJob`
+### `IReEncryptionService`
 
 ```csharp
-public interface IReEncryptionJob
+public interface IReEncryptionService
 {
     Task ReEncryptAsync<TEntity>(
         int batchSize = 500,
@@ -328,6 +331,10 @@ public interface IReEncryptionJob
         where TEntity : class;
 }
 ```
+
+Lives in `Granit.Encryption.EntityFrameworkCore`. The service is invoked on demand —
+it is not itself a recurring Granit background job; wire it into your own scheduled job,
+admin endpoint or CLI command.
 
 ### `AddGranitEncryptionReEncryption<TContext>`
 
@@ -337,7 +344,7 @@ public static IServiceCollection AddGranitEncryptionReEncryption<TContext>(
     where TContext : DbContext;
 ```
 
-Registers `IReEncryptionJob` → `DefaultReEncryptionJob<TContext>` (scoped).
+Registers `IReEncryptionService` → `DefaultReEncryptionService<TContext>` (scoped).
 Requires `IDbContextFactory<TContext>` to be already registered.
 
 ## Compliance
@@ -354,7 +361,7 @@ Use field-level encryption when:
 
 - You store **PII** (national IDs, medical records, bank accounts) that regulations require to be encrypted at rest
 - You need **column-level protection** — even DBAs or leaked backups should not see plaintext
-- **Key rotation** is a compliance requirement — `IReEncryptionJob` handles this without downtime
+- **Key rotation** is a compliance requirement — `IReEncryptionService` handles this without downtime
 
 Skip it when:
 
@@ -377,7 +384,7 @@ the `[Encrypted]` attribute is ignored and data is stored in plaintext. This is 
 :::
 
 :::caution[Re-encryption batch size]
-`IReEncryptionJob.ReEncryptAsync` loads entities in batches. If your table has millions
+`IReEncryptionService.ReEncryptAsync` loads entities in batches. If your table has millions
 of rows, choose a batch size that fits in memory (default 500). Monitor the job duration
 and adjust based on your Vault/KMS latency.
 :::

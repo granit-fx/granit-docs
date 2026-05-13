@@ -15,7 +15,7 @@ Granit provides two complementary tools for schema management:
 
 | | CLI mode | Standard (at startup) | SQL script (CI/CD) | Expand & Contract |
 |---|---|---|---|---|
-| **Package** | `Granit.Persistence.Hosting` | EF Core built-in | EF Core built-in | `Granit.Persistence.Migrations` |
+| **Package** | `Granit.Persistence.EntityFrameworkCore.Hosting` | EF Core built-in | EF Core built-in | `Granit.Persistence.EntityFrameworkCore.Migrations` |
 | **When** | Production, K8s init container | Dev / single instance | Production DDL-only | Zero-downtime breaking changes |
 | **Complexity** | Low | Low | Medium | High |
 | **Multi-module** | ✅ Topological order, auto-discovery | Manual per DbContext | Manual per DbContext | Per DbContext |
@@ -27,7 +27,7 @@ any migration that must rename, split, or backfill a column without downtime.
 
 ## CLI mode
 
-`Granit.Persistence.Hosting` adds a first-class `--migrate` CLI mode to any Granit application.
+`Granit.Persistence.EntityFrameworkCore.Hosting` adds a first-class `--migrate` CLI mode to any Granit application.
 Running `dotnet run --migrate` (or `docker run myapp --migrate` in CI/CD) applies all pending EF
 Core migrations in dependency-graph order, runs data seeders, and exits cleanly. The HTTP server
 never starts.
@@ -42,7 +42,7 @@ startup-time migration race condition in multi-replica deployments.
 1. **Add the package**
 
    ```bash
-   dotnet add package Granit.Persistence.Hosting
+   dotnet add package Granit.Persistence.EntityFrameworkCore.Hosting
    ```
 
 2. **Register migration support in `Program.cs`**
@@ -144,7 +144,7 @@ In SchemaPerTenant mode, the runner uses a **double-seed** flow:
 ### `IMigratableModule<TContext>`
 
 ```csharp
-// Granit.Persistence.Hosting
+// Granit.Persistence.EntityFrameworkCore.Hosting
 public interface IMigratableModule<TContext> where TContext : DbContext;
 ```
 
@@ -203,7 +203,7 @@ public interface IGranitMigrationLock
 }
 ```
 
-**For PostgreSQL**, `Granit.Persistence.Postgres` provides `NpgsqlAdvisoryMigrationLock`
+**For PostgreSQL**, `Granit.Persistence.EntityFrameworkCore.Postgres` provides `NpgsqlAdvisoryMigrationLock`
 out of the box — zero configuration required. Call `AddGranitPostgres()` before
 `AddGranitMigrateSupport()` and the advisory lock is registered automatically via
 `TryAddSingleton`:
@@ -418,7 +418,7 @@ These are the cases where Expand & Contract is necessary.
 
 ## Expand & Contract migrations
 
-`Granit.Persistence.Migrations` implements the **Expand & Contract** pattern: split a
+`Granit.Persistence.EntityFrameworkCore.Migrations` implements the **Expand & Contract** pattern: split a
 breaking schema change into three safe, backwards-compatible phases, each deployed
 independently.
 
@@ -528,14 +528,19 @@ no side effects.
 
 ### Channel vs Wolverine dispatch
 
-| | `Granit.Persistence.Migrations` | `+ .Wolverine` |
+`Granit.Persistence.EntityFrameworkCore.Migrations` ships both dispatch flavours from a
+single package. The default is in-memory `Channel<T>`; activate Wolverine by adding a
+reference to `Granit.Wolverine.*` — the migration package detects the registered
+`ICommandSender` at startup and routes batches through the durable outbox instead.
+
+| | Default (Channel) | With Wolverine |
 |---|---|---|
 | Dispatch | In-memory `Channel<T>` | Durable outbox |
 | Restart safety | Lost batches on crash | Survives restarts |
 | Multi-instance | Single node only | Distributed |
 
-Use `Granit.Persistence.Migrations.Wolverine` when batch processing must survive
-application restarts or run across multiple nodes.
+Wire up Wolverine when batch processing must survive application restarts or run across
+multiple nodes.
 
 ---
 
