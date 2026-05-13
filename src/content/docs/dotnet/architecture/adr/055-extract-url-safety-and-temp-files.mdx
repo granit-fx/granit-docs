@@ -1,5 +1,5 @@
 ---
-title: "ADR-055: Extract URL safety and temp-file primitives into shared packages"
+title: "ADR-055: Extract URL safety + temp-file primitives"
 description: "The pre-1.0 Browsing security-hardening pass surfaced duplicate SSRF/IP-classification logic (Webhooks + Browsing) and duplicate temp-file usage (Browsing + Privacy). We extract two minimal shared packages — Granit.Http.Security (IUrlSafetyValidator, PrivateNetworkClassifier, ReservedTldClassifier) and Granit.IO (ITempFileFactory) — instead of inlining, folding into Granit core, repurposing Granit.BlobStorage.Temp, or shipping a separate Browsing analyzer."
 sidebar:
   order: 55
