@@ -11,10 +11,14 @@ import { Aside, FileTree, Tabs, TabItem } from "@astrojs/starlight/components";
 A `Granit.{Module}.Notifications` package is the bridge between a domain module and
 `Granit.Notifications`: it ships the notification *types* (what events users care
 about), the Wolverine *handlers* (what triggers them) and the email *templates*
-(what the user sees). The framework already includes eight such packages
-(`Granit.Privacy.Notifications`, `Granit.Identity.Local.Notifications`,
-`Granit.Invoicing.Notifications`, …); this page captures the convention every new
-package must follow so the inventory stays homogeneous.
+(what the user sees). Several such packages ship across the framework — in `granit-dotnet`:
+`Granit.Privacy.Notifications`, `Granit.Identity.Local.Notifications`,
+`Granit.Auditing.Notifications`, `Granit.BackgroundJobs.Notifications`,
+`Granit.Webhooks.Notifications`; in `granit-business`:
+`Granit.Invoicing.Notifications`, `Granit.Activities.Notifications`,
+`Granit.CustomerBalance.Notifications`, `Granit.Documents.Notifications`,
+and more. This page captures the convention every new package must follow so the
+inventory stays homogeneous.
 
 The same checklist is mirrored — terser — in the project
 [`CLAUDE.md`](https://github.com/granit-fx/granit-dotnet/blob/develop/CLAUDE.md)
