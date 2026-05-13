@@ -41,7 +41,7 @@ consistent while minimizing server resource usage.
   - Granit.BlobStorage.AzureBlob Azure Blob Storage client, SAS tokens
   - Granit.BlobStorage.GoogleCloud Google Cloud Storage client, signed URLs
   - Granit.BlobStorage.FileSystem Local file system storage
-  - Granit.BlobStorage.DbStore EF Core database storage (small files)
+  - Granit.BlobStorage.Database EF Core database storage (small files)
   - Granit.BlobStorage.Proxy Token-based proxy endpoints for server-side providers
   - Granit.BlobStorage.Endpoints Minimal API admin endpoints (upload, confirm, download, delete)
   - Granit.BlobStorage.EntityFrameworkCore Isolated DbContext, EF persistence (metadata)
@@ -54,7 +54,7 @@ consistent while minimizing server resource usage.
 | `Granit.BlobStorage.AzureBlob` | Azure Blob SAS tokens, Managed Identity support | `Granit.BlobStorage` |
 | `Granit.BlobStorage.GoogleCloud` | Google Cloud Storage signed URLs, Workload Identity support | `Granit.BlobStorage` |
 | `Granit.BlobStorage.FileSystem` | Local file system storage, path traversal protection | `Granit.BlobStorage` |
-| `Granit.BlobStorage.DbStore` | EF Core database storage (small files, 10 MB default) | `Granit.BlobStorage`, `Granit.Persistence` |
+| `Granit.BlobStorage.Database` | EF Core database storage (small files, 10 MB default) | `Granit.BlobStorage`, `Granit.Persistence` |
 | `Granit.BlobStorage.Proxy` | Token-based proxy endpoints for FileSystem/DbStore | `Granit.BlobStorage` |
 | `Granit.BlobStorage.EntityFrameworkCore` | `BlobStorageDbContext`, `EfBlobDescriptorStore` | `Granit.BlobStorage`, `Granit.Persistence` |
 
@@ -83,7 +83,7 @@ graph TD
     AZ[Granit.BlobStorage.AzureBlob] --> BS
     GC[Granit.BlobStorage.GoogleCloud] --> BS
     FS[Granit.BlobStorage.FileSystem] --> BS
-    DB[Granit.BlobStorage.DbStore] --> BS
+    DB[Granit.BlobStorage.Database] --> BS
     DB --> P[Granit.Persistence]
     PX[Granit.BlobStorage.Proxy] --> BS
     EF[Granit.BlobStorage.EntityFrameworkCore] --> BS

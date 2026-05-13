@@ -15,6 +15,19 @@ Every Granit module exposes business-level metrics via the .NET `System.Diagnost
 These metrics are automatically exported to Mimir (or any OpenTelemetry-compatible backend) by
 `AddGranitObservability()` — no manual wiring needed.
 
+:::note[Two flavours of metrics, two homes]
+
+- **In-process OpenTelemetry counters / histograms** (`*Metrics.cs` in each module's `Diagnostics/`
+  folder) are scraped live by Mimir and listed below.
+- **Declarative `MetricDefinition` records** used by `Granit.Analytics` to render dashboards
+  ship from six satellite packages in `granit-business` — `Granit.BlobStorage.Analytics`,
+  `Granit.Webhooks.Analytics`, `Granit.Notifications.Analytics`, `Granit.Identity.Federated.Analytics`,
+  `Granit.BlobStorage.Dashboards`, `Granit.Webhooks.Dashboards`.
+
+See [Analytics / Dashboards](/dotnet/building-blocks/query-engine/) for the declarative side.
+
+:::
+
 ## Conventions
 
 All Granit metrics follow strict naming and tagging conventions:
