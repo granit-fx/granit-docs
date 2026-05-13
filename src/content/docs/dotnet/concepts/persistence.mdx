@@ -183,28 +183,52 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 }
 ```
 
-### 4. Wire interceptors in the extension method
+### 4. Register the DbContext — `AddGranitDbContext` or `AddGranitIsolatedDbContext`
 
-Use the `(IServiceProvider, DbContextOptionsBuilder)` overload of
-`AddDbContextFactory` with `ServiceLifetime.Scoped`. Resolve interceptors
-from the service provider:
+The framework ships two extensions; pick based on whether the module is
+**tenant-isolated** (data physically separated per tenant) or **shared** (one
+database, tenant-scoped via query filters):
 
 ```csharp
+// Non-tenant-isolated: the standard path — auto-wires interceptors and
+// applies UseGranitInterceptors (the 6 standard interceptors + any
+// IGranitAutoInterceptor registered by other modules, e.g. AuditingChangeTrackingInterceptor).
 public static IServiceCollection AddInvoicePersistence(
     this IServiceCollection services,
-    string connectionString)
+    Action<DbContextOptionsBuilder> configure)
 {
-    services.AddDbContextFactory<InvoiceDbContext>((sp, options) =>
-    {
-        options.UseNpgsql(connectionString);
-        options.AddInterceptors(
-            sp.GetRequiredService<AuditedEntityInterceptor>(),
-            sp.GetRequiredService<SoftDeleteInterceptor>());
-    }, ServiceLifetime.Scoped);
-
+    services.AddGranitDbContext<InvoiceDbContext>(configure);
     return services;
 }
 ```
+
+For modules that must support **all three** tenant-isolation strategies
+(`SharedDatabase`, `DatabasePerTenant`, `SchemaPerTenant`), use
+`AddGranitIsolatedDbContext` — the host's `TenantIsolation:Strategy` setting picks
+the right factory at runtime, and an invalid value fails fast at startup:
+
+```csharp
+// Tenant-isolated: ships ALL three strategies; appsettings picks one.
+services.AddGranitIsolatedDbContext<InvoiceDbContext>(
+    configureShared:             opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("Invoicing")),
+    configureDatabasePerTenant:  (opts, tenantCs) => opts.UseNpgsql(tenantCs),
+    configureSchemaPerTenant:    opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("Invoicing")),
+    configureTenantSchema:       schema => schema.NamingConvention = TenantSchemaNamingConvention.Prefix);
+```
+
+Both helpers auto-wire `AuditedEntityInterceptor`, `SoftDeleteInterceptor`,
+`VersioningInterceptor`, and any `IGranitAutoInterceptor` registered by another
+module (e.g. `AuditingChangeTrackingInterceptor`) — manual `AddInterceptors`
+calls aren't needed.
+
+:::tip[Host-scoped tables in a tenant-isolated context]
+Since [PR #2021](https://github.com/granit-fx/granit-dotnet/pull/2021), modules
+that are **tenant-only by intent** (every entity is `IMultiTenant`) but also need
+a small set of host-level tables — typically reference tables — declare them in
+the `HostDbSchema` (`granit_host` by default). `GranitPersistenceEntityFrameworkCoreModule`
+sets the schema eagerly at startup so downstream module configurations resolve it
+consistently across `SharedDatabase` and `SchemaPerTenant`.
+:::
 
 ### 5. DependsOn attribute
 
