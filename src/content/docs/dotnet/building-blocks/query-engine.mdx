@@ -1,0 +1,186 @@
+---
+title: "Granit.QueryEngine — One declarative filter that drives your API and your grid"
+description: "Stop writing filter parsing twice. QueryEngine ships a strongly-typed QueryDefinition<TEntity> that drives the API's $filter/$sort/$page, the frontend data grid's column metadata, and the OpenAPI schema — from a single declaration. EF Core-backed, SQL-injection-safe by construction, $ref-typed in OpenAPI, OData-bridgeable."
+sidebar:
+  label: QueryEngine
+  order: 16
+---
+
+import { FileTree, Aside } from "@astrojs/starlight/components";
+
+Every admin grid eventually grows the same shape: a search box, a few quick filters,
+sortable columns, paged results, maybe groupBy with aggregates. The dumb way is to
+hand-roll a parser per endpoint: `?status=active&from=...&to=...&sort=-date`, plus a
+matching DTO on the frontend, plus an OpenAPI annotation, plus a column metadata
+endpoint so the grid knows which fields are filterable. Five places to keep in sync,
+two of them not type-checked.
+
+**`Granit.QueryEngine`** flips it: one strongly-typed `QueryDefinition<TEntity>`
+describes columns, filter groups, quick filters, search, and sort options. That
+single declaration drives the search endpoint, the metadata endpoint the frontend
+data grid binds to, the OpenAPI schema for code generation, and — via
+[`Granit.Http.ODataExposure`](/dotnet/api/odata-exposure/) — a full OData v4 feed
+for Power BI. Zero duplication, SQL-injection-safe by construction, framework
+filters (tenant, soft-delete) layered before user input always.
+
+| Pain | This package's answer |
+|------|----------------------|
+| Hand-rolled `?status=...&sort=...` parsing per endpoint | One generic `MapGranitQuery<T>` route — same shape everywhere |
+| Frontend grid reimplements which columns are filterable | `GET /meta` endpoint returns the filter/sort/groupBy schema |
+| LIKE wildcard injection (`%`, `_`) | Metacharacters auto-escaped before EF Core |
+| Tenant-leaky filter (forgot `WHERE tenant_id = …`) | `IQueryableSource<T>` arrives pre-filtered by `ApplyGranitConventions` |
+| Cursor forgery for keyset pagination | HMAC-signed cursors via `QueryEngineOptions.CursorHmacKey` |
+| Fat OpenAPI doc (PagedResult inlined per endpoint) | Schemas emitted as `$ref` (PR #1651) — generated clients stay slim |
+| BI tool wants tabular data | Same `QueryDefinition` → OData v4 EntitySet ([ADR-050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/)) |
+
+## Package structure
+
+<FileTree>
+
+- Granit.QueryEngine.Abstractions/ Contracts: `QueryDefinition<T>`, `QueryRequest`, `PagedResult<T>`, `GroupedResult<T>`, `IQueryEngine<T>`, `IQueryableSource<T>`, column descriptors
+  - Granit.QueryEngine/ DI wiring, definitions registry, null-object defaults
+    - Granit.QueryEngine.EntityFrameworkCore EF Core `IQueryEngine<T>` implementation
+    - Granit.QueryEngine.AspNetCore Generic `MapGranitQuery<T>()` endpoint + metadata endpoint + bindable `QueryRequest`
+  - Granit.QueryEngine.AI NL → `QueryRequest` translation (the [AI/NLQ](/dotnet/ai/natural-language-query/) bridge)
+
+</FileTree>
+
+| Package | Role | Depends on |
+|---------|------|------------|
+| `Granit.QueryEngine.Abstractions` | `QueryRequest`, `PagedResult<T>`, `GroupedResult<T>`, `QueryDefinition<T>`, `ColumnDescriptor`, `IQueryEngine<T>` | `Granit` |
+| `Granit.QueryEngine` | `IQueryDefinitionDescriptor` registry, DI wiring, null-object defaults | `Granit.QueryEngine.Abstractions` |
+| `Granit.QueryEngine.EntityFrameworkCore` | EF Core query executor — translates `QueryRequest` to `IQueryable<T>` and projects to DTOs | `Granit.QueryEngine`, `Granit.Persistence` |
+| `Granit.QueryEngine.AspNetCore` | `MapGranitQuery<T>()`, `BindableQueryRequest`, OpenAPI transformer emitting `$ref` for paged/grouped schemas | `Granit.QueryEngine` |
+| `Granit.QueryEngine.AI` | `INaturalLanguageQueryTranslator` (LLM → `QueryRequest`) | `Granit.QueryEngine.Abstractions`, `Granit.AI` |
+
+<Aside type="note" title="EntityView superseded SavedViews (ADR-047)">
+The `SavedView` primitive that QueryEngine used to ship has been removed
+(PR #1639) in favour of `EntityView` — a richer first-class primitive with kind
+inheritance, three visibility levels, JSON Schema validation, and a clean break
+from the legacy filter-only model. `EntityView` lives in `Granit.Entities.Views`
+in the `granit-business` repo. QueryEngine itself no longer persists views.
+</Aside>
+
+## Endpoints
+
+`MapGranitQuery<TEntity>("/api/{module}/{entity}", ...)` mounts two routes on the
+target group:
+
+| Method | Route | Returns |
+|--------|-------|---------|
+| `GET` | `/` | `PagedResult<TEntity>` (or `GroupedResult<TEntity>` when `?groupBy=...`) |
+| `GET` | `/meta` | `QueryMetadata` — fields, operators, sort options, defaults; what the frontend binds to |
+
+`POST /query` is NOT a separate route — the body-style query endpoint is achieved by
+passing a serialized `QueryRequest` in `?q=` (the `BindableQueryRequest` binder
+accepts both query-string and form-encoded shapes for large request payloads).
+
+## Security hardening
+
+The query engine applies defence in depth across multiple layers — each one is the
+default, not an opt-in.
+
+### Authentication by default
+
+Every endpoint registered via `MapGranitQuery<T>()` requires authentication. Use
+`AuthorizationPolicy` for a named permission policy; use `AllowAnonymous` only when
+the data is genuinely public (countries, currencies, marketing catalog):
+
+```csharp
+endpoints.MapGranitQuery<Invoice>("/api/invoices", sp => ..., options =>
+{
+    options.AuthorizationPolicy = "Invoices.Read"; // named policy
+});
+
+// Rare: anonymous catalog
+endpoints.MapGranitQuery<Product>("/api/products", sp => ..., options =>
+{
+    options.AllowAnonymous = true;
+});
+```
+
+### LIKE wildcard escaping
+
+Search terms and string filter values (`Contains`, `StartsWith`, `EndsWith`) have
+SQL LIKE metacharacters (`%`, `_`, `[`) escaped before reaching EF Core — preventing
+wildcard injection probing (CWE-943).
+
+### Cursor integrity (HMAC signing)
+
+Keyset pagination cursors can be signed with HMAC-SHA256 to prevent forgery.
+Configure a 256-bit key in `QueryEngineOptions.CursorHmacKey` (base64):
+
+```json
+{
+  "QueryEngine": {
+    "CursorHmacKey": "BASE64_ENCODED_32_BYTE_KEY"
+  }
+}
+```
+
+Tampered cursors silently fall back to a fresh paging window — never disclose the
+tampering reason to the caller.
+
+### Resource exhaustion protection
+
+| Control | Default | Option |
+|---------|---------|--------|
+| Max page size | 100 | `MaxPageSize` |
+| Max stream size | 100 000 | `MaxStreamSize` |
+| Max group-by cardinality | 1 000 | `MaxGroupCount` |
+| Max filter entries | 50 | Validator constant |
+| Max filter key length | 200 chars | Validator constant |
+| Max filter value length | 2 000 chars | Validator constant |
+
+### Operator-type validation
+
+Filter operators are validated at runtime against the column's CLR type. `Contains`
+is only accepted on `string` columns; `Between` is only accepted on numeric/date
+types. Invalid operator/type combinations are silently ignored — the filter is
+dropped instead of escalating into an error that leaks schema details.
+
+### PII-safe logging
+
+Filter values, cursor payloads, and natural language inputs are never written to
+log messages. Only field names, target types, and input lengths are logged. The
+contract is enforced by an architecture test on every CI run.
+
+## OpenAPI integration
+
+Each `MapGranitQuery<TEntity>` registration plays well with the
+[ApiDocumentation](/dotnet/api/api-documentation/) module:
+
+- `PagedResult<TEntity>` and `GroupedResult<TEntity>` are emitted as `$ref` schemas
+  in `components.schemas` instead of being inlined per endpoint (PR #1651) — code
+  generators (`openapi-typescript`, NSwag, Kiota) emit a single shared type.
+- The grouped result projects to the entity DTO rather than the EF entity
+  (PR #1653) — the OpenAPI shape matches the API shape.
+- Spurious `["integer", "string"]` fallbacks on `int32` properties are stripped
+  by `Int32SchemaTransformer` (same PR).
+
+Net effect: the OpenAPI document for a host with 50 query endpoints shrinks by
+~250 KB, and the generated client has one `PagedResultOfInvoice` instead of fifty.
+
+## OData bridge (read-only)
+
+If you also reference [`Granit.Http.ODataExposure`](/dotnet/api/odata-exposure/),
+the same `QueryDefinition<TEntity>` registered for the admin grid powers an OData
+v4 EntitySet that Power BI, Excel, and Tableau consume natively. No second
+definition, no parallel maintenance — the EDM whitelist is derived from
+`EntityDefinition` (ADR-050).
+
+## Natural language queries
+
+`Granit.QueryEngine.AI` ships `INaturalLanguageQueryTranslator` — pass a phrase like
+*"unpaid invoices from last quarter over €5 000"*, get back a `QueryRequest` that
+runs through the same validators as a manually-crafted one. See
+[AI: Natural Language Query](/dotnet/ai/natural-language-query/) for the full
+prompt structure, sanitization, and per-tenant cost ceiling.
+
+## See also
+
+- [Persistence](/dotnet/data/persistence/) — EF Core interceptors, query filters, `IQueryableSource<T>`
+- [API Documentation](/dotnet/api/api-documentation/) — `$ref` schema emission, OpenAPI transformers
+- [OData feed (BI)](/dotnet/api/odata-exposure/) — `QueryDefinition<T>` → Power BI / Excel / Tableau
+- [AI: Natural Language Query](/dotnet/ai/natural-language-query/) — phrase → `QueryRequest`
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — why SavedView was removed in favour of `EntityView`

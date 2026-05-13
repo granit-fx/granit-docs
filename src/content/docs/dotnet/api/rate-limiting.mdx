@@ -139,6 +139,39 @@ On **rejected** responses (429), `Retry-After` is set in addition.
 }
 ```
 
+## Policies in the wild — OData feeds
+
+The [OData exposure module](/dotnet/api/odata-exposure/) bridges `QueryDefinition<TEntity>`
+to OData v4 EntitySets for BI tools (Power BI, Excel, Tableau). Every OData route is
+gated by the `granit-odata` policy (per-tenant feed) or `granit-odata-host` (cross-tenant
+host feed):
+
+```json
+{
+  "RateLimiting": {
+    "Policies": {
+      "granit-odata": {
+        "Algorithm": "SlidingWindow",
+        "PartitionBy": "Tenant",
+        "PermitLimit": 60,
+        "Window": "00:01:00"
+      },
+      "granit-odata-host": {
+        "Algorithm": "SlidingWindow",
+        "PartitionBy": "User",
+        "PermitLimit": 600,
+        "Window": "00:01:00"
+      }
+    }
+  }
+}
+```
+
+Per-tenant partitioning is what makes the feed safe against a single tenant
+saturating the backend with a misconfigured Power BI refresh job. Accepted requests
+carry `X-RateLimit-Limit` + `X-RateLimit-Remaining` so the BI tool's incremental
+refresh logic can throttle itself before hitting `429`.
+
 ## Dynamic quotas with Granit.Features
 
 When `UseFeatureBasedQuotas` is enabled, the permit limit is resolved dynamically

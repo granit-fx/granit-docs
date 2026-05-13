@@ -63,12 +63,22 @@ flowchart TD
     ABSENT -- No: InProgress --> CONFLICT[409 Request In Progress]
     ABSENT -- No: Completed --> REPLAY[Replay cached response\nIdempotent-Replayed: true]
     ACQUIRE --> EXECUTE[Execute handler]
-    EXECUTE -- 2xx / cacheable 4xx --> COMPLETE[SetCompleted\nSET XX PX → Completed]
+    EXECUTE -- 2xx / cacheable 4xx --> SIZE{Response &gt; MaxResponseSizeBytes?}
     EXECUTE -- 5xx / timeout --> RELEASE[DELETE key → Absent]
+    SIZE -- Yes --> TOMB[SetCompleted\nstate = Tombstoned]
+    SIZE -- No --> COMPLETE[SetCompleted\nstate = Completed]
     COMPLETE --> RESPONSE[Return response]
+    TOMB --> RESPONSE
     REPLAY --> RESPONSE
+    ABSENT -- Tombstoned --> R413[413 Payload Too Large\nUse a new key]
     COMPLETE -- TTL expires --> ABSENT
 ```
+
+A **`Tombstoned`** entry means "this request executed successfully but the response
+is too large to replay safely". The middleware still streams the full response to the
+original caller; later retries with the same key get `413 Payload Too Large` —
+preserving the at-most-once guarantee without paying the storage cost of a giant
+cached payload.
 
 ## Composite key structure
 
@@ -103,12 +113,37 @@ different body.
 | Scenario | Status | Title |
 | -------- | ------ | ----- |
 | Missing header (required) | 422 | Missing Idempotency-Key |
+| Header value too long | 400 | Idempotency-Key exceeds `MaxKeyLength` (rejected before hashing or cache lookup) |
 | Multipart request | 422 | Unsupported Content-Type |
-| Key in progress (another pod) | 409 | Request In Progress |
+| Key in progress (another pod) | 409 | Request In Progress (`Retry-After` header set) |
+| Race on completed entry mid-execute | 409 | Concurrent request fail-fast |
 | Payload hash mismatch | 422 | Idempotency Key Conflict |
+| Replay of tombstoned response | 413 | Original response exceeded replay size limit — retry with a new key |
 | Execution timeout | 503 | Execution Timeout |
 
 Replayed responses include an `Idempotent-Replayed: true` header.
+
+## Replay-header filter
+
+Caching a response that contains per-request security artefacts (rotating session
+cookies, CSRF tokens, `WWW-Authenticate` challenges) and replaying it to a later
+retry would re-issue stale credentials to a new caller. The middleware filters a
+default deny-list both **on capture** (entry stored without these headers) and **on
+replay** (defence in depth):
+
+| Excluded by default | Why |
+|---------------------|-----|
+| `Set-Cookie`, `Set-Cookie2` | Session rotation |
+| `WWW-Authenticate`, `Proxy-Authenticate` | Auth challenges |
+| `Authorization` | Echoed credentials |
+| `Server`, `Date`, `Transfer-Encoding` | Per-response transport headers |
+
+Add custom entries through configuration:
+
+```csharp
+services.Configure<IdempotencyOptions>(opts =>
+    opts.ExcludedResponseHeaders.Add("X-Custom-Session-Token"));
+```
 
 ## Configuration reference
 
@@ -117,9 +152,14 @@ Replayed responses include an `Idempotent-Replayed: true` header.
 | `HeaderName` | `"Idempotency-Key"` | HTTP header name |
 | `KeyPrefix` | `"idp"` | Redis key prefix |
 | `CompletedTtl` | `24:00:00` | TTL for completed entries |
+| `TombstoneTtl` | `24:00:00` | TTL for tombstoned (oversized) entries — matched to `CompletedTtl` so retries within the normal window see a deterministic 413 |
 | `InProgressTtl` | `00:00:30` | Lock TTL (must be > `ExecutionTimeout`) |
 | `ExecutionTimeout` | `00:00:25` | Max handler execution time |
 | `MaxBodySizeBytes` | `1048576` | Max request body size to hash (1 MiB) |
+| `MaxResponseSizeBytes` | `262144` | Max response body stored for replay (256 KiB) — over this, entry is tombstoned |
+| `MaxKeyLength` | `256` | Max length of the client-supplied header value (rejected with 400 above this) |
+| `ShouldCacheStatusCode` | 2xx + {400, 404, 409, 410, 422} | Predicate controlling which status codes get cached |
+| `ExcludedResponseHeaders` | See above | Headers filtered on capture + replay |
 
 ## Public API summary
 

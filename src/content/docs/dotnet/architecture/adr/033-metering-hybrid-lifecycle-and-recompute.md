@@ -117,12 +117,10 @@ leaking a held lock into the connection pool.
 
 ### 5. SQL ad-hoc metric definitions — DEFER
 
-A separate spike (`docs/dotnet/architecture/spikes/metering-sql-ad-hoc-metrics`)
-explored letting admins define ad-hoc metrics as SQL queries against
-`MeterEvent`. **Decision: defer** until there are at least three
+Letting admins define ad-hoc metrics as SQL queries against `MeterEvent`
+was considered. **Decision: defer** until there are at least three
 independent users with a concrete need that the five built-in
-aggregations cannot serve. Re-evaluation criterion is documented in the
-spike.
+aggregations cannot serve.
 
 ## Consequences
 
@@ -174,5 +172,4 @@ spike.
 - ADR-032 — `Granit.Catalog.Product` as the shared billing aggregate
   (`MeterDefinition.ProductId` soft reference)
 - ADR-036 — Invoicing line item source + product convention
-- Spike: `dotnet/architecture/spikes/metering-sql-ad-hoc-metrics` — SQL ad-hoc metric definitions (DEFER)
 - ISO 27001 A.9.4 — Least privilege on destructive operations

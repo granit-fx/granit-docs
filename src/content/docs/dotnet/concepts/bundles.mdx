@@ -1,63 +1,141 @@
 ---
-title: "Bundles — Meta-Packages for .NET Modules"
-description: NuGet meta-packages that bundle related modules (Essentials, Api, Documents, Notifications, SaaS) — one package reference and one Add*() call gets your entire feature group wired and ready.
+title: "Granit Bundles — start a new project with one PackageReference, not thirty"
+description: "Meta-packages that group Granit modules by job — Essentials, Api, OpenIddict, Notifications (granit-dotnet), and Documents + SaaS (granit-business). One PackageReference, one Add*() call, and the whole feature group is wired correctly. Skip the bundle and reference modules directly when you need fine-grained control."
 sidebar:
   label: Bundles
   order: 10
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components";
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
 
 ## The problem
 
-Granit ships %%PACKAGE_COUNT%% packages. That level of granularity is great for control, but overwhelming when you just want to start a new project. You should not have to know the full module graph to get a working API up.
+Granit ships %%PACKAGE_COUNT%% packages. That level of granularity is great for control
+but overwhelming when you're starting a fresh project — you shouldn't have to know
+the full module graph to get a working API up. **Bundles** solve this: a bundle is a
+NuGet meta-package with no code of its own, just a curated set of `PackageReference`
+entries you'd otherwise type by hand. One package reference, one `Add*()` call, and
+the entire feature group is wired correctly.
 
-**Bundles** solve this. A bundle is a meta-package that pulls in a curated set of related modules. One package reference, one `Add*()` call, and the entire group is wired.
+| Pain | Bundle's answer |
+|------|------------------|
+| Onboarding asks for "the right modules to start" | One meta-package per job |
+| Manually composing 8 references for a typical Web API | `Granit.Bundle.Api` |
+| Forgetting `Granit.Persistence.EntityFrameworkCore` and crashing at first save | Bundles include the persistence root |
+| Mixing up which OpenIddict packages go together | `Granit.Bundle.OpenIddict` ships the full server + EFC + endpoints + jobs |
+| Maintaining your "starter template" | Bump the bundle version; transitive deps follow |
+
+<Aside type="note" title="Two repos, six bundles">
+Four bundles ship from the open-source framework repo (`granit-dotnet`):
+**Essentials**, **Api**, **OpenIddict**, **Notifications**. Two ship from the
+commercial repo (`granit-business`): **SaaS** and **Documents**. From your
+project's perspective there's no difference once the private feed is configured —
+they're both ordinary NuGet packages.
+</Aside>
 
 ## Available bundles
 
-| Bundle | Includes | Use case |
-|--------|----------|----------|
-| **Essentials** | Core, Timing, Guids, Validation, ExceptionHandling, Observability | Every project |
-| **Api** | Essentials + ApiVersioning, ApiDocumentation, Cors, Http.Idempotency, Cookies | REST API projects |
-| **Documents** | Templating.Scriban, DocumentGeneration.Pdf, DocumentGeneration.Excel | Document generation |
-| **Notifications** | Notifications + Email.Smtp, Sms, Push, SignalR | Multi-channel notifications |
-| **SaaS** | Api + MultiTenancy, Settings, Features, Localization, BackgroundJobs, Caching | Full SaaS platform |
+| Bundle | Ships from | Use case |
+|--------|------------|----------|
+| **Essentials** | granit-dotnet | Every project — the foundation |
+| **Api** | granit-dotnet | REST API projects — adds versioning + OpenAPI + Idempotency + Localization + Redis caching |
+| **OpenIddict** | granit-dotnet | Authorization server (issuer of access tokens) — adds the full OpenIddict stack + local identity |
+| **Notifications** | granit-dotnet | Multi-channel notifications — Email (SMTP) + SignalR with persistence + admin API |
+| **SaaS** | granit-business | Multi-tenant operations — MultiTenancy + Features + RateLimiting + Bulkhead |
+| **Documents** | granit-business | Document generation — Templating (Scriban) + DocumentGeneration (PDF, Excel) with persistence |
 
-Each bundle is a NuGet meta-package with no code of its own. It only declares dependencies on the modules it groups.
+## Bundle contents
 
-## Bundle contents at a glance
+### `Granit.Bundle.Essentials`
 
-| Package | Essentials | Api | Notifications | Documents | SaaS |
-|---------|:----------:|:---:|:-------------:|:---------:|:----:|
-| `Granit` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Timing` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Guids` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Validation` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Http.ExceptionHandling` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Observability` | ✓ | ✓ | ✓ | | ✓ |
-| `Granit.Http.ApiVersioning` | | ✓ | | | ✓ |
-| `Granit.Http.ApiDocumentation` | | ✓ | | | ✓ |
-| `Granit.Http.Cors` | | ✓ | | | ✓ |
-| `Granit.Http.Idempotency` | | ✓ | | | ✓ |
-| `Granit.Http.Cookies` | | ✓ | | | ✓ |
-| `Granit.Notifications` | | | ✓ | | ✓ |
-| `Granit.Notifications.Email.Smtp` | | | ✓ | | |
-| `Granit.Notifications.Sms` | | | ✓ | | |
-| `Granit.Notifications.Push` | | | ✓ | | |
-| `Granit.Notifications.SignalR` | | | ✓ | | |
-| `Granit.Templating.Scriban` | | | | ✓ | |
-| `Granit.DocumentGeneration.Pdf` | | | | ✓ | |
-| `Granit.DocumentGeneration.Excel` | | | | ✓ | |
-| `Granit.MultiTenancy` | | | | | ✓ |
-| `Granit.Settings` | | | | | ✓ |
-| `Granit.Features` | | | | | ✓ |
-| `Granit.Localization` | | | | | ✓ |
-| `Granit.BackgroundJobs` | | | | | ✓ |
-| `Granit.Caching` | | | | | ✓ |
+The foundation. Every Granit project starts here.
 
-SaaS inherits everything in Api, which inherits everything in Essentials.
-The `Notifications` and `Documents` bundles are standalone — add them on top of any base.
+| Package | Role |
+|---------|------|
+| `Granit` | Core abstractions (`ICurrentUserService`, `ICurrentTenant`, base entity types) |
+| `Granit.Timing` | `TimeProvider` injection |
+| `Granit.Guids` | Sequential GUID generation |
+| `Granit.Validation` | FluentValidation wiring |
+| `Granit.Persistence.EntityFrameworkCore` | `AddGranitDbContext<T>`, `UseGranitInterceptors`, auto-discovered interceptors |
+| `Granit.Observability` | Serilog + OpenTelemetry tracing/metrics, OTLP export |
+| `Granit.Http.Cors` | Standardized CORS with startup validation |
+| `Granit.Http.ExceptionHandling` | RFC 7807 Problem Details, 4xx/5xx message masking |
+| `Granit.Http.ResponseCompression` | gzip / brotli by default |
+| `Granit.Http.SecurityHeaders` | CSP, HSTS, X-Content-Type-Options |
+| `Granit.Diagnostics` | Activity sources registry, health-check primitives |
+
+### `Granit.Bundle.Api`
+
+Everything in Essentials + the REST API surface.
+
+| Package | Role |
+|---------|------|
+| `Granit.Bundle.Essentials` (transitive) | The foundation |
+| `Granit.Http.ApiVersioning` | URL / header / query versioning |
+| `Granit.Http.ApiDocumentation` | OpenAPI 3.1 + Scalar UI, versioned per major API |
+| `Granit.Http.Idempotency` | Stripe-style replay-safe `Idempotency-Key` middleware |
+| `Granit.Localization` + `.EntityFrameworkCore` | Accept-Language resolution, runtime overrides |
+| `Granit.Caching.StackExchangeRedis` | Distributed cache backbone for output caching, idempotency, sessions |
+
+### `Granit.Bundle.OpenIddict`
+
+A complete authorization server (token issuer). Use this when your app **owns**
+the identity store; if you only need to **consume** tokens issued by Keycloak /
+EntraId / Cognito, use `Granit.Authentication.JwtBearer.<provider>` directly.
+
+| Package | Role |
+|---------|------|
+| `Granit.Authentication.OpenIddict` | JWT Bearer validation against the local OpenIddict issuer |
+| `Granit.OpenIddict` | OpenIddict core |
+| `Granit.OpenIddict.Server` | Token + authorization + introspection endpoints |
+| `Granit.OpenIddict.EntityFrameworkCore` | EF-backed application/authorization/scope stores |
+| `Granit.OpenIddict.Endpoints` | Admin API for application/scope management |
+| `Granit.OpenIddict.BackgroundJobs` | Token cleanup + key rotation jobs |
+| `Granit.Identity.Local.AspNetIdentity` | ASP.NET Identity-backed `LocalIdentity` user store |
+| `Granit.Identity.Local.Endpoints` | Self-service `/account/*` endpoints (register, reset, change password) |
+
+### `Granit.Bundle.Notifications`
+
+| Package | Role |
+|---------|------|
+| `Granit.Notifications` | Channel-agnostic dispatch (`INotificationPublisher`, types, preferences) |
+| `Granit.Notifications.EntityFrameworkCore` | Delivery log + user preferences persistence |
+| `Granit.Notifications.Endpoints` | Admin / user preference API |
+| `Granit.Notifications.Email` | Channel-neutral email contract |
+| `Granit.Notifications.Email.Smtp` | SMTP provider (MailKit) |
+| `Granit.Notifications.SignalR` | Real-time browser push via SignalR + Redis backplane |
+
+Add other providers à la carte: `Granit.Notifications.Email.{SendGrid,Brevo,Scaleway,Mailgun,Postmark,AwsSes,AzureCommunication}`, `Granit.Notifications.Sms.*`, `Granit.Notifications.WebPush`, `Granit.Notifications.MobilePush.*`, `Granit.Notifications.WhatsApp`, `Granit.Notifications.Zulip`.
+
+### `Granit.Bundle.SaaS` (granit-business)
+
+Focused multi-tenant infrastructure. Layer it on top of `Granit.Bundle.Api`.
+
+| Package | Role |
+|---------|------|
+| `Granit.MultiTenancy` | Tenant resolution (domain, header, JWT claim), `ICurrentTenant`, side-aware permissions (`MultiTenancySides`) |
+| `Granit.Features` | Multi-level feature flags (Tenant > Plan > Default) |
+| `Granit.Features.EntityFrameworkCore` | Persistent flag overrides |
+| `Granit.RateLimiting` | Per-tenant rate limiting (sliding/fixed window, token bucket, concurrency) |
+| `Granit.Http.Bulkhead` | Per-tenant concurrency isolation |
+
+<Aside type="note">
+The historic "SaaS bundle = Api + everything else" pattern was deprecated when
+`granit-business` was extracted in May 2026. Today's SaaS bundle is **focused**: it
+covers what's specifically multi-tenant. Add `Granit.Bundle.Api` separately for the
+REST surface.
+</Aside>
+
+### `Granit.Bundle.Documents` (granit-business)
+
+| Package | Role |
+|---------|------|
+| `Granit.Templating` | `ITemplateEngine` abstraction + lifecycle (draft/review/publish) |
+| `Granit.Templating.Scriban` | Scriban-based engine (Liquid-compatible, sandboxed) |
+| `Granit.Templating.EntityFrameworkCore` | Template + version persistence |
+| `Granit.DocumentGeneration` | `IDocumentGenerator` facade — two-stage pipeline (text render → binary) |
+| `Granit.DocumentGeneration.Pdf` | HTML → PDF via headless browser, PDF/A-3b |
+| `Granit.DocumentGeneration.Excel` | ClosedXML-based engine |
 
 ## Usage
 
@@ -65,24 +143,25 @@ Reference the bundle package and call the corresponding method on the Granit bui
 
 <Tabs>
   <TabItem label="Single bundle">
-    ```csharp
-    builder.AddGranit<AppModule>(granit => granit
-        .AddSaaS());
-    ```
-  </TabItem>
-  <TabItem label="Multiple bundles">
-    ```csharp
-    builder.AddGranit<AppModule>(granit => granit
-        .AddApi()
-        .AddNotifications()
-        .AddDocuments());
-    ```
-  </TabItem>
-</Tabs>
 
-## GranitBuilder fluent API
+```csharp
+builder.AddGranit<AppModule>(granit => granit
+    .AddApi());
+```
 
-Bundles are built on the same `GranitBuilder` fluent API that individual modules use. If a bundle groups more than you need, skip it and pick modules directly:
+  </TabItem>
+  <TabItem label="Stack of bundles">
+
+```csharp
+builder.AddGranit<AppModule>(granit => granit
+    .AddApi()
+    .AddSaaS()
+    .AddOpenIddict()
+    .AddNotifications());
+```
+
+  </TabItem>
+  <TabItem label="Mix bundle + individual modules">
 
 ```csharp
 builder.AddGranit<AppModule>(granit => granit
@@ -91,15 +170,18 @@ builder.AddGranit<AppModule>(granit => granit
     .AddModule<GranitDocumentGenerationPdfModule>());
 ```
 
-This gives you full control without losing the ergonomics of the builder pattern.
+  </TabItem>
+</Tabs>
 
 ## Bundles are additive
 
-You can combine any number of bundles in a single call. Deduplication is automatic: the module dependency graph tracks what is already registered and skips duplicates. Calling `.AddSaaS()` (which includes Api, which includes Essentials) and then `.AddNotifications()` works without conflict.
+You can combine any number of bundles in a single call. Deduplication is automatic
+— the `[DependsOn]` graph tracks what's already registered and skips duplicates.
 
 ```csharp
-// SaaS already includes Api and Essentials — no duplicates
+// Api includes Essentials; layering SaaS on top is safe — no double registration.
 builder.AddGranit<AppModule>(granit => granit
+    .AddApi()
     .AddSaaS()
     .AddNotifications()
     .AddDocuments());
@@ -107,7 +189,8 @@ builder.AddGranit<AppModule>(granit => granit
 
 ## When NOT to use bundles
 
-Bundles are convenience, not requirement. If your project only needs two or three specific packages, reference them directly:
+Bundles are convenience, not requirement. If your project only needs three specific
+packages, reference them directly:
 
 ```xml
 <PackageReference Include="Granit" />
@@ -115,17 +198,24 @@ Bundles are convenience, not requirement. If your project only needs two or thre
 <PackageReference Include="Granit.Http.ExceptionHandling" />
 ```
 
-This keeps your dependency footprint minimal and avoids pulling in modules you will never configure.
+This keeps your dependency footprint minimal and avoids pulling in modules you'll
+never configure.
 
 :::note[Good to know]
-Unused modules registered through a bundle have near-zero runtime cost. They register services but those services are never resolved if you do not call them. The overhead is limited to startup DI registration time.
+Unused modules registered through a bundle have near-zero runtime cost. They
+register services but those services are never resolved if you don't call them.
+The overhead is limited to startup DI registration time.
 :::
 
 :::tip[Pro tip]
-Start with the SaaS bundle for greenfield projects. You can always remove modules later — the `DependsOn` graph ensures nothing breaks silently. If a module you remove is required by another, the framework throws at startup with a clear error.
+Start with `AddApi()` for greenfield Web API projects. Add `AddSaaS()` the day
+multi-tenancy becomes a requirement. You can always strip modules later — the
+`[DependsOn]` graph will throw at startup with a clear error if you remove
+something another module depends on.
 :::
 
 ## Further reading
 
-- [Module System](./module-system/) — how `DependsOn` and the module graph work
-- [Reference overview](../reference/) — per-module API documentation
+- [Module System](./module-system/) — how `[DependsOn]` and the module graph work
+- [Framework vs modules](./framework-vs-modules/) — what lives in `granit-dotnet` vs `granit-business`
+- [Dependency Graph](/dotnet/architecture/dependency-graph/) — full visual map of every package

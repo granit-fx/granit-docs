@@ -1,14 +1,39 @@
 ---
-title: "Dependency Graph \u2014 Module Relationships"
-description: Visual dependency graph of all Granit NuGet packages — understand module relationships, layering, and safe extension points before adding references.
+title: "Granit Dependency Graph — what depends on what, and where each module lives"
+description: "Visual map of every Granit package, how it depends on the rest, and which of the two repositories (granit-dotnet framework or granit-business commercial) it ships from. Read this before adding a reference — it tells you which couplings are safe, which are accidental, and which are explicitly forbidden by architecture tests."
 sidebar:
   label: Dependency Graph
   order: 32
 ---
 
-This page documents the dependency graph across all %%PACKAGE_COUNT%% Granit source packages. Arrows
-indicate the direction of usage: `A --> B` means "A is used by B". `Granit`
+A module that depends on the wrong thing is harder to remove than to add. Cyclic
+references, surprise transitive couplings, and silent dependencies on commercial
+modules from the open-source core all start as one innocent `using` statement and
+end as multi-week refactors. This page is the cheat sheet that prevents those —
+every Granit module, every direction of usage, every layering rule that an
+architecture test enforces.
+
+Arrows indicate the direction of usage: `A --> B` means "A is used by B". `Granit`
 is the root and feeds the entire tree.
+
+## Two repositories, one framework
+
+Since Granit 0.32 (May 2026), the source is split across two sibling repositories:
+
+- **`granit-dotnet`** (open-source, Apache 2.0) — framework spine: core, identity,
+  persistence, caching, http stack, observability, AI, webhooks, query engine.
+  Ships as public NuGet packages. **This page focuses primarily on this graph.**
+- **`granit-business`** (commercial, private feed) — business runtime: Documents,
+  Invoicing, Payments, Subscriptions, Metering, Catalog, Tax, Parties, Activities,
+  Taxonomy, Analytics, Dashboards, Entities, Workspaces (runtime). Depends on
+  `granit-dotnet`. **Abstractions for these modules remain in granit-dotnet**
+  (`Granit.Analytics.Abstractions`, `Granit.Dashboards.Abstractions`,
+  `Granit.Entities.Abstractions`, `Granit.Workspaces.Abstractions`) so framework
+  packages can host extension points without depending on the commercial runtime.
+
+The high-level diagram below shows both, with the business modules collapsed into a
+single node (their internal dependencies are documented in the `granit-business`
+repo).
 
 Conventions used throughout this page:
 
@@ -67,7 +92,7 @@ flowchart TD
         OPENID["OpenIddict (5)"]:::security
     end
 
-    subgraph Business
+    subgraph Generic["Generic services (granit-dotnet)"]
         TMPL["Templating (8)"]:::business
         QRY["QueryEngine (4)"]:::business
         DX["DataExchange (7)"]:::business
@@ -75,10 +100,15 @@ flowchart TD
         TL["Timeline (5)"]:::business
         AUDIT["Auditing (4)"]:::business
         MCP["MCP (3)"]:::business
+        BROWSING["Browsing (3)"]:::business
+        ODATA["Http.ODataExposure"]:::business
+        MERGE["Mergeable (2)"]:::business
+        IO_PKG["IO + Http.Security (2)"]:::core
     end
 
     AI["AI (21)"]:::ai
     ANLZ["Analyzers (2)"]:::core
+    BIZ["granit-business<br/>(Documents, Invoicing, Payments,<br/>Subscriptions, Catalog, Parties,<br/>Activities, Taxonomy, Analytics,<br/>Dashboards, Entities runtime,<br/>Workspaces runtime, …)"]:::business
 
     CORE --> UTILS
     CORE --> EVT
@@ -126,6 +156,22 @@ flowchart TD
     PERS --> AI
     SEC --> AI
     CORE --> MCP
+
+    CORE --> IO_PKG
+    SEC --> IO_PKG
+    QRY --> ODATA
+    PERS --> ODATA
+    IO_PKG --> BROWSING
+    PERS --> MERGE
+
+    %% granit-business consumes everything above
+    AUDIT --> BIZ
+    QRY --> BIZ
+    TL --> BIZ
+    WF --> BIZ
+    NOTIF --> BIZ
+    AI --> BIZ
+    DX --> BIZ
 ```
 
 ### Domain composition
@@ -134,14 +180,15 @@ flowchart TD
 |--------|----------|
 | Utilities | Timing, Guids, Diagnostics, Diagnostics.Endpoints, Validation (4), Http.ExceptionHandling, Observability, MultiTenancy, Privacy (4), Cors, Bulkhead, RateLimiting, Testing (2) |
 | Events | Events, Events.Wolverine |
-| Identity | Identity, Identity.Endpoints, Identity.Federated (5 incl. Keycloak, EntraId, Cognito, GoogleCloud, EntityFrameworkCore), Identity.Local, Identity.Local.AspNetIdentity |
+| Identity | Identity (incl. canonical `User` aggregate — ADR-051), Identity.Endpoints, Identity.Federated (5 incl. Keycloak, EntraId, Cognito, GoogleCloud, EntityFrameworkCore), Identity.Local, Identity.Local.AspNetIdentity |
 | Security | Encryption (3), Vault (5), Authentication.JwtBearer (5 incl. Keycloak, EntraId, Cognito, GoogleCloud), Authentication.ApiKeys (3), Authentication.DPoP, Authentication.OpenIddict, Authorization (3) |
 | OpenIddict | OpenIddict, OpenIddict.Server, OpenIddict.Endpoints, OpenIddict.EntityFrameworkCore, OpenIddict.BackgroundJobs |
 | OIDC | Oidc, Oidc.TokenManagement |
 | BFF | Bff, Bff.BackgroundJobs, Bff.Endpoints, Bff.EntityFrameworkCore, Bff.Yarp |
 | Configuration | Settings (3), Features (3), ReferenceData (3) |
-| Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies (3), Http.Idempotency, Http.OutputCaching (2), Http.Resilience, Http.ResponseCompression, Http.SecurityHeaders, Webhooks (4) |
-| Storage | BlobStorage (11 incl. AI, BackgroundJobs, Database, Endpoints), Imaging (3) |
+| Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies (3 incl. Klaro + Endpoints), Http.Idempotency, Http.OutputCaching (2), Http.Resilience, Http.ResponseCompression, Http.Security (URL safety / SSRF), Http.SecurityHeaders, Http.ODataExposure (BI feed for Power BI / Excel / Tableau), Webhooks (5 incl. BackgroundJobs + Notifications), RateLimiting (AspNetCore + Wolverine adapters) |
+| Cross-cutting primitives | IO (temp files), Mergeable (entity merge framework), Scheduling, Browsing (headless web scraping) |
+| Storage | BlobStorage (11 incl. AI, BackgroundJobs, Database, Endpoints), Imaging (3) — Documents runtime moved to `granit-business` |
 | Persistence | Persistence, Persistence.Hosting, Persistence.Migrations (2), Persistence.Postgres, Persistence.SqlServer |
 | Caching | Caching, Caching.StackExchangeRedis |
 | Background Jobs | BackgroundJobs (4) |
@@ -155,7 +202,7 @@ flowchart TD
 | DataExchange | DataExchange (5), DataExchange.Wolverine |
 | QueryEngine | QueryEngine, QueryEngine.AspNetCore, QueryEngine.EntityFrameworkCore |
 | Wolverine | Wolverine, Wolverine.Postgresql, Wolverine.SqlServer |
-| AI | AI (8 incl. Endpoints, Mcp, VectorData, Extraction), and 13 cross-cutting `*.AI` packages |
+| AI | AI (9 incl. Endpoints, Mcp, VectorData, Extraction + 3 providers: OpenAI, AzureOpenAI, Ollama), and cross-cutting `*.AI` packages on framework modules |
 | Analyzers | Analyzers, Analyzers.CodeFixes |
 
 ## Core layer dependencies

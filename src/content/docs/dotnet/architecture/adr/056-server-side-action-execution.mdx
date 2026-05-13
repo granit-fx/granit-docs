@@ -1,0 +1,289 @@
+---
+title: "ADR-056: Server-side entity-action execution and bulk endpoint"
+description: "Granit.Entities actions were purely declarative — URL + verb + permission, the renderer hits the URL row by row. Story #1822 ships a bulk endpoint POST /api/entities/{name}/bulk/{action} that needs an in-process execution surface. This ADR locks the IEntityActionExecutor<TEntity> contract, executor lifecycle, transactional semantics (per-row isolation with structured failure report), id-based row addressing, and the EntityBulkUpdatedEvent<TEntity> emission point."
+sidebar:
+  order: 56
+  label: "056 - Server-side action execution"
+---
+
+> **Date:** 2026-05-11
+> **Authors:** Jean-Francois Meyers
+> **Scope:** `Granit.Entities.Abstractions` (new `Actions/Execution/` surface), `Granit.Entities.Endpoints` (new `BulkActionEndpoint`). No EF migration. No persistence package touched.
+> **Status:** Accepted
+
+## Context
+
+`Granit.Entities` actions are declared on `EntityDefinition<T>` via a fluent
+builder. Each action carries a URL template, an HTTP method, a permission
+gate, and the rendering surfaces it opts into (row / kanban / selection /
+list-header). The renderer hits the URL — there is **no server-side
+execution surface** in the framework today.
+
+Two requirements force a server-side execution surface:
+
+1. **Bulk endpoint** (`POST /api/entities/{name}/bulk/{action}`). Story
+   #1794 introduced the batched-invalidation primitive
+   (`EntityBulkUpdatedEvent<TEntity>`) but its consumer was synthetic — no
+   framework code emitted the event. The bulk endpoint is the first
+   first-class emitter.
+2. **Selection-bar fan-out is wasteful.** The renderer's current strategy
+   for the selection bar (`OnSelection()`) fires N parallel per-row
+   requests substituting `{id}` per row. For a 200-row archive this is
+   200 round-trips, 200 controller activations, 200 transactions, 200
+   audit events. The host can do better with one round-trip plus per-row
+   failure isolation.
+
+Three design questions had to be answered.
+
+### Q1 — Executor lifecycle
+
+Action execution typically needs a `DbContext` to mutate the targeted
+row. `DbContext` is scoped per request. The executor itself MUST be
+**scoped** — singleton would force every executor implementation to
+inject `IDbContextFactory<>` and dispose explicitly, which is a footgun
+the framework should not impose.
+
+### Q2 — Transactional semantics for bulk
+
+Three candidate strategies were on the table:
+
+- **All-or-nothing** — wrap the N executions in a single transaction;
+  one failure rolls back the lot. Plays well with DDD invariants but
+  is brittle for UX bulk operations: one stale row in a 200-row select
+  fails the whole batch and the user has to figure out which row.
+- **Fail-fast** — stop at the first failure and return what was applied.
+  Surprising for the user (some rows changed, others did not, no
+  visible reason).
+- **Per-row isolation with structured report** — every row runs in its
+  own logical scope; failures are reported back in a
+  `BulkActionResult.Failures[]` list. The frontend can highlight the
+  failed rows and re-issue against them.
+
+Selected: **per-row isolation with structured failure report**. The
+framework gives executors the per-row hook; a host needing atomicity
+can wrap the executor in its own transaction (rare for bulk
+quick-actions, common for invoicing-style "post a batch" flows — those
+are a different surface anyway, closer to `Granit.DataExchange.Import`).
+
+### Q3 — Side effects vs queryable contract
+
+Three options:
+
+- The framework loads entities by ID and hands them to the executor →
+  one more abstraction (`IEntityRowLoader<TEntity>`), one more DI
+  contract for every host to wire up, and the loader has no way to
+  share the read with the write side without re-querying.
+- The executor returns the affected rows; the framework emits the
+  `EntityBulkUpdatedEvent` — single source of truth on what changed.
+- Both — the executor signals what changed AND the framework also
+  emits per-row events. Causes duplicate invalidation work (story
+  #1793's invalidator already treats bulk and per-row as alternatives).
+
+Selected: **the executor returns the affected rows, the framework emits
+exactly one `EntityBulkUpdatedEvent<TEntity>` for the batch**. The
+executor controls fetching (it owns the `DbContext`), mutates, and
+returns the post-save entities. No row-loader abstraction.
+
+### Q4 — Per-row vs bulk executor surface
+
+The contributor pattern argued for two interfaces:
+
+- `IEntityActionExecutor<TEntity>` — mandatory for any server-executed
+  action. Single-row contract. Reused by the soon-to-land
+  single-row `POST /api/entities/{name}/{id}/{action}` endpoint
+  (out-of-scope here).
+- `IBulkActionExecutor<TEntity>` — optional. When registered, the
+  bulk endpoint dispatches the whole list in one call (one query,
+  one save). When missing, the bulk endpoint loops over the per-row
+  executor on the host's behalf — N queries, N saves, but one HTTP
+  round-trip and one event.
+
+Both interfaces exist. The framework default is the loop; opt into the
+bulk variant when batch-friendly persistence pays off (typical: a UPDATE
+with a WHERE id IN (...) clause).
+
+### Q5 — Row addressing (deviation from story body)
+
+The story scope describes `ExecuteBulkAsync(IReadOnlyList<TEntity>
+entities, ...)`. During implementation we chose **id-based addressing**
+instead — the executor receives `IReadOnlyList<Guid> ids`, not loaded
+entities. Rationale:
+
+1. **No row-loader abstraction.** Passing entities would force a
+   framework-side load through some yet-to-be-designed
+   `IEntityRowLoader<T>`. The host already has the optimal load path
+   (Named Query Filters + tenant filter + soft-delete filter applied
+   through its `DbContext`); the loader would either duplicate or
+   skip that.
+2. **Executor controls the read.** Bulk-friendly executors typically
+   want `SELECT FOR UPDATE` semantics, eager-loaded children, or a
+   bulk UPDATE that skips the load entirely. Forcing a pre-load
+   defeats those.
+3. **Permission filtering stays in the executor.** Hosts MAY return
+   only the rows the caller owns; the framework records the missing
+   IDs as `MissingIds` failures.
+
+The story body's `IReadOnlyList<TEntity>` was a guideline. The accepted
+contract is `IReadOnlyList<Guid>` — documented here so future readers
+do not chase the discrepancy.
+
+## Decision
+
+### Contracts (new, in `Granit.Entities.Abstractions`)
+
+```csharp
+public interface IEntityActionExecutor<TEntity> where TEntity : class
+{
+    Task<EntityActionExecutionResult<TEntity>> ExecuteAsync(
+        Guid id, JsonElement payload, CancellationToken cancellationToken);
+}
+
+public interface IBulkActionExecutor<TEntity> where TEntity : class
+{
+    Task<BulkActionExecutionResult<TEntity>> ExecuteBulkAsync(
+        IReadOnlyList<Guid> ids, JsonElement payload, CancellationToken cancellationToken);
+}
+
+public sealed record EntityActionExecutionResult<TEntity>(
+    TEntity? AffectedEntity, string? FailureReason) where TEntity : class;
+
+public sealed record BulkActionExecutionResult<TEntity>(
+    IReadOnlyList<TEntity> AffectedEntities,
+    IReadOnlyList<BulkActionFailure> Failures) where TEntity : class;
+
+public sealed record BulkActionFailure(Guid Id, string Reason);
+```
+
+### Builder + descriptor wiring
+
+`EntityActionBuilder<TEntity>.ServerExecutor<TExecutor>()` flags the
+action and captures the executor type:
+
+```csharp
+public EntityActionBuilder<TEntity> ServerExecutor<TExecutor>()
+    where TExecutor : class, IEntityActionExecutor<TEntity>
+```
+
+`EntityActionDescriptor` grows two members:
+
+- `bool RequiresServerExecution`
+- `Type? ServerExecutorType`
+
+The executor type is captured as `Type` (no generic on the descriptor —
+heterogeneous actions live in one collection).
+
+### DI registration
+
+The builder does NOT register the executor in DI — `EntityDefinition` is
+configured before `IServiceCollection.BuildServiceProvider()`, but the
+builder has no `IServiceCollection` handle. Hosts register their
+executors explicitly:
+
+```csharp
+services.AddScoped<MyArchiveOrdersExecutor>();   // per-row
+services.AddScoped<IBulkActionExecutor<Order>, MyArchiveOrdersExecutor>(); // optional
+```
+
+The archi test `ServerExecutorRegistrationTests` enforces that every
+action with `RequiresServerExecution = true` has its declared
+`ServerExecutorType` registered in DI.
+
+### Endpoint
+
+`POST /api/entities/{name}/bulk/{action}` lives in
+`Granit.Entities.Endpoints.Endpoints.BulkActionEndpoint`. Body:
+
+```json
+{ "ids": ["...guid...", "..."], "payload": { "..." } }
+```
+
+Response: `BulkActionResponse { affected: int, failures: BulkActionFailure[] }`.
+
+Behaviour:
+
+1. Resolve the entity definition by name; 404 if unknown.
+2. Resolve the action by name on that definition; 404 if unknown.
+3. Reject the request with 400 if the action does not declare
+   `RequiresServerExecution = true`.
+4. Resolve the action's `RequiresPermission` through
+   `EntityPermissionResolver`; 403 if missing.
+5. Resolve the executor: if `IBulkActionExecutor<TEntity>` is in DI,
+   call it once; otherwise loop the per-row executor over the IDs.
+6. After the executor returns (regardless of partial failures), publish
+   `EntityBulkUpdatedEvent<TEntity>` with the affected rows via
+   `ILocalEventBus` — but only when `TEntity : IEmitEntityLifecycleEvents`.
+   Entities outside that constraint silently skip the event (manifest
+   declares but persistence layer disagreed — non-fatal).
+7. Return `BulkActionResponse(affected: affectedEntities.Count,
+   failures: failures)` with HTTP 200, even when `failures` is non-empty.
+   200 reflects "the bulk call itself succeeded"; the per-row failures
+   are payload, not a transport-level error.
+
+### OpenAPI metadata
+
+The endpoint ships the 5 mandatory elements (Name, Summary, Description,
+Produces, ProducesProblem 400/403/404) and inherits the entity-tag from
+the route group.
+
+## Consequences
+
+### Positive
+
+- One round-trip for bulk operations (down from N).
+- Per-row failure visible without inspecting N response bodies.
+- Single `EntityBulkUpdatedEvent` emission keeps relation-aggregate cache
+  invalidation cheap (story #1793 contract honoured).
+- Per-row executor is reused by a future single-row server-execution
+  endpoint — no duplicate contract.
+- No row-loader abstraction to maintain.
+
+### Negative
+
+- Atomic bulk operations are not a framework concern. Hosts needing
+  all-or-nothing wrap the executor in their own transaction; the
+  framework will not. Documented as a known trade-off.
+- The executor must perform its own permission filtering on the loaded
+  rows (`MissingIds` failure). Defense in depth: the route gate covers
+  "can the user invoke this action at all" — row-level visibility lives
+  in the executor.
+
+### Neutral
+
+- `IBulkActionExecutor<TEntity>` is opt-in. Most hosts ship only the
+  per-row executor; the framework loop covers them. Hosts where bulk
+  pays off (large UPDATE / DELETE) implement both.
+
+## Alternatives considered
+
+### All-or-nothing transactional bulk
+
+Rejected as the default. Brittle for UX bulk; the failure mode hides
+which rows were rejected. Hosts that need it wrap the executor; the
+framework stays out of the way.
+
+### Pass loaded `TEntity[]` to the executor
+
+Rejected. Requires a row-loader abstraction the framework would have to
+keep aligned with every host's Named Query Filter / multi-tenant filter
+stack. The executor already owns the `DbContext`; let it load.
+
+### Emit per-row `EntityUpdatedEvent` + bulk event
+
+Rejected — duplicate invalidation work, as flagged in
+`EntityBulkUpdatedEvent`'s XML docs. The bulk event is the canonical
+signal for batch operations.
+
+## Migration impact
+
+None on existing actions. Pre-#1822 actions stay purely declarative —
+`RequiresServerExecution` defaults to `false`. The selection-bar
+renderer keeps the per-row fan-out as a fallback; opting an action into
+`.ServerExecutor<>()` is what flips it onto the bulk endpoint.
+
+## References
+
+- Story [#1822](https://github.com/granit-fx/granit-dotnet/issues/1822)
+- Parent epic [#1510](https://github.com/granit-fx/granit-dotnet/issues/1510)
+- Predecessor [#1794](https://github.com/granit-fx/granit-dotnet/issues/1794) (batched-invalidation primitive)
+- ADR-045 (contributor pattern — same IoC shape applies)
+- `EntityBulkUpdatedEvent<TEntity>` — `src/Granit/Events/EntityBulkUpdatedEvent.cs`

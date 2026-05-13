@@ -43,6 +43,7 @@ export default defineConfig({
     "/dotnet/infrastructure/wolverine/": "/dotnet/infrastructure/wolverine-messaging/",
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
     "/dotnet/api/webhooks/wolverine/": "/dotnet/api/webhooks/",
+    "/dotnet/api/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
     "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",
@@ -67,9 +68,19 @@ export default defineConfig({
     "/architecture/adr/006-fluentvalidation/": "/dotnet/architecture/adr/006-fluentvalidation/",
     "/architecture/adr-frontend/005-keycloak/": "/frontend/architecture/adr/005-keycloak/",
 
+    // Business → Building Blocks split: modules that stayed in granit-dotnet
+    // (open-source, framework-shipped) moved out of "Business Features".
+    "/dotnet/business/workflow/": "/dotnet/building-blocks/workflow/",
+    "/dotnet/business/data-exchange/": "/dotnet/building-blocks/data-exchange/",
+    "/dotnet/business/data-lookup/": "/dotnet/building-blocks/data-lookup/",
+    "/dotnet/business/document-generation/": "/dotnet/building-blocks/document-generation/",
+    "/dotnet/business/query-engine/": "/dotnet/building-blocks/query-engine/",
+    "/dotnet/business/timeline/": "/dotnet/building-blocks/timeline/",
+    "/dotnet/business/templating/": "/dotnet/building-blocks/templating/",
+
     // Legacy /reference/modules/* — superseded by /dotnet/* layout.
     "/reference/modules/utilities/": "/dotnet/core/time-provider-clock/",
-    "/reference/modules/workflow/": "/dotnet/business/workflow/",
+    "/reference/modules/workflow/": "/dotnet/building-blocks/workflow/",
     "/reference/modules/localization/": "/dotnet/infrastructure/localization/",
     "/reference/modules/observability/": "/dotnet/core/observability/",
 
@@ -234,12 +245,45 @@ export default defineConfig({
                 },
                 {
                   label: "Compliance",
-                  items: [{ autogenerate: { directory: "dotnet/compliance" } }],
                   collapsed: true,
+                  items: [
+                    { label: "Audit Log", link: "/dotnet/compliance/audit-log/" },
+                    { label: "Crypto-Shredding", link: "/dotnet/compliance/crypto-shredding/" },
+                    {
+                      label: "Cookies",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/compliance/cookies" } }],
+                    },
+                    {
+                      label: "Privacy",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/compliance/privacy" } }],
+                    },
+                  ],
                 },
                 {
                   label: "API & Http",
-                  items: [{ autogenerate: { directory: "dotnet/api" } }],
+                  items: [
+                    { label: "Overview", link: "/dotnet/api/" },
+                    { label: "CORS", link: "/dotnet/api/cors-cross-origin/" },
+                    { label: "Blob Storage Endpoints", link: "/dotnet/api/blob-storage-endpoints/" },
+                    { label: "API Versioning", link: "/dotnet/api/api-versioning/" },
+                    { label: "API Documentation", link: "/dotnet/api/api-documentation/" },
+                    { label: "Exception Handling", link: "/dotnet/api/exception-handling/" },
+                    { label: "Idempotency", link: "/dotnet/api/idempotency/" },
+                    { label: "Rate Limiting", link: "/dotnet/api/rate-limiting/" },
+                    { label: "Bulkhead", link: "/dotnet/api/bulkhead/" },
+                    { label: "HTTP Resilience", link: "/dotnet/api/http-resilience/" },
+                    { label: "Response Compression", link: "/dotnet/api/response-compression/" },
+                    { label: "Output Caching", link: "/dotnet/api/output-caching/" },
+                    { label: "OData feed (BI)", link: "/dotnet/api/odata-exposure/" },
+                    {
+                      label: "Webhooks",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/api/webhooks" } }],
+                    },
+                    { label: "Endpoint Registry", link: "/dotnet/api/endpoint-registry/" },
+                  ],
                 },
                 {
                   label: "Infrastructure",
@@ -265,6 +309,23 @@ export default defineConfig({
                   label: "SaaS & Commerce",
                   items: [{ autogenerate: { directory: "dotnet/saas" } }],
                   collapsed: true,
+                },
+                {
+                  label: "Building Blocks",
+                  collapsed: true,
+                  items: [
+                    { label: "Data Exchange", link: "/dotnet/building-blocks/data-exchange/" },
+                    { label: "Document Generation", link: "/dotnet/building-blocks/document-generation/" },
+                    { label: "Workflow", link: "/dotnet/building-blocks/workflow/" },
+                    { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
+                    { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
+                    { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
+                    {
+                      label: "Templating",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/building-blocks/templating" } }],
+                    },
+                  ],
                 },
                 {
                   label: "Business Features",
@@ -380,11 +441,6 @@ export default defineConfig({
                     {
                       label: "ADRs",
                       items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
-                      collapsed: true,
-                    },
-                    {
-                      label: "Spikes",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/spikes" } }],
                       collapsed: true,
                     },
                   ],

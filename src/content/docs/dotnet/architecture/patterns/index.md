@@ -1,11 +1,11 @@
 ---
-title: "Pattern Library — 57 Design Patterns for .NET"
-description: Catalogue of design patterns implemented in Granit — GoF patterns, architecture patterns, cloud/SaaS patterns, concurrency, security, and .NET idioms.
+title: "Pattern Library — 60 Design Patterns for .NET"
+description: Catalogue of design patterns implemented in Granit — GoF patterns, architecture patterns, cloud/SaaS patterns, data, concurrency, security, AI, and .NET idioms with concrete source-file references.
 sidebar:
   label: Pattern Library
   order: 0
   badge:
-    text: "57"
+    text: "60"
     variant: note
 ---
 
@@ -28,6 +28,7 @@ and references to the actual source files where the pattern is applied.
 | [Vertical Slice Architecture](./vertical-slice-architecture/) | Feature-organized code, per-use-case slices |
 | [Aggregate Root](./ddd-aggregate-roots/) | DDD aggregate roots for business invariants and domain events |
 | [Anti-Corruption Layer](./anti-corruption-layer/) | Isolation of Keycloak, S3, Brevo, FCM via internal DTOs |
+| [Backends For Frontends (BFF)](./bff-proxy/) | Secure token proxy for SPAs — OIDC tokens live server-side, browser sees cookies only |
 
 ## Cloud and SaaS patterns
 
@@ -87,6 +88,8 @@ and references to the actual source files where the pattern is applied.
 | [Data Filtering](./data-filtering/) | IDataFilter with ImmutableDictionary AsyncLocal |
 | [Unit of Work](./unit-of-work/) | Implicit DbContext + interceptor chain |
 | [Specification](./specification/) | QueryDefinition whitelist-first, expression trees |
+| [Metadata Property Bag](./metadata/) | JSON property bag with optional SQL column promotion for indexing |
+| [Data Lookup](./data-lookup/) | Unified typeahead — one registry feeds QueryEngine filters + form dropdowns + refdata |
 
 ## Concurrency patterns
 

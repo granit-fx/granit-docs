@@ -18,20 +18,25 @@ Granit's answer: make Wolverine optional everywhere, with a `Channel<T>` fallbac
 
 ## The Channel fallback pattern
 
-Four modules ship with both a Wolverine integration package and a built-in `Channel<T>` dispatcher:
+Five modules ship with both a Wolverine integration package and an in-process
+default (most use `Channel<T>`, scheduling uses a Cronos-backed ticker):
 
-| Module | Channel dispatcher | Wolverine package |
-|--------|-------------------|-------------------|
+| Module | In-process default | Wolverine package |
+|--------|--------------------|--------------------|
 | `Granit.BackgroundJobs` | `ChannelBackgroundJobDispatcher` | `Granit.BackgroundJobs.Wolverine` |
 | `Granit.Notifications` | `ChannelNotificationPublisher` | `Granit.Notifications.Wolverine` |
 | `Granit.Webhooks` | `ChannelWebhookCommandDispatcher` | `Granit.Webhooks.Wolverine` |
-| `Granit.DataExchange` | `ChannelImportCommandDispatcher` / `ChannelExportCommandDispatcher` | `Granit.DataExchange.Wolverine` |
+| `Granit.Scheduling` | In-process Cronos ticker | `Granit.Scheduling.Wolverine` |
+| `Granit.Events` | Synchronous `IDomainEvent` dispatch | `Granit.Events.Wolverine` (durable `IIntegrationEvent` outbox) |
 
-Each base module registers its `Channel<T>` dispatcher by default. When the corresponding Wolverine package is added and its module is declared in `[DependsOn]`, it **replaces** the Channel dispatcher with a durable outbox-backed implementation. No code changes in your handlers.
+Each base module registers its in-process default. When the corresponding Wolverine
+package is added and its module is declared in `[DependsOn]`, it **replaces** the
+default with a durable outbox-backed implementation. No code changes in your
+handlers.
 
 ### How Channel dispatch works
 
-The pattern is the same across all four modules. Taking background jobs as an example:
+The pattern is the same across the `Channel<T>` modules. Taking background jobs as an example:
 
 ```csharp
 // ChannelBackgroundJobDispatcher (simplified)

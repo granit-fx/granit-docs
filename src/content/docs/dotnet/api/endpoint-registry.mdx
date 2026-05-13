@@ -8,12 +8,33 @@ sidebar:
 
 import { Aside, Badge } from "@astrojs/starlight/components";
 
-Complete inventory of all HTTP endpoints exposed by Granit framework modules.
+Complete inventory of all HTTP endpoints exposed by Granit modules — both the
+open-source framework (`granit-dotnet`) and the commercial business modules
+(`granit-business`).
 
 <Aside type="tip">
 Use this page to verify that your frontend API client matches the backend routes.
 The OpenAPI schema (available at `/openapi/v1.json`) is the authoritative source
 for request/response types — this page focuses on **routes, methods, and permissions**.
+</Aside>
+
+<Aside type="note" title="Where do the business modules live?">
+Since Granit 0.32, commercial business modules ship from a separate repository
+(`granit-business`) as a private NuGet feed. The framework repo (`granit-dotnet`)
+keeps only the abstractions and HTTP infrastructure. The route inventory below
+covers **both** — every endpoint your application can mount when both feeds are
+referenced.
+
+Modules in `granit-dotnet` (open-source): AI, Auditing, ApiKeys, Authorization,
+BackgroundJobs, Bff, BlobStorage, Cookies, DataExchange, DataLookup, Diagnostics,
+Features, Identity, Identity.Local, Localization, MultiTenancy, Notifications,
+OpenIddict, Privacy, Scheduling, Settings, Templating, Timeline, Validation,
+Webhooks, Workflow.
+
+Modules in `granit-business` (commercial): Activities, Analytics, Catalog,
+CustomerBalance, Dashboards, Documents (+ AssetMetadata, PublicLinks, Renditions),
+Entities, Entities.Customization, Entities.Views, Invoicing, Metering, Parties,
+Payments, ReferenceData, Subscriptions, Tax, Taxonomy.
 </Aside>
 
 ## Conventions
@@ -243,6 +264,50 @@ The static files / SPA fallback endpoint is only registered when
 | <Badge text="GET" variant="note" /> | `/metadata/presets/{definitionName}` | ListExportPresets | `DataExchange.Export.*` |
 | <Badge text="POST" variant="success" /> | `/metadata/presets` | SaveExportPreset | `DataExchange.Export.*` |
 | <Badge text="DELETE" variant="danger" /> | `/metadata/presets/{definitionName}/{presetName}` | DeleteExportPreset | `DataExchange.Export.*` |
+
+---
+
+## Data Lookup
+
+**Module:** `Granit.DataLookup.Endpoints`
+**Prefix:** `data-lookup`
+
+Generic typeahead / autocomplete surface for every entity that declares a
+`LookupDefinition<TEntity>`. The frontend uses one client to drive every
+"search-as-you-type" picker (parties, products, refdata, …) — no per-entity
+custom endpoint to write.
+
+| Method | Route | Operation | Permission |
+|--------|-------|-----------|------------|
+| <Badge text="GET" variant="note" /> | `/sources` | ListLookupSources | Authenticated |
+| <Badge text="GET" variant="note" /> | `/{sourceName}/search?q=…&take=…` | SearchLookup | Per source — declared in the `LookupDefinition` |
+| <Badge text="GET" variant="note" /> | `/{sourceName}/by-id/{id}` | GetLookupItemById | Per source |
+
+The frontend's `<Combobox>` binds to `/{sourceName}/search?q=…` and `by-id/{id}`
+for selected-value hydration.
+
+---
+
+## OData (BI feed)
+
+**Module:** `Granit.Http.ODataExposure`
+**Prefix:** `odata` (per-tenant feed) / `odata/host` (cross-tenant host feed)
+
+Bridges registered `QueryDefinition<TEntity>` instances to OData v4 EntitySets so
+Power BI / Excel / Tableau consume them via the standard "Get Data → OData feed"
+connector. Each EntitySet's permission is **explicit** — declared per
+`opts.EntitySet<>(...).RequirePermission(...)`. The `$metadata` document at
+`/{prefix}/$metadata` (CSDL XML) is the authoritative discovery surface.
+
+| Method | Route | Operation | Permission |
+|--------|-------|-----------|------------|
+| <Badge text="GET" variant="note" /> | `/{prefix}` | OData service document — lists EntitySets | Per declared sets |
+| <Badge text="GET" variant="note" /> | `/{prefix}/$metadata` | CSDL XML — EDM schema | Per declared sets |
+| <Badge text="GET" variant="note" /> | `/{prefix}/{EntitySetName}?$filter=…&$top=…&$orderby=…` | Query an EntitySet | `RequirePermission(...)` per set |
+
+See [OData feed (BI)](/dotnet/api/odata-exposure/) for the EntitySet builder,
+strict-config validator (`Permission` + `$expand` policy required), per-tenant
+rate limiting, and host-feed cross-tenant analytics.
 
 ---
 
