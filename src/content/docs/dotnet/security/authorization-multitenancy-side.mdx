@@ -21,7 +21,7 @@ Without an explicit marker, nothing stops an operator from granting `Tenants.Man
 a tenant user or from issuing a tenant-scoped check for an inherently host-level
 permission. Granit 2026.05 adds two aligned features that close this gap:
 
-1. A **`MultiTenancySide`** tag on every `PermissionDefinition` (`Host`, `Tenant`, `Both`).
+1. A **`MultiTenancySides`** tag on every `PermissionDefinition` (`Host`, `Tenant`, `Both`).
 2. A **multi-provider grant model** (role / user / OIDC client) with a deterministic
    evaluation order.
 
@@ -29,25 +29,25 @@ Multi-tenancy remains optional: consumers that do not reference
 `Granit.MultiTenancy` keep their current behavior — the absent module resolves to a
 `NullTenantContext`, which is always "host-side" from the checker's point of view.
 
-## `MultiTenancySide`
+## `MultiTenancySides`
 
 ```csharp title="MyModulePermissionDefinitionProvider.cs"
 group.AddPermission(
     MyPermissions.Tenants.Manage,
     L("Permission:MyModule.Tenants.Manage"),
-    MultiTenancySide.Host);
+    MultiTenancySides.Host);
 
 group.AddPermission(
     MyPermissions.Invoices.Delete,
     L("Permission:MyModule.Invoices.Delete"),
-    MultiTenancySide.Tenant);
+    MultiTenancySides.Tenant);
 
 group.AddPermission(
     MyPermissions.Profile.Read,
     L("Permission:MyModule.Profile.Read")); // default = Both
 ```
 
-The `MultiTenancySide` property on the definition is consulted by
+The `MultiTenancySides` property on the definition is consulted by
 `IPermissionChecker.IsGrantedAsync` **before** any store lookup:
 
 - Permission is `Host` and `ICurrentTenant.IsAvailable == true` → denied, no DB hit.
@@ -192,7 +192,7 @@ authorization state.
 
 ## Role-side scoping
 
-`MultiTenancySide` is not only a permission property — it is also a property of the
+`MultiTenancySides` is not only a permission property — it is also a property of the
 **role** the permission is granted to. The `RoleMetadata` aggregate (introduced
 alongside this feature) carries the same `Host` / `Tenant` / `Both` enum plus an
 optional `TenantId` (required when the side is `Tenant`):

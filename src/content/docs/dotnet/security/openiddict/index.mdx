@@ -34,7 +34,8 @@ Granit.OpenIddict is the alternative: **your application IS the identity provide
 
 <FileTree>
 - Granit.OpenIddict/ Abstractions, entities, options, permissions, events
-  - Granit.OpenIddict.EntityFrameworkCore/ DbContext, OpenIddict server, seeding
+  - Granit.OpenIddict.Server/ Token, authorization, introspection, revocation, userinfo endpoints (`AddGranitOpenIddictServer`)
+  - Granit.OpenIddict.EntityFrameworkCore/ DbContext, application/authorization/scope stores, seeding
   - Granit.Identity.Local.AspNetIdentity/ IIdentityProvider bridge (AspNetIdentityProvider)
   - Granit.OpenIddict.Endpoints/ Account self-service + admin REST API
   - Granit.OpenIddict.BackgroundJobs/ Token cleanup + idle session enforcement
@@ -44,7 +45,8 @@ Granit.OpenIddict is the alternative: **your application IS the identity provide
 | Package | Responsibility |
 |---------|----------------|
 | `Granit.OpenIddict` | Abstractions, entities, options, permissions, integration events, diagnostics |
-| `Granit.OpenIddict.EntityFrameworkCore` | `OpenIddictDbContext`, server configuration, seed contributor, host builder extension |
+| `Granit.OpenIddict.Server` | Token + authorization + introspection + revocation + userinfo endpoints (`AddGranitOpenIddictServer()`) |
+| `Granit.OpenIddict.EntityFrameworkCore` | `OpenIddictDbContext`, EF-backed application / authorization / scope stores, seed contributor, host builder extension |
 | `Granit.Identity.Local.AspNetIdentity` | `AspNetIdentityProvider` implementing all 7 `IIdentityProvider` sub-interfaces |
 | `Granit.OpenIddict.Endpoints` | 40+ REST endpoints (account self-service + admin management) |
 | `Granit.OpenIddict.BackgroundJobs` | `[RecurringJob]` for token cleanup and idle session enforcement |
@@ -55,8 +57,9 @@ Granit.OpenIddict is the alternative: **your application IS the identity provide
 ```mermaid
 graph TD
     OID[Granit.OpenIddict] --> IDEN[Granit.Identity]
-    OID --> EVT[Granit.EventBus]
-    OID --> SEC[Granit.Users]
+    OID --> EVT[Granit.Events]
+    SRV[Granit.OpenIddict.Server] --> OID
+    OID --> SEC[Granit]
     OID --> QRY[Granit.QueryEngine]
     OID --> GID[Granit.Guids]
     OID --> TIM[Granit.Timing]
@@ -187,11 +190,11 @@ In SchemaPerTenant mode, tables are created in the host schema.
 
 ## Key design decisions
 
-### No ISoftDeletable on GranitUser
+### No ISoftDeletable on LocalIdentity
 
-`GranitUser` extends `IdentityUser<Guid>` which is managed by ASP.NET Core Identity's
+`LocalIdentity` extends `IdentityUser<Guid>` which is managed by ASP.NET Core Identity's
 `UserManager<T>`. The `UserManager` uses reflection and metadata patterns that are
-incompatible with the `ISoftDeletable` interface. Instead, `GranitUser` has manual
+incompatible with the `ISoftDeletable` interface. Instead, `LocalIdentity` has manual
 `IsDeleted` / `DeletedAt` / `DeletedBy` fields with an explicit named query filter
 registered in `ConfigureOpenIddictModule()`. The filter follows the same
 `bypass || real` pattern as `ApplyGranitConventions` so that
@@ -223,7 +226,7 @@ is enforced at the permission/policy level, not at the role definition level.
 ### Do NOT add Granit.Identity.Federated.EntityFrameworkCore
 
 When using `Granit.Identity.Local.AspNetIdentity`, **do not add** `Granit.Identity.Federated.EntityFrameworkCore`.
-`GranitUser` is the source of truth — `UserCacheEntry` and `UserCacheSyncMiddleware` are
+`LocalIdentity` is the source of truth — `UserCacheEntry` and `UserCacheSyncMiddleware` are
 unnecessary and create data duplication risk. A warning is logged at startup if both
 packages are detected. See [ADR-019](/dotnet/architecture/adr/019-user-lookup-dual-mode/)
 for the full rationale.

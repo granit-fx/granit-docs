@@ -20,10 +20,15 @@ module can create invoices via `CreateInvoiceCommand`, not just Subscriptions.
   - Granit.Invoicing.Endpoints Minimal API (invoice listing, PDF download) with RBAC
   - Granit.Invoicing CreateInvoiceHandler, payment event handlers
   - Granit.Invoicing.BackgroundJobs Overdue invoice scan
-  - Granit.Invoicing.Internal Self-hosted PDF via Granit.Templating (Phase 2)
+  - Granit.Invoicing.Builtin Self-hosted PDF via Granit.Templating (Phase 2)
   - Granit.Invoicing.Odoo External accounting sync via XML-RPC (Phase 2)
-  - Granit.Invoicing.EuVat EU VAT calculator with VIES validation (Phase 2)
+  - Granit.Invoicing.Notifications Email notifications for status changes (overdue, paid, ...)
 </FileTree>
+
+VAT calculation and VIES validation are delegated to the separate
+[Tax module](/dotnet/saas/tax/) (`Granit.Tax`, `Granit.Tax.Builtin`,
+`Granit.Tax.Stripe`) — they ship as their own package family rather than as
+an Invoicing sub-package.
 
 ## Invoice lifecycle
 
