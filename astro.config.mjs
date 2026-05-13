@@ -51,6 +51,9 @@ export default defineConfig({
     "/dotnet/browsing/providers/playwright/": "/dotnet/infrastructure/browsing/providers/playwright/",
     "/dotnet/browsing/providers/puppeteer-sharp/": "/dotnet/infrastructure/browsing/providers/puppeteer-sharp/",
     "/dotnet/io/temp-files/": "/dotnet/infrastructure/io/temp-files/",
+    "/dotnet/configuration-keys/": "/dotnet/reference/configuration-keys/",
+    "/dotnet/cloud-providers/": "/dotnet/reference/cloud-providers/",
+    "/dotnet/provider-compatibility/": "/dotnet/reference/provider-compatibility/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
     "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",
@@ -334,15 +337,15 @@ export default defineConfig({
                   items: [
                     {
                       label: "Configuration Keys",
-                      link: "/dotnet/configuration-keys/",
+                      link: "/dotnet/reference/configuration-keys/",
                     },
                     {
                       label: "Cloud Providers",
-                      link: "/dotnet/cloud-providers/",
+                      link: "/dotnet/reference/cloud-providers/",
                     },
                     {
                       label: "Provider Compatibility",
-                      link: "/dotnet/provider-compatibility/",
+                      link: "/dotnet/reference/provider-compatibility/",
                     },
                   ],
                   collapsed: true,

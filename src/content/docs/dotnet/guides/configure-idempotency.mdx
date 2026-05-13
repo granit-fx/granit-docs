@@ -79,6 +79,10 @@ key is scoped to `tenantId + userId` for security isolation.
 | `InProgressTtl` | 30 seconds | Lock duration while request is processing |
 | `ExecutionTimeout` | 25 seconds | Timeout for the business handler |
 | `MaxBodySizeBytes` | 1,048,576 | Max body size read for hash computation |
+| `MaxKeyLength` | 256 | Maximum accepted length of the `Idempotency-Key` header value |
+| `MaxResponseSizeBytes` | 262,144 (256 KiB) | Responses larger than this are tombstoned — replays receive `413 Payload Too Large` |
+| `TombstoneTtl` | 24 hours | How long a tombstone is retained before the key can be reused |
+| `ExcludedResponseHeaders` | `Set-Cookie`, `Authorization`, … | Per-replay header allow-list applied on top of the captured response |
 
 :::note[Good to know]
 `ExecutionTimeout` must be strictly less than `InProgressTtl`. This gap ensures
@@ -148,6 +152,10 @@ The middleware implements a three-state machine backed by Redis:
 
 ```text
 Absent --(SET NX PX)--> InProgress --(SET XX PX)--> Completed
+                                                  |
+                                                  +--(response > MaxResponseSizeBytes)--> Tombstoned
+
+Tombstoned --(replay)--> 413 Payload Too Large (until TombstoneTtl elapses)
                              |
                              +--(5xx / timeout)--> Absent
 ```
