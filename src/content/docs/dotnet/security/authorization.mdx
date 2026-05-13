@@ -33,14 +33,14 @@ request, so access changes take effect within the cache TTL (seconds, not sprint
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Authorization` | RBAC permissions, dynamic policy provider | `Granit.Users`, `Granit.Caching` |
+| `Granit.Authorization` | RBAC permissions, dynamic policy provider | `Granit`, `Granit.Caching` |
 | `Granit.Authorization.EntityFrameworkCore` | EF Core permission grant store | `Granit.Authorization`, `Granit.Persistence` |
 
 ## Dependency graph
 
 ```mermaid
 graph TD
-    AZ[Granit.Authorization] --> S[Granit.Users]
+    AZ[Granit.Authorization] --> S[Granit]
     AZ --> CA[Granit.Caching]
     AZEF[Granit.Authorization.EntityFrameworkCore] --> AZ
     AZEF --> P[Granit.Persistence]
@@ -112,8 +112,15 @@ The `PermissionChecker` evaluates in order:
 1. **Not authenticated → denied** — anonymous users are always rejected, even with `AlwaysAllow`
 2. `AlwaysAllow` option (development only, authenticated users only)
 3. Admin role bypass — users with any role in `AdminRoles` get all permissions (case-insensitive)
-4. Per-role cache lookup (key: `perm:{tenantId}:{roleName}:{permissionName}`)
+4. Multi-provider grant lookup — every grant carries a `(providerName, providerKey)` pair
+   (`User`/`Role`/`Client`/`UserGroup`/…). Cache key:
+   `perm:{tenantId|"global"}:{providerName}:{providerKey}:{permissionName}` — PR #1899
+   collapses the lookup to a single per-(user, tenant, action) evaluator covering every
+   provider in one round-trip.
 5. `IPermissionGrantStore` fallback (default: `NullPermissionGrantStore` — always denied)
+
+See [Multi-tenancy side](/dotnet/security/authorization-multitenancy-side/) for the full
+provider matrix and the canonical `PermissionGrantProviderNames` constants.
 
 ## Using permissions
 
@@ -176,14 +183,19 @@ real store backed by EF Core.
 **Entity:**
 
 ```csharp
-public class PermissionGrant : AuditedEntity, IMultiTenant
+public class PermissionGrant : AuditedAggregateRoot, IMultiTenant
 {
-    public string Name { get; init; } = string.Empty;     // Permission name (immutable)
-    public string RoleName { get; init; } = string.Empty;  // Role granted to (immutable)
-    public Guid? TenantId { get; set; }                    // Tenant scope (null = global)
+    public string Name { get; init; } = string.Empty;          // Permission name (immutable)
+    public string ProviderName { get; init; } = string.Empty;  // User / Role / Client / UserGroup / …
+    public string ProviderKey { get; init; } = string.Empty;   // userId, roleName, clientId, etc.
+    public Guid? TenantId { get; set; }                        // Tenant scope (null = host/global)
 }
-// Unique index: (TenantId, Name, RoleName)
+// Unique index: (TenantId, ProviderName, ProviderKey, Name)
 ```
+
+The shift from a role-only `RoleName` column to the `(ProviderName, ProviderKey)` pair
+landed with ABP-style multi-provider grants in PR #1056 / #1899 — see the canonical
+constants in `PermissionGrantProviderNames` (`User`, `Role`, `Client`, `UserGroup`).
 
 **DbContext integration:**
 
@@ -201,18 +213,26 @@ public class PermissionAdminService(
     IPermissionManagerWriter writer,
     IPermissionManagerReader reader)
 {
-    public async Task GrantAsync(
+    public async Task GrantToRoleAsync(
         string roleName, string permissionName, CancellationToken cancellationToken)
     {
-        await writer.SetAsync(permissionName, roleName, tenantId: null,
-            isGranted: true, cancellationToken)
+        await writer.SetAsync(
+            permissionName,
+            providerName: PermissionGrantProviderNames.Role,
+            providerKey:  roleName,
+            tenantId:     null,
+            isGranted:    true,
+            cancellationToken)
             .ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<string>> GetGrantedAsync(
         string roleName, CancellationToken cancellationToken)
     {
-        return await reader.GetGrantedPermissionsAsync(roleName, tenantId: null,
+        return await reader.GetGrantedPermissionsAsync(
+            providerName: PermissionGrantProviderNames.Role,
+            providerKey:  roleName,
+            tenantId:     null,
             cancellationToken)
             .ConfigureAwait(false);
     }

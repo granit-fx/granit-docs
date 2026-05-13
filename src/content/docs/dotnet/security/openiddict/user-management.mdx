@@ -1,6 +1,6 @@
 ---
 title: "User Management"
-description: GranitUser entity, GranitRole, user groups, AspNetIdentityProvider bridge, admin REST API for users, roles, groups, OIDC applications, scopes, and authorizations.
+description: LocalIdentity entity, GranitRole, user groups, AspNetIdentityProvider bridge, admin REST API for users, roles, groups, OIDC applications, scopes, and authorizations.
 sidebar:
   order: 3
   label: User Management
@@ -14,12 +14,24 @@ groups, and OIDC resources.
 
 ## Entities
 
-### GranitUser
+:::note[`LocalIdentity` is credentials only — the canonical user lives elsewhere]
+`LocalIdentity` is the ASP.NET Identity row that owns credentials (password hash,
+lockout, claims). The framework's **canonical `User` aggregate** lives in
+`Granit.Identity` and is auto-created whenever a `LocalIdentity` is created
+([ADR-051](/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/) /
+PR #1712). The rest of the framework references the canonical `User` for audit
+fields, ownership, and tenant assignment — never `LocalIdentity` directly outside
+the authentication layer.
+:::
 
-Extends `IdentityUser<Guid>` with Granit multi-tenancy and audit support.
+### LocalIdentity
+
+Extends `IdentityUser<Guid>` with Granit multi-tenancy and audit support. Renamed
+from the legacy `GranitUser` class to clarify that it represents *local* identity
+credentials specifically (rather than the canonical user identity).
 
 ```csharp
-public class GranitUser : IdentityUser<Guid>, IMultiTenant
+public class LocalIdentity : IdentityUser<Guid>, IMultiTenant
 {
     public string? FirstName { get; set; }              // max 256
     public string? LastName { get; set; }               // max 256
@@ -111,7 +123,7 @@ It implements all 7 sub-interfaces of the Granit.Identity abstraction layer:
 
 | Interface | Implementation detail |
 |-----------|---------------------|
-| `IIdentityUserReader` | `UserManager<GranitUser>.Users` LINQ queries |
+| `IIdentityUserReader` | `UserManager<LocalIdentity>.Users` LINQ queries |
 | `IIdentityUserWriter` | `UserManager.CreateAsync()`, `UpdateAsync()` |
 | `IIdentityRoleManager` | `RoleManager<GranitRole>` operations |
 | `IIdentityGroupManager` | Direct EF Core queries on `GranitUserGroup` |
@@ -137,7 +149,7 @@ SupportsUserCreation = true
 :::caution
 Do **NOT** add `Granit.Identity.Federated.EntityFrameworkCore` alongside `Granit.Identity.Local.AspNetIdentity`.
 It would create a redundant `UserCache` layer. `AspNetIdentityUserLookupService` queries
-`UserManager<GranitUser>` directly.
+`UserManager<LocalIdentity>` directly.
 :::
 
 ## Identity settings (ASP.NET Core)
@@ -279,7 +291,7 @@ The schema is configurable via `GranitOpenIddictDbProperties.DbSchema`.
 
 | Table | Entity | Multi-tenant |
 |-------|--------|-------------|
-| `openiddict_users` | `GranitUser` | Yes |
+| `openiddict_users` | `LocalIdentity` | Yes |
 | `openiddict_roles` | `GranitRole` | No (global) |
 | `openiddict_user_roles` | `IdentityUserRole<Guid>` | -- |
 | `openiddict_user_claims` | `IdentityUserClaim<Guid>` | -- |

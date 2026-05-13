@@ -20,7 +20,7 @@ modules and granted to roles at runtime. Two things were missing before this fea
    operators had to hand-roll role management endpoints or reach into the database.
 
 `RoleMetadata` and the `/admin/roles` CRUD close both gaps with the same
-`MultiTenancySide` vocabulary already used by
+`MultiTenancySides` vocabulary already used by
 [`PermissionDefinition`](/dotnet/security/authorization-multitenancy-side/).
 
 ## The `RoleMetadata` aggregate
@@ -34,7 +34,7 @@ public sealed class RoleMetadata : AuditedAggregateRoot, IMultiTenant
     public string Name { get; private set; }                       // "Manager"
     public Guid? TenantId { get; private set; }                    // required when Side = Tenant
     public string? ClientId { get; private set; }                  // realm / client role distinction (reserved)
-    public MultiTenancySide MultiTenancySide { get; private set; } // Host / Tenant / Both
+    public MultiTenancySides MultiTenancySides { get; private set; } // Host / Tenant / Both
     public string? Description { get; private set; }
     public bool IsSystem { get; private set; }                     // true for seeded roles
 }
@@ -150,8 +150,10 @@ requests with a 403 problem detail; Host and Both roles remain fully available.
 
 `GranitRole` rows live in the Identity DbContext (e.g. `OpenIddictDbContext`) and
 `RoleMetadata` rows live in the host DbContext that implements
-`IPermissionGrantDbContext`. The `IGranitRoleOrchestrator` serialises the two writes
-with a **compensating-write strategy**:
+`IPermissionGrantDbContext`. `IGranitRoleOrchestrator` keeps the two writes in lockstep
+with an **atomic shared-connection transaction by default** (PR #1097 / #1110), and falls
+back to a compensating-write strategy only when the deployment cannot expose a shared
+connection:
 
 ```mermaid
 sequenceDiagram
@@ -161,34 +163,28 @@ sequenceDiagram
     participant H as Host DbContext
 
     C->>O: CreateAsync(cmd)
+    O->>I: OpenConnectionAsync + BeginTransactionAsync
+    O->>H: UseTransactionAsync(sharedTx)
     O->>I: RoleManager.CreateAsync(new GranitRole)
-    I-->>O: OK
     O->>H: IRoleMetadataStore.AddAsync(RoleMetadata.Create(…))
-    alt RoleMetadata write fails
-        H-->>O: throw
-        O->>I: RoleManager.DeleteAsync(granitRole)  [compensation]
-        O-->>C: rethrow
-    else success
-        H-->>O: OK
+    alt either write fails
+        I-->>O: throw / rollback
+        O-->>C: rethrow (no half-written state)
+    else both succeed
+        O->>I: CommitAsync
         O-->>C: RoleMetadata
     end
 ```
 
-This trades cross-DbContext atomicity for portability:
+The atomic path requires both DbContexts to target the same physical database and to
+share an EF Core connection. When that contract holds — the default deployment shape
+for `Granit.Identity.Local.AspNetIdentity` — there is no half-written state to repair.
 
-- **No** `TransactionScope` → no MSDTC escalation on Linux with Npgsql.
-- **No** shared-connection transaction requirement → works regardless of whether both
-  DbContexts target the same physical database.
-- The compensating delete converges the invariant "every Granit-managed role has
-  matching metadata" on the happy failure path.
-
-Deployments that guarantee both DbContexts target the same physical database **and**
-can expose the Identity DbContext connection across assemblies can replace the default
-implementation with a shared-connection EF Core transaction
-(`Database.OpenConnectionAsync` / `SetDbConnection` / `BeginTransactionAsync` /
-`UseTransactionAsync`). The current `OpenIddictDbContext` is `internal sealed`, so the
-shared-connection path requires either widening its visibility or introducing a
-provider-specific orchestrator implementation.
+When a deployment uses physically separate databases for identity and host data,
+`IGranitRoleOrchestrator` falls back to a **compensating-write strategy**: create the
+`GranitRole` first, then persist `RoleMetadata`; if the metadata write fails, delete the
+freshly created `GranitRole`. The fallback trades cross-DbContext atomicity for portability
+and is documented for completeness — the atomic transaction is the production default.
 
 ## Grant-side coherence
 

@@ -26,7 +26,7 @@ with GDPR erasure and pseudonymization built in.
     - Granit.Identity.Federated.EntityFrameworkCore User cache (cache-aside, login-time sync)
     - Granit.Identity.Federated.Privacy Personal-data export provider for the federated user cache
   - Granit.Identity.Local/ Shared domain types for self-hosted identity providers
-    - Granit.Identity.Local.AspNetIdentity ASP.NET Core Identity provider (GranitUser + role orchestration + tenant-aware lookup)
+    - Granit.Identity.Local.AspNetIdentity ASP.NET Core Identity provider (LocalIdentity + role orchestration + tenant-aware lookup)
     - Granit.Identity.Local.Endpoints Account self-service endpoints (login, register, profile, 2FA, passkey) + role CRUD + admin impersonation
     - Granit.Identity.Local.Notifications 9 security notifications (welcome, password reset, 2FA, email change, impersonation)
     - Granit.Identity.Local.Privacy Personal-data export provider for the local identity store
@@ -222,6 +222,29 @@ public class SessionService(
     }
 }
 ```
+
+## Canonical `User` aggregate
+
+`Granit.Identity` ships a canonical `User` aggregate that is the single anchor for
+audit fields, ownership, and tenant assignment across every Granit module. It is
+**not** the same row as the identity-provider credentials — those live on `LocalIdentity`
+(`Granit.Identity.Local`, ASP.NET Identity-backed) or on a `UserCacheEntry` mirror of an
+external IdP. The canonical `User` is the join point that lets the rest of the framework
+talk about people without caring which provider authenticates them.
+
+Per [ADR-051](/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/) and PR #1712,
+a canonical `User` row is **auto-created** whenever a `LocalIdentity` is created
+(B-step 2.5). The same handler runs after federated cache upserts so every
+authenticated principal has exactly one canonical `User` per tenant, with stable
+`Id`, `Email`, and audit fields the rest of the framework can reference.
+
+:::note[PII at rest is encrypted]
+Personal-data columns on the user aggregates (federated cache `Email`, `DisplayName`,
+phone numbers) are flagged with `[Encrypted]` so they are transparently encrypted at
+rest through `Granit.Encryption.EntityFrameworkCore` (PR #1907). The encryption test
+suite refuses to compile if a `[SensitiveData(>=Confidential)]` field is added without
+the matching `[Encrypted]`.
+:::
 
 ## User cache (cache-aside)
 
