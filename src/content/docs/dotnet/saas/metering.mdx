@@ -416,7 +416,7 @@ Tenants opt in via the notifications admin UI.
 | `metering.quota_exceeded` | `QuotaExceededEto` — emitted when usage exceeds the hard quota | Email, InApp | Error |
 
 Email templates ship in EN + FR; additional cultures are produced via the
-[translation script](/dotnet/business/templating/) (US #1311).
+[translation script](/dotnet/building-blocks/templating/) (US #1311).
 
 ## See also
 
@@ -425,4 +425,3 @@ Email templates ship in EN + FR; additional cultures are produced via the
 - [Invoicing](/dotnet/saas/invoicing/) — invoice creation from usage data
 - [ADR-033 — Metering hybrid](/dotnet/architecture/adr/033-metering-hybrid-lifecycle-and-recompute/) — lifecycle, CountDistinct, recompute, backfill, deprecate
 - [ADR-036 — Invoicing line item source convention](/dotnet/architecture/adr/036-invoicing-line-source-convention/) — `MeterDefinition.ProductId` propagation
-- [Spike — SQL ad-hoc metric definitions (DEFER)](/dotnet/architecture/spikes/metering-sql-ad-hoc-metrics/)
