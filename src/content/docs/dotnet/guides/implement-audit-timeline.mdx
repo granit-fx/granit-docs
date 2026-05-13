@@ -282,6 +282,29 @@ await followerService.UnfollowAsync(
 
 The author is automatically excluded from notifications for their own entries.
 
+## Reactions
+
+Each `TimelineEntry` accepts ad-hoc emoji-style reactions (`👍`, `🎉`, `🚀`, …) via the
+`Granit.Timeline` reaction API (PR #1875). A reaction carries the author, the reaction
+key (`":+1:"`, `":heart:"`, etc.) and the timestamp; one user can hold a single reaction
+per entry — calling `ReactAsync` with the same key twice removes it.
+
+```csharp
+await timelineWriter.ReactAsync(
+    entryId:     entry.Id,
+    reactionKey: ":+1:",
+    cancellationToken);
+
+await timelineWriter.RemoveReactionAsync(
+    entryId:     entry.Id,
+    reactionKey: ":+1:",
+    cancellationToken);
+```
+
+The reader projects an aggregated `IReadOnlyDictionary<string, ReactionTally>` per
+entry — `{ ":+1:": { Count: 4, ReactedByMe: true }, … }` — so the UI can render
+totals without a second round-trip.
+
 ## Graceful degradation
 
 The timeline adapts to available dependencies:

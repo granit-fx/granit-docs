@@ -85,23 +85,30 @@ filters centrally. Manual filters cause duplicates or conflicts.
 
 ### Missing interceptors
 
-**Symptom**: `CreatedAt`, `CreatedBy`, `LastModifiedAt`, `LastModifiedBy` fields
-are never populated. Soft-deleted entities are hard-deleted instead of flagged.
+**Symptom**: `CreatedAt`, `CreatedBy`, `ModifiedAt`, `ModifiedBy` fields are never
+populated. Soft-deleted entities are hard-deleted instead of flagged.
 
-**Cause**: The `AddDbContextFactory` call does not resolve
-`AuditedEntityInterceptor` and `SoftDeleteInterceptor`.
+**Cause**: The DbContext was registered via raw `AddDbContextFactory<T>` (or
+`AddDbContext<T>`) without wiring Granit's five interceptors
+(`AuditedEntityInterceptor`, `VersioningInterceptor`, `ConcurrencyStampInterceptor`,
+`DomainEventDispatcherInterceptor`, `SoftDeleteInterceptor`).
 
-**Fix**: Use the `(sp, options)` overload to resolve interceptors from the
-service provider.
+**Fix**: Register the DbContext through `AddGranitDbContext<T>` — or
+`AddGranitIsolatedDbContext<T>` for strictly tenant-scoped contexts (BlobStorage,
+Privacy, anything carrying `[Encrypted]` fields). Both extensions resolve
+`UseGranitInterceptors(sp)` internally and pre-seed `HostDbSchema`.
 
 ```csharp
-services.AddDbContextFactory<MyDbContext>((sp, options) =>
+services.AddGranitDbContext<MyDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
-    options.AddInterceptors(
-        sp.GetRequiredService<AuditedEntityInterceptor>(),
-        sp.GetRequiredService<SoftDeleteInterceptor>());
-}, ServiceLifetime.Scoped);
+});
+
+// Per-tenant data (PR #2021 / #2028)
+services.AddGranitIsolatedDbContext<MyTenantDbContext>(options =>
+{
+    options.UseNpgsql(connectionString);
+});
 ```
 
 ## Validator not executing

@@ -182,10 +182,44 @@ public sealed class HealthRecordService(ITransitEncryptionService transit)
 :::tip[Pro tip]
 Vault Transit supports transparent key rotation. When you rotate the key in Vault,
 old ciphertexts remain readable (the key version is embedded in the ciphertext prefix
-`vault:v1:...`, `vault:v2:...`). No re-encryption of existing data is needed.
+`vault:v1:...`, `vault:v2:...`). No re-encryption of existing data is needed *to keep
+reading it*. Re-encryption is required only when you want to **retire** an old key
+version (see step 5 below).
 :::
 
-## Step 5 -- Encrypt cached values
+## Step 5 -- Re-encrypt existing rows after key rotation
+
+`Granit.Encryption.EntityFrameworkCore` ships an `IReEncryptionService` that walks every
+EF entity carrying `[Encrypted]` properties and forces a save round-trip, producing fresh
+ciphertext under the current key version. It's idempotent and safe to run multiple times.
+
+Register it once per `DbContext` that owns encrypted fields:
+
+```csharp
+builder.Services.AddDbContextFactory<AppDbContext>(...);
+builder.Services.AddGranitEncryptionReEncryption<AppDbContext>();
+```
+
+Then invoke it from an admin endpoint, a CLI command, or a one-shot hosted service after
+each Vault key rotation:
+
+```csharp
+public sealed class KeyRotationCommand(IReEncryptionService reEncryption)
+{
+    public async Task RunAsync(CancellationToken cancellationToken)
+    {
+        await reEncryption.ReEncryptAsync<Patient>(batchSize: 500, cancellationToken);
+        await reEncryption.ReEncryptAsync<LegalAgreement>(batchSize: 500, cancellationToken);
+    }
+}
+```
+
+Once every row has been re-encrypted, list the retired versions in configuration
+(`ReEncryption:RetiredKeyVersions`); `HashiCorpVaultStringEncryptionProvider` will then
+throw `RetiredKeyVersionException` on the first ciphertext that slipped through. See the
+[Field-Level Encryption reference](/dotnet/data/encryption/#key-rotation-and-re-encryption).
+
+## Step 6 -- Encrypt cached values
 
 For data stored in Redis or another distributed cache, enable encrypted serialization
 in FusionCache to provide transparent AES-256 encryption of cached values:
@@ -240,7 +274,7 @@ public sealed class PatientCacheService(
 }
 ```
 
-## Step 6 -- Encrypt settings automatically
+## Step 7 -- Encrypt settings automatically
 
 Settings declared with `IsEncrypted = true` are encrypted at rest in the database.
 The cache stores plaintext to avoid double encryption (Redis is already protected
