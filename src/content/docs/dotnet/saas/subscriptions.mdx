@@ -22,7 +22,7 @@ produce invoices at the right time with the right line items.
   - Granit.Subscriptions Event handlers (provider sync, usage → invoice)
   - Granit.Subscriptions.BackgroundJobs Trial expiration, period end, cancel-at-period-end scans
   - Granit.Subscriptions.Features Bridge to Granit.Features (IPlanIdProvider + IPlanFeatureStore)
-  - Granit.Subscriptions.Internal No-op provider for self-hosted mode (zero dependencies)
+  - Granit.Subscriptions.Builtin No-op provider for self-hosted mode (zero dependencies)
 </FileTree>
 
 ## Plan lifecycle
@@ -201,7 +201,7 @@ Built-in providers:
 
 | Provider | Package | Capabilities |
 |----------|---------|-------------|
-| Internal | `Granit.Subscriptions.Internal` | None (no-op, zero dependency) |
+| Internal | `Granit.Subscriptions.Builtin` | None (no-op, zero dependency) |
 | Stripe | `Granit.Subscriptions.Stripe` | All (Phase 2) |
 
 ## Value Objects

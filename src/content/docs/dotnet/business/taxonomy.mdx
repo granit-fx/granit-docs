@@ -57,6 +57,7 @@ flowchart LR
 | `Granit.Taxonomy` | Abstractions: `Tag` and `Category` aggregates, `TagAssignment` / `CategoryAssignment` entities, `ITagService` / `ICategoryService`, options, DI registration, diagnostics. |
 | `Granit.Taxonomy.EntityFrameworkCore` | Isolated `TaxonomyDbContext`, EF Core configurations, service implementations. |
 | `Granit.Taxonomy.Endpoints` | Tag and category CRUD, assignment endpoints, per-scope autocomplete, cross-entity search. |
+| `Granit.Taxonomy.BackgroundJobs` | Nightly orphan-assignment sweep job (T5.2 — PR #1870 / #1897) that prunes dangling `*Assignment` rows whose target aggregates no longer exist. |
 
 Architecture boundaries are pinned by `TaxonomyArchitectureTests`: no
 `Microsoft.AspNetCore.*` in the base package, no EF Core in endpoints, no

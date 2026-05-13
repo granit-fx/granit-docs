@@ -28,25 +28,29 @@ The framework's BI story is structured in three additive layers, each useful on 
 
 <FileTree>
 - Layer 1 — Inline metrics  KPIs above a list, single-value tiles
-  - Granit.Analytics  Declarative MetricDefinition base classes
+  - Granit.Analytics.Abstractions  Declarative MetricDefinition, MetricValueKind, IWidgetSource
+  - Granit.Analytics  Registry, FusionCache plumbing, period resolver
   - Granit.Analytics.EntityFrameworkCore  EF Core executor with empty-set semantics
-  - Granit.Analytics.Endpoints  POST /metrics/:name surface with FusionCache
+  - Granit.Analytics.Endpoints  POST /metrics/:name surface
 - Layer 2 — Composable dashboards  Drag-drop layouts, multiple widget kinds
-  - Granit.Analytics  DashboardDefinition + widget contracts (planned)
-  - Granit.Analytics.EntityFrameworkCore  Persisted Dashboard aggregate (planned)
+  - Granit.Dashboards.Abstractions  DashboardDefinition, RefreshHint, widget contracts
+  - Granit.Dashboards  Registry + push primitives
+  - Granit.Dashboards.EntityFrameworkCore  Persisted Dashboard aggregate
+  - Granit.Dashboards.Endpoints  REST surface
+  - Granit.Dashboards.Push / .Push.WebSockets  Server-push delivery
 - Layer 3 — OData v4 connector  Power BI / Excel / Tableau native consumption
-  - Granit.Http.ODataExposure  Bridge QueryDefinition → OData EntitySet (planned)
+  - Granit.Http.ODataExposure  Bridge QueryDefinition → OData EntitySet (ships in granit-dotnet)
 </FileTree>
 
 ## Package structure (Layer 1, shipped)
 
 <FileTree>
-- Granit.Analytics  Abstractions — no EF Core dependency
+- Granit.Analytics.Abstractions  Pure abstractions — no EF Core, no FusionCache
   - Metrics/MetricDefinition.cs  Aggregation declaration + period selector
   - Metrics/MetricValueKind.cs  Count / Number / Currency / Percentage / Duration / Date
-  - Metrics/RefreshHint.cs  Static / Dynamic / Realtime
   - Widgets/IWidgetSource.cs  Pull-and-future-push widget contract
   - Widgets/WidgetPayload.cs  Snapshot envelope with sequence + emitted-at metadata
+- Granit.Analytics  Registry, FusionCache plumbing
 - Granit.Analytics.EntityFrameworkCore  Concrete EF Core executor
   - IMetricExecutor.cs  Public façade — typed per (TEntity, TValue)
   - Internal/MetricExecutor.cs  Typed dispatch per TValue (int / long / decimal / double)
