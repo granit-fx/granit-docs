@@ -1,6 +1,6 @@
 ---
 title: "Localization \u2014 17 Cultures & CLDR Plurals"
-description: JSON-based i18n covering 17 cultures with CLDR plural rules, source-generated translation keys, per-tenant database overrides at runtime, culture fallback chains, and Minimal API endpoints.
+description: JSON-based i18n covering 18 cultures with CLDR plural rules, source-generated translation keys, per-tenant database overrides at runtime, culture fallback chains, and Minimal API endpoints.
 sidebar:
   label: Localization
   order: 18
@@ -21,7 +21,7 @@ files are embedded per module and auto-discovered at startup (no registration bo
 Tenants can override any translation at runtime through a database-backed store, cached
 in-memory with per-tenant isolation. A Roslyn source generator produces strongly-typed
 key constants at build time — misspelled keys become compile errors, not runtime blanks.
-The system ships with 17 cultures (14 base + 3 regional), so your application is
+The system ships with 18 cultures (15 base + 3 regional — `en-GB`, `fr-CA`, `pt-BR`), so your application is
 international from the first commit.
 
 ## Package structure
@@ -529,7 +529,7 @@ Skip it when:
 ## Common pitfalls
 
 :::caution[Missing JSON files for a culture]
-All 17 cultures must have a JSON resource file, even if empty. The source generator
+All 18 cultures must have a JSON resource file, even if empty. The source generator
 and auto-discovery expect the file to exist. A missing file for one culture means
 `IStringLocalizer<T>` returns the key name instead of a translation — no error, just
 silent degradation.
