@@ -255,6 +255,24 @@ In development and tests, `NoOpWebhookSecretProtector` stores secrets in plain t
 This is acceptable for local development but must never be used in production.
 :::
 
+## Signing-key rotation
+
+Each subscription owns one or more `WebhookSigningKey` aggregates (PR #1408). At any
+moment two keys can be **active** in parallel — old and new — so consumers can roll
+their verifier without missing deliveries:
+
+1. Call the admin endpoint to mint a new key — the response surfaces the new secret
+   exactly once.
+2. Push the new secret to the receiver alongside the existing one; the receiver accepts
+   both during the overlap window.
+3. Granit signs each delivery with the most recently activated key but exposes both
+   `kid` values via the `x-granit-signature-keys` header during overlap.
+4. After the receiver has switched over, retire the old key — subsequent deliveries
+   sign with the new key only.
+
+See [`/dotnet/api/webhooks/signing-keys/`](/dotnet/api/webhooks/signing-keys/) for the
+admin REST surface, audit-event names, and the dual-key overlap timing model.
+
 ## Multi-tenancy
 
 Subscriptions support both global and tenant-scoped delivery:
@@ -280,7 +298,7 @@ curl -s -X POST http://localhost:5000/api/v1/webhooks/subscriptions \
   }' | jq .id
 
 # Trigger an event (create an invoice) and check webhook.site
-# The delivery should arrive with an X-Webhook-Signature header
+# The delivery should arrive with an x-granit-signature header
 ```
 
 ## Next steps

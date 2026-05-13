@@ -110,13 +110,13 @@ are resolved transitively and deduplicated automatically.
 
 ```csharp
 using Granit.Modularity;
-using Granit.Persistence;
-using Granit.Users;
+using Granit.Persistence.EntityFrameworkCore;
+using Granit.Observability;
 
 namespace Granit.Inventory;
 
-[DependsOn(typeof(GranitPersistenceModule))]
-[DependsOn(typeof())]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCoreModule))]
+[DependsOn(typeof(GranitObservabilityModule))]
 public sealed class GranitInventoryModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -130,15 +130,17 @@ You can also combine multiple types in a single attribute:
 
 ```csharp
 [DependsOn(
-    typeof(GranitPersistenceModule),
-    typeof())]
+    typeof(GranitPersistenceEntityFrameworkCoreModule),
+    typeof(GranitObservabilityModule))]
 public sealed class GranitInventoryModule : GranitModule { }
 ```
 
 :::note[Transitive resolution]
-Declaring a dependency on `GranitPersistenceModule` automatically pulls in
-`GranitTimingModule`, `GranitGuidsModule`, and ``. You do
-not need to repeat them.
+Declaring a dependency on `GranitPersistenceEntityFrameworkCoreModule` automatically pulls
+in `GranitPersistenceModule`, `GranitTimingModule`, and `GranitGuidsModule`. You do not
+need to repeat them. `ICurrentUserService` and the audit primitives ship inside the core
+`Granit` package under the `Granit.Users` namespace — no separate `Granit.Users` package
+exists.
 :::
 
 ## Step 5 -- Use lifecycle hooks

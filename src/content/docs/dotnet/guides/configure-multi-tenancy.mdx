@@ -209,6 +209,29 @@ builder.Services.AddGranitIsolatedDbContext<AppDbContext>(
 The `IsolatedDbContextFactory<TContext>` reads the strategy from `appsettings.json`
 and delegates to the appropriate keyed factory at runtime.
 
+### `AddGranitDbContext` vs `AddGranitIsolatedDbContext`
+
+Granit ships two registration extensions:
+
+| Extension | Use for | Behaviour |
+|-----------|---------|-----------|
+| `AddGranitDbContext<T>(opts)` | Default — dual-scope or host-only contexts | Runs interceptors, applies `HostDbSchema`, leaves tenant resolution to `ApplyGranitConventions` |
+| `AddGranitIsolatedDbContext<T>(opts)` | Strictly tenant-isolated modules (BlobStorage, Privacy, Encryption-bound contexts, …) | Forces every query through `ICurrentTenant`, throws if no tenant is active, refuses host-side bypass |
+
+PR #2021 made seven framework modules opt into `AddGranitIsolatedDbContext` by default —
+BlobStorage, Privacy, Activities, Documents, AssetMetadata, Renditions, PublicLinks —
+and PR #2028 patched an infinite-recursion bug in the non-generic overload. Reach for
+`AddGranitIsolatedDbContext<T>` whenever your context stores blobs, PII, encrypted
+columns, or anything else that must never leak across tenants. `[Encrypted]` fields on
+host-shared contexts fail the build (PR #2062).
+
+### `MultiTenancySides` enum
+
+Permission scopes and BFF frontends are tagged with the `MultiTenancySides` `[Flags]`
+enum (`Host | Tenant | Both`). PR #1068 promoted the type to the foundation `Granit`
+package so cross-cutting modules can reference it without depending on
+`Granit.MultiTenancy`. See [Host vs Tenant side](/dotnet/concepts/multi-tenancy/#host-vs-tenant-side--the-multitenancysides-enum).
+
 ## Step 5 -- Use ICurrentTenant in your code
 
 ### In a service (constructor injection)
