@@ -245,12 +245,45 @@ export default defineConfig({
                 },
                 {
                   label: "Compliance",
-                  items: [{ autogenerate: { directory: "dotnet/compliance" } }],
                   collapsed: true,
+                  items: [
+                    { label: "Audit Log", link: "/dotnet/compliance/audit-log/" },
+                    { label: "Crypto-Shredding", link: "/dotnet/compliance/crypto-shredding/" },
+                    {
+                      label: "Cookies",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/compliance/cookies" } }],
+                    },
+                    {
+                      label: "Privacy",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/compliance/privacy" } }],
+                    },
+                  ],
                 },
                 {
                   label: "API & Http",
-                  items: [{ autogenerate: { directory: "dotnet/api" } }],
+                  items: [
+                    { label: "Overview", link: "/dotnet/api/" },
+                    { label: "CORS", link: "/dotnet/api/cors-cross-origin/" },
+                    { label: "Blob Storage Endpoints", link: "/dotnet/api/blob-storage-endpoints/" },
+                    { label: "API Versioning", link: "/dotnet/api/api-versioning/" },
+                    { label: "API Documentation", link: "/dotnet/api/api-documentation/" },
+                    { label: "Exception Handling", link: "/dotnet/api/exception-handling/" },
+                    { label: "Idempotency", link: "/dotnet/api/idempotency/" },
+                    { label: "Rate Limiting", link: "/dotnet/api/rate-limiting/" },
+                    { label: "Bulkhead", link: "/dotnet/api/bulkhead/" },
+                    { label: "HTTP Resilience", link: "/dotnet/api/http-resilience/" },
+                    { label: "Response Compression", link: "/dotnet/api/response-compression/" },
+                    { label: "Output Caching", link: "/dotnet/api/output-caching/" },
+                    { label: "OData feed (BI)", link: "/dotnet/api/odata-exposure/" },
+                    {
+                      label: "Webhooks",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/api/webhooks" } }],
+                    },
+                    { label: "Endpoint Registry", link: "/dotnet/api/endpoint-registry/" },
+                  ],
                 },
                 {
                   label: "Infrastructure",
@@ -279,8 +312,20 @@ export default defineConfig({
                 },
                 {
                   label: "Building Blocks",
-                  items: [{ autogenerate: { directory: "dotnet/building-blocks" } }],
                   collapsed: true,
+                  items: [
+                    { label: "Data Exchange", link: "/dotnet/building-blocks/data-exchange/" },
+                    { label: "Document Generation", link: "/dotnet/building-blocks/document-generation/" },
+                    { label: "Workflow", link: "/dotnet/building-blocks/workflow/" },
+                    { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
+                    { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
+                    { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
+                    {
+                      label: "Templating",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/building-blocks/templating" } }],
+                    },
+                  ],
                 },
                 {
                   label: "Business Features",
