@@ -1,6 +1,6 @@
 ---
-title: "AI Integration — LLMs, Embeddings & Semantic Search"
-description: AI capabilities in Granit — provider-agnostic LLM integration, natural language queries, semantic search, workflow decisions, content moderation, and more. Built on Microsoft.Extensions.AI.
+title: "AI for .NET — 14 capabilities, one provider-agnostic core"
+description: Granit ships LLMs, embeddings, semantic search, NLQ, document extraction, content moderation, and more as opt-in modules on top of Microsoft.Extensions.AI. Swap providers per environment. GDPR and ISO 27001 by design.
 sidebar:
   label: Overview
   order: 1
@@ -8,10 +8,13 @@ sidebar:
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Granit integrates AI as an **optional, provider-agnostic layer** that enriches
-existing modules without modifying them. Every AI feature follows the same principle:
-existing modules define extension points with null-object defaults; AI packages
-provide smart implementations that activate via DI composition.
+The hard part of "putting AI in your app" is rarely the prompt. It's wiring an LLM
+into a dozen modules without turning your code into a vendor SDK transcript, without
+losing track of cost, and without failing a compliance audit. Granit treats AI as a
+**provider-agnostic layer that enriches existing modules without modifying them**.
+Every AI feature follows the same rule: the base module declares an extension point
+with a null-object default; the `.AI` package activates the capability via DI
+composition. Don't install the AI package — the module still works.
 
 ## What you can do with Granit.AI
 
@@ -38,7 +41,7 @@ provide smart implementations that activate via DI composition.
 ### 1. Provider-agnostic
 
 Your application code depends on `IChatClient` (from Microsoft.Extensions.AI), not on
-OpenAI or Anthropic. Swap providers per environment:
+the OpenAI or Azure SDK. Swap providers per environment:
 
 | Environment | Provider | Why |
 |-------------|----------|-----|

@@ -43,6 +43,7 @@ export default defineConfig({
     "/dotnet/infrastructure/wolverine/": "/dotnet/infrastructure/wolverine-messaging/",
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
     "/dotnet/api/webhooks/wolverine/": "/dotnet/api/webhooks/",
+    "/dotnet/api/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
     "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",

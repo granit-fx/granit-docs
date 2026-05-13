@@ -18,32 +18,35 @@ integrate with Wolverine for durable outbox-backed execution when installed.
 ## Package structure
 
 <FileTree>
-- Granit.DataExchange/ Core: import/export pipelines, fluent definitions, mapping suggestion engine
-  - Granit.DataExchange.BlobStorage Bridges IDataExchangeFileProvider to IBlobStoreProvider (S3, Azure, FileSystem)
-  - Granit.DataExchange.Csv CSV parser (Sep SIMD) and writer (semicolon separator)
-  - Granit.DataExchange.Excel Excel parser (Sylvan.Data.Excel) and writer (ClosedXML)
-  - Granit.DataExchange.EntityFrameworkCore DataExchangeDbContext, EF executor, identity resolvers, stores
-  - Granit.DataExchange.Endpoints REST endpoints for import/export operations
-  - Granit.DataExchange.Wolverine Replaces Channel dispatchers with Wolverine outbox-backed dispatchers
-  - Granit.DataExchange.Definitions Pre-built ExportDefinition for 39 framework entities
+- Granit.DataExchange.Abstractions/ Pure contracts: `ImportDefinition<T>`, `ExportDefinition<T>`, mapping descriptors, DTOs
+  - Granit.DataExchange/ Core: import/export pipelines, fluent definitions, mapping suggestion engine, reflection-based fallback `ExportDefinition`
+    - Granit.DataExchange.BlobStorage Bridges `IDataExchangeFileProvider` to `IBlobStoreProvider` (S3, Azure, FileSystem)
+    - Granit.DataExchange.Csv CSV parser (Sep SIMD) and writer (semicolon separator)
+    - Granit.DataExchange.Excel Excel parser (Sylvan.Data.Excel) and writer (ClosedXML)
+    - Granit.DataExchange.EntityFrameworkCore `DataExchangeDbContext`, EF executor, identity resolvers, stores
+    - Granit.DataExchange.Endpoints REST endpoints for import/export operations
+    - Granit.DataExchange.AI AI-powered mapping suggestions for cryptic CSV/Excel column names
+
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.DataExchange` | Import/export pipelines, mapping suggestions, fluent definitions | `Granit.Timing`, `Granit.Validation` |
+| `Granit.DataExchange.Abstractions` | Pure contracts — `ImportDefinition<T>`, `ExportDefinition<T>`, mapping descriptors. Per [ADR-020](/dotnet/architecture/adr/020-declarative-definitions-placement/), each module ships its own `ExportDefinition<T>` referencing only this package — no upstream dependency on the import/export runtime | `Granit` |
+| `Granit.DataExchange` | Import/export pipelines, mapping suggestion engine, reflection-based fallback `ExportDefinition` when none is declared | `Granit.DataExchange.Abstractions`, `Granit.Timing`, `Granit.Validation` |
 | `Granit.DataExchange.BlobStorage` | Bridges file operations to blob storage providers | `Granit.DataExchange`, `Granit.BlobStorage` |
 | `Granit.DataExchange.Csv` | Sep-based CSV parser, semicolon CSV writer | `Granit.DataExchange` |
 | `Granit.DataExchange.Excel` | Sylvan streaming Excel reader, ClosedXML writer | `Granit.DataExchange` |
-| `Granit.DataExchange.EntityFrameworkCore` | DataExchangeDbContext, EF executor, identity resolvers | `Granit.DataExchange`, `Granit.Persistence` |
+| `Granit.DataExchange.EntityFrameworkCore` | `DataExchangeDbContext`, EF executor, identity resolvers | `Granit.DataExchange`, `Granit.Persistence` |
 | `Granit.DataExchange.Endpoints` | 19 REST endpoints (import + export + metadata) | `Granit.DataExchange`, `Granit.Authorization` |
-| `Granit.DataExchange.Wolverine` | Outbox-backed import/export dispatch | `Granit.DataExchange`, `Granit.Wolverine` |
-| `Granit.DataExchange.Definitions` | Pre-built export definitions for 39 framework entities | `Granit.DataExchange`, all entity modules |
+| `Granit.DataExchange.AI` | `ISemanticMappingService` — LLM-powered "Nom_Clt_V2_Final → CustomerName" mapping inside the import wizard | `Granit.DataExchange`, `Granit.AI` |
 
 ## Dependency graph
 
 ```mermaid
 graph TD
-    DX[Granit.DataExchange] --> T[Granit.Timing]
+    DXA[Granit.DataExchange.Abstractions]
+    DX[Granit.DataExchange] --> DXA
+    DX --> T[Granit.Timing]
     DX --> V[Granit.Validation]
     BS[Granit.DataExchange.BlobStorage] --> DX
     BS --> B[Granit.BlobStorage]
@@ -53,8 +56,8 @@ graph TD
     EF --> P[Granit.Persistence]
     EP[Granit.DataExchange.Endpoints] --> DX
     EP --> A[Granit.Authorization]
-    WV[Granit.DataExchange.Wolverine] --> DX
-    WV --> W[Granit.Wolverine]
+    AI[Granit.DataExchange.AI] --> DX
+    AI --> AIROOT[Granit.AI]
 ```
 
 ## Setup

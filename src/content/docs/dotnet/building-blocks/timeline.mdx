@@ -15,18 +15,21 @@ follow/notify pattern.
 ## Package structure
 
 <FileTree>
-- Granit.Timeline/ Core stream engine, in-memory default
+- Granit.Timeline/ Core stream engine, in-memory default, closed-catalog reactions on `TimelineEntry`
   - Granit.Timeline.EntityFrameworkCore Durable persistence (PostgreSQL)
   - Granit.Timeline.Endpoints Minimal API routes, permissions
   - Granit.Timeline.Notifications Follow/notify via Granit.Notifications
+  - Granit.Timeline.AI Audit-trail summarization + anomaly detection
+
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, stream DTOs | `Granit.Timing` |
-| `Granit.Timeline.EntityFrameworkCore` | Durable persistence for entries + attachments | `Granit.Timeline`, `Granit.Persistence` |
+| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, stream DTOs, closed-catalog reactions (👍 ❤️ 🎉 …) on entries | `Granit.Timing` |
+| `Granit.Timeline.EntityFrameworkCore` | Durable persistence for entries + attachments + reactions | `Granit.Timeline`, `Granit.Persistence` |
 | `Granit.Timeline.Endpoints` | REST API, permission policies | `Granit.Timeline`, `Granit.Authorization` |
 | `Granit.Timeline.Notifications` | Notification-backed follower/notifier bridge | `Granit.Timeline` |
+| `Granit.Timeline.AI` | Summarize long audit trails into a digest; detect unusual activity patterns | `Granit.Timeline`, `Granit.AI` |
 
 ## Dependency graph
 

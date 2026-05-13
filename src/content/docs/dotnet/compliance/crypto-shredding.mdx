@@ -653,6 +653,32 @@ public async Task Shredded_entity_returns_null_for_isolated_properties()
 }
 ```
 
+## `[SensitiveData]` → `[Encrypted]` arch test
+
+A common slip: someone marks a column `[SensitiveData(Sensitivity.Confidential)]`
+for log/audit masking but forgets `[Encrypted]` for at-rest protection. The two
+attributes serve different layers (telemetry / persistence) and both matter.
+
+Since stage 3/3 of the encryption convention rollout
+([#1909](https://github.com/granit-fx/granit-dotnet/pull/1909)), an architecture
+test on the CI enforces it: any property carrying
+`[SensitiveData(Sensitivity >= Confidential)]` **must** also carry `[Encrypted]`
+(with or without `KeyIsolation`). The build fails otherwise — the convention is no
+longer aspirational.
+
+## Wolverine field-level encryption — messages in flight
+
+Persistence isn't the only place PII rests. A Wolverine message sitting in the
+outbox table, or replayed from the durable inbox, carries the same bytes as the
+DbContext write that produced it. `Granit.Wolverine.Encryption`
+([#1908](https://github.com/granit-fx/granit-dotnet/pull/1908)) closes that gap:
+every `[Encrypted]`-marked property on a Wolverine message envelope is encrypted
+before serialization and decrypted on dispatch — using the same key ring and the
+same crypto-shred semantics as the DbContext path.
+
+Net result: shredding the key removes the PII from the database, the outbox, the
+inbox, and any replay log in one go.
+
 ## See also
 
 - [Field-level Encryption](/dotnet/data/encryption/) — shared key ring, `[Encrypted]` attribute, key rotation
