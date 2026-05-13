@@ -17,19 +17,24 @@ an INSERT-only audit trail for ISO 27001 compliance.
 ## Package structure
 
 <FileTree>
-- Granit.Workflow/ Core FSM engine, fluent builder, domain events
-  - Granit.Workflow.EntityFrameworkCore EF Core interceptor, audit trail persistence
-  - Granit.Workflow.Endpoints Minimal API for transition history
-  - Granit.Workflow.Notifications Approval and state change notifications
+- Granit.Workflow.Abstractions/ Pure contracts: `IWorkflowDefinition`, `WorkflowTransition`, `TransitionContext`, `TransitionResult`
+  - Granit.Workflow/ Core FSM engine, fluent builder, `IWorkflowManager<TState>`, domain events
+    - Granit.Workflow.EntityFrameworkCore EF Core interceptor, audit trail persistence
+    - Granit.Workflow.Endpoints Minimal API for transition history
+    - Granit.Workflow.Notifications Approval and state change notifications
+    - Granit.Workflow.AI AI-assisted transition advisor + risk-based auto-approval
   - Granit.Templating.Workflow Bridge: template lifecycle via Workflow FSM
+
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Workflow` | FSM definitions, `IWorkflowManager<TState>`, domain events | `Granit.Timing` |
+| `Granit.Workflow.Abstractions` | Pure contracts (`IWorkflowDefinition`, `WorkflowTransition`, `TransitionContext`, `TransitionResult`) — split out in PR #1603 so modules can declare workflow shape without depending on the runtime | `Granit` |
+| `Granit.Workflow` | FSM runtime, fluent `WorkflowDefinitionBuilder`, `IWorkflowManager<TState>`, domain events | `Granit.Workflow.Abstractions`, `Granit.Timing` |
 | `Granit.Workflow.EntityFrameworkCore` | `WorkflowTransitionInterceptor`, `IWorkflowHistoryQuery`, `IWorkflowTransitionRecorder` | `Granit.Workflow`, `Granit.Persistence` |
 | `Granit.Workflow.Endpoints` | `GET /{entityType}/{entityId}/history` (paginated audit trail) | `Granit.Workflow`, `Granit.Authorization` |
 | `Granit.Workflow.Notifications` | Approval notifications (InApp + Email), state change notifications (InApp + SignalR) | `Granit.Workflow` |
+| `Granit.Workflow.AI` | Transition advisor (recommend next state), risk-based auto-approval | `Granit.Workflow`, `Granit.AI` |
 | `Granit.Templating.Workflow` | Replaces `NullTemplateTransitionHook` with `WorkflowTemplateTransitionHook` | `Granit.Templating`, `Granit.Workflow` |
 
 ## Dependency graph

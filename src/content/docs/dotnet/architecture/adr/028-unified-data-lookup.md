@@ -255,7 +255,7 @@ Follow-up items explicitly out of scope:
 - [ADR-020: Declarative definitions placement](/dotnet/architecture/adr/020-declarative-definitions-placement/)
   — why `QueryDefinition` lives in base modules (applies to
   `AsLookup`-decorated definitions too).
-- [`/dotnet/business/data-lookup/`](/dotnet/business/data-lookup/) —
+- [`/dotnet/building-blocks/data-lookup/`](/dotnet/building-blocks/data-lookup/) —
   module documentation page.
 - [`/dotnet/architecture/patterns/data-lookup/`](/dotnet/architecture/patterns/data-lookup/)
   — adoption guide with recipes.

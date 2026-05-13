@@ -3,7 +3,7 @@ title: "Webhook Signing Keys — Dual-Key Rotation"
 description: First-class WebhookSigningKey aggregate with Active / Retired / Revoked statuses, overlap rotation, configurable grace period, and verification fallback to the legacy SigningSecret. Replaces the single-secret model with an auditable key history (ISO 27001 A.10.1 / A.8.24).
 sidebar:
   label: Signing keys
-  order: 19
+  order: 3
 ---
 
 import { Aside, Tabs, TabItem, Badge } from "@astrojs/starlight/components";
@@ -235,5 +235,5 @@ all consumers have rotated at least once.
 ## See also
 
 - [Webhooks](/dotnet/api/webhooks/) — core module: publisher, envelope, HMAC, retry
-- [Webhook endpoints](/dotnet/api/webhooks-endpoints/) — full Minimal API surface, DTOs, permissions
+- [Webhook endpoints](/dotnet/api/webhooks/endpoints/) — full Minimal API surface, DTOs, permissions
 - [Notifications conventions](/dotnet/infrastructure/notifications/conventions/) — `*.Notifications` package shape (the rotation-due notification ships here)

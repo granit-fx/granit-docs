@@ -1,13 +1,19 @@
 ---
-title: Tech Stack
-description: Complete third-party library reference for Granit — OpenTelemetry, Wolverine, EF Core, Redis, FluentValidation, and more, with ADR rationale per dependency.
+title: "Granit Tech Stack — every production dependency, ADR-justified"
+description: "Complete third-party library reference for the Granit framework — OpenTelemetry, Wolverine, EF Core, Redis, FusionCache, Microsoft.Extensions.AI, ModelContextProtocol, AspNetCore.OData and more. Every library was picked through an Architecture Decision Record when an alternative existed."
 sidebar:
   order: 34
 ---
 
-Granit builds on battle-tested open-source libraries. This page lists every direct
-production dependency, organized by functional domain. Each library was selected
-through an Architecture Decision Record (ADR) when multiple alternatives existed.
+Frameworks fail when their dependencies stop being maintained. Granit picks each
+direct dependency the way a senior engineer picks a kitchen knife — based on what's
+been kept sharp for years, not what's trending this quarter. Every choice that had
+alternatives is captured in an [ADR](./adr/) so the reasoning survives the person
+who made it.
+
+This page lists every direct production dependency, organized by functional domain.
+Indirect transitive dependencies — and there are many — are tracked in
+[`THIRD-PARTY-NOTICES.md`](https://github.com/granit-fx/granit-dotnet/blob/develop/THIRD-PARTY-NOTICES.md).
 
 For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/adr/003-testing-stack/).
 
@@ -25,8 +31,10 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 |---------|---------|------|-----|
 | [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/) | MIT | ORM, migrations, interceptors (audit, soft delete) | — |
 | [Npgsql.EntityFrameworkCore.PostgreSQL](https://www.npgsql.org/) | PostgreSQL | PostgreSQL provider for EF Core | — |
+| [Microsoft.EntityFrameworkCore.SqlServer](https://learn.microsoft.com/en-us/ef/core/providers/sql-server/) | MIT | SQL Server provider for EF Core | — |
 | [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) | MIT | Redis client for distributed caching | [ADR-002](/dotnet/architecture/adr/002-redis/) |
 | [FusionCache](https://github.com/ZiggyCreatures/FusionCache) | MIT | L1/L2 cache with backplane, fail-safe, stampede protection, OpenTelemetry | [ADR-018](/dotnet/architecture/adr/018-fusioncache-caching-provider/) |
+| [Microsoft.Extensions.Caching.Hybrid](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/hybrid) | MIT | `HybridCache` backbone — wrapped by Granit's tenant-scoped cache service | — |
 
 ## Messaging and scheduling
 
@@ -59,17 +67,23 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 | [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/ai-extensions) | MIT | Provider-agnostic `IChatClient` / `IEmbeddingGenerator` abstractions — used by `Granit.AI` | — |
 | [Microsoft.Extensions.AI.OpenAI](https://www.nuget.org/packages/Microsoft.Extensions.AI.OpenAI) | MIT | OpenAI integration (GPT-4o, o3/o4-mini, embeddings) for `Granit.AI.OpenAI` and `Granit.AI.AzureOpenAI` | — |
 | [Azure.AI.OpenAI](https://learn.microsoft.com/en-us/dotnet/api/overview/azure/ai.openai-readme) | MIT | Azure OpenAI Service client with `DefaultAzureCredential` support — used by `Granit.AI.AzureOpenAI` | — |
-| [Anthropic](https://www.nuget.org/packages/Anthropic) | MIT | Anthropic SDK for Claude models (Opus, Sonnet, Haiku) — used by `Granit.AI.Anthropic` | — |
-| [OllamaSharp](https://github.com/awaescher/OllamaSharp) | MIT | Ollama client for local model execution — used by `Granit.AI.Ollama` | — |
+| [OllamaSharp](https://github.com/awaescher/OllamaSharp) | MIT | Ollama client for local model execution + `/api/show` capability discovery — used by `Granit.AI.Ollama` | — |
 | [Microsoft.Extensions.VectorData.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.VectorData.Abstractions) | MIT | Provider-agnostic vector store interface — used by `Granit.AI.VectorData` | — |
+| [ModelContextProtocol](https://github.com/modelcontextprotocol/csharp-sdk) | MIT | MCP client/server SDK — used by `Granit.AI.Mcp` and `Granit.Mcp.{Client,Server}` | — |
+| [ModelContextProtocol.AspNetCore](https://github.com/modelcontextprotocol/csharp-sdk) | MIT | ASP.NET Core hosting for MCP tool sources | — |
 
 ## API and web
 
 | Library | License | Role | ADR |
 |---------|---------|------|-----|
 | [Asp.Versioning](https://github.com/dotnet/aspnet-api-versioning) | MIT | API versioning (URL segment, header, query) | [ADR-004](/dotnet/architecture/adr/004-asp-versioning/) |
-| [Scalar](https://github.com/scalar/scalar) | MIT | Interactive OpenAPI documentation UI | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
-| [Microsoft.Extensions.Http.Resilience](https://learn.microsoft.com/en-us/dotnet/core/resilience/) | MIT | Polly v8 resilience pipeline for outbound HTTP (retry, circuit breaker, timeout) — used by HTTP-based notification providers | — |
+| [Scalar.AspNetCore](https://github.com/scalar/scalar) | MIT | Interactive OpenAPI documentation UI | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
+| [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/) | MIT | OpenAPI 3.1 document generation (versioned per major API) | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
+| [Microsoft.AspNetCore.OData](https://github.com/OData/AspNetCoreOData) | MIT | OData v4 runtime — bridges `QueryDefinition<T>` to EntitySets for Power BI / Excel / Tableau in `Granit.Http.ODataExposure` | [ADR-050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/) |
+| [Microsoft.AspNetCore.OutputCaching.StackExchangeRedis](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/output) | MIT | Distributed output cache backplane for `Granit.Http.OutputCaching.StackExchangeRedis` | — |
+| [Yarp.ReverseProxy](https://github.com/microsoft/reverse-proxy) | MIT | Reverse-proxy core for the Backend-For-Frontend pattern (`Granit.Bff.Yarp`) | — |
+| [Microsoft.Extensions.Http.Resilience](https://learn.microsoft.com/en-us/dotnet/core/resilience/) | MIT | Polly v8 resilience pipeline for outbound HTTP (retry, circuit breaker, timeout) — used by HTTP-based notification providers and webhook delivery | — |
+| [AngleSharp](https://anglesharp.github.io/) | MIT | HTML parsing + DOM traversal — used by `Granit.Browsing` and notification template processors | — |
 
 ## Observability
 
@@ -83,7 +97,10 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 | Library | License | Role | ADR |
 |---------|---------|------|-----|
 | [Scriban](https://github.com/scriban/scriban) | BSD-2-Clause | Template engine (Liquid-compatible, sandboxed) | [ADR-010](/dotnet/architecture/adr/010-scriban-template-engine/) |
+| [Mjml.Net](https://github.com/SebastianStehle/mjml-net) | MIT | MJML → responsive HTML email transformer in the templating pipeline | — |
 | [PuppeteerSharp](https://www.puppeteersharp.com/) | MIT | HTML-to-PDF rendering via headless Chromium | [ADR-012](/dotnet/architecture/adr/012-puppeteersharp-pdf-rendering/) |
+| [Microsoft.Playwright](https://playwright.dev/dotnet/) | Apache-2.0 | Headless browser automation — used by `Granit.Browsing` providers | — |
+| [PdfPig](https://github.com/UglyToad/PdfPig) | Apache-2.0 | PDF text extraction for `Granit.AI.Extraction` and document indexing | — |
 | [ClosedXML](https://github.com/ClosedXML/ClosedXML) | MIT | Excel (.xlsx) generation | [ADR-011](/dotnet/architecture/adr/011-closedxml-excel-generation/) |
 
 ## Data exchange (import/export)
@@ -140,14 +157,15 @@ These libraries are used exclusively in `*.Tests` projects and are not shipped i
 
 ## License summary
 
-| License | Count | Examples |
-|---------|-------|----------|
-| MIT | 58 | EF Core, Wolverine, ClosedXML, StackExchange.Redis, Microsoft.Extensions.AI |
-| Apache-2.0 | 18 | OpenTelemetry, Serilog, FluentValidation, Magick.NET, Google.Cloud.Storage.V1, AWSSDK.* |
-| BSD-3-Clause | 2 | NSubstitute, Shouldly |
-| BSD-2-Clause | 1 | Scriban |
-| PostgreSQL | 1 | Npgsql |
+| License | Examples |
+|---------|----------|
+| MIT | EF Core, Wolverine, ClosedXML, StackExchange.Redis, Microsoft.Extensions.AI, Microsoft.AspNetCore.OData, Yarp.ReverseProxy, ModelContextProtocol, MailKit, OllamaSharp |
+| Apache-2.0 | OpenTelemetry, Serilog, FluentValidation, Magick.NET, Google.Cloud.Storage.V1, AWSSDK.\*, Microsoft.Playwright, PdfPig |
+| BSD-3-Clause | NSubstitute, Shouldly |
+| BSD-2-Clause | Scriban |
+| PostgreSQL | Npgsql |
 
 All dependencies are OSI-approved open-source licenses compatible with Apache-2.0.
-The full list with versions and copyright notices is maintained in
-[`THIRD-PARTY-NOTICES.md`](https://github.com/granit-fx/granit-dotnet/blob/develop/THIRD-PARTY-NOTICES.md).
+Authoritative counts, exact versions, and copyright notices are maintained in
+[`THIRD-PARTY-NOTICES.md`](https://github.com/granit-fx/granit-dotnet/blob/develop/THIRD-PARTY-NOTICES.md) —
+the table above is a quick spectrum, not a contract.

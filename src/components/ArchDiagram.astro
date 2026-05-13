@@ -54,15 +54,33 @@ const layers: Layer[] = [
   {
     id: "business",
     label: "Business Features",
+    sublabel: "granit-business · paid",
     color: "business",
     modules: [
-      { name: "Workflow",            pkg: "Granit.Workflow",            href: "/dotnet/business/workflow/",           tip: "FSM engine, publication lifecycle, approval flows" },
-      { name: "DataExchange",        pkg: "Granit.DataExchange",        href: "/dotnet/business/data-exchange/",      tip: "Import pipeline (CSV, Excel) + export presets" },
-      { name: "Templating",          pkg: "Granit.Templating",          href: "/dotnet/business/templating/",         tip: "Scriban templates, HTML-to-PDF, data enrichment" },
-      { name: "DocumentGeneration",  pkg: "Granit.DocumentGeneration",  href: "/dotnet/business/document-generation/",tip: "PDF rendering pipeline" },
-      { name: "Timeline",            pkg: "Granit.Timeline",            href: "/dotnet/business/timeline/",           tip: "Entity activity stream, follow & notify (ISO 27001)" },
-      { name: "QueryEngine",          pkg: "Granit.QueryEngine",         href: "/dotnet/business/query-engine/",       tip: "Column definitions, filters, sorting, pagination" },
-      { name: "ReferenceData",       pkg: "Granit.ReferenceData",       href: "/dotnet/business/reference-data/",     tip: "Domain reference data: countries, currencies, statuses, lookup APIs" },
+      { name: "Parties",                    pkg: "Granit.Parties",                    href: "/dotnet/business/parties/",                    tip: "Customers, contacts, organisations — merge framework, dedup, tenant seeding" },
+      { name: "ReferenceData",              pkg: "Granit.ReferenceData",              href: "/dotnet/business/reference-data/",             tip: "Domain reference data: countries, currencies, statuses, lookup APIs" },
+      { name: "Analytics",                  pkg: "Granit.Analytics",                  href: "/dotnet/business/analytics/",                  tip: "OData host feed, Power BI integration, inline metrics" },
+      { name: "Dashboards",                 pkg: "Granit.Dashboards",                 href: "/dotnet/business/dashboards/",                 tip: "Widget catalog, push transport, workspace navigation" },
+      { name: "Documents",                  pkg: "Granit.Documents",                  href: "/dotnet/business/documents/",                  tip: "Folders + versioned documents with path-based ACL inheritance" },
+      { name: "Documents.Renditions",       pkg: "Granit.Documents.Renditions",       href: "/dotnet/business/documents-renditions/",       tip: "Provider-chained thumbnails, web, print and poster renditions" },
+      { name: "Documents.AssetMetadata",    pkg: "Granit.Documents.AssetMetadata",    href: "/dotnet/business/documents-asset-metadata/",   tip: "Extractor chain, indexed projection, GDPR GPS scrub" },
+      { name: "Documents.PublicLinks",      pkg: "Granit.Documents.PublicLinks",      href: "/dotnet/business/documents-public-links/",     tip: "Tokenised, scoped, time-limited public sharing links" },
+      { name: "Taxonomy",                   pkg: "Granit.Taxonomy",                   href: "/dotnet/business/taxonomy/",                   tip: "Cross-cutting tags and categories — scoped autocomplete, cross-entity search, polymorphic assignments" },
+    ],
+  },
+  {
+    id: "building-blocks",
+    label: "Building Blocks",
+    sublabel: "framework · open-source",
+    color: "building-blocks",
+    modules: [
+      { name: "Workflow",            pkg: "Granit.Workflow",            href: "/dotnet/building-blocks/workflow/",           tip: "FSM engine, publication lifecycle, approval flows" },
+      { name: "DataExchange",        pkg: "Granit.DataExchange",        href: "/dotnet/building-blocks/data-exchange/",      tip: "Import pipeline (CSV, Excel) + export presets" },
+      { name: "Templating",          pkg: "Granit.Templating",          href: "/dotnet/building-blocks/templating/",         tip: "Scriban templates, HTML-to-PDF, data enrichment" },
+      { name: "DocumentGeneration",  pkg: "Granit.DocumentGeneration",  href: "/dotnet/building-blocks/document-generation/",tip: "PDF rendering pipeline" },
+      { name: "Timeline",            pkg: "Granit.Timeline",            href: "/dotnet/building-blocks/timeline/",           tip: "Entity activity stream, follow & notify (ISO 27001)" },
+      { name: "QueryEngine",         pkg: "Granit.QueryEngine",         href: "/dotnet/building-blocks/query-engine/",       tip: "Column definitions, filters, sorting, pagination" },
+      { name: "DataLookup",          pkg: "Granit.DataLookup",          href: "/dotnet/building-blocks/data-lookup/",        tip: "Unified server-side lookup APIs for cascading dropdowns" },
     ],
   },
   {
@@ -78,7 +96,10 @@ const layers: Layer[] = [
       { name: "Idempotency",     pkg: "Granit.Http.Idempotency", href: "/dotnet/api/idempotency/",       tip: "Idempotent request processing" },
       { name: "ExceptionHandling",pkg:"Granit.ExceptionHandling",href: "/dotnet/api/exception-handling/",tip: "RFC 7807 Problem Details, global error mapping" },
       { name: "Webhooks",        pkg: "Granit.Webhooks",        href: "/dotnet/api/webhooks/",          tip: "HMAC-signed outbound webhook delivery with retry" },
-      { name: "ResponseCompression", pkg: "Granit.ResponseCompression", href: "/dotnet/api/response-compression/", tip: "Brotli + gzip with safe HTTPS defaults, SSE exclusion" },
+      { name: "ResponseCompression", pkg: "Granit.Http.ResponseCompression", href: "/dotnet/api/response-compression/", tip: "Brotli + gzip with safe HTTPS defaults, SSE exclusion" },
+      { name: "OutputCaching",   pkg: "Granit.Http.OutputCaching",   href: "/dotnet/api/output-caching/",   tip: "Response caching with Redis backing, vary-by tenant/user policies" },
+      { name: "HttpResilience",  pkg: "Granit.Http.Resilience",      href: "/dotnet/api/http-resilience/",  tip: "Retry, timeout and circuit-breaker policies for outbound HttpClient" },
+      { name: "ODataExposure",   pkg: "Granit.Http.ODataExposure",   href: "/dotnet/business/analytics/odata-host-feed/", tip: "OData EDM whitelist driven by EntityDefinition — Power BI / Excel host feed" },
     ],
   },
   {
@@ -89,10 +110,15 @@ const layers: Layer[] = [
       { name: "Wolverine",       pkg: "Granit.Wolverine",       href: "/dotnet/infrastructure/wolverine-messaging/",      tip: "Message bus, saga, outbox, retry (Wolverine)" },
       { name: "Notifications",   pkg: "Granit.Notifications",   href: "/dotnet/infrastructure/notifications/",  tip: "6-channel notifications: email, SMS, push, in-app, SignalR, SSE" },
       { name: "BackgroundJobs",  pkg: "Granit.BackgroundJobs",  href: "/dotnet/infrastructure/background-jobs/",tip: "Recurring & delayed jobs (Wolverine + Cronos)" },
-      { name: "Localization",    pkg: "Granit.Localization",    href: "/dotnet/infrastructure/localization/",   tip: "i18n for 17 cultures, source-generated keys, runtime overrides" },
+      { name: "Scheduling",      pkg: "Granit.Scheduling",      href: "/dotnet/infrastructure/scheduling/",     tip: "User-facing job schedules — cron, calendar, retry policies, audit log" },
+      { name: "Localization",    pkg: "Granit.Localization",    href: "/dotnet/infrastructure/localization/",   tip: "i18n for 18 cultures, source-generated keys, runtime overrides" },
       { name: "Settings",        pkg: "Granit.Settings",        href: "/dotnet/infrastructure/application-settings/",       tip: "Layered settings: global → tenant → user" },
       { name: "Features",        pkg: "Granit.Features",        href: "/dotnet/infrastructure/feature-flags/",       tip: "Feature flags per tenant/user with inheritance" },
       { name: "MultiTenancy",    pkg: "Granit.MultiTenancy",    href: "/dotnet/infrastructure/multi-tenancy/",  tip: "Tenant resolution, isolation, data filtering" },
+      { name: "Browsing",                pkg: "Granit.Browsing",                href: "/dotnet/infrastructure/browsing/",        tip: "Headless browser abstraction: deny-by-default sandbox, CSP, SSRF guard" },
+      { name: "Browsing.Playwright",     pkg: "Granit.Browsing.Playwright",     href: "/dotnet/browsing/providers/playwright/",  tip: "Playwright provider — Chromium / Firefox / WebKit, HAR & traces" },
+      { name: "Browsing.PuppeteerSharp", pkg: "Granit.Browsing.PuppeteerSharp", href: "/dotnet/browsing/providers/puppeteer-sharp/", tip: "PuppeteerSharp provider — Chromium with integrity-pinned BrowserFetcher" },
+      { name: "IO",              pkg: "Granit.IO",              href: "/dotnet/io/temp-files/", tip: "Tenant-aware secure temp file factory with DeleteOnClose + janitor recovery" },
     ],
   },
   {
@@ -115,12 +141,14 @@ const layers: Layer[] = [
       { name: "Authentication",  pkg: "Granit.Authentication",  href: "/dotnet/security/authentication/",  tip: "JWT Bearer, Keycloak, Entra ID, Cognito, Google Cloud" },
       { name: "Authorization",   pkg: "Granit.Authorization",   href: "/dotnet/security/authorization/",   tip: "RBAC, permission checker, policy builder" },
       { name: "Identity",        pkg: "Granit.Identity",        href: "/dotnet/security/identity/",        tip: "Keycloak / EntraID / Cognito, user cache" },
-      { name: "Oidc",            pkg: "Granit.Authentication.Oidc", href: "/dotnet/security/authentication-oidc/", tip: "OIDC client primitives: discovery, DPoP, PKCE, typed requests" },
-      { name: "TokenMgmt",       pkg: "Granit.Authentication.TokenManagement", href: "/dotnet/security/token-management/", tip: "Token lifecycle: client credentials caching, DelegatingHandler" },
+      { name: "ApiKeys",         pkg: "Granit.Authentication.ApiKeys", href: "/dotnet/security/api-keys/", tip: "Long-lived API key authentication: scoped, rotated, audited" },
+      { name: "Oidc",            pkg: "Granit.Oidc",            href: "/dotnet/security/authentication-oidc/", tip: "OIDC client primitives: discovery, DPoP, PKCE, typed requests" },
+      { name: "TokenMgmt",       pkg: "Granit.Oidc.TokenManagement", href: "/dotnet/security/token-management/", tip: "Token lifecycle: client credentials caching, DelegatingHandler" },
       { name: "DPoP",            pkg: "Granit.Authentication.DPoP", href: "/dotnet/security/openiddict/advanced/dpop-resource-server-validation/", tip: "IdP-agnostic DPoP proof validation (RFC 9449)" },
       { name: "OpenIddict",     pkg: "Granit.OpenIddict",      href: "/dotnet/security/openiddict/",      tip: "Self-hosted OIDC server, user management, 2FA, passkeys, key rotation" },
       { name: "BFF",             pkg: "Granit.Bff",             href: "/dotnet/security/bff/",             tip: "Backend For Frontend: OIDC proxy, token store, CSRF, YARP" },
       { name: "SecurityHeaders",   pkg: "Granit.Http.SecurityHeaders",   href: "/dotnet/security/security-headers/",         tip: "OWASP security headers: Server suppression, HSTS, X-Content-Type-Options, X-Frame-Options, CSP, COOP/COEP" },
+      { name: "Http.Security",     pkg: "Granit.Http.Security",          href: "/dotnet/http/security/url-safety/",           tip: "Shared URL safety primitive: SSRF guard against cloud metadata, RFC 1918, loopback, DNS-rebinding" },
     ],
   },
   {
@@ -134,6 +162,7 @@ const layers: Layer[] = [
       { name: "Imaging",         pkg: "Granit.Imaging",         href: "/dotnet/data/imaging/",         tip: "Image processing pipeline: resize, crop, convert, watermark" },
       { name: "Encryption",      pkg: "Granit.Encryption",      href: "/dotnet/data/encryption/",      tip: "Field-level AES-256-GCM encryption" },
       { name: "Vault",           pkg: "Granit.Vault",           href: "/dotnet/data/vault/",tip: "HashiCorp Vault integration, secret rotation" },
+      { name: "Mergeable",       pkg: "Granit.Mergeable",       href: "/dotnet/data/mergeable/", tip: "Aggregate merge framework: collision detection, conflict resolution, lineage" },
     ],
   },
   {
@@ -332,6 +361,7 @@ const layers: Layer[] = [
   .arch-layer--ai       { --lc: #f59e0b; --lt: #b45309; }  /* amber        */
   .arch-layer--mcp      { --lc: #f97316; --lt: #c2410c; }  /* orange       */
   .arch-layer--business { --lc: #e879f9; --lt: #c026d3; }  /* fuchsia      */
+  .arch-layer--building-blocks { --lc: #f43f5e; --lt: #e11d48; }  /* rose         */
   .arch-layer--api      { --lc: #ec4899; --lt: #db2777; }  /* pink         */
   .arch-layer--infra    { --lc: #7c3aed; --lt: #6d28d9; }  /* violet       — Granit accent */
   .arch-layer--compliance { --lc: #8b5cf6; --lt: #7c3aed; } /* purple       */

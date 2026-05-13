@@ -17,7 +17,7 @@ branding, and no easy way for non-developers to update templates.
 
 Granit.DocumentGeneration solves this with a two-stage pipeline: first, render a
 Scriban text template (HTML or data), then convert the output to a binary format (PDF
-or Excel). Templates are managed through the [Templating](/dotnet/business/templating/)
+or Excel). Templates are managed through the [Templating](/dotnet/building-blocks/templating/)
 system with full lifecycle and approval workflow, so business users control the content
 while developers control the rendering. PDF/A-3b support is built in for long-term
 archival and electronic invoicing (Factur-X / ZUGFeRD EN 16931) — a legal requirement
@@ -282,7 +282,7 @@ instruments for every generation call:
 
 ## See also
 
-- [Templating module](/dotnet/business/templating/) -- Scriban pipeline, enrichers, resolvers, template lifecycle
+- [Templating module](/dotnet/building-blocks/templating/) -- Scriban pipeline, enrichers, resolvers, template lifecycle
 - [Browsing module](/dotnet/infrastructure/browsing/) -- Headless-browser abstraction (PuppeteerSharp / Playwright) consumed by the PDF renderer for HTML → PDF
 - [Background Jobs module](/dotnet/infrastructure/background-jobs/) -- Schedule document generation as background jobs
 - [Wolverine module](/dotnet/infrastructure/wolverine-messaging/) -- Durable messaging for async document generation

@@ -109,9 +109,14 @@ bundled with the framework PR. Workflow:
 
 ## Git workflow
 
-GitFlow-style: `main` (auto-deployed) + `feature/*` + `fix/*`. PRs target `main`.
-Conventional Commits required for PR titles. CI must be green; preview build must
-look correct before merge.
+GitFlow: `develop` (default branch) + `main` (auto-deployed to production via
+Cloudflare Pages) + `feature/*` + `fix/*` + `release/*` + `hotfix/*`.
+
+**PR target — STRICT**: `feature/*` and `fix/*` → `develop`. `release/*` and
+`hotfix/*` → both `main` and `develop`. Direct push to `main` forbidden.
+
+Conventional Commits required for PR titles. CI must be green; preview build
+must look correct before merge.
 
 ## Definition of Done
 
