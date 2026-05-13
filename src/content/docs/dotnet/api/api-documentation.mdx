@@ -120,6 +120,40 @@ The module registers these OpenAPI transformers automatically:
 | `InternalApiDocumentTransformer` | Removes `[InternalApi]` endpoints |
 | `WolverineOpenApiOperationTransformer` | Enhances Wolverine HTTP endpoint documentation |
 | `SchemaExampleSchemaTransformer` | Applies `ISchemaExampleProvider` examples |
+| `Int32SchemaTransformer` | Strips the spurious `["integer", "string"]` fallback ASP.NET Core emits on `int32` properties (only matters for `int64` / JS Number precision) |
+| `QueryEngineOperationTransformer` | Emits `$ref` for `PagedResult<T>` / `GroupedResult<T>` 200 responses |
+
+### QueryEngine schema references
+
+Query endpoints (`MapGranitQuery<T>`) return one of `PagedResult<T>` or
+`GroupedResult<T>` depending on whether the caller passes a `groupBy`. Before
+Granit 0.31, both schemas were **inlined** in the `oneOf` of every operation —
+duplicating ~5 KB per endpoint and leaving orphan `GroupedResultOf*` schemas in
+`components.schemas`.
+
+From 0.31, the transformer constructs an explicit `OpenApiSchemaReference` so the
+operation response serializes as:
+
+```json
+{
+  "200": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "oneOf": [
+            { "$ref": "#/components/schemas/PagedResultOfInvoice" },
+            { "$ref": "#/components/schemas/GroupedResultOfInvoice" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+Net effect: the generated OpenAPI doc is dramatically smaller for hosts with many
+query endpoints, and `components.schemas` no longer contains orphan entries — both
+help code generators (`openapi-typescript`, `NSwag`, Kiota) produce tighter clients.
 
 ## Configuration reference
 

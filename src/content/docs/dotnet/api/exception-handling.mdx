@@ -45,12 +45,41 @@ flowchart TD
     J --> K{IUserFriendlyException?}
     K -->|yes| L[Title = exception.Message]
     K -->|no| M{ExposeInternalErrorDetails?}
-    M -->|yes| N[Title = message, Detail = stack trace]
-    M -->|no| O["Title = 'An unexpected error occurred.'"]
+    M -->|yes| N[Title = raw message<br/>Detail = stack trace 5xx only]
+    M -->|no| O[Title = per-status fallback<br/>Detail = null]
     L --> P[Write RFC 7807 response]
     N --> P
     O --> P
 ```
+
+### Why 4xx messages are masked too
+
+Before Granit 0.31, only 5xx messages were masked. Internal teams found themselves
+writing `throw new ArgumentException($"User {userId} of tenant {tenantId} already has
+permission X")` — those strings reached external callers as `title`. From 0.31, the
+mask applies to **both 4xx and 5xx** non-`IUserFriendlyException` cases — opt into
+exposing a 4xx message by implementing `IUserFriendlyException` on the exception type
+(or by carrying an `IHasErrorCode` so the localizer can pick up a translated title).
+
+**Per-status fallback titles** when `ExposeInternalErrorDetails = false` and the
+exception is not user-friendly:
+
+| Status | Title |
+|--------|-------|
+| 5xx | `"An unexpected error occurred."` |
+| 404 | `"Resource not found."` |
+| 403 | `"Forbidden."` |
+| 409 | `"Conflict."` |
+| 422 | `"Validation failed."` |
+| other 4xx | `"Invalid request."` |
+
+### Validation error sanitization
+
+When an exception implements `IHasValidationErrors`, the field map is passed through
+`ValidationErrorsSanitizer` before being attached as `problemDetails.Extensions["errors"]`.
+The sanitizer strips raw operand values that frameworks like FluentValidation embed in
+error message templates (e.g. `"must be greater than {ComparisonValue}"` with an
+internal cap value) so the response carries only the localizable error code per field.
 
 ## IExceptionStatusCodeMapper
 

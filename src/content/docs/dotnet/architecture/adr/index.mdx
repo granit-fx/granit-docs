@@ -62,3 +62,22 @@ Justification, and Consequences.
 | [035](035-customer-balance-orb-credits-mapping/) | Granit.CustomerBalance ↔ ORB Credits term-by-term mapping | Accepted | 2026-04-25 | Granit.CustomerBalance.\* |
 | [036](036-invoicing-line-source-convention/) | Invoicing line item source + product convention | Accepted | 2026-04-25 | Granit.Invoicing.\*, Granit.Subscriptions, Granit.Metering |
 | [037](037-party-merge-framework/) | Party Merge Framework — Mergeable primitive + cross-module rewriters | Accepted | 2026-04-27 | Granit.Mergeable, Granit.Mergeable.EntityFrameworkCore, Granit.Parties, Granit.Parties.Mergeable, Granit.Parties.Endpoints |
+| [038](038-analytics-dashboard-definition-vs-aggregate/) | DashboardDefinition vs Dashboard boundary | Accepted | 2026-04-28 | Granit.Analytics, Granit.Analytics.EntityFrameworkCore, Granit.Analytics.Endpoints |
+| [039](039-widget-renderer-architecture/) | Widget renderer architecture — typed `IWidgetSource<TSnapshot>` + non-generic adapter | Accepted | 2026-04-29 | Granit.Dashboards, Granit.Dashboards.Endpoints, Granit.Analytics |
+| [040](040-three-tier-metadata-architecture/) | Three-tier metadata architecture (compiled / tenant customization / Niveau B) | Accepted | 2026-05-01 | Granit.Entities, Granit.Entities.Customization |
+| [041](041-component-catalog/) | Field component catalog + closed naming convention | Accepted | 2026-05-01 | Granit.Entities (form/detail builders); @granit/entities-react |
+| [042](042-view-catalog/) | View catalog + per-kind config schema | Accepted | 2026-05-01 | Granit.Entities (collections facet); @granit/entities-react |
+| [043](043-dashboard-push-transport/) | Dashboard push transport (SSE / WebSocket) is framework-owned | Accepted | 2026-04-30 | Granit.Analytics, Granit.Dashboards, Granit.Dashboards.Push |
+| [044](044-workspace-navigation/) | Workspace navigation — hierarchical + additive presets + agnostic detail routes | Accepted | 2026-04-30 | Granit.Workspaces.\*, @granit/workspaces-react |
+| [045](045-contributor-pattern/) | Inversion-of-control contributor pattern (workspaces, relations, activities) | Accepted | 2026-04-30 | Granit.Workspaces.Abstractions, Granit.Entities.Abstractions, Granit.Activities.Abstractions |
+| [046](046-activities-vs-timeline/) | Activities vs Timeline split — past vs future, narrative vs action-required | Accepted | 2026-04-30 | Granit.Timeline, Granit.Activities |
+| [047](047-entity-view/) | EntityView supersedes Granit.QueryEngine.SavedViews | Accepted | 2026-04-30 | Granit.Entities.Views, Granit.Entities.Views.Endpoints; @granit/entities-react |
+| [048](048-cross-module-entity-relations/) | Cross-module entity relations (smart buttons + sidebar + tab + inline-chips) | Accepted | 2026-05-01 | Granit.Entities.Abstractions, Granit.Entities, Granit.Entities.Endpoints |
+| [049](049-default-landing-route/) | Default landing route — 5-tier precedence with URL/route output | Accepted | 2026-04-30 | Granit.Workspaces, Granit.Workspaces.Endpoints |
+| [050](050-odata-edm-whitelist-via-entity-definition/) | OData EDM whitelist via EntityDefinition (gate) + ExportDefinition (field source) | Accepted | 2026-05-01 | Granit.Http.ODataExposure |
+| [051](051-user-aggregate-and-parties-bridge/) | User aggregate in Granit.Identity + optional `Granit.Parties.Identity` bridge | Accepted | 2026-05-02 | Granit.Identity, Granit.Identity.Local, Granit.Identity.Federated, Granit.Authorization, Granit.Parties.Identity |
+| [052](052-documents-module/) | Granit.Documents — user-managed file & asset module | Accepted | 2026-05-10 | Granit.Documents.\* (+ Renditions, AssetMetadata, PublicLinks, Indexing, Workflow, Collections) |
+| [053](053-entities-customization-layer-1/) | Granit.Entities.Customization — Layer 1 tenant overrides (reorder / regroup / hide) | Accepted | 2026-05-02 | Granit.Entities.Customization.\* (+ touches Granit.Entities.Endpoints) |
+| [054](054-taxonomy-module/) | Granit.Taxonomy — cross-cutting tags and hierarchical categories | Accepted | 2026-05-02 | Granit.Taxonomy.\* (replaces per-module `*Tag` join tables) |
+| [055](055-extract-url-safety-and-temp-files/) | Extract URL safety + temp-file primitives into shared packages | Accepted | 2026-05-11 | Granit.Http.Security, Granit.IO; consumers refactored: Browsing, Webhooks, Privacy.BlobStorage |
+| [056](056-server-side-action-execution/) | Server-side entity-action execution + bulk endpoint | Accepted | 2026-05-13 | Granit.Entities.Abstractions (`Actions/Execution/`), Granit.Entities.Endpoints (`BulkActionEndpoint`) |
