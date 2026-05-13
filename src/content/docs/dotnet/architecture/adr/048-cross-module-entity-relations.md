@@ -1,5 +1,5 @@
 ---
-title: "ADR-048: Cross-module entity relations (smart buttons + sidebar + tab + inline-chips)"
+title: "ADR-048: Cross-module entity relations"
 description: "An entity gets cross-module 'smart button' badges (and sidebars, tabs, inline-chip rows) grafted from other modules via the third application of the IoC contributor pattern (ADR-045). Four display modes cover 95% of UX needs. Aggregates batched into one round-trip endpoint to avoid N+1. Permission filtering at both manifest emission and aggregate computation — defense in depth. FusionCache 30s with entity-tagged invalidation hooks reserved for Phase 2."
 sidebar:
   order: 48

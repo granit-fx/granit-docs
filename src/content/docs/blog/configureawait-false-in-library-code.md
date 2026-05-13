@@ -1,5 +1,5 @@
 ---
-title: "ConfigureAwait(false) in Library Code — Still Relevant in .NET 10?"
+title: "ConfigureAwait(false) in Library Code in .NET 10"
 date: 2026-04-29
 authors:
   - jfmeyers

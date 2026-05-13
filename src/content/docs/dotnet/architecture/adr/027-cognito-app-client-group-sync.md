@@ -1,5 +1,5 @@
 ---
-title: "ADR-027: Cognito app-client group sync via naming-prefix convention"
+title: "ADR-027: Cognito app-client group sync"
 description: "Apply the ADR-025 client-role template to AWS Cognito User Pools using a {appClientId}:role naming prefix, since Cognito has no native group-to-app-client binding"
 sidebar:
   order: 27

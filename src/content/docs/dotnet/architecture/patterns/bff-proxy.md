@@ -1,5 +1,5 @@
 ---
-title: "Backends For Frontends (BFF) Pattern — Secure Token Proxy for SPAs"
+title: "BFF Pattern — Secure Token Proxy for SPAs"
 description: "Move OIDC token handling from the browser to the server. SPAs never see tokens — the BFF manages cookies, CSRF, and automatic token refresh via YARP reverse proxy."
 sidebar:
   label: Backends For Frontends (BFF)

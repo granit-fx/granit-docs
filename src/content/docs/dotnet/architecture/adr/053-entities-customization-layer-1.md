@@ -1,5 +1,5 @@
 ---
-title: "ADR-053: Granit.Entities.Customization — Layer 1 tenant overrides"
+title: "ADR-053: Entities Customization — Layer 1"
 description: "Granit introduces a Layer 1 customization model that lets tenant administrators reorder, regroup, and hide compiled fields on any EntityDefinition without touching code. The vocabulary is closed (reorder / regroup / hide; never add) and resolves through a 5-layer hierarchy beneath URL state, saved views, and workspace presets. Every override is captured by ISO 27001 audit, gated by an RBAC permission, and surfaced in the runtime manifest with per-field provenance so a dev-mode field inspector can attribute every rendered field to its source layer."
 sidebar:
   order: 53

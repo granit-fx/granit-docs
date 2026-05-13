@@ -1,5 +1,5 @@
 ---
-title: "5 EF Core Mistakes That Kill Performance (and How to Fix Them)"
+title: "5 EF Core Mistakes That Kill Performance"
 date: 2026-05-03
 authors:
   - jfmeyers

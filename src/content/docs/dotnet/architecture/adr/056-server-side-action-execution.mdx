@@ -1,5 +1,5 @@
 ---
-title: "ADR-056: Server-side entity-action execution and bulk endpoint"
+title: "ADR-056: Server-side entity-action execution"
 description: "Granit.Entities actions were purely declarative — URL + verb + permission, the renderer hits the URL row by row. Story #1822 ships a bulk endpoint POST /api/entities/{name}/bulk/{action} that needs an in-process execution surface. This ADR locks the IEntityActionExecutor<TEntity> contract, executor lifecycle, transactional semantics (per-row isolation with structured failure report), id-based row addressing, and the EntityBulkUpdatedEvent<TEntity> emission point."
 sidebar:
   order: 56
