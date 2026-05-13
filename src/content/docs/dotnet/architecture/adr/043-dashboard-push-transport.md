@@ -1,5 +1,5 @@
 ---
-title: "ADR-043: Dashboard push transport (SSE / WebSocket) is framework-owned"
+title: "ADR-043: Dashboard push transport (SSE / WebSocket)"
 description: "Push transport for dashboards is a Granit framework concern, not deferred to a downstream IoT repository. RefreshHint stays widget-level; a new DashboardPushPolicy stays dashboard-level; the effective policy at render time is the union. SSE is the default v1 transport; WebSocket ships as an optional sibling. Renderers, transports, and the existing pull endpoint share one envelope shape."
 sidebar:
   order: 43

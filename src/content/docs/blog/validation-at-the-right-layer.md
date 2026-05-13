@@ -1,5 +1,5 @@
 ---
-title: "Validation at the Right Layer: FluentValidation + Endpoint Filters"
+title: "Validation at the Right Layer"
 date: 2026-04-23
 authors:
   - jfmeyers

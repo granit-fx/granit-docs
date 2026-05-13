@@ -1,5 +1,5 @@
 ---
-title: "Granit Dependency Graph — what depends on what, and where each module lives"
+title: "Granit Dependency Graph"
 description: "Visual map of every Granit package, how it depends on the rest, and which of the two repositories (granit-dotnet framework or granit-business commercial) it ships from. Read this before adding a reference — it tells you which couplings are safe, which are accidental, and which are explicitly forbidden by architecture tests."
 sidebar:
   label: Dependency Graph

@@ -1,5 +1,5 @@
 ---
-title: "ADR-024: Shared-connection EF Core transaction for role orchestration"
+title: "ADR-024: Shared-connection transaction for roles"
 description: "Upgrade IGranitRoleOrchestrator from compensating-write to atomic shared-connection transaction when both DbContexts target the same database"
 sidebar:
   order: 24

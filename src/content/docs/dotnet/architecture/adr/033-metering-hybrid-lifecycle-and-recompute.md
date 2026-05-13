@@ -1,5 +1,5 @@
 ---
-title: "ADR-033: Metering hybrid — lifecycle, CountDistinct, recompute, backfill, deprecate"
+title: "ADR-033: Metering hybrid lifecycle + recompute"
 description: "Promote MeterDefinition to a workflow-managed lifecycle (Draft / Published / Archived), introduce CountDistinct aggregation with a typed JSON path, expose admin-side recompute / backfill / event-deprecation endpoints under a transaction-scoped advisory lock to keep aggregates consistent with concurrent ingestion."
 sidebar:
   order: 33
