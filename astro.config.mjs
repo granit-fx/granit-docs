@@ -44,7 +44,8 @@ export default defineConfig({
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
     "/dotnet/api/webhooks/wolverine/": "/dotnet/api/webhooks/",
     "/dotnet/api/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
-    "/dotnet/http/security/url-safety/": "/dotnet/http/url-safety/",
+    "/dotnet/http/security/url-safety/": "/dotnet/api/url-safety/",
+    "/dotnet/http/url-safety/": "/dotnet/api/url-safety/",
     "/dotnet/browsing/": "/dotnet/infrastructure/browsing/",
     "/dotnet/browsing/conventions/": "/dotnet/infrastructure/browsing/conventions/",
     "/dotnet/browsing/security/": "/dotnet/infrastructure/browsing/security/",
@@ -284,6 +285,7 @@ export default defineConfig({
                     { label: "Response Compression", link: "/dotnet/api/response-compression/" },
                     { label: "Output Caching", link: "/dotnet/api/output-caching/" },
                     { label: "OData feed (BI)", link: "/dotnet/api/odata-exposure/" },
+                    { label: "URL Safety", link: "/dotnet/api/url-safety/" },
                     {
                       label: "Webhooks",
                       collapsed: true,
@@ -295,11 +297,6 @@ export default defineConfig({
                 {
                   label: "Infrastructure",
                   items: [{ autogenerate: { directory: "dotnet/infrastructure" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "HTTP",
-                  items: [{ autogenerate: { directory: "dotnet/http" } }],
                   collapsed: true,
                 },
                 {

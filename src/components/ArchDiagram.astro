@@ -69,6 +69,21 @@ const layers: Layer[] = [
     ],
   },
   {
+    id: "saas",
+    label: "SaaS & Commerce",
+    sublabel: "granit-business · paid",
+    color: "saas",
+    modules: [
+      { name: "Catalog",          pkg: "Granit.Catalog",          href: "/dotnet/saas/catalog/",          tip: "Shared Product aggregate — billing-grade catalog referenced by Subscriptions, Invoicing and Metering" },
+      { name: "Subscriptions",    pkg: "Granit.Subscriptions",    href: "/dotnet/saas/subscriptions/",    tip: "Plans, phases, tiered pricing (ADR-034), billing-cycle orchestration" },
+      { name: "Invoicing",        pkg: "Granit.Invoicing",        href: "/dotnet/saas/invoicing/",        tip: "Unified invoice + credit-note aggregate, partial payments, gap-free numbering, Odoo sync" },
+      { name: "Payments",         pkg: "Granit.Payments",         href: "/dotnet/saas/payments/",         tip: "Stripe, Mollie, SEPA Direct Debit (Builtin / GoCardless / Twikey), SEPA Transfer" },
+      { name: "Tax",              pkg: "Granit.Tax",              href: "/dotnet/saas/tax/",              tip: "ITaxCalculator providers — Builtin (EU VAT + VIES) and Stripe Tax" },
+      { name: "Metering",         pkg: "Granit.Metering",         href: "/dotnet/saas/metering/",         tip: "Declarative meter definitions, CountDistinct + DistinctProperty, lifecycle status, recompute" },
+      { name: "CustomerBalance",  pkg: "Granit.CustomerBalance",  href: "/dotnet/saas/customer-balance/", tip: "Account balance per tenant — credit notes, refunds, dunning" },
+    ],
+  },
+  {
     id: "building-blocks",
     label: "Building Blocks",
     sublabel: "framework · open-source",
@@ -148,7 +163,7 @@ const layers: Layer[] = [
       { name: "OpenIddict",     pkg: "Granit.OpenIddict",      href: "/dotnet/security/openiddict/",      tip: "Self-hosted OIDC server, user management, 2FA, passkeys, key rotation" },
       { name: "BFF",             pkg: "Granit.Bff",             href: "/dotnet/security/bff/",             tip: "Backend For Frontend: OIDC proxy, token store, CSRF, YARP" },
       { name: "SecurityHeaders",   pkg: "Granit.Http.SecurityHeaders",   href: "/dotnet/security/security-headers/",         tip: "OWASP security headers: Server suppression, HSTS, X-Content-Type-Options, X-Frame-Options, CSP, COOP/COEP" },
-      { name: "Http.Security",     pkg: "Granit.Http.Security",          href: "/dotnet/http/url-safety/",           tip: "Shared URL safety primitive: SSRF guard against cloud metadata, RFC 1918, loopback, DNS-rebinding" },
+      { name: "Http.Security",     pkg: "Granit.Http.Security",          href: "/dotnet/api/url-safety/",           tip: "Shared URL safety primitive: SSRF guard against cloud metadata, RFC 1918, loopback, DNS-rebinding" },
     ],
   },
   {
@@ -361,6 +376,7 @@ const layers: Layer[] = [
   .arch-layer--ai       { --lc: #f59e0b; --lt: #b45309; }  /* amber        */
   .arch-layer--mcp      { --lc: #f97316; --lt: #c2410c; }  /* orange       */
   .arch-layer--business { --lc: #e879f9; --lt: #c026d3; }  /* fuchsia      */
+  .arch-layer--saas     { --lc: #d946ef; --lt: #a21caf; }  /* fuchsia-darker */
   .arch-layer--building-blocks { --lc: #f43f5e; --lt: #e11d48; }  /* rose         */
   .arch-layer--api      { --lc: #ec4899; --lt: #db2777; }  /* pink         */
   .arch-layer--infra    { --lc: #7c3aed; --lt: #6d28d9; }  /* violet       — Granit accent */

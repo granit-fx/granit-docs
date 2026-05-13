@@ -46,7 +46,7 @@ flowchart TD
 
 | Layer | Responsibility |
 | --- | --- |
-| `IUrlSafetyValidator` | Scheme/host/private-net/TLD/length pre-flight; resolves DNS. See [URL safety](/dotnet/http/url-safety/). |
+| `IUrlSafetyValidator` | Scheme/host/private-net/TLD/length pre-flight; resolves DNS. See [URL safety](/dotnet/api/url-safety/). |
 | `IBrowserSandboxProfile` | Per-host policy: allowed schemes/hosts, CSP forcing, console redaction, render cap. |
 | `RequestRouter` | Single subscriber on the engine's network event; runs the sandbox + user handlers in fixed order ("sandbox wins"). |
 | `BrowsingTimeout` | Hard wall-clock cap on a single render — defaults 30 s, cancellable. |
@@ -330,7 +330,7 @@ deny — defense in depth.
 
 ## Related
 
-- [URL Safety](/dotnet/http/url-safety/) — the shared SSRF primitive.
+- [URL Safety](/dotnet/api/url-safety/) — the shared SSRF primitive.
 - [Secure Temp Files](/dotnet/infrastructure/io/temp-files/) — `file://` PDF viewer, HAR, trace.
 - [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/).
 - [Browsing overview](/dotnet/infrastructure/browsing/) — capabilities, pool tuning.
