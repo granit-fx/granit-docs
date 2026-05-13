@@ -129,7 +129,7 @@ environment variables. Never commit secrets to source control.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `AutoRegisterExternalUsers` | `bool` | `true` | Auto-create a `GranitUser` on first login via an external provider. When `false`, returns 403 if no existing account matches the email. |
+| `AutoRegisterExternalUsers` | `bool` | `true` | Auto-create a `LocalIdentity` on first login via an external provider. When `false`, returns 403 if no existing account matches the email. |
 | `Providers` | `ExternalProviderOptions[]` | `[]` | External login providers to configure. |
 
 ### ExternalProviderOptions

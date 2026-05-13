@@ -40,12 +40,12 @@ rejects the token immediately instead of waiting for expiry.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Authentication.JwtBearer` | JWT Bearer middleware, back-channel logout | `Granit.Users` |
+| `Granit.Authentication.JwtBearer` | JWT Bearer middleware, back-channel logout | `Granit` |
 | `Granit.Authentication.JwtBearer.Keycloak` | Keycloak claims transformation | `Granit.Authentication.JwtBearer` |
 | `Granit.Authentication.JwtBearer.EntraId` | Entra ID roles parsing | `Granit.Authentication.JwtBearer` |
 | `Granit.Authentication.JwtBearer.Cognito` | Cognito groups → roles | `Granit.Authentication.JwtBearer` |
 | `Granit.Authentication.JwtBearer.GoogleCloud` | Google Cloud Identity Platform claims | `Granit.Authentication.JwtBearer` |
-| `Granit.Authentication.OpenIddict` | Built-in token validation for OpenIddict IdP | `Granit.Users` |
+| `Granit.Authentication.OpenIddict` | Built-in token validation for OpenIddict IdP | `Granit` |
 | `Granit.Oidc` | OIDC client primitives — discovery, typed requests, DPoP proof generation, PKCE | `Granit`, `Granit.Timing` |
 | `Granit.Oidc.TokenManagement` | Token lifecycle — client credentials caching, `DelegatingHandler`, revocation | `Granit.Oidc` |
 | `Granit.Authentication.DPoP` | IdP-agnostic DPoP proof validation (RFC 9449) | `Granit`, `Granit.Timing` |
