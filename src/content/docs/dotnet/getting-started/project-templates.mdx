@@ -38,8 +38,9 @@ You should see three templates: `granit-api`, `granit-api-full`, and `granit-mod
 
 <Tabs>
   <TabItem label="granit-api (Minimal)">
-    A lightweight API project with the essential Granit modules: Core, Timing, Persistence,
-    Security, and Observability.
+    A lightweight API project that wires `Granit.Bundle.Essentials` and exposes a sample
+    endpoint — module system, Timing, Persistence abstractions, Observability,
+    ExceptionHandling, CORS, SecurityHeaders, ResponseCompression, Diagnostics.
 
     ```bash
     dotnet new granit-api -n MyApp
@@ -55,9 +56,10 @@ You should see three templates: `granit-api`, `granit-api-full`, and `granit-mod
     pick additional modules yourself.
   </TabItem>
 
-  <TabItem label="granit-api-full (Full SaaS)">
-    Everything in `granit-api`, plus MultiTenancy, Caching, Notifications, BackgroundJobs,
-    and Localization pre-configured and ready to run.
+  <TabItem label="granit-api-full (Full API)">
+    A complete API project wired with `Granit.Bundle.Api` (everything in Essentials +
+    versioning + OpenAPI + Idempotency + Localization + Redis caching), Keycloak JWT
+    authentication, Notifications, and EF Core persistence.
 
     ```bash
     dotnet new granit-api-full -n MyApp
@@ -65,13 +67,13 @@ You should see three templates: `granit-api`, `granit-api-full`, and `granit-mod
 
     **What gets generated:**
 
-    - Full API project with all production modules wired
-    - Docker Compose with PostgreSQL, Redis, and Keycloak
+    - Full API project with the API bundle, auth, notifications, and EF Core wired
+    - Sample DbContext + migration baseline
+    - `appsettings.json` with Keycloak + database configuration
     - Health checks and readiness probes
-    - Keycloak realm configuration
 
-    **Best for:** production SaaS applications that need tenant isolation, background
-    processing, and notification delivery from day one.
+    **Best for:** production APIs that need versioning, OpenAPI, authentication, and
+    notification delivery from day one.
   </TabItem>
 
   <TabItem label="granit-module (Library)">
@@ -128,8 +130,9 @@ All templates accept standard `dotnet new` parameters. The most commonly used:
 
 :::tip[Pro tip]
 Start with `granit-api` for the tutorial. Move to `granit-api-full` when you are building
-for production — it includes Docker Compose with PostgreSQL, Redis, and Keycloak
-pre-configured.
+for production — it wires the full `Granit.Bundle.Api` (versioning, OpenAPI, Idempotency,
+Localization, Redis caching) plus Keycloak authentication, notifications, and EF Core
+persistence.
 :::
 
 ## What to read next

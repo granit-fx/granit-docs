@@ -27,14 +27,15 @@ and sequential GUIDs automatically.
 Add the persistence stack and the PostgreSQL provider:
 
 ```bash
-dotnet add package Granit.Persistence
-dotnet add package Granit.Users
+dotnet add package Granit.Persistence.EntityFrameworkCore
+dotnet add package Granit.Persistence.EntityFrameworkCore.Postgres
 dotnet add package Granit.Guids
-dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
 ```
 
-`Granit.Persistence` brings in `Granit` and `Granit.Timing` transitively, so you
-do not need to add those manually.
+`Granit.Persistence.EntityFrameworkCore` brings in `Granit.Persistence`, `Granit`, and
+`Granit.Timing` transitively, so you do not need to add those manually. `ICurrentUserService`
+and the audit primitives ship in the core `Granit` package — no separate `Granit.Users`
+package needed.
 
 ## Update the domain entity
 
@@ -68,7 +69,7 @@ Add a `Data/TaskDbContext.cs` file:
 // Data/TaskDbContext.cs
 using Granit.DataFiltering;
 using Granit.MultiTenancy;
-using Granit.Persistence.Extensions;
+using Granit.Persistence.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 public sealed class TaskDbContext(
@@ -105,13 +106,13 @@ Declare the persistence dependency and register the DbContext:
 ```csharp
 // TaskManagementModule.cs
 using Granit.Modularity;
-using Granit.Persistence;
-using Granit.Persistence.Extensions;
+using Granit.Persistence.EntityFrameworkCore;
+using Granit.Persistence.EntityFrameworkCore.Extensions;
 using Granit.Timing;
 using Microsoft.EntityFrameworkCore;
 
 [DependsOn(typeof(GranitTimingModule))]
-[DependsOn(typeof(GranitPersistenceModule))]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCoreModule))]
 public sealed class TaskManagementModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -125,9 +126,17 @@ public sealed class TaskManagementModule : GranitModule
 }
 ```
 
-`AddGranitDbContext<T>` wires up the four interceptors (`AuditedEntityInterceptor`,
-`VersioningInterceptor`, `DomainEventDispatcherInterceptor`, `SoftDeleteInterceptor`)
-automatically. You do not need to resolve them yourself.
+`AddGranitDbContext<T>` wires up the five interceptors (`AuditedEntityInterceptor`,
+`VersioningInterceptor`, `ConcurrencyStampInterceptor`, `DomainEventDispatcherInterceptor`,
+`SoftDeleteInterceptor`) automatically and pre-seeds `HostDbSchema`. You do not need to
+resolve them yourself.
+
+:::tip[Reach for `AddGranitIsolatedDbContext` once you store per-tenant data]
+For DbContexts that hold blobs, PII, encrypted columns, or anything else that must never
+leak across tenants, swap `AddGranitDbContext<T>` for `AddGranitIsolatedDbContext<T>`.
+It throws if no tenant is active and refuses host-side bypass — see
+[Persistence](/dotnet/data/persistence/) for the full distinction.
+:::
 
 ## Add the connection string
 
@@ -362,6 +371,8 @@ You never wrote a single line of audit code. The interceptors fire on every
 |-------------|---------|--------|
 | `AuditedEntityInterceptor` | `EntityState.Added` | Sets `CreatedAt`, `CreatedBy`, assigns a sequential GUID to `Id` if empty, injects `TenantId` on `IMultiTenant` entities |
 | `AuditedEntityInterceptor` | `EntityState.Modified` | Sets `ModifiedAt`, `ModifiedBy`, protects `CreatedAt`/`CreatedBy` from accidental overwrite |
+| `ConcurrencyStampInterceptor` | `EntityState.Modified` on `IConcurrencyAware` | Mints a fresh stamp on every update — drives the optimistic-concurrency check |
+| `DomainEventDispatcherInterceptor` | After `SaveChanges` | Drains `IDomainEventSource.PullEvents()` and dispatches via `Granit.Events` |
 | `SoftDeleteInterceptor` | `EntityState.Deleted` | Converts DELETE to UPDATE: sets `IsDeleted = true`, `DeletedAt`, `DeletedBy` |
 
 :::note[Good to know]
