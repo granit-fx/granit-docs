@@ -133,7 +133,7 @@ encoded outputs are dropped and left to the background path so the upload
 request stays predictable. The inline hook covers only `image/*` sources —
 Office and PDF uploads always defer.
 
-**Async generation (default).** `Granit.Documents.Renditions.BackgroundJobs`
+**Async generation (default).** `Granit.Documents.Renditions.Wolverine`
 hosts `DocumentVersionAddedRenditionsHandler`. It asks `IRenditionTypePolicy`
 which renditions to build for the source MIME, then runs the pipeline per
 target with concurrency capped at
@@ -150,7 +150,7 @@ The default policy:
 | anything else | (none — handler short-circuits) |
 
 Hosts override the policy by registering their own `IRenditionTypePolicy`
-before calling `AddGranitDocumentsRenditionsBackgroundJobs()`.
+before calling `AddGranitDocumentsRenditionsWolverine()`.
 
 **On-demand fallback (deferred).** The download endpoint does not currently
 run the pipeline synchronously for a missing rendition. Callers retry once the
@@ -189,7 +189,7 @@ builder.AddGranitDocuments();
 builder.AddGranitDocumentsEntityFrameworkCore(opts => opts.UseNpgsql(connString));
 builder.AddGranitDocumentsRenditions();
 builder.AddGranitDocumentsRenditionsEntityFrameworkCore(opts => opts.UseNpgsql(connString));
-builder.AddGranitDocumentsRenditionsBackgroundJobs();
+builder.AddGranitDocumentsRenditionsWolverine();
 builder.AddGranitImagingMagickNet();
 builder.AddGranitDocumentsRenditionsImaging();
 builder.AddGranitBrowsingPlaywright(o => o.Engine = BrowserEngine.Chromium);
