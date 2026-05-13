@@ -254,7 +254,7 @@ trailing-dot FQDNs.
 3. **At provider level** (Browsing): the in-process request router consults
    `IBrowserSandboxProfile` on every request, including sub-resource loads
    triggered by the rendered page — see
-   [Browsing security](/dotnet/browsing/security/).
+   [Browsing security](/dotnet/infrastructure/browsing/security/).
 
 The three layers compose: the attacker would have to win the race at all three
 points, *and* the resolved address would have to be in a public range at each
@@ -262,9 +262,9 @@ check.
 
 ## Related
 
-- [`Granit.IO` — secure temp files](/dotnet/io/temp-files/) — the second
+- [`Granit.IO` — secure temp files](/dotnet/infrastructure/io/temp-files/) — the second
   primitive extracted in the same hardening pass.
-- [Browsing security](/dotnet/browsing/security/) — pillar consumer.
+- [Browsing security](/dotnet/infrastructure/browsing/security/) — pillar consumer.
 - [Webhooks](/dotnet/api/webhooks/) — pre-existing consumer, refactored to
   drop the private SSRF guard.
 - [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/).

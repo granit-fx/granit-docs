@@ -35,15 +35,13 @@ compliance and user management needs grow.
 
 ## Package structure
 
-<FileTree>
+The core actor abstractions ship inside the foundation `Granit` package — there is no
+separate `Granit.Users` NuGet. `ICurrentUserService`, `ActorKind`, and the audit
+identity primitives all live under the `Granit.Users` namespace within `Granit`.
 
-- Granit.Users/ Base abstractions (ICurrentUserService, ActorKind)
-
-</FileTree>
-
-| Package | Role | Depends on |
-|---------|------|------------|
-| `Granit.Users` | `ICurrentUserService`, `ActorKind` | `Granit` |
+| Namespace (within `Granit`) | Role |
+|------------------------------|------|
+| `Granit.Users` | `ICurrentUserService`, `ActorKind`, `SystemCurrentUserService` |
 
 ## ICurrentUserService
 
@@ -81,18 +79,18 @@ The complete authentication and authorization stack is documented in dedicated p
 
 ```mermaid
 graph TD
-    S[Granit.Users] --> C[Granit]
-    JWT[Granit.Authentication.JwtBearer] --> S
+    C[Granit] -->|namespace Granit.Users| ICUS[ICurrentUserService]
+    JWT[Granit.Authentication.JwtBearer] --> C
     KC[Granit.Authentication.JwtBearer.Keycloak] --> JWT
     EID[Granit.Authentication.JwtBearer.EntraId] --> JWT
     CG[Granit.Authentication.JwtBearer.Cognito] --> JWT
     GC[Granit.Authentication.JwtBearer.GoogleCloud] --> JWT
     DPOP[Granit.Authentication.DPoP] --> JWT
-    AZ[Granit.Authorization] --> S
+    AZ[Granit.Authorization] --> C
     AZ --> CA[Granit.Caching]
     AZEF[Granit.Authorization.EntityFrameworkCore] --> AZ
     AZEF --> P[Granit.Persistence]
-    BFF[Granit.Bff] --> S
+    BFF[Granit.Bff] --> C
     BFFE[Granit.Bff.Endpoints] --> BFF
     BFFY[Granit.Bff.Yarp] --> BFF
 ```

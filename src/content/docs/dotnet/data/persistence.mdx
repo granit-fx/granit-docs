@@ -17,16 +17,22 @@ audit fields, no silent data overwrites.
 ## Package structure
 
 <FileTree>
-- Granit.Persistence/ Base interceptors, conventions, data seeding
-  - Granit.Persistence.Migrations Zero-downtime batch migrations (Expand & Contract)
-  - Granit.Persistence.Migrations.Wolverine Durable outbox-backed migration dispatch
+- Granit.Persistence/ Abstractions — `ICurrentTenant` filters, data seeding contracts, no EF references
+  - Granit.Persistence.EntityFrameworkCore/ Interceptors, `ApplyGranitConventions`, `AddGranitDbContext`, `AddGranitIsolatedDbContext`
+    - Granit.Persistence.EntityFrameworkCore.Hosting/ Tenant provisioning, host orchestration
+    - Granit.Persistence.EntityFrameworkCore.Migrations/ Zero-downtime batch migrations (Expand & Contract)
+    - Granit.Persistence.EntityFrameworkCore.Postgres/ PostgreSQL provider, advisory locks, schema activator
+    - Granit.Persistence.EntityFrameworkCore.SqlServer/ SQL Server provider
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Persistence` | Interceptors, `ApplyGranitConventions`, data seeding | `Granit`, `Granit.Timing`, `Granit.Guids`, `Granit.Users` |
-| `Granit.Persistence.Migrations` | Expand & Contract migrations with batch processing | `Granit.Persistence`, `Granit.Timing` |
-| `Granit.Persistence.Migrations.Wolverine` | Durable migration dispatch via Wolverine outbox | `Granit.Persistence.Migrations`, `Granit.Wolverine` |
+| `Granit.Persistence` | Abstractions only — no EF reference. Tenant filter contracts, data seeding contracts | `Granit` |
+| `Granit.Persistence.EntityFrameworkCore` | Interceptors, `ApplyGranitConventions`, `AddGranitDbContext`, `AddGranitIsolatedDbContext` | `Granit.Persistence` |
+| `Granit.Persistence.EntityFrameworkCore.Hosting` | Tenant provisioning, host orchestration | `Granit.Persistence.EntityFrameworkCore` |
+| `Granit.Persistence.EntityFrameworkCore.Migrations` | Expand & Contract migrations with batch processing; Wolverine handlers ship here too | `Granit.Persistence.EntityFrameworkCore` |
+| `Granit.Persistence.EntityFrameworkCore.Postgres` | PostgreSQL provider, advisory locks, schema activator | `Granit.Persistence.EntityFrameworkCore` |
+| `Granit.Persistence.EntityFrameworkCore.SqlServer` | SQL Server provider | `Granit.Persistence.EntityFrameworkCore` |
 
 ## Dependency graph
 
@@ -36,9 +42,9 @@ graph TD
     P --> T[Granit.Timing]
     P --> G[Granit.Guids]
     P --> S[Granit.Users]
-    PM[Granit.Persistence.Migrations] --> P
+    EFC[Granit.Persistence.EntityFrameworkCore] --> P
+    PM[Granit.Persistence.EFC.Migrations] --> EFC
     PM --> T
-    PMW[Granit.Persistence.Migrations.Wolverine] --> PM
     PMW --> W[Granit.Wolverine]
 ```
 
@@ -122,7 +128,26 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ```
 
 `AddGranitDbContext<T>` handles interceptor wiring automatically — it calls
-`UseGranitInterceptors(sp)` internally with `ServiceLifetime.Scoped`.
+`UseGranitInterceptors(sp)` internally with `ServiceLifetime.Scoped`, and pre-seeds
+`HostDbSchema` so any module that opts into a dual-scope (host + tenant) layout
+lands its host tables under the correct schema by default.
+
+### `AddGranitDbContext` vs `AddGranitIsolatedDbContext`
+
+Two registration extensions, two intents:
+
+| Extension | Use for | Behaviour |
+|-----------|---------|-----------|
+| `AddGranitDbContext<T>(opts)` | Default — dual-scope or host-only contexts | Runs interceptors, applies host schema, leaves tenant resolution to `ApplyGranitConventions` |
+| `AddGranitIsolatedDbContext<T>(opts)` | Strictly tenant-isolated modules (BlobStorage, Privacy, Encryption-bound contexts, etc.) | Forces every query through `ICurrentTenant`, throws if no tenant is active, refuses host-side bypass |
+
+Seven framework modules now register their DbContext via `AddGranitIsolatedDbContext`
+(PR #2021): the safety net is on by default for anything storing per-tenant blobs,
+PII, or encrypted data. PR #2028 fixed an infinite-recursion bug in the non-generic
+overload — make sure you are on the patched version if you use it.
+
+`[Encrypted]` fields can only live on entities owned by an `IsolatedDbContext` —
+architecture tests fail the build otherwise (PR #2062).
 
 :::danger
 Never call `HasQueryFilter` manually in entity configurations.
@@ -280,7 +305,7 @@ safely because they have isolated table prefixes and no migration history of the
 Register seed contributors that run at application startup:
 
 ```csharp
-public class CountryDataSeedContributor(AppDbContext db) : IDataSeedContributor
+public class CountryDataSeedContributor(AppDbContext db) : IHostDataSeedContributor
 {
     public async Task SeedAsync(DataSeedContext context, CancellationToken cancellationToken)
     {
@@ -296,7 +321,10 @@ public class CountryDataSeedContributor(AppDbContext db) : IDataSeedContributor
 }
 ```
 
-Register with `services.AddTransient<IDataSeedContributor, CountryDataSeedContributor>()`.
+Register with `services.AddTransient<IHostDataSeedContributor, CountryDataSeedContributor>()`
+— or use `ITenantDataSeedContributor` if the seed depends on `ICurrentTenant` and must
+run inside each tenant's scope (PR #942 split host vs tenant seeding so cross-tenant
+data is never mixed in).
 
 `DataSeedingHostedService` orchestrates all contributors at startup. Errors are logged
 but do not block application start.
@@ -357,13 +385,13 @@ breach (ISO 27001).
 | Module | `GranitPersistenceModule` | `Granit.Persistence` |
 | Interceptors | `AuditedEntityInterceptor`, `VersioningInterceptor`, `ConcurrencyStampInterceptor`, `DomainEventDispatcherInterceptor`, `SoftDeleteInterceptor` | `Granit.Persistence` |
 | Extensions | `AddGranitPersistence()`, `AddGranitDbContext<T>()`, `UseGranitInterceptors()`, `ApplyGranitConventions()` | `Granit.Persistence` |
-| Data seeding | `IDataSeeder`, `IDataSeedContributor`, `DataSeedContext` | `Granit.Persistence` |
+| Data seeding | `IHostDataSeedContributor`, `ITenantDataSeedContributor`, `DataSeedContext` (PR #942 split the legacy `IDataSeedContributor`) | `Granit.Persistence` |
 | Purging | `ISoftDeletePurgeTarget`, `PurgeSoftDeletedBeforeAsync()` | `Granit.Persistence` |
 | Query extensions | `IncludeTranslations()`, `WhereTranslation()`, `OrderByTranslation()` | `Granit.Persistence` |
 | Multi-tenancy | `TenantIsolationStrategy`, `ITenantSchemaProvider`, `ITenantConnectionStringProvider`, `ITenantSchemaActivator`, `IsolatedDbContextMarker` | `Granit.Persistence` |
-| Tenant provisioning | `ITenantProvisioner`, `AutoTenantProvisioner` | `Granit.Persistence.Hosting` |
+| Tenant provisioning | `ITenantProvisioner`, `AutoTenantProvisioner` | `Granit.Persistence.EntityFrameworkCore.Hosting` |
 | Host migrations | `Configure{Module}Module()`, `Granit{Module}DbProperties` | Each `*.EntityFrameworkCore` package |
-| Migrations | `MigrationPhase`, `MigrationCycleAttribute`, `IMigrationCycleRegistry`, `BatchMigrationDelegate` | `Granit.Persistence.Migrations` |
+| Migrations | `MigrationPhase`, `MigrationCycleAttribute`, `IMigrationCycleRegistry`, `BatchMigrationDelegate` | `Granit.Persistence.EntityFrameworkCore.Migrations` |
 | Wolverine dispatch | `GranitPersistenceMigrationsWolverineModule` | `Granit.Persistence.Migrations.Wolverine` |
 
 ## Testing persistence

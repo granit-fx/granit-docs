@@ -9,9 +9,14 @@ sidebar:
 import { FileTree, Tabs, TabItem } from "@astrojs/starlight/components";
 
 `ReferenceDataEntity` is an abstract base class for i18n lookup tables (countries,
-currencies, document types). Each entity has a unique `Code`, 14 language labels,
-automatic label resolution based on `CurrentUICulture`, and an extensible
-`Metadata` JSON bag for application-specific fields.
+currencies, document types). Each entity has a unique `Code`, 15 language labels
+(covering all 18 framework cultures — the 3 regional variants fall back to their
+base language), automatic label resolution based on `CurrentUICulture`, and an
+extensible `Metadata` JSON bag for application-specific fields.
+
+Every reference-data type registered through `AddReferenceDataStore<T, TCtx>`
+is automatically exposed as a `Granit.QueryEngine` lookup source (PR #1128) —
+no extra `IDataLookupSource` plumbing required.
 
 ## Package structure
 
@@ -37,11 +42,11 @@ public abstract class ReferenceDataEntity
 {
     public string Code { get; set; }
 
-    // 14 language labels
+    // 15 language labels
     public string LabelEn { get; set; }
     public string LabelFr { get; set; }
     // ... LabelNl, LabelDe, LabelEs, LabelIt, LabelPt,
-    //     LabelZh, LabelJa, LabelPl, LabelTr, LabelKo, LabelSv, LabelCs
+    //     LabelZh, LabelJa, LabelPl, LabelTr, LabelKo, LabelSv, LabelCs, LabelHi
 
     // Resolved at runtime via CurrentUICulture (not mapped to DB)
     public virtual string Label { get; }

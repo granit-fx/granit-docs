@@ -52,7 +52,7 @@ critical path).
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Authentication.ApiKeys` | `ApiKeyEntry` aggregate, `IApiKeyStore` / `IApiKeyAdminStore` / `IApiKeyGenerator`, `ApiKeyAuthenticationHandler`, CIDR validator | `Granit.Users`, `Granit.Guids`, `Granit.Timing` |
+| `Granit.Authentication.ApiKeys` | `ApiKeyEntry` aggregate, `IApiKeyStore` / `IApiKeyAdminStore` / `IApiKeyGenerator`, `ApiKeyAuthenticationHandler`, CIDR validator | `Granit`, `Granit.Guids`, `Granit.Timing` |
 | `Granit.Authentication.ApiKeys.EntityFrameworkCore` | Isolated `DbContext`, entity configurations, migrations | `Granit.Persistence` |
 | `Granit.Authentication.ApiKeys.Endpoints` | Five admin route groups, `ApiKeyPermissions`, FluentValidation validators | `Granit.Authorization`, `Granit.Validation` |
 | `Granit.Authentication.ApiKeys.BackgroundJobs` | `ExpiringApiKeyScannerJob` (daily, 07:00 UTC) | `Granit.BackgroundJobs` |

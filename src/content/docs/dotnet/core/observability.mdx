@@ -12,11 +12,20 @@ Granit.Observability wires Serilog structured logging and OpenTelemetry (traces 
 into a single `AddGranitObservability()` call. Logs ship to Loki, traces to Tempo, and
 metrics to Mimir — all via an OTLP collector.
 
-## Package
+## Packages
 
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
-| `Granit.Observability` | Serilog + OpenTelemetry (traces, metrics, logs) | `Granit` |
+| `Granit.Observability` | Serilog + OpenTelemetry (traces, metrics, logs), OTLP export | `Granit` |
+| `Granit.Observability.AI` | AI-driven log analysis — feeds Loki excerpts into an LLM for incident summaries | `Granit.Observability`, `Granit.AI` |
+
+Beyond the framework stack, six **satellite packages** in `granit-business` register
+declarative `MetricDefinition` and `DashboardDefinition` records consumed by
+`Granit.Analytics` and `Granit.Dashboards`: `Granit.BlobStorage.{Analytics,Dashboards}`,
+`Granit.Webhooks.{Analytics,Dashboards}`, `Granit.Notifications.Analytics`,
+`Granit.Identity.Federated.Analytics`. They live next to the modules they describe so
+analytics contracts ship with the domain that owns them — see
+[Application metrics reference](/dotnet/core/metrics/).
 
 ## OTLP pipeline
 
@@ -97,31 +106,32 @@ GranitActivitySourceRegistry.Register("Granit.Workflow");
 
 ### Registered activity sources
 
-| ActivitySource | Span names |
-| -------------- | ---------- |
-| `Granit.Vault` | `vault.encrypt`, `vault.decrypt`, `vault.get-secret`, `vault.check-rotation` |
-| `Granit.Vault.Azure` | `akv.encrypt`, `akv.decrypt`, `akv.get-secret`, `akv.check-rotation` |
-| `Granit.Wolverine` | `wolverine.send`, `wolverine.handle` |
-| `Granit.Notifications` | `notification.dispatch`, `notification.deliver` |
-| `Granit.Notifications.Email.Smtp` | `smtp.send` |
-| `Granit.Notifications.Email.AwsSes` | `ses.send` |
-| `Granit.Notifications.Email.AzureCommunicationServices` | `acs-email.send` |
-| `Granit.Notifications.Sms.AzureCommunicationServices` | `acs-sms.send` |
-| `Granit.Notifications.MobilePush.AzureNotificationHubs` | `anh.send` |
-| `Granit.Notifications.Brevo` | `brevo.send` |
-| `Granit.Notifications.Zulip` | `zulip.send` |
-| `Granit.Workflow` | `workflow.transition` |
-| `Granit.BlobStorage` | `blob.upload`, `blob.download`, `blob.delete` |
-| `Granit.DataExchange` | `import.execute`, `export.execute` |
-| `Granit.EventBus` | `eventbus.publish.local`, `eventbus.publish.distributed` |
-| `Granit.Privacy` | `privacy.export.execute`, `privacy.deletion.execute` |
-| `Granit.Observability.AI` | `observability-ai.analysis.execute` |
-| `Granit.Persistence` | `persistence.save`, `persistence.purge` |
+Around 70 `ActivitySource` names are pre-registered. Major groups:
+
+| Domain | ActivitySource names |
+| ------ | -------------------- |
+| Core data | `Granit.Persistence`, `Granit.Entities`, `Granit.Encryption`, `Granit.Events`, `Granit.Wolverine` |
+| Security & identity | `Granit.HttpSecurity`, `Granit.DPoP`, `Granit.TokenManagement`, `Granit.OpenIddict`, `Granit.Identity`, `Granit.Identity.Local`, `Granit.Identity.{Cognito,EntraId,GoogleCloud,Keycloak}` |
+| Vault / KMS | `Granit.Vault.{Aws,Azure,GoogleCloud,HashiCorp}` |
+| Blob storage | `Granit.BlobStorage.{Azure,Database,FileSystem,GoogleCloud,Proxy,S3}` |
+| Notifications | `Granit.Notifications`, `Granit.Notifications.Email.{Acs,AwsSes,Scaleway,SendGrid}`, `Granit.Notifications.Sms.{Acs,AwsSns}`, `Granit.Notifications.MobilePush.{Anh,AwsSns}` |
+| Privacy / compliance | `Granit.Privacy`, `Granit.Auditing` |
+| Background work | `Granit.BackgroundJobs`, `Granit.Scheduling`, `Granit.Webhooks`, `Granit.Browsing` |
+| Documents & media | `Granit.Templating`, `Granit.PdfRendering`, `Granit.Imaging.{AI,MagickNet}`, `Granit.Documents`, `Granit.Documents.PublicLinks`, `Granit.AssetMetadata`, `Granit.Renditions` |
+| AI | `Granit.AI`, `Granit.AI.{AzureOpenAI,Ollama,OpenAI}`, `Granit.QueryEngine.AI`, `Granit.Observability.AI`, `Granit.Timeline.AI` |
+| Query engine / BFF | `Granit.QueryEngine.EfCore`, `Granit.DataExchange`, `Granit.DataLookup`, `Granit.ReferenceData`, `Granit.Bff` |
+| Multi-tenant primitives | `Granit.RateLimiting`, `Granit.Bulkhead`, `Granit.Features`, `Granit.Settings`, `Granit.Localization`, `Granit.IO` |
+| SaaS business | `Granit.Activities`, `Granit.Workflow`, `Granit.Catalog`, `Granit.CustomerBalance`, `Granit.Invoicing`, `Granit.Payments`, `Granit.Parties`, `Granit.Subscriptions`, `Granit.Tax`, `Granit.Taxonomy`, `Granit.Metering`, `Granit.Analytics` |
+| MCP / integration | `Granit.Mcp` |
+
+The canonical list is the `GranitActivitySourceRegistry` registrations performed inside
+each module's `AddGranit*()` extension — read it in source for the exact set shipped
+by your current Granit version.
 
 ## PII redaction — `LogRedaction`
 
 Logs and trace spans must **never** contain raw PII (GDPR Art. 5, ISO 27001 A.5.34).
-The `Granit.Diagnostics.LogRedaction` static class provides redaction helpers for use
+The `LogRedaction` static class (namespace `Granit.Diagnostics`, shipped in the core `Granit` package) provides redaction helpers for use
 in `[LoggerMessage]` call sites and `Activity.SetTag()` calls:
 
 | Method | Input | Output | Use case |
@@ -166,5 +176,5 @@ pseudonymous and exempt.
 - [Application metrics reference](/dotnet/core/metrics/) -- All metrics emitted by Granit modules, with PromQL examples
 - [ADR-001: Serilog + OpenTelemetry](/dotnet/architecture/adr/001-observability/) -- Why this observability stack was chosen
 - [Diagnostics module](/dotnet/core/diagnostics/) -- Kubernetes health probes
-- [Core module](/dotnet/core/module-system/) -- `GranitActivitySourceRegistry` and `LogRedaction` live in `Granit.Diagnostics`
+- [Core module](/dotnet/core/module-system/) -- `GranitActivitySourceRegistry` and `LogRedaction` live in the core `Granit` package (namespace `Granit.Diagnostics`)
 - [Coding standards — PII redaction](/contributing/coding-standards/#pii-redaction-in-logs-and-traces) -- Mandatory `LogRedaction` usage in log templates

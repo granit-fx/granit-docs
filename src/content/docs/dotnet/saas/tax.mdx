@@ -25,7 +25,7 @@ EU VAT rules or Stripe Tax API.
 
 <FileTree>
 - Granit.Tax/ Abstractions: ITaxIdValidator, ITaxRateProvider, domain types, metrics
-  - Granit.Tax.Internal Self-hosted EU VAT rules + VIES validation + configurable rates
+  - Granit.Tax.Builtin Self-hosted EU VAT rules + VIES validation + configurable rates
   - Granit.Tax.EntityFrameworkCore DB-persisted rate overrides and validated tax ID cache
   - Granit.Tax.Endpoints Minimal API (validate, rates, rate by country) with RBAC
   - Granit.Tax.Stripe Stripe Tax Calculations + Tax IDs API integration
@@ -66,8 +66,8 @@ flowchart TD
 // Program.cs
 builder.AddGranitTax();          // Base abstractions + metrics
 
-// Granit.Tax.Internal provides ITaxCalculator, ITaxIdValidator, ITaxRateProvider
-// via GranitTaxInternalModule — auto-discovered by the module system.
+// Granit.Tax.Builtin provides ITaxCalculator, ITaxIdValidator, ITaxRateProvider
+// via GranitTaxBuiltinModule — auto-discovered by the module system.
 
 // Optional: DB-managed rate overrides
 builder.AddGranitTaxEntityFrameworkCore(options =>
@@ -88,7 +88,7 @@ builder.AddGranitTaxEntityFrameworkCore(options =>
 }
 ```
 
-Register `GranitTaxStripeModule` instead of `GranitTaxInternalModule` — the
+Register `GranitTaxStripeModule` instead of `GranitTaxBuiltinModule` — the
 abstractions (`ITaxCalculator`, `ITaxIdValidator`) are swapped automatically.
 
 ## Configuration

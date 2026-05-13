@@ -46,7 +46,7 @@ flowchart TD
 
 | Layer | Responsibility |
 | --- | --- |
-| `IUrlSafetyValidator` | Scheme/host/private-net/TLD/length pre-flight; resolves DNS. See [URL safety](/dotnet/http/security/url-safety/). |
+| `IUrlSafetyValidator` | Scheme/host/private-net/TLD/length pre-flight; resolves DNS. See [URL safety](/dotnet/api/url-safety/). |
 | `IBrowserSandboxProfile` | Per-host policy: allowed schemes/hosts, CSP forcing, console redaction, render cap. |
 | `RequestRouter` | Single subscriber on the engine's network event; runs the sandbox + user handlers in fixed order ("sandbox wins"). |
 | `BrowsingTimeout` | Hard wall-clock cap on a single render — defaults 30 s, cancellable. |
@@ -322,7 +322,7 @@ PDF viewer staging, HAR, trace. Cross-link:
 - Use `emptyDir { medium: Memory }` on the temp root.
 - Size: `MaxBrowsers × MaxPagesPerBrowser × MaxSizeBytes × 1.5`.
 - Never `ReadWriteMany` PVC on the temp root.
-- Full guidance: [Secure Temp Files — Kubernetes deployment](/dotnet/io/temp-files/#kubernetes-deployment).
+- Full guidance: [Secure Temp Files — Kubernetes deployment](/dotnet/infrastructure/io/temp-files/#kubernetes-deployment).
 
 For URL safety, the in-process layer is sufficient; if your network policy
 allows pods to reach `169.254.169.254`, *also* add a `NetworkPolicy` egress
@@ -330,7 +330,7 @@ deny — defense in depth.
 
 ## Related
 
-- [URL Safety](/dotnet/http/security/url-safety/) — the shared SSRF primitive.
-- [Secure Temp Files](/dotnet/io/temp-files/) — `file://` PDF viewer, HAR, trace.
+- [URL Safety](/dotnet/api/url-safety/) — the shared SSRF primitive.
+- [Secure Temp Files](/dotnet/infrastructure/io/temp-files/) — `file://` PDF viewer, HAR, trace.
 - [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/).
 - [Browsing overview](/dotnet/infrastructure/browsing/) — capabilities, pool tuning.

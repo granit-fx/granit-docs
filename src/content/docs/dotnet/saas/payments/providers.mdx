@@ -154,6 +154,18 @@ Requires a PAIN.008 batch generator (provided — `Pain008Generator`) and an ups
 CAMT.053 import path (`Granit.Payments.SepaTransfer` ships a parser shared between
 SDD and SCT).
 
+Two managed alternatives are available when you prefer to delegate the bank
+relationship and mandate orchestration to a specialised provider:
+
+- **`Granit.Payments.SepaDirectDebit.GoCardless`** — GoCardless API integration:
+  hosted mandate sign-up, webhook-driven status reconciliation.
+- **`Granit.Payments.SepaDirectDebit.Twikey`** — Twikey API integration with the
+  same hosted mandate / webhook contract for SEPA-zone deployments.
+
+The three SDD packages all implement `IPaymentProvider` with the same surface; the
+runtime selector picks one based on `PaymentMethodType = "sepa_debit"` plus the
+provider id you configured (`Granit:Payments:SepaDirectDebit:Provider`).
+
 ## SEPA Transfer (`Granit.Payments.SepaTransfer`)
 
 Bank transfers with structured reference reconciliation. The charge returns a

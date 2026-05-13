@@ -106,7 +106,7 @@ live in tenant-specific schemas (or are filtered by `TenantId` in shared databas
 | Workflow | `ConfigureWorkflowModule()` | State transitions per tenant |
 | DataExchange | `ConfigureDataExchangeModule()` | Import/export mappings per tenant |
 | Templating | `ConfigureTemplatingModule()` | Templates per tenant |
-| QueryEngine | `ConfigureQueryEngineModule()` | Saved views per tenant |
+| QueryEngine | `ConfigureQueryEngineModule()` | Entity views per tenant (PR #1639 supersedes the legacy SavedView surface) |
 | Privacy | `ConfigurePrivacyModule()` | Legal documents per tenant |
 
 ### Mixed modules (TenantId nullable in host)

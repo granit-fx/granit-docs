@@ -217,11 +217,16 @@ production, grant this permission using one of two approaches:
 
 ```csharp
 await permissionManager.SetAsync(
-    "BackgroundJobs.Jobs.Manage",
-    "ops-team",
-    tenantId: null,
-    isGranted: true);
+    permissionName: "BackgroundJobs.Jobs.Manage",
+    providerName:   PermissionGrantProviderNames.Role,   // "R" — grant to a role
+    providerKey:    "ops-team",                          // the role name
+    tenantId:       null,                                // null = host / global
+    isGranted:      true);
 ```
+
+PR #1056 / #1899 introduced the multi-provider grant schema —
+`PermissionGrantProviderNames` exposes constants for `Role`, `User`, `Client`, and
+`UserGroup`. See [Authorization](/dotnet/security/authorization/) for the full matrix.
 
 </TabItem>
 </Tabs>

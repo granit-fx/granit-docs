@@ -81,7 +81,7 @@ builder.AddGranit<AppModule>();
 
 // Option 2: Fluent builder (multi-root)
 builder.AddGranit(granit => granit
-    .AddModule<>()
+    .AddModule<GranitCoreModule>()
     .AddModule<GranitPersistenceModule>()
     .AddModule<AppModule>());
 
@@ -109,7 +109,7 @@ Every module inherits from `GranitModule` and declares dependencies via `[Depend
 
 ```csharp
 [DependsOn(typeof(GranitPersistenceModule))]
-[DependsOn(typeof())]
+[DependsOn(typeof(GranitObservabilityModule))]
 public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

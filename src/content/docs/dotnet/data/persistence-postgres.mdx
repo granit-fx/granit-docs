@@ -1,6 +1,6 @@
 ---
 title: Persistence — PostgreSQL Provider
-description: Granit.Persistence.Postgres adds opinionated Npgsql defaults, a pg_try_advisory_lock distributed migration lock, schema-per-tenant isolation, and a lightweight raw-connection health check.
+description: Granit.Persistence.EntityFrameworkCore.Postgres adds opinionated Npgsql defaults, a pg_try_advisory_lock distributed migration lock, schema-per-tenant isolation, and a lightweight raw-connection health check.
 sidebar:
   label: Persistence — PostgreSQL
   order: 3
@@ -8,7 +8,7 @@ sidebar:
 
 import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
-`Granit.Persistence.Postgres` is the PostgreSQL provider for Granit's persistence layer.
+`Granit.Persistence.EntityFrameworkCore.Postgres` is the PostgreSQL provider for Granit's persistence layer.
 It wires three things that every production Postgres deployment needs but that the
 base `Granit.Persistence` package deliberately leaves abstract: a **distributed migration
 lock**, **schema-per-tenant isolation**, and a **lightweight health check** that doesn't
@@ -18,7 +18,7 @@ drag EF Core onto the readiness probe path.
 
 <FileTree>
 
-- Granit.Persistence.Postgres/
+- Granit.Persistence.EntityFrameworkCore.Postgres/
   - Extensions/
     - PersistencePostgresHostApplicationBuilderExtensions.cs `AddGranitPostgres()`
     - NpgsqlDbContextOptionsExtensions.cs `UseGranitNpgsql()`

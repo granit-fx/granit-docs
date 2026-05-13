@@ -104,6 +104,7 @@ Per-frontend options in `Frontends[]`:
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `RequirePushedAuthorizationRequests` | `bool` | `false` | When `true`, a PAR failure returns 502 instead of falling back to direct authorization parameters. Requires `UsePushedAuthorizationRequests: true`. |
+| `ClientSide` | `MultiTenancySides?` | `null` | Side this frontend is restricted to (`Host` / `Tenant` / `Both`). When set, the BFF validates that the OpenIddict client carries the matching `client_side` setting; seed via `OidcApplicationSeedDescriptor.ClientSide` or `OpenIddictApplicationDescriptor.SetClientSide(...)`. Promoted to `Granit` foundation in PR #1068 so frontend scoping shares the same `MultiTenancySides` enum used by permission definitions — see [Multi-tenancy side](/dotnet/security/authorization-multitenancy-side/). |
 
 ### Startup validation
 

@@ -222,7 +222,7 @@ it resets `AccessFailedCount`, clears `LockoutEnd`, and resets
 ### Implementation details
 
 The exponential backoff is implemented via `GranitUserManager` — a custom
-`UserManager<GranitUser>` that overrides `AccessFailedAsync()`:
+`UserManager<LocalIdentity>` that overrides `AccessFailedAsync()`:
 
 1. `base.AccessFailedAsync()` increments the failed count and triggers lockout
    at the threshold
@@ -230,7 +230,7 @@ The exponential backoff is implemented via `GranitUserManager` — a custom
 3. The lockout duration is recalculated using the exponential formula
 4. `LockoutEnd` is overwritten with the new, longer duration
 
-`GranitUser` stores the `ConsecutiveLockouts` counter (persisted in the
+`LocalIdentity` stores the `ConsecutiveLockouts` counter (persisted in the
 `openiddict_users` table, defaults to 0).
 
 ## Module configuration

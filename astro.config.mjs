@@ -44,6 +44,17 @@ export default defineConfig({
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
     "/dotnet/api/webhooks/wolverine/": "/dotnet/api/webhooks/",
     "/dotnet/api/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
+    "/dotnet/http/security/url-safety/": "/dotnet/api/url-safety/",
+    "/dotnet/http/url-safety/": "/dotnet/api/url-safety/",
+    "/dotnet/browsing/": "/dotnet/infrastructure/browsing/",
+    "/dotnet/browsing/conventions/": "/dotnet/infrastructure/browsing/conventions/",
+    "/dotnet/browsing/security/": "/dotnet/infrastructure/browsing/security/",
+    "/dotnet/browsing/providers/playwright/": "/dotnet/infrastructure/browsing/providers/playwright/",
+    "/dotnet/browsing/providers/puppeteer-sharp/": "/dotnet/infrastructure/browsing/providers/puppeteer-sharp/",
+    "/dotnet/io/temp-files/": "/dotnet/infrastructure/io/temp-files/",
+    "/dotnet/configuration-keys/": "/dotnet/reference/configuration-keys/",
+    "/dotnet/cloud-providers/": "/dotnet/reference/cloud-providers/",
+    "/dotnet/provider-compatibility/": "/dotnet/reference/provider-compatibility/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
     "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",
@@ -277,6 +288,7 @@ export default defineConfig({
                     { label: "Response Compression", link: "/dotnet/api/response-compression/" },
                     { label: "Output Caching", link: "/dotnet/api/output-caching/" },
                     { label: "OData feed (BI)", link: "/dotnet/api/odata-exposure/" },
+                    { label: "URL Safety", link: "/dotnet/api/url-safety/" },
                     {
                       label: "Webhooks",
                       collapsed: true,
@@ -288,21 +300,6 @@ export default defineConfig({
                 {
                   label: "Infrastructure",
                   items: [{ autogenerate: { directory: "dotnet/infrastructure" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "HTTP",
-                  items: [{ autogenerate: { directory: "dotnet/http" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "IO",
-                  items: [{ autogenerate: { directory: "dotnet/io" } }],
-                  collapsed: true,
-                },
-                {
-                  label: "Browsing",
-                  items: [{ autogenerate: { directory: "dotnet/browsing" } }],
                   collapsed: true,
                 },
                 {
@@ -337,15 +334,15 @@ export default defineConfig({
                   items: [
                     {
                       label: "Configuration Keys",
-                      link: "/dotnet/configuration-keys/",
+                      link: "/dotnet/reference/configuration-keys/",
                     },
                     {
                       label: "Cloud Providers",
-                      link: "/dotnet/cloud-providers/",
+                      link: "/dotnet/reference/cloud-providers/",
                     },
                     {
                       label: "Provider Compatibility",
-                      link: "/dotnet/provider-compatibility/",
+                      link: "/dotnet/reference/provider-compatibility/",
                     },
                   ],
                   collapsed: true,
