@@ -11,7 +11,7 @@ sidebar:
 > **Scope:** granit-dotnet (`Granit.Workspaces.Abstractions`, `Granit.Workspaces`, every `*.Endpoints` package shipping a `*WorkspaceContribution`); granit-business (`Granit.Workspaces.Framework`, `Granit.Workspaces.Business`); host applications (`Granit.Showcase.Web`, `Granit.Showcase.Admin`)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
 > **Supersedes (partial):** [ADR-044](./044-workspace-navigation) §3 (cross-workspace presets), [ADR-045](./045-contributor-pattern) §2 (workspace contributor only — entity relations and activity types are unchanged)
-> **Status:** Proposed
+> **Status:** Accepted (backend implementation complete; phase 4 frontend + phase 5 final deprecation pending)
 
 ## Context
 
@@ -334,10 +334,81 @@ This ADR is the prerequisite. The admin-UI composition mode can land as a phase 
 
 ## Decision record
 
-This ADR is **proposed**. Approval blocks on:
+This ADR is **accepted** as of 2026-05-15. Backend implementation
+(phases 1, 2, 3, and partial 5) landed in a coordinated set of MRs
+across granit-dotnet and granit-business between 2026-05-15 and the
+following day. Phase 4 (frontend) and phase 5 (final deprecation +
+removal) remain pending.
 
-- Sign-off from JF Meyers (author).
-- One additional reviewer with framework-level context.
-- Confirmation from the frontend team that the route-name model (§5) is workable.
+## Implementation status
 
-Once accepted, phase 1 lands within one sprint. The 3 MRs currently in flight (granit-dotnet #2094, granit-business !23, !24 — the taxonomy refactor) are not blocked: they ship under the legacy model and the new model rides on top.
+### Phase 1 — Additive primitives (granit-dotnet + granit-business)
+
+- ✅ `IFeature`, `IFeatureCatalog`, `IFeatureProvider`, `FeatureDescriptor`,
+  `FeatureBuilder`, `IFeatureCatalogBuilder` shipped in
+  `Granit.Workspaces.Abstractions` (granit-dotnet #2096, granit-business !25).
+- ✅ `WorkspaceSectionBuilder.Feature(name, configure?)` and
+  `WorkspaceSectionBuilder.IncludeWorkspacesMatching(predicate)` added.
+- ✅ Composer learns to resolve `Feature` items at filter time and to
+  expand dynamic include predicates against the surviving workspace set
+  (granit-business !25).
+- ✅ Architecture test enforces unique feature names + well-formed shape
+  (kebab + dot, lowercase, no whitespace).
+
+### Phase 2 — Shells declare feature placements (granit-business)
+
+- ✅ Framework root + Business root use `IncludeWorkspacesMatching` —
+  no static SubWorkspace list anymore (!26).
+- ✅ All 11 Framework shells declare their feature placements
+  (`IdentityAccess`, `Platform`, `Customization`, `Communication`,
+  `Storage`, `Automation`, `Integrations`, `Insights`, `AI`,
+  `Observability`, `Compliance`) — !27 + !31.
+- ✅ All 4 Business shells declare their feature placements
+  (`Sales`, `Billing`, `Operations`, `Reference`) — !30.
+
+### Phase 3 — Module-by-module migration
+
+- ✅ Framework modules (21) — granit-dotnet #2097 (Diagnostics pilot),
+  #2098 (IdentityAccess batch), #2099 (16 remaining framework modules).
+- ✅ Business modules (12) — granit-business !28 (Parties pilot),
+  !29 (Billing batch: Invoicing / Payments / Tax / CustomerBalance /
+  Metering), !30 (Sales / Operations / Reference batch), !31
+  (Customization + Insights: EntitiesCustomization / EntitiesViews /
+  Analytics / Dashboards).
+- **Total**: 33 modules expose features via `IFeatureProvider`,
+  populating ~40 entries in `IFeatureCatalog` at boot.
+
+### Phase 4 — Frontend route table (granit-front)
+
+- ⏳ Pending. Frontend types in `@granit/workspaces` need the `Feature`
+  kind value in the `WorkspaceItemKind` union and the `featureName` +
+  `routeName` fields on `WorkspaceItemResponse`. Consumer apps (host +
+  tenant) need a route-name table keyed by feature name. Blocked until
+  the granit-front working tree is clean.
+
+### Phase 5 — Deprecation & removal
+
+- ✅ **Partial**: legacy `*WorkspaceContribution.cs` classes deleted and
+  `AddWorkspaceContribution<>` calls removed from all 21 framework
+  modules (granit-dotnet #2100). Workspace-side contributors are gone.
+- ⏳ **Final deprecation pending**: `IWorkspaceContributor`,
+  `WorkspaceSectionBuilder.Link()`, `AddWorkspaceContribution<>()` are
+  still defined in `Granit.Workspaces.Abstractions` for backward
+  compatibility, but no longer used by the framework or business
+  modules. A future MR will mark them `[Obsolete]` and remove them
+  after a warning release cycle.
+
+### What works today
+
+- Admin UI menu composed entirely from the feature catalog
+- Boot-time fail-fast on missing feature references (no silent drop)
+- Zero dangling sub-workspace pointers by construction
+  (dynamic `IncludeWorkspacesMatching`)
+- Modules carry no UI placement opinion — they expose capabilities,
+  the framework workspace shells own placement (per §1)
+- Multi-placement of the same feature across workspaces remains
+  trivial (the `Showcase.Crm` + `Showcase.Accounting` Party
+  cross-placement that motivated this ADR is preserved via
+  `WorkspaceSectionBuilder.Entity()` — the Entity path stays valid
+  for cross-workspace entity surfaces, complementing Feature for
+  bespoke pages).
