@@ -1,0 +1,343 @@
+---
+title: "ADR-057: Workspace composition belongs to the application, not the module"
+description: "ADR-044/045 made modules contribute to workspace shells declared in the framework, on the premise that loading a module gives you UI for free. That premise leaks UI authority into business code: each module dictates its menu placement, icon, route URL, and section ordering, and ships a non-trivial WorkspaceContribution at the same time as it ships its endpoints. This ADR splits the concern: modules expose a feature catalog (capability + permission + route name + display hints, zero placement), the host application composes workspaces from that catalog. Workspaces become an application-level concern. The framework still ships opt-in default bundles for hosts that want batteries-included admin UI. ADR-044 keeps the navigation primitives; ADR-045 keeps the IoC contributor pattern for entity relations and activity types but is amended for workspaces."
+sidebar:
+  order: 57
+  label: "057 - Workspace composition is an app concern"
+---
+
+> **Date:** 2026-05-15
+> **Authors:** Jean-Francois Meyers
+> **Scope:** granit-dotnet (`Granit.Workspaces.Abstractions`, `Granit.Workspaces`, every `*.Endpoints` package shipping a `*WorkspaceContribution`); granit-business (`Granit.Workspaces.Framework`, `Granit.Workspaces.Business`); host applications (`Granit.Showcase.Web`, `Granit.Showcase.Admin`)
+> **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
+> **Supersedes (partial):** [ADR-044](./044-workspace-navigation) §3 (cross-workspace presets), [ADR-045](./045-contributor-pattern) §2 (workspace contributor only — entity relations and activity types are unchanged)
+> **Status:** Proposed
+
+## Context
+
+[ADR-044](./044-workspace-navigation) introduced `WorkspaceDefinition` as the navigation primitive and [ADR-045](./045-contributor-pattern) generalised the **inversion-of-control contributor** pattern so that `Granit.BackgroundJobs.Endpoints`, `Granit.Webhooks.Endpoints`, etc., could graft items onto shells declared in `Granit.Workspaces.Framework`. The bet was: **loading a module gives you its admin UI for free**, with zero coupling between the shell owner and the contributors.
+
+Six months of usage exposes three structural problems with that bet.
+
+### Problem 1 — UI opinions leak into business modules
+
+A `*WorkspaceContribution.cs` today carries:
+
+- the **target shell name** (`FrameworkWorkspaceNames.Storage`) — a UI grouping decision
+- the **section key + order** (`"blob-storage", Order(0)`) — a layout decision
+- the **route URL** (`"/blob-storage"`) — a frontend routing decision baked into backend C#
+- the **icon** (`"file"`) — a UI presentation decision
+- the **display keys** for sections and items — UI labels
+
+Every business module that wants admin UI ships these decisions. `Granit.BlobStorage.Endpoints` cannot say "I exist" without also saying "I should appear under Storage, second item, with a `file` icon, on `/blob-storage`." A host that wants blob-storage capability without the menu entry has to *opt out* by not loading the contribution — but the contribution lives in the same assembly as the endpoint code, so it loads transitively whenever the endpoint is referenced. The opt-out is effectively impossible without a fork.
+
+This violates the principle that **business modules are libraries**: their job is to expose capabilities and authorisation, not to dictate where those capabilities appear in a host's UI.
+
+### Problem 2 — Multi-placement is a second-class citizen
+
+ADR-044 §3 anticipated that the same entity (e.g., `Party`) would surface under multiple workspaces with different preset overlays (CRM hides leads, Accounting hides leads-with-zero-balance, etc.). The current implementation supports this **only when the placement is declared in the same module that owns the workspace**. Cross-workspace placement *across modules* requires either:
+
+- a third "placement module" that depends on both → an artificial coupling layer
+- duplicate `*WorkspaceContribution` files (one per workspace) → smell, drift risk
+
+The showcase app already hit this: `Granit.Parties.Endpoints` cannot graft Party onto both `Showcase.Crm` and `Showcase.Accounting` without an explicit pair of contributions, each redeclaring the entity name, icon, and display key.
+
+### Problem 3 — Dangling SubWorkspace references
+
+The framework workspace root `Granit.Framework` statically lists its child shells (`Granit.Framework.Storage`, `Granit.Framework.Automation`, …) as `SubWorkspace` items. The `WorkspaceFilter` drops empty shells (no contributor → no items → shell elided), but **does not** strip the corresponding `SubWorkspace` items in the root. A host that doesn't load `Granit.BlobStorage.Endpoints` and `Granit.DataExchange.Endpoints` therefore returns a root workspace whose "Storage" sub-workspace link points to nothing — the React shell renders an empty page.
+
+Patching the filter to drop dangling pointers is a one-screen fix but it papers over the deeper issue: **the root knows about its children by name, statically, at declaration time**. Any divergence between declaration and runtime composition produces an inconsistency that the filter has to mop up. The hierarchical static declaration is the bug.
+
+### Why now
+
+We just renamed the 8 framework shells to 11 (Identity & Access / Platform / Customization / Communication / Storage / Automation / Integrations / Insights / AI / Observability / Compliance) and introduced a parallel `Granit.Business` root with 4 shells (Sales / Billing / Operations / Reference). Both refactors are pure renaming inside the ADR-044/045 model. The renaming exercise made the structural smell impossible to ignore: every renamed shell forced a touch on every contributor in every business module, even though no business code changed. The framework was the one moving furniture, but the bill landed on the modules.
+
+This is the moment to fix the model, before we layer route-name decoupling (frontend ↔ backend) and feature-flag-driven menu hiding on top of a broken foundation.
+
+## Decision
+
+Granit splits **capability declaration** (module concern) from **UI composition** (application concern).
+
+### 1. Modules expose a feature catalog, not workspace contributions
+
+Each `*.Endpoints` package that wants to surface in admin UI ships an `IFeatureProvider` instead of (eventually: in addition to, then replacing) an `IWorkspaceContributor`:
+
+```csharp
+// In Granit.Invoicing.Endpoints
+internal sealed class InvoicingFeatureProvider : IFeatureProvider
+{
+    public void DefineFeatures(IFeatureCatalog catalog)
+    {
+        catalog.Add("invoicing.invoices.list", f => f
+            .Permission(InvoicingPermissions.Invoices.Read)
+            .RouteName("invoicing.invoices.list")
+            .DefaultIcon("receipt")
+            .DisplayKey("InvoicingEndpoints:Invoices.List"));
+
+        catalog.Add("invoicing.invoices.detail", f => f
+            .Permission(InvoicingPermissions.Invoices.Read)
+            .RouteName("invoicing.invoices.detail")
+            .DefaultIcon("file-text")
+            .DisplayKey("InvoicingEndpoints:Invoices.Detail"));
+
+        catalog.Add("invoicing.invoices.new", f => f
+            .Permission(InvoicingPermissions.Invoices.Manage)
+            .RouteName("invoicing.invoices.new")
+            .DefaultIcon("plus")
+            .DisplayKey("InvoicingEndpoints:Invoices.New"));
+    }
+}
+```
+
+A feature carries:
+
+- **Name** (`invoicing.invoices.list`) — globally unique, dot-separated, kebab-case segments. Convention: `{module}.{entity-plural}.{view}` where view ∈ `{list, detail, new, edit, …}` or a domain-specific verb.
+- **Permission** — single permission gate. The feature is invisible to users who lack it (defence in depth: filtered out of every workspace serving the user, never sent in the tree response).
+- **RouteName** — logical frontend route identifier, *not* a URL. The host's React app maps route names to paths (see §5 for the contract).
+- **DefaultIcon** — a Lucide icon name. Suggestion only; hosts can override per placement.
+- **DisplayKey** — a localisation key. Mandatory in 18 cultures (existing rule from CLAUDE.md).
+
+A feature does **not** carry:
+
+- A workspace name
+- A section key
+- An order
+- A URL
+
+Those are placement concerns and live one layer up.
+
+### 2. The application composes workspaces from the catalog
+
+Workspace declarations move out of `Granit.Workspaces.Framework` / `Granit.Workspaces.Business` (which keep existing as opt-in default bundles, see §4) and into the host's `Program.cs` or a host-local composition module:
+
+```csharp
+// In Granit.Showcase.Web — Program.cs (or a Composition.cs partial)
+services.AddWorkspace("Showcase.Erp", w => w
+    .DisplayKey("Showcase:Workspace.Erp")
+    .Icon("building")
+    .RequiresPermission("Workspace.Showcase.Erp.Read")
+    .Section("billing", s => s
+        .DisplayKey("Showcase:Section.Erp.Billing")
+        .Feature("invoicing.invoices.list")
+        .Feature("invoicing.invoices.new")
+        .Feature("payments.transactions.list"))
+    .Section("clients", s => s
+        .DisplayKey("Showcase:Section.Erp.Clients")
+        .Feature("parties.list", overlay: o => o
+            .Filter("type", "customer")
+            .Columns("name", "email", "balance"))));
+
+services.AddWorkspace("Showcase.Crm", w => w
+    .Section("contacts", s => s
+        .Feature("parties.list", overlay: o => o
+            .Filter("kind", "lead")
+            .Sort("-lastContactedAt"))));
+```
+
+The fluent `.Feature(name, overlay?)` resolves at composition time against the registered `IFeatureCatalog`. Resolution rules:
+
+- **Missing feature** (the host references a feature no module declares): startup fails fast with a descriptive error listing the offending feature and the workspace+section that referenced it. No silent drop. Reason: typos in workspace composition were one of the recurring sources of dangling references in the ADR-044/045 model; explicit failure beats silent omission.
+- **Per-placement overrides**: `.Feature("invoicing.invoices.list", f => f.Icon("chart-bar"))` overrides the catalog default for this placement only. Mirrors the existing preset-overlay pattern from ADR-044 §3, generalised.
+- **Permission inheritance**: the feature's declared permission is *and*-ed with any workspace- or section-level permission. A user must satisfy *every* gate on the path from root to feature.
+
+Multi-placement (the "Party in CRM + ERP" use case) becomes trivial: each workspace adds its own `Feature("parties.list", overlay: ...)` line. No coordination between modules. No duplicate `*WorkspaceContribution`.
+
+### 3. The framework workspace root composes dynamically, not statically
+
+`FrameworkWorkspaceDefinition` no longer hard-codes a list of `SubWorkspace` items. Instead it asks the composer to **include all registered workspaces matching a predicate**:
+
+```csharp
+// In Granit.Workspaces.Framework.Defaults (opt-in bundle, see §4)
+public sealed class FrameworkWorkspaceDefinition : WorkspaceDefinition
+{
+    public override string Name => FrameworkWorkspaceNames.Framework;
+
+    protected override void Configure(WorkspaceBuilder b) => b
+        .DisplayKey("WorkspacesFramework:Workspace.Framework")
+        .Icon("settings")
+        .Order(1000)
+        .RequiresPermission(FrameworkWorkspaceNames.FrameworkReadPermission)
+        .Section("framework", s => s
+            .IncludeWorkspacesMatching(name => name.StartsWith("Granit.Framework.", StringComparison.Ordinal))
+            .OrderBy(WorkspaceProperty.Order));
+}
+```
+
+At composition time, the included `SubWorkspace` items are *materialised from the actually-registered workspaces matching the predicate*. If only `Granit.Framework.Automation` and `Granit.Framework.Integrations` are registered (because the host only loaded those modules), the rendered root has exactly two `SubWorkspace` items. No dangling references possible by construction. No duplication of icon / displayKey / order between the root declaration and the shell declaration — the include resolution reads those properties **from the target shell itself**.
+
+The same primitive applies to `Granit.Business` (`name.StartsWith("Granit.Business.", …)`). It generalises to any container workspace.
+
+### 4. The framework still ships batteries-included default bundles
+
+`Granit.Workspaces.Framework.Defaults` and `Granit.Workspaces.Business.Defaults` become opt-in packages a host can pull when it wants the canonical admin UI without composing it by hand:
+
+```csharp
+// Quick-start host
+services.AddDefaultFrameworkWorkspaces();  // declares Granit.Framework + 11 shells + their default feature placements
+services.AddDefaultBusinessWorkspaces();   // declares Granit.Business + 4 shells
+
+// Custom host
+// (no calls — host composes workspaces explicitly with services.AddWorkspace(...))
+```
+
+The default bundle is itself **a consumer of the feature catalog** — same APIs, no special hooks. It is the canonical example of how to compose a tree. A host can call the default and then *augment* it (`services.AddWorkspace("Showcase.Erp", …)` adds an extra top-level), *override* a specific feature placement, or *replace* the bundle entirely.
+
+This preserves the "loading a module gives you UI for free" promise of ADR-045 — it's just now an explicit opt-in (`AddDefaultFrameworkWorkspaces()`) rather than an implicit consequence of loading endpoints.
+
+### 5. Route names decouple backend from frontend routing
+
+Features carry **route names** (`invoicing.invoices.list`), not URLs (`/invoicing`). The host's React app ships a route table that maps names to paths:
+
+```typescript
+// granit-front/apps/host/routes/index.ts
+export const ROUTES: Record<string, RouteSpec> = {
+  "invoicing.invoices.list": { path: "/invoicing", element: <InvoicingListPage /> },
+  "invoicing.invoices.detail": { path: "/invoicing/:id", element: <InvoicingDetailPage /> },
+  "invoicing.invoices.new": { path: "/invoicing/new", element: <InvoicingNewPage /> },
+  // ...
+};
+```
+
+The workspace tree response carries `routeName`; the React workspace renderer looks up the path at click time. Three benefits:
+
+1. **The frontend owns its URLs.** Renaming `/invoicing` → `/billing/invoices` in React no longer requires a backend deployment.
+2. **Different hosts can map the same feature to different paths.** A tenant-facing app and an admin-facing app can both render `invoicing.invoices.list` but at different routes.
+3. **A feature without a frontend route is detectable.** If the host's route table has no entry for a feature, the workspace renderer can hide the item or render a placeholder — the backend doesn't need to know.
+
+Route names are convention `{module}.{entity-plural}.{view}` — the same as feature names. In ~95 % of cases feature name **is** the route name, but they're stored as separate fields to permit the rare divergence (e.g., a feature with no dedicated page that just appears as a menu shortcut to an existing page).
+
+### 6. Workspaces are still served by the existing endpoint, with the same shape
+
+`GET /api/{version}/workspaces/` (ADR-044 §2) continues to return `WorkspaceTreeResponse`. The payload shape **stays compatible** with the existing React workspace renderer: workspaces → sections → items, where each item is a `Link` / `Entity` / `SubWorkspace` / new `Feature` kind. The renderer learns one new kind; the filter still filters by permission; the cache key is unchanged.
+
+This is critical: we don't want a flag day. The React app can render the new `Feature` kind alongside the legacy kinds for the entire migration window.
+
+## Consequences
+
+### Positive
+
+- **Modules become pure libraries.** A `*.Endpoints` package exposes endpoints + features + permissions, nothing else. An API-only host pays zero UI cost.
+- **Dangling references impossible by construction.** Dynamic inclusion (§3) and explicit composition (§2) close both gaps. The `WorkspaceFilter` two-pass patch becomes unnecessary.
+- **Multi-placement is first-class.** Party in CRM and ERP, with different overlays, is two lines in the host composition.
+- **Hosts control their UX.** Showcase.Web, an internal admin tool, a customer-facing portal, and a partner-facing API console can all consume the same set of modules and render entirely different navigations.
+- **Workspaces become data.** A future tenant-customisation layer (admin reorders sections through the UI) reads from the same store rather than emitting C#. Out of scope here, but unblocked.
+- **Route-name decoupling lands naturally** without a separate refactor.
+- **No more duplication** of icon / displayKey / order between the root workspace declaration and the shell declarations.
+
+### Negative
+
+- **Bigger host boilerplate.** A host that previously got 25 menu entries for free by loading modules now declares them (or pulls a `*.Defaults` bundle). Mitigated by the bundles (§4) but the curve exists.
+- **Feature-name drift risk.** A typo in `services.AddWorkspace(...).Feature("invoicng.invoices.list")` (note the typo) fails startup — explicit but still possible. Mitigated by `nameof`-style helpers shipped per module (`InvoicingFeatures.Invoices.List` as a `const string`).
+- **Two coexisting models during migration.** The legacy `IWorkspaceContributor` keeps working alongside `IFeatureProvider` for the migration window (1–2 quarters). The composer accepts both. Adds testing surface.
+- **ADR-044 needs an amendment** documenting that workspaces are no longer declared from the framework. ADR-045 keeps its core for entity relations and activity types but gets a section noting the workspace specialisation has moved here.
+- **`/audit` and `/quality` skills need updates** to detect modules shipping new endpoints without a matching feature.
+
+### Neutral
+
+- Permission model unchanged (ADR-044 §4 intersection rule still applies).
+- Cache key unchanged (`(user-perms-hash, culture, includeShells)`).
+- OpenAPI surface of `/api/workspaces` unchanged (one new `kind` value in the discriminator).
+- Localisation rules unchanged (every feature ships its `DisplayKey` in 18 cultures).
+- Architecture-test rules around `WorkspaceDefinition` placement (base module, not `.Endpoints`) unchanged — but the rule about `*WorkspaceContribution.cs` placement is deprecated.
+
+## Migration plan
+
+Five phases. Each phase ships independently and leaves the system buildable.
+
+### Phase 1 — Additive primitives (granit-dotnet)
+
+- Introduce `IFeature`, `IFeatureCatalog`, `IFeatureProvider` in `Granit.Workspaces.Abstractions`.
+- Introduce `WorkspaceBuilder.Feature(name, overlay?)` and `WorkspaceSectionBuilder.IncludeWorkspacesMatching(predicate)` alongside the existing `.Link()`, `.Entity()`, `.SubWorkspace()` methods.
+- Composer learns to resolve `Feature` items at filter time. Missing feature → startup-time exception (not filter-time).
+- React renderer learns the `Feature` kind (reads `routeName`, looks up the path table, falls back to a placeholder if unmapped).
+- Architecture tests: a feature name must be globally unique; permission must be a declared one.
+
+**Non-breaking.** Existing `IWorkspaceContributor` keeps working.
+
+### Phase 2 — Default bundles (granit-business)
+
+- Create `Granit.Workspaces.Framework.Defaults` and `Granit.Workspaces.Business.Defaults` packages.
+- Move the framework workspace declarations (the renamed 11 shells from MR !23, the 4 business shells from MR !24) from the current packages into the `.Defaults` ones.
+- Defaults compose workspaces from the (still-empty) feature catalogue — they ship the *placements* without the *features* yet. Hosts that load the bundle see empty shells until phase 3 fills them.
+
+**Non-breaking.** The current `Granit.Workspaces.Framework` and `Granit.Workspaces.Business` remain but become thin re-exports during the transition.
+
+### Phase 3 — Module-by-module migration
+
+For each `Granit.X.Endpoints` package shipping a `*WorkspaceContribution`:
+
+1. Add `*FeatureProvider` declaring features for the module's screens.
+2. Update `Granit.Workspaces.Framework.Defaults` (or `Business.Defaults`) to place those features in the relevant shell.
+3. Mark the legacy `*WorkspaceContribution` `[Obsolete]` (kept building, scheduled for removal).
+4. Update the module's CLAUDE.md / README to point new contributors at the feature pattern.
+
+Order of migration (priority by user-visible footprint):
+
+1. `Granit.Identity.Endpoints`, `Granit.Authorization.Endpoints`, `Granit.OpenIddict.Endpoints` (IdentityAccess shell — heaviest user)
+2. `Granit.BlobStorage.Endpoints`, `Granit.DataExchange.Endpoints` (Storage)
+3. `Granit.Notifications.Endpoints`, `Granit.Templating.Endpoints` (Communication)
+4. `Granit.BackgroundJobs.Endpoints`, `Granit.Scheduling.Endpoints`, `Granit.Workflow.Endpoints` (Automation)
+5. Remaining modules.
+
+Each module migration is one MR. The CI shard split (CLAUDE.md) keeps the blast radius small.
+
+### Phase 4 — Frontend route table migration
+
+- granit-front host + tenant apps register a route table keyed by feature name.
+- The workspace renderer prefers `routeName` over the legacy `linkUrl`. `linkUrl` is rendered as a fallback for items not yet migrated.
+- One MR per app per route batch.
+
+### Phase 5 — Deprecation & removal
+
+- After all modules have migrated: mark `IWorkspaceContributor`, `WorkspaceBuilder.Link()`, `WorkspaceBuilder.Entity()`, `WorkspaceBuilder.SubWorkspace()` as `[Obsolete]` with a one-version warning.
+- After the warning version ships: delete the obsolete surface, the legacy `linkUrl` fallback, and the legacy `Granit.Workspaces.Framework` / `.Business` thin packages.
+- Update ADR-044, ADR-045, ADR-049 to reflect the new model. Update CLAUDE.md (the workspace section). Update `granit-docs` site.
+
+Estimated calendar: phase 1 (1 week) → phase 2 (3 days) → phase 3 (3–4 weeks, parallelisable across module owners) → phase 4 (1–2 weeks, coupled to frontend availability) → phase 5 (after a release cycle, ~1 week).
+
+## Alternatives considered
+
+### A — Keep ADR-044/045 and just fix the dangling-reference bug
+
+A two-pass `WorkspaceFilter` (collect surviving workspace names, then strip orphan `SubWorkspace` items, iterate to fixed point) fixes the immediate UI bug in ~50 lines. Rejected as the sole solution: it papers over Problems 1 and 2 (UI leak, multi-placement) and doubles down on a model that already feels wrong six months in. Worth keeping as a hot-fix if phase 1 slips past a release we cannot block, but not the destination.
+
+### B — Make `*WorkspaceContribution` declarative but inert by default
+
+Modules keep shipping contributions, but the contribution is a `[WorkspaceContributionDefault]`-marked class that the host explicitly enables (e.g., via `services.EnableContribution<BlobStorageWorkspaceContribution>()`). Closer to the current pattern, smaller boilerplate per host. Rejected because:
+
+- It keeps UI opinions (icon, route URL, section key) in the module — Problem 1 unaddressed.
+- It keeps multi-placement awkward — Problem 2 unaddressed.
+- It introduces a "what's enabled" registry that the team has to keep in sync — replacing one coupling with another.
+- The opt-in granularity is wrong: the module declares one composition unit but the host wants to mix-and-match individual features.
+
+### C — Workspaces declared in a separate "wiring" module per host
+
+Introduce `Granit.Showcase.Web.Wiring` that depends on every module the host uses and declares all `WorkspaceDefinition`s. Workspace declarations no longer live in `*.Endpoints` packages. Solves Problem 1 partially (modules stop declaring placement) but the wiring module still hard-references concrete `WorkspaceDefinition` classes, encoding the same coupling at a different layer. Multi-placement still requires duplicate declarations. Rejected as a half-measure.
+
+### D — Wait for the entity-customisation tenant UI (ADR-053) and let admins compose workspaces through a UI
+
+A tenant admin drags features into workspaces from a palette; the persisted result drives the tree. Most flexible end state. Rejected as a *first* step because:
+
+- It still needs the underlying primitives this ADR ships (feature catalogue, dynamic resolution).
+- It defers an immediate problem (the Granit.Framework taxonomy refactor just landed) by 6+ months.
+- It conflates "host engineer composes default UX" with "tenant admin tweaks UX" — different audiences, different tools.
+
+This ADR is the prerequisite. The admin-UI composition mode can land as a phase 6 once the data model is in place.
+
+## Open questions
+
+1. **Feature granularity** — One feature per *screen* (list, detail, new, edit) or one feature per *entity* with the screens implicit? Current proposal: per screen, because each can have its own permission gate and the React app already routes per screen. To validate during phase 1 against a real module.
+2. **Feature name as `const string` vs. type-safe enum** — `InvoicingFeatures.Invoices.List = "invoicing.invoices.list"` (current proposal, mirrors `XxxPermissions`) or `[Feature(...)] sealed record InvoiceListFeature` typed? Type safety is nice but introduces a "discoverable type" indexing problem the contributor pattern explicitly avoided. Defer to phase 1 prototype.
+3. **Does the catalog support multiple permission gates per feature?** — Today a screen might require *two* permissions (read entity + execute action). Proposal: single permission, AND the rest at workspace/section/feature-placement level. To revisit if a real case fails.
+4. **Tenant-level workspace overrides** — The current ADR-044 model allows a tenant to hide a workspace via missing permission. The new model still does, but can a tenant *rearrange* sections? Out of scope (phase 6), but the data model should leave room.
+5. **`Granit.Bff.Endpoints` + auth endpoints** — these are explicitly *not* admin features (no menu entry). The feature catalogue is for menu-visible capabilities. The convention: if it doesn't show in a workspace, it doesn't need a feature. Confirm during phase 3 that no edge case forces us to re-think.
+
+## Decision record
+
+This ADR is **proposed**. Approval blocks on:
+
+- Sign-off from JF Meyers (author).
+- One additional reviewer with framework-level context.
+- Confirmation from the frontend team that the route-name model (§5) is workable.
+
+Once accepted, phase 1 lands within one sprint. The 3 MRs currently in flight (granit-dotnet #2094, granit-business !23, !24 — the taxonomy refactor) are not blocked: they ship under the legacy model and the new model rides on top.
