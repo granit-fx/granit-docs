@@ -42,7 +42,8 @@ builder.AddGranitTimelineAI();
     "Timeline": {
       "WorkspaceName": "default",
       "TimeoutSeconds": 30,
-      "MaxEntriesToAnalyze": 200
+      "SummarizerMaxEntries": 200,
+      "AnomalyDetectorMaxEntries": 500
     }
   }
 }
@@ -53,7 +54,7 @@ builder.AddGranitTimelineAI();
 ## Summarization
 
 `ITimelineSummarizer.SummarizeAsync` fetches the timeline entries for an entity
-(up to `MaxEntriesToAnalyze`), sends them to the LLM, and returns a natural language
+(up to `SummarizerMaxEntries`, default 200), sends them to the LLM, and returns a natural language
 summary:
 
 ```csharp
@@ -161,7 +162,7 @@ public sealed record TimelineAnomaly(
 | Mass bulk operations | 200 records deleted in one action |
 | Privilege-sensitive actions | Role escalation in audit log |
 
-The detector uses `MaxEntriesToAnalyze` to cap the context window for the LLM.
+The detector uses `AnomalyDetectorMaxEntries` (default 500) to cap the context window for the LLM — higher than the summarizer cap because anomaly signal improves with volume.
 For very long timelines, only the most recent entries are analyzed.
 
 ## Scheduled analysis (recommended)
@@ -214,7 +215,8 @@ public static class NightlyAnomalyDetectionHandler
 |----------|------|---------|-------------|
 | `WorkspaceName` | `string?` | `null` (default) | AI workspace for timeline analysis |
 | `TimeoutSeconds` | `int` | `15` | LLM call timeout |
-| `MaxEntriesToAnalyze` | `int` | `100` | Max entries sent to LLM per call |
+| `SummarizerMaxEntries` | `int` | `200` | Max entries fed to the summarizer LLM (token-budget bound) |
+| `AnomalyDetectorMaxEntries` | `int` | `500` | Max entries fed to the anomaly-detection LLM (signal-to-noise bound) |
 | `MaxConcurrentRequests` | `int` | `3` | Concurrency limiter for LLM calls (denial-of-wallet protection) |
 
 ## See also
