@@ -1,0 +1,178 @@
+---
+title: "Background Jobs in .NET Without Hangfire: Wolverine + Cronos + Outbox"
+date: 2026-05-18
+authors:
+  - jfmeyers
+tags:
+  - messaging
+  - architecture
+  - best-practice
+  - comparison
+description: "Hangfire is great until you need cluster-safe scheduling, exactly-once semantics, and a transactional outbox. Wolverine + Cronos gives you all three, with less moving parts."
+excerpt: >
+  Hangfire ships fast. Then production scales out, two nodes fire the same
+  recurring job at the same time, the outbox you bolted on doesn't include the
+  job table, and the audit log goes sideways. There is a better default in 2026.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You run two pods of your .NET API behind a load balancer. Every night at 03:00, "send daily summary emails" runs **twice** and 5,000 customers get duplicate invoices. You add a distributed lock with Redis. It works until Redis fails over and you get duplicates again. You add idempotency keys to the email sender. The accountant asks why three customers got two emails on Wednesday.
+
+The hard part of background jobs is not "run this in five minutes". It is:
+
+1. **Exactly-once execution in a cluster** — only one node runs the 03:00 job.
+2. **Atomic scheduling** — if the handler succeeds, the next run *is* persisted. If it crashes, no orphan and no duplicate.
+3. **Transactional consistency** — the job and the side effects (DB writes, outbound messages) commit together.
+4. **Cluster-safe leader election** — works during rolling deploys, pod restarts, network partitions.
+
+Hangfire handles (1) with a SQL-level distributed lock and is comfortable up to a single SQL server. For (2), (3) and (4), most teams discover the limits the hard way. **Wolverine + Cronos** gives you all four by piggybacking on the same outbox you already use for events. No second database. No second scheduler. One mental model.
+
+## What "background job" actually means in 2026
+
+The label covers three quite different things:
+
+| Kind                | Trigger                  | Example                          | What it needs                  |
+| ------------------- | ------------------------ | -------------------------------- | ------------------------------ |
+| Fire-and-forget     | Inline (`PublishAsync`)  | "send welcome email"             | Outbox, retries                |
+| Delayed             | One-shot future time     | "remind in 24h if no reply"      | Persistent scheduling          |
+| Recurring (cron)    | Cron expression          | "nightly export at 03:00"        | Leader election, idempotency   |
+
+Hangfire blurs these. Wolverine separates them cleanly — and the boring ones (fire-and-forget, delayed) are already handled by its message bus and outbox. The interesting case is **recurring jobs**, which is where this article focuses.
+
+## The two failures nobody warns you about
+
+### Failure 1 — Two pods, one cron
+
+Naive cron schedulers run on every node. Two nodes, one job at 03:00, two executions. You learn this on day two of horizontal scaling.
+
+The fix is a **singleton agent**: one (and only one) pod runs the scheduler. If that pod dies, another takes over within seconds. Wolverine ships exactly this primitive: `SingularAgent` — a cluster-wide leader-elected service hosted by one node at a time.
+
+```csharp title="Granit wiring (simplified)"
+context.Services.AddSingularAgent<CronSchedulerAgent>();
+```
+
+Inside the agent, scheduling is a one-line call:
+
+```csharp
+DateTimeOffset next = cron.GetNextOccurrence(clock.Now, TimeZoneInfo.Utc) ?? DateTimeOffset.MaxValue;
+await messageBus.ScheduleAsync(new HourlyCleanupJob(), next);
+```
+
+That's the entire scheduler. Cronos parses the expression, Wolverine handles persistence, the singular agent guarantees one writer.
+
+### Failure 2 — Scheduling outside the transaction
+
+Look closely at any cron scheduler that is not transactional. The "schedule the next occurrence" call happens **after** the handler returns. If the node crashes between the handler success and the schedule call, the next occurrence is lost. The job stops firing. Silently.
+
+The opposite mistake: schedule first, run second. Now the node crashes between scheduling and the actual work. The work never happened, but the *next* one will fire. Silent gap, no audit trail.
+
+The only safe pattern is: **schedule the next occurrence inside the same database transaction as the handler**.
+
+This is the textbook **Outbox pattern**. Wolverine implements it natively: `IMessageContext.ScheduleAsync(...)` inside a handler writes to the outbox table, in the handler's DB transaction. Commit succeeds → next run is durable. Commit fails → next run never existed; the current message is redelivered.
+
+## The Granit ergonomics — `[RecurringJob]` and zero glue
+
+The full pattern is fiddly enough that you do not want to write it per job. Granit collapses it to two declarations:
+
+```csharp title="Jobs/HourlyCleanupJob.cs"
+[RecurringJob("0 * * * *", "billing-hourly-cleanup")]
+public sealed record HourlyCleanupJob : IBackgroundJob;
+```
+
+```csharp title="Jobs/HourlyCleanupHandler.cs"
+internal static partial class HourlyCleanupHandler
+{
+    public static async Task HandleAsync(HourlyCleanupJob job, IBillingService billing, CancellationToken ct)
+        => await billing.CleanupStaleQuotesAsync(ct);
+    //  Rescheduling is injected automatically.
+}
+```
+
+That's it. No explicit scheduler call. No worker class. No `IHostedService`.
+
+What's happening behind the scenes:
+
+1. At startup, `RecurringJobDiscovery` scans for `[RecurringJob]` types and seeds them into the `BackgroundJobDefinitions` table.
+2. The Wolverine handler chain for each decorated message has `RecurringJobSchedulingMiddleware` injected. After every successful handler invocation, the middleware reads the current cron from the store, computes the next occurrence, and calls `IMessageContext.ScheduleAsync` — **inside the handler's transaction**.
+3. The `SingularAgent` scheduler ensures the first occurrence (and the catch-up logic on startup) runs from one node only.
+
+```csharp title="RecurringJobSchedulingMiddleware.cs (excerpt)"
+public async Task AfterAsync(Envelope envelope, IMessageContext context, CancellationToken ct)
+{
+    RecurringJobAttribute? attr = envelope.Message?.GetType().GetCustomAttribute<RecurringJobAttribute>();
+    if (attr is null) return;
+
+    BackgroundJobDefinition? job = await storeReader.FindAsync(attr.Name, ct);
+    if (job is not { IsEnabled: true }) return;
+
+    DateTimeOffset? next = CronExpression.Parse(job.CronExpression).GetNextOccurrence(clock.Now, TimeZoneInfo.Utc);
+    if (next is null) return;
+
+    await context.ScheduleAsync(envelope.Message!, next.Value);
+}
+```
+
+The handler can pause itself by flipping `IsEnabled = false` in the store — the next reschedule is skipped, the cron resumes when an admin re-enables it. No code change, no redeploy.
+
+## Where Cronos fits
+
+`Cronos` is the small, fast cron parser by Hangfire's author. It supports:
+
+- 5-field (`min hour day month dow`) and 6-field (`sec min hour day month dow`) expressions
+- DST-aware time zones (`TimeZoneInfo`)
+- Calculation of the next occurrence from any starting `DateTime`, including a range query for catch-up
+
+Granit parses 6-field first and falls back to 5-field. You can write `"*/30 * * * * *"` for "every 30 seconds" or `"0 3 * * 1-5"` for "weekdays at 03:00".
+
+## Comparison: Hangfire vs Wolverine + Cronos
+
+| Concern                          | Hangfire                          | Wolverine + Cronos              |
+| -------------------------------- | --------------------------------- | ------------------------------- |
+| Storage                          | Separate Hangfire schema          | Your application DB (outbox)    |
+| Transaction with business logic  | No (separate connection)          | **Yes** (same DbContext + tx)   |
+| Cluster-safe singleton           | SQL `sp_getapplock` (SQL Server)  | `SingularAgent` (any backend)   |
+| Exactly-once on crash            | Best-effort                       | **Outbox-guaranteed**           |
+| Dashboard UI                     | Bundled                           | Bring your own / Granit endpoints |
+| License                          | LGPL (free) / Pro (paid)          | MIT                             |
+| Dependencies                     | Hangfire + storage adapter        | Wolverine + Cronos (~2 MB)      |
+
+The killer column is "transaction with business logic". Hangfire is *near* your DB; Wolverine writes the next-run schedule *in the same transaction* as the work it just did. That difference is what eliminates the duplicate-email class of bugs.
+
+<Aside type="note">
+Hangfire is still a great default for monoliths that don't already use a message bus. The case for migrating is strongest when you already run Wolverine or MassTransit and don't want a second scheduler living alongside.
+</Aside>
+
+## Operational ergonomics — what your SRE asks about
+
+A scheduler that admins cannot inspect at 03:14 AM is a liability. The minimum surface every background job system needs:
+
+- **List of jobs** with last run, last status, next occurrence.
+- **Pause / resume** without redeploy.
+- **Trigger now** for manual catch-up.
+- **Audit** — who triggered what, when. Required for ISO 27001 (A.12.4 logging).
+
+Granit exposes these as `IBackgroundJobReader` (CQRS query side) and `IBackgroundJobWriter` (write side, audited). The writer captures the `X-Triggered-By` header into the job definition so that `manual` runs are distinguishable from `cron` runs in the audit log.
+
+```csharp title="Admin endpoint (sketch)"
+app.MapPost("/admin/jobs/{name}/trigger", async (string name, IBackgroundJobWriter writer, ICurrentUser user, CancellationToken ct) =>
+{
+    await writer.TriggerNowAsync(name, triggeredBy: user.Email, ct);
+    return Results.Accepted();
+});
+```
+
+## Takeaways
+
+- **Background jobs in a cluster are an outbox problem**, not a scheduling problem. Solve the outbox and the schedule comes for free.
+- **One scheduler, leader-elected.** Many workers, all stateless. Anything else creates duplicates.
+- **Reschedule inside the handler's transaction.** Commit-or-rollback together is the only safe semantic.
+- **Pick a small cron library** (Cronos), let your message bus (Wolverine) do persistence and retries.
+- **Expose pause/resume/trigger-now and audit from day one.** Schedulers without admin surface become 03 AM pages.
+
+## Further reading
+
+- [Granit.BackgroundJobs module](/dotnet/infrastructure/background-jobs/)
+- [CQRS without MediatR — how Granit uses Wolverine](/blog/cqrs-without-mediatr-how-granit-uses-wolverine/)
+- [Idempotency keys — why every POST should be retry-safe](/blog/idempotency-keys-why-every-post-should-be-retry-safe/)
+- [Observability in .NET 10: Serilog + OpenTelemetry to Grafana](/blog/observability-dotnet-10-serilog-opentelemetry-grafana/)

@@ -1,0 +1,232 @@
+---
+title: "Architecture Tests in .NET: Stop Module Boundary Drift at Build Time"
+date: 2026-05-09
+authors:
+  - jfmeyers
+tags:
+  - testing
+  - architecture
+  - best-practice
+  - code-quality
+description: "Architecture tests catch layer violations, EF Core leaks and module coupling before they reach main. Here is what to enforce, in which order, and why."
+excerpt: >
+  Code reviews catch typos. They do not catch a controller quietly importing
+  `Microsoft.EntityFrameworkCore` and bypassing your repository layer. Architecture
+  tests do — at build time, on every PR. Here is a pragmatic playbook for .NET teams.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A senior developer leaves. Six months later, a new hire opens your codebase and notices the rules of your "clean architecture" are no longer obvious. A controller references `DbContext` directly. An endpoint project takes a dependency on a sibling module's internals. A `DbContext.OnModelCreating` quietly stops applying soft-delete query filters. Nothing fails. The tests are green. Production keeps running. **The architecture is dead, and nobody noticed.**
+
+This is the silent failure mode of layered architectures: **conventions only hold while the people who wrote them are still around**. Documentation rots. PR reviewers grow tired. The only thing that actually defends the boundary is a test that fails when someone crosses it.
+
+This article is a pragmatic guide to architecture tests in .NET — what to enforce first, what is not worth your time, and how Granit wires the high-value rules so you can copy the pattern.
+
+## What architecture tests actually are
+
+An architecture test is a unit test that asserts a structural rule about your code: "no type in namespace X may reference assembly Y", "every class deriving from Z must be sealed", "controllers must not return entity types". The test runs on the **compiled assembly graph** — there is no I/O, no HTTP, no database. It is fast (seconds), deterministic, and runs on every PR like any other test.
+
+In .NET, the two mainstream libraries are:
+
+- **[ArchUnitNET](https://github.com/TngTech/ArchUnitNET)** — fluent rules over the type graph. Battle-tested, port of the JVM `ArchUnit`.
+- **[NetArchTest](https://github.com/BenMorris/NetArchTest)** — simpler, lighter, also based on Mono.Cecil.
+
+For non-graph rules ("no `HasQueryFilter` outside the persistence layer", "every `OnModelCreating` must call `ApplyGranitConventions`") you also need **source scanners** — plain file globbing with regex. Both are part of a healthy architecture test suite.
+
+## The four rules that pay off immediately
+
+Most teams discover architecture tests, write 50 rules, get bored, and let them rot. **Start with four rules**. Add more only after the first four have caught real violations on real PRs.
+
+### 1. Layer dependency — no upward references
+
+Endpoints must not depend on infrastructure. Application must not depend on web. Core must not depend on anything except itself.
+
+```csharp title="LayerDependencyTests.cs"
+[Fact]
+public void Endpoint_types_should_not_depend_on_EntityFrameworkCore()
+{
+    IEnumerable<IType> endpointTypes = Architecture.Types
+        .Where(t => t.Namespace.FullName.EndsWith(".Endpoints", StringComparison.Ordinal)
+                 || t.Namespace.FullName.Contains(".Endpoints.", StringComparison.Ordinal));
+
+    IEnumerable<IType> violations = endpointTypes
+        .Where(t => t.Dependencies.Any(d =>
+            d.Target.FullName.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal)));
+
+    violations.ShouldBeEmpty(
+        "Endpoints must use ports (interfaces), not EF Core directly. " +
+        $"Violators: {string.Join(", ", violations.Select(t => t.FullName))}");
+}
+```
+
+This single test catches the most common architectural regression: a developer adds a quick `DbContext` injection into a controller "just for this one endpoint" and bypasses the entire repository layer.
+
+### 2. `IQueryable` must not escape the persistence layer
+
+`IQueryable<T>` is a leaky abstraction. Once it crosses an interface boundary, the caller can compose arbitrary LINQ expressions — including ones that EF Core cannot translate, or that bypass your query filters. Return materialized DTOs or `IAsyncEnumerable<T>`. Never `IQueryable<T>`.
+
+```csharp title="LayerDependencyTests.cs"
+[Fact]
+public void IQueryable_should_not_appear_in_non_persistence_types()
+{
+    IEnumerable<IType> leaks = Architecture.Types
+        .Where(t => !t.Namespace.FullName.Contains("EntityFrameworkCore", StringComparison.Ordinal))
+        .Where(t => t.MemberDependencies.Any(d =>
+            d.Target.FullName.StartsWith("System.Linq.IQueryable", StringComparison.Ordinal)));
+
+    leaks.ShouldBeEmpty($"IQueryable<T> escaped the persistence layer: {string.Join(", ", leaks.Select(t => t.FullName))}");
+}
+```
+
+### 3. Domain entities must not leak through HTTP
+
+Returning EF entities from a controller exposes your database schema as a public contract. The next migration becomes a breaking change for every API consumer. Enforce the boundary with a test:
+
+```csharp title="LayerDependencyTests.cs"
+[Fact]
+public void Endpoint_types_should_not_inherit_from_domain_entities()
+{
+    string[] domainBases =
+    [
+        "Granit.Domain.Entity",
+        "Granit.Domain.AuditedEntity",
+        "Granit.Domain.FullAuditedEntity",
+        "Granit.Domain.AggregateRoot",
+    ];
+
+    IEnumerable<IType> violations = Architecture.Types
+        .Where(t => t.Namespace.FullName.Contains(".Endpoints", StringComparison.Ordinal))
+        .Where(t => domainBases.Any(b => InheritsFrom(t, b)));
+
+    violations.ShouldBeEmpty();
+}
+```
+
+The matching positive rule — "controllers return DTOs only" — is a second test in the same file. Pair them.
+
+### 4. Module boundaries — framework must not depend on modules
+
+The killer rule for a modular monolith. Without it, the framework slowly accretes references to specific modules ("just import that one helper from Billing"), and you can no longer ship the framework without dragging the whole product with it.
+
+```csharp title="FrameworkBoundaryTests.cs"
+[Fact]
+public void Framework_packages_should_not_reference_module_packages()
+{
+    foreach (string csproj in Directory.GetFiles(SrcRoot, "*.csproj", SearchOption.AllDirectories))
+    {
+        string projectName = Path.GetFileNameWithoutExtension(csproj);
+        if (ClassifyProject(projectName) != "framework") continue;
+
+        foreach (string referenced in ReadProjectReferences(csproj))
+        {
+            if (ClassifyProject(referenced) == "module")
+            {
+                violations.Add($"{projectName} -> {referenced}");
+            }
+        }
+    }
+
+    violations.ShouldBeEmpty(
+        "Framework packages must never reference module packages. " +
+        $"Violators:\n{string.Join("\n", violations)}");
+}
+```
+
+The same pattern flags every unclassified `.csproj` so that adding a new package forces a conscious decision: framework, module, or bundle?
+
+<Aside type="tip">
+Architecture tests are not a substitute for code review — they encode the rules that **don't** require human judgment. Reserve review for the ones that do (naming, intent, trade-offs).
+</Aside>
+
+## Rules to skip (at first)
+
+Some rules sound great in blog posts and never catch anything in practice. Examples to deprioritize:
+
+- **"Every class must have an interface"** — false positives everywhere, real bugs almost never.
+- **"Method bodies must be under N lines"** — that's a linter rule, not architecture.
+- **"Namespace must match folder structure"** — your IDE already enforces this.
+
+Add a rule only when you have a story for **what would have been caught**. "Last quarter, a junior added `using Microsoft.EntityFrameworkCore` in our minimal API endpoint and bypassed soft-delete. We caught it three weeks later in QA." That's a rule.
+
+## Convention rules — going beyond the type graph
+
+Some invariants are not expressible as "type A depends on type B". For those, scan the source files directly:
+
+```csharp title="IsolatedDbContextTests.cs"
+[Fact]
+public void OnModelCreating_should_call_ApplyGranitConventions()
+{
+    List<string> violations = [];
+
+    foreach (string efProject in GetEfCoreProjectDirs())
+    {
+        foreach (string csFile in Directory.GetFiles(efProject, "*.cs", SearchOption.AllDirectories))
+        {
+            string content = File.ReadAllText(csFile);
+
+            if (!OnModelCreatingOverride().IsMatch(content)) continue;
+            if (content.Contains("ApplyGranitConventions", StringComparison.Ordinal)) continue;
+
+            violations.Add(Path.GetRelativePath(RepoRoot, csFile));
+        }
+    }
+
+    violations.ShouldBeEmpty(
+        "Every DbContext.OnModelCreating must call modelBuilder.ApplyGranitConventions(). " +
+        $"Violators: {string.Join(", ", violations)}");
+}
+```
+
+This catches an entire class of GDPR bugs: a new module adds a `DbContext` but forgets the central call that registers soft-delete and multi-tenant query filters. Silent data leak averted at build time.
+
+## How Granit ships these rules
+
+Granit packages a curated rule library as `Granit.ArchitectureTests.Abstractions`. You pull it in, point it at your assembly, and call the rules you want:
+
+```csharp title="MyArchitectureTests.cs"
+public sealed class MyArchitectureTests
+{
+    private static readonly ArchUnitNET.Domain.Architecture Architecture =
+        ArchitectureLoader.Load("MyApp.", typeof(MyArchitectureTests).Assembly);
+
+    [Theory]
+    [InlineData("MyApp.Domain")]
+    [InlineData("MyApp.Application")]
+    public void Core_should_not_depend_on_EF_Core(string namespacePrefix) =>
+        LayerDependencyRules.TypesShouldNotDependOnEntityFrameworkCore(
+            Architecture, namespacePrefix, $"Core layer ({namespacePrefix})");
+
+    [Fact]
+    public void Endpoints_should_not_depend_on_EF_Core() =>
+        LayerDependencyRules.EndpointTypesShouldNotDependOnEntityFrameworkCore(Architecture);
+}
+```
+
+The Granit repo itself runs ~30 of these tests, including module-isolation, CQRS naming, Wolverine coupling guard-rails and Privacy/PII annotation completeness. They run in under five seconds.
+
+## The ROI nobody talks about
+
+Architecture tests do not stop bad code from being written. They stop bad code from being **merged**. The economic effect compounds:
+
+- **Reviews get shorter.** The reviewer no longer has to remember 30 unwritten rules.
+- **Onboarding gets faster.** New developers learn the architecture by reading the failing tests.
+- **Refactoring becomes safe.** You can move a module knowing the test suite will scream if a hidden coupling crosses a boundary.
+- **Tech-debt stops compounding silently.** Every violation is visible the moment it appears, while the fix is still a one-line revert.
+
+The team that pays for architecture tests is the future team — usually the same people, six months later, trying to remember why everything is tangled.
+
+## Takeaways
+
+- **Architecture tests are unit tests for your design.** Same tooling, same speed, same CI gate.
+- **Start with four rules**: layer dependencies, no `IQueryable` leaks, no entity leaks, framework-to-module boundary. Add more only when you have a real violation to point to.
+- **Mix graph rules (ArchUnitNET) with source scanners.** Some invariants are not type-level.
+- **Use a curated rule library** like `Granit.ArchitectureTests.Abstractions` instead of rolling your own — the edge cases are not where you want to spend your time.
+- **The point is not to be clever, it's to be boring.** Boring code survives developer turnover.
+
+## Further reading
+
+- [Layered architecture pattern](/dotnet/architecture/patterns/layered-architecture/)
+- [Module system](/dotnet/architecture/patterns/module-system/)
+- [Don't mock the database — use Testcontainers](/blog/dont-mock-the-database-use-testcontainers/)
+- [Never return EF entities from controllers](/blog/never-return-ef-entities/)
