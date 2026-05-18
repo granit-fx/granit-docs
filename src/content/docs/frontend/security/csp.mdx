@@ -1,0 +1,232 @@
+---
+title: "Content Security Policy + Trusted Types"
+description: CSP and Trusted Types compatibility for Granit apps. Recommended directives, the policy-compartment pattern, per-package CSP requirements, and the architecture test that keeps the convention enforced.
+sidebar:
+  label: CSP & Trusted Types
+  order: 7
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Granit is **CSP-strict by design**. The framework itself emits no inline
+script, no `dangerouslySetInnerHTML`, no `eval`. Packages that legitimately
+need a DOM-script sink (Leaflet popups, Keycloak silent renew iframes, …)
+ship a **scoped Trusted Types policy** under a `<pkg>/csp` subpath that the
+app composes at boot.
+
+<Aside type="tip">
+Read this page **before** writing your CSP response header. A wrong directive
+will silently break the framework in the browser console.
+</Aside>
+
+## Recommended CSP
+
+The reference CSP for a new Granit app served by a Granit BFF. Three levels
+of hardening — pick the strictest your dependency graph supports.
+
+<Tabs>
+<TabItem label="Strict (recommended)">
+
+```http
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'nonce-{nonce}';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  font-src 'self' data:;
+  connect-src 'self' {BFF_ORIGIN} {OTLP_ORIGIN};
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+  require-trusted-types-for 'script';
+  trusted-types granit {SCOPED_POLICIES};
+  upgrade-insecure-requests;
+```
+
+Replace `{SCOPED_POLICIES}` with the space-separated list of scoped policies
+your app installs (see below). `getCspTrustedTypesDirective()` from
+`@granit/csp` returns exactly this list at runtime — wire it into your BFF
+response header builder.
+
+</TabItem>
+<TabItem label="Standard">
+
+Same as strict but without `require-trusted-types-for`. Use during the
+migration of an existing app — your dependencies will work but a third-party
+library that calls `innerHTML = userInput` would not be caught at runtime.
+
+</TabItem>
+<TabItem label="Permissive (legacy only)">
+
+```http
+Content-Security-Policy:
+  default-src 'self' 'unsafe-inline';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  connect-src *;
+```
+
+**Do not ship this**. It cancels most of the value of CSP. Listed here only
+because audit teams sometimes encounter it on legacy apps — flag it.
+
+</TabItem>
+</Tabs>
+
+## The policy-compartment pattern
+
+A single broad Trusted Types policy is an escape hatch. Granit splits the
+surface into **narrowly scoped policies** — one per package that needs a
+sink. Each policy lives in `<pkg>/csp` next to the code that needs it.
+
+```ts
+// main.tsx — apps compose only the policies they use.
+import { installPolicy as installCore } from '@granit/csp';
+import { installPolicy as installMap } from '@granit/react-map/csp';
+import {
+  installPolicy as installKeycloak,
+  setKeycloakAuthorities,
+} from '@granit/react-authentication-keycloak/csp';
+
+installCore();
+
+if (USES_MAPS) installMap();
+
+if (USES_KEYCLOAK) {
+  setKeycloakAuthorities([import.meta.env.VITE_KEYCLOAK_AUTHORITY]);
+  installKeycloak();
+}
+```
+
+Then build the CSP directive from what's installed:
+
+```ts
+import { getCspTrustedTypesDirective } from '@granit/csp';
+
+// Server-side (BFF or dev middleware):
+res.setHeader(
+  'Content-Security-Policy',
+  `require-trusted-types-for 'script'; trusted-types ${getCspTrustedTypesDirective()};`
+);
+```
+
+## Built-in policies
+
+### `granit` (core)
+
+Shipped by `@granit/csp`. **Strict refuser** — throws on `createHTML`,
+`createScript`, `createScriptURL`. Framework code does not assign to any
+DOM-script sink, so a call through this policy is a programming error and
+must surface loudly. Mandatory in every app.
+
+```ts
+import { installPolicy } from '@granit/csp';
+installPolicy();
+```
+
+### `granit-map`
+
+Shipped by `@granit/react-map/csp`. Covers Leaflet's
+`bindPopup(htmlString)` and similar APIs that hit `innerHTML` under the
+hood. Routes `createHTML` through DOMPurify with the HTML profile.
+
+```ts
+import { installPolicy } from '@granit/react-map/csp';
+installPolicy();
+```
+
+CSP directive: `trusted-types granit granit-map;`
+
+### `granit-keycloak`
+
+Shipped by `@granit/react-authentication-keycloak/csp`. Covers Keycloak.js
+silent renew / check-session iframes (`iframe.setAttribute('src', url)`).
+The policy **allow-lists script URLs by origin** — only same-origin
+relative URLs and URLs whose origin matches the registered Keycloak
+authority are accepted. Anything else (including `javascript:`,
+protocol-relative `//evil.com`, foreign origins) throws.
+
+```ts
+import {
+  installPolicy,
+  setKeycloakAuthorities,
+} from '@granit/react-authentication-keycloak/csp';
+
+// MUST be called before installPolicy().
+setKeycloakAuthorities([keycloakConfig.authority]);
+installPolicy();
+```
+
+CSP directive: `trusted-types granit granit-keycloak;`
+
+## Adding a policy for a new package
+
+A `@granit/<pkg>` package that needs to write to `innerHTML`, `outerHTML`,
+`iframe.src`, `script.src` (or call `insertAdjacentHTML`) **must**:
+
+1. Add `./csp` to its `package.json` `exports`:
+
+   ```json
+   "exports": {
+     ".": "./src/index.ts",
+     "./csp": "./src/csp/index.ts"
+   }
+   ```
+
+2. Add `@granit/csp` to its `peerDependencies`.
+3. Create `src/csp/index.ts`:
+
+   ```ts
+   import { installNamedPolicy } from '@granit/csp';
+   import type { InstallResult } from '@granit/csp';
+
+   export const GRANIT_FOO_POLICY_NAME = 'granit-foo' as const;
+
+   export function installPolicy(): InstallResult {
+     return installNamedPolicy(GRANIT_FOO_POLICY_NAME, {
+       createHTML: (input) => /* sanitize */,
+     });
+   }
+   ```
+
+4. Add a unit test covering: idempotence, no-op without Trusted Types,
+   sink behaviour with a representative input.
+5. Document the policy + CSP requirement in the package's `README.md`,
+   under a `## CSP requirements` section.
+
+The architecture test `pnpm check:csp` enforces step 1 — it scans every
+`@granit/*` package for DOM-script sinks and fails the build if a package
+has sinks without a `/csp` subpath.
+
+## Smoke-test: app under strict CSP
+
+Within `granit-front`, the per-policy unit tests (vitest + jsdom mock of
+`window.trustedTypes`) verify policies are registered correctly and
+sink behaviour matches expectations. They do **not** catch policies
+forgotten by an app integrator.
+
+For end-to-end coverage, the reference app
+`granit-showcase-admin-react` ships a Playwright suite that serves the
+app under the recommended strict CSP and fails if the console emits any
+`Refused to ...` or `Trusted Types violation`. Run it before shipping any
+significant CSP change.
+
+## Why this design
+
+| Alternative considered | Why we did not pick it |
+|------------------------|------------------------|
+| One global `granit` policy with all sinks | Single escape hatch, no audit trail per package, every app pays the bundle cost of DOMPurify even without maps. |
+| Side-effect import (`import '@granit/react-map/csp/auto'`) | Breaks tree-shaking, registers a policy whose name is never explicit in the CSP header. |
+| Policy registered server-side via header alone | Trusted Types creation must happen in the browser; the header allow-lists names but the policy must be installed at runtime. |
+| `default` policy that sanitizes silently | Defeats the point — a missed sink should error loudly so it's caught in dev, not silently sanitized into a half-broken state in production. |
+
+## Compliance
+
+| Standard | Section | Covered by |
+|----------|---------|------------|
+| OWASP ASVS 4.0 | V14.4.3 (CSP) | `Content-Security-Policy` recommended header |
+| OWASP ASVS 4.0 | V14.4.7 (Trusted Types) | `require-trusted-types-for` + scoped policies |
+| OWASP Top 10 (2021) | A05 Security Misconfiguration | CSP recommended, smoke-test in CI |
+| W3C CSP Level 3 | All directives | Reference header above |
+| W3C Trusted Types | Policy compartments pattern | `granit`, `granit-map`, `granit-keycloak` |
+
+For the broader front-end security posture see
+[Client-side authorization (trust model)](/frontend/security/client-authorization/).

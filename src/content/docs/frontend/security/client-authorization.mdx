@@ -1,0 +1,134 @@
+---
+title: "Client-Side Authorization — Trust Model"
+description: How @granit/react-authorization permissions interact with .NET enforcement. Why client-side checks are a UX hint and never a security boundary, with concrete do / do-not patterns for tenant switching, sensitive data fetching, and form gating.
+sidebar:
+  label: Client authorization (trust model)
+  order: 6
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+<Aside type="danger" title="Hard rule">
+Client-side permission checks are a **UX hint**, never a security boundary.
+Every endpoint that returns or mutates protected data **MUST** re-check
+authorization on the .NET backend.
+</Aside>
+
+`@granit/react-authorization` exposes `usePermissions()`, `useHasPermission()`,
+and friends so apps can hide or disable controls the current user cannot use.
+This page documents the **trust posture** behind those hooks — what the
+framework defends against, what it does not, and what apps must do to keep
+authorization correct end-to-end.
+
+## Layered enforcement
+
+| Layer       | Job                                                              | Where it lives                                        |
+|-------------|------------------------------------------------------------------|-------------------------------------------------------|
+| UX gating   | Hide / disable controls the user cannot use, avoiding noisy 403. | `@granit/react-authorization` hooks (browser)         |
+| Enforcement | Reject the request (403) when the caller lacks the permission.   | `Granit.Authorization` (.NET backend, every endpoint) |
+
+The browser is **hostile territory**. An attacker can pause the JS engine
+and flip `permissions.isGranted(...)` to `true`, replay an authenticated
+XHR with a forged payload from DevTools, or run a userscript that mounts
+the gated component without ever invoking `usePermissions()`. The
+client-side check has zero security value on its own.
+
+## Patterns
+
+### ✅ Skip the fetch when the user is not allowed
+
+```tsx
+const can = usePermissions().data?.isGranted('Sensitive.Read') ?? false;
+const { data } = useSensitiveData({ enabled: can });
+return <Display data={data} />;
+```
+
+The query is skipped client-side **and** the server still rejects the
+call when the cache is bypassed (DevTools "Replay XHR", userscripts).
+Defense in depth.
+
+### ❌ Fetch then hide
+
+```tsx
+// WRONG — payload is already in memory, visible in DevTools / extensions
+const { data } = useSensitiveData();
+if (!can('Sensitive.Read')) return null;
+return <Display data={data} />;
+```
+
+Anything the browser receives is reachable from `window`, the React
+DevTools tree, the network panel, browser extensions, the service
+worker cache, and the inspector heap snapshot. If the user is not
+authorized to see the data, the server must not send it.
+
+### ❌ Rely on `disabled` / `hidden` for security
+
+```tsx
+<button disabled={!can('Order.Approve')} onClick={approve}>Approve</button>
+```
+
+A user can re-enable a disabled `<button>` in DevTools and click it.
+The `onClick` will fire. The framework's gating is correct UX, but the
+server **must** validate every field and every transition. Hidden form
+inputs, `aria-disabled`, CSS-clipped fields — none of these are
+security boundaries.
+
+### ❌ Bypass the server check because "the UI prevents it"
+
+A common anti-pattern: the team ships `[Authorize]` on the parent
+controller, then adds endpoints that read or write protected data
+without their own permission check, "because the UI hides the button".
+
+The UI is **one of many** entry points (mobile apps, integrations,
+crafted XHRs, future SDK consumers). Every endpoint authorizes
+independently.
+
+## Cross-tenant integrity
+
+In multi-tenant apps, the active tenant is injected into every request
+as `X-Tenant-Id` by `@granit/api-client` (read from the
+`TenantProvider`). When the user switches tenant:
+
+1. **Clear the React Query cache** — wire
+   `useClearQueriesOnTenantChange()` from `@granit/react-multi-tenancy`,
+   or pass `onTenantChange={() => queryClient.clear()}` to
+   `<TenantProvider>`. A stale `permissions` object briefly served
+   under tenant B is a **confidentiality issue**, not a UX bug.
+2. **Refetch `usePermissions()`** — its query key includes the current
+   tenant context; verify in your app that the refetch fires before any
+   tenant-scoped component re-renders.
+
+## Threat model
+
+| Threat                                                       | Defense                                          |
+|--------------------------------------------------------------|--------------------------------------------------|
+| User sees a button they cannot use, clicks, gets 403         | ✅ UX gating via `isGranted`                     |
+| User crafts XHR for a forbidden endpoint                     | ❌ Out of scope — server enforces                |
+| Compromised browser extension reads in-memory permissions    | ❌ Out of scope — assume server enforcement      |
+| Stale permissions after tenant switch                        | ✅ when `useClearQueriesOnTenantChange` is wired |
+| Stale permissions after back-channel logout                  | ✅ via 401 interceptor in `@granit/api-client`   |
+| Permissions leaked into telemetry (PII in multi-tenant ctx)  | ✅ via `@granit/logger` redaction helpers        |
+
+## Checklist before shipping
+
+- [ ] Every endpoint backing a `usePermissions()`-gated UI has its own
+      `[Authorize(Permissions = ...)]` (or equivalent) check on the .NET
+      side.
+- [ ] No `useQuery` fetches sensitive data first and hides it second —
+      every sensitive query is `enabled`-gated on the permission check.
+- [ ] `useClearQueriesOnTenantChange()` (or `queryClient.clear()` via
+      `onTenantChange`) is mounted in the app shell.
+- [ ] `setOnUnauthorized()` is wired to force logout on 401, so a
+      revoked session does not keep serving cached `permissions` data.
+- [ ] No permission name is logged outside redacted contexts.
+
+## Related
+
+- `@granit/react-authorization` — the hooks themselves (`usePermissions`,
+  `useHasPermission`, `usePermissionDefinitions`, `usePermissionGrant`).
+- `@granit/react-multi-tenancy` — `useClearQueriesOnTenantChange`,
+  `TenantProvider`.
+- `@granit/api-client` — `setOnUnauthorized`, `setTokenGetter`,
+  CSRF / BFF mode.
+- `@granit/logger` — redaction helpers for any permission / role string
+  that ends up in telemetry.
