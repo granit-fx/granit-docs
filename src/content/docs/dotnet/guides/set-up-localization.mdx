@@ -6,7 +6,7 @@ sidebar:
   label: Set up localization
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Granit.Localization provides a modular JSON-based localization system that
 integrates with `IStringLocalizer<T>`. Each package embeds its own translations,
@@ -354,13 +354,65 @@ public sealed class TranslationAdminService(
 
 | Method | Route | Description |
 | --- | --- | --- |
-| `GET` | `/api/{version}/localization/overrides` | List overrides by resource and culture |
+| `GET` | `/api/{version}/localization/overrides` | Query-engine list (`page`, `pageSize`, `sort`, `filter[...]`, `search`, `presets[...]`, `groupBy`) |
+| `GET` | `/api/{version}/localization/overrides/meta` | Query metadata (columns, filters, sorts, presets) for dynamic UI generation |
 | `PUT` | `/api/{version}/localization/overrides/{resource}/{culture}/{key}` | Create or update an override |
 | `DELETE` | `/api/{version}/localization/overrides/{resource}/{culture}/{key}` | Remove an override |
 
 ```csharp
 app.MapGranitLocalizationOverrides();
 ```
+
+<Aside type="caution" title="Breaking change — Granit 0.1.0-dev (May 2026)">
+The legacy `GET /localization/overrides?resourceName=X&cultureName=Y` lookup is
+removed. `MapGranitLocalizationOverrides()` now mounts the query-engine contract
+(`GET /` + `GET /meta`); consumers must migrate to filter on `resourceName` /
+`cultureName` via `filter[...]` parameters. `PUT` and `DELETE` are unchanged. See
+[query-engine](/frontend/data/query-engine/) for the parameter shape.
+</Aside>
+
+#### SPA usage
+
+The list and metadata endpoints plug directly into the
+[`@granit/react-query-engine`](/frontend/data/query-engine/) hooks. Point
+`QueryProvider` at the overrides base path and the hooks fetch `GET /` and
+`GET /meta` automatically:
+
+```tsx
+import {
+  QueryProvider,
+  useQueryEndpoint,
+  useQueryMeta,
+} from '@granit/react-query-engine';
+import type { LocalizationOverride } from '@granit/localization';
+
+const QUERY_CONFIG = { basePath: '/api/v1/localization/overrides' };
+
+export function LocalizationOverridesPage() {
+  return (
+    <QueryProvider config={QUERY_CONFIG}>
+      <LocalizationOverridesContent />
+    </QueryProvider>
+  );
+}
+
+function LocalizationOverridesContent() {
+  const meta = useQueryMeta();                          // GET /api/v1/localization/overrides/meta
+  const query = useQueryEndpoint<LocalizationOverride>({ // GET /api/v1/localization/overrides
+    initialParams: {
+      page: 1,
+      pageSize: 25,
+      sort: [{ field: 'modifiedAt', direction: 'desc' }],
+    },
+  });
+
+  if (meta.isLoading || query.query.isLoading) return null;
+  return <pre>{JSON.stringify(query.query.data, null, 2)}</pre>;
+}
+```
+
+The Granit admin showcase wires this exact pattern in
+`granit-showcase-admin-react/src/features/localization/localization-override-list-page.tsx`.
 
 ### Multi-tenancy
 
