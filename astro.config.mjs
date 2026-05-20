@@ -39,6 +39,7 @@ export default defineConfig({
     "/dotnet/data/vault-encryption/#key-rotation": "/dotnet/data/vault/encryption/",
 
     // Pages renamed within /dotnet/.
+    "/dotnet/glossary/": "/dotnet/reference/glossary/",
     "/dotnet/infrastructure/settings/": "/dotnet/infrastructure/application-settings/",
     "/dotnet/infrastructure/wolverine/": "/dotnet/infrastructure/wolverine-messaging/",
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
@@ -365,7 +366,7 @@ export default defineConfig({
                   items: [
                     {
                       label: "Glossary",
-                      link: "/dotnet/glossary/",
+                      link: "/dotnet/reference/glossary/",
                     },
                     {
                       label: "Configuration Keys",
