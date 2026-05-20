@@ -1,9 +1,11 @@
 ---
 title: "ADR-031: Client-role write operations"
-description: "Extend the read-only Phase 2 IIdentityClientRoleManager with CreateClientRoleAsync / AssignClientRoleAsync / RemoveClientRoleAsync so admin UIs can author client-scoped roles directly, using each provider's native admin surface"
+description: "Extend IIdentityClientRoleManager with Create/Assign/RemoveClientRoleAsync so admin UIs author client-scoped roles via each provider's native admin API."
 sidebar:
   order: 31
   label: "031 - Client-role writes"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

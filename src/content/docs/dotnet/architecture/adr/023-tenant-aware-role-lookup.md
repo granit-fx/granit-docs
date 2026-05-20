@@ -4,6 +4,8 @@ description: "Universal ILookupNormalizer registration and IGranitRoleLookup abs
 sidebar:
   order: 23
   label: "023 - Tenant-aware role lookup"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-22

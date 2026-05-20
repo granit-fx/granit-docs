@@ -1,6 +1,6 @@
 ---
 title: "Timeline \u2014 Activity Stream & Audit Trail"
-description: Odoo-style activity chatter for any EF Core entity — comments, internal notes, system audit logs, threaded replies, @mentions, file attachments, and follower notification integration.
+description: Odoo-style chatter for any EF Core entity — comments, internal notes, audit logs, threaded replies, mentions, attachments, follower notifications.
 sidebar:
   label: Timeline
   order: 19
@@ -19,16 +19,18 @@ follow/notify pattern.
   - Granit.Timeline.EntityFrameworkCore Durable persistence (PostgreSQL)
   - Granit.Timeline.Endpoints Minimal API routes, permissions
   - Granit.Timeline.Notifications Follow/notify via Granit.Notifications
+  - Granit.Timeline.Auditing Federated bridge — project audit entries into the stream
   - Granit.Timeline.AI Audit-trail summarization + anomaly detection
 
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, stream DTOs, closed-catalog reactions (👍 ❤️ 🎉 …) on entries | `Granit.Timing` |
+| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, `ITimelineSource`, stream DTOs, closed-catalog reactions (👍 ❤️ 🎉 …) on entries | `Granit.Timing` |
 | `Granit.Timeline.EntityFrameworkCore` | Durable persistence for entries + attachments + reactions | `Granit.Timeline`, `Granit.Persistence` |
 | `Granit.Timeline.Endpoints` | REST API, permission policies | `Granit.Timeline`, `Granit.Authorization` |
 | `Granit.Timeline.Notifications` | Notification-backed follower/notifier bridge | `Granit.Timeline` |
+| `Granit.Timeline.Auditing` | Federated bridge — projects `Granit.Auditing` entries into the stream so audited changes show up on the affected entity's timeline | `Granit.Timeline`, `Granit.Auditing` |
 | `Granit.Timeline.AI` | Summarize long audit trails into a digest; detect unusual activity patterns | `Granit.Timeline`, `Granit.AI` |
 
 ## Dependency graph
@@ -131,8 +133,23 @@ public sealed record TimelineStreamEntry
     public string Body { get; init; } = string.Empty;
     public IReadOnlyList<TimelineAttachmentInfo> Attachments { get; init; } = [];
     public Guid? ParentEntryId { get; init; }
+
+    // Federation
+    public TimelineEntryOrigin Origin { get; init; } = TimelineEntryOrigin.Native;
+    public string SourceKey { get; init; } = TimelineSourceKeys.Native;
+    public string? SourceId { get; init; }
+
+    // Edit tracking
+    public DateTimeOffset? EditedAt { get; init; }
 }
 ```
+
+`Origin` discriminates entries that live in the native `timeline_entries` table
+(`Native`) from those projected by an `ITimelineSource` contributor (`External`).
+`SourceKey` carries the contributor name (`"auditing"`, `"workflow"`, …) — soft
+contract, contributors register their own. Reactions, replies, and edits only
+target `Native` rows; an `External` entry must first be **anchored** to materialize
+a native shadow row (see below).
 
 | Entry type | Description | Deletable | Visibility |
 |-----------|-------------|-----------|------------|
@@ -146,12 +163,145 @@ All endpoints are prefixed with `/api/{version}/timeline`.
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|
-| `GET` | `/{entityType}/{entityId}` | Paginated activity stream (newest first) | `Timeline.Entries.Read` |
+| `GET` | `/{entityType}/{entityId}` | Paginated activity stream (newest first), merged across registered `ITimelineSource` contributors | `Timeline.Entries.Read` |
 | `POST` | `/{entityType}/{entityId}/entries` | Post a comment, note, or system log | `Timeline.Entries.Create` |
+| `PATCH` | `/{entityType}/{entityId}/entries/{entryId}` | Edit own comment/note within `TimelineOptions.EditWindow` (default 15 min) | `Timeline.Entries.Create` + ownership |
+| `POST` | `/{entityType}/{entityId}/anchor` | Materialize a native shadow row for an external entry (idempotent) so reactions/replies can target it | `Timeline.Entries.Create` |
 | `DELETE` | `/{entityType}/{entityId}/entries/{entryId}` | Soft-delete an entry (GDPR) — owner or admin | `Timeline.Entries.Create` + ownership or `Timeline.Entries.Manage` |
 | `POST` | `/{entityType}/{entityId}/follow` | Subscribe current user as follower | `Timeline.Followers.Manage` |
 | `DELETE` | `/{entityType}/{entityId}/follow` | Unsubscribe current user | `Timeline.Followers.Manage` |
 | `GET` | `/{entityType}/{entityId}/followers` | List follower user IDs | `Timeline.Entries.Read` |
+
+The GET stream endpoint sets the `X-Timeline-Degraded-Sources` response header
+(comma-separated source keys) when one or more contributors timed out or threw
+under the default `DegradeGracefully` policy. Beyond `TimelineOptions.MaxPage`
+(default 10) the endpoint returns `400 timeline-depth-exceeded` so a misbehaving
+client can't deepen federated pagination indefinitely.
+
+## Federated stream — ITimelineSource
+
+Any module can contribute entries to the unified stream by implementing
+`ITimelineSource`. The reader merges native rows with every registered
+contributor under a canonical sort (`OccurredAt DESC`, native wins ties,
+`SourceKey ASC`, `Id ASC`) and applies per-source timeouts.
+
+```csharp
+public interface ITimelineSource
+{
+    string SourceKey { get; } // regex ^[a-z][a-z0-9_-]{0,63}$
+
+    Task<IReadOnlyList<TimelineStreamEntry>> GetEntriesAsync(
+        string entityType, string entityId, int limit, CancellationToken ct);
+
+    Task<TimelineStreamEntry?> GetEntryAsync(
+        string entityType, string entityId, string sourceId, CancellationToken ct);
+}
+```
+
+The framework ships `Granit.Timeline.Auditing` — register the module and every
+`AuditEntry` targeting an `ITimelined` entity shows up in that entity's
+timeline as an `External`-origin `SystemLog`:
+
+```csharp
+[DependsOn(
+    typeof(GranitTimelineEntityFrameworkCoreModule),
+    typeof(GranitTimelineAuditingModule))]
+public class AppModule : GranitModule { }
+```
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Reader as ITimelineReader
+    participant Native as timeline_entries
+    participant Audit as IAuditingReader
+
+    Client->>Reader: GET /timeline/User/u-42
+    par fetch native top-K
+        Reader->>Native: SELECT ... ORDER BY CreatedAt DESC LIMIT K
+    and fan-out to sources
+        Reader->>Audit: GetByEntityAsync("User", "u-42", limit=K)
+    end
+    Reader->>Reader: merge, dedupe shadows, sort canonical
+    Reader-->>Client: TimelineStreamResult { Page, DegradedSources }
+```
+
+### Anchor — making external entries interactive
+
+Reactions and threaded replies always target a native `TimelineEntry.Id`. To
+attach interaction to an `External`-origin entry, the client first calls
+`POST /timeline/{entityType}/{entityId}/anchor` with the source key + source id.
+The server materializes a **shadow row** with a deterministic v5 GUID derived
+from `(TenantId, EntityType, EntityId, SourceKey, SourceId)` and returns it:
+
+```http
+POST /api/v1/timeline/User/u-42/anchor
+{ "sourceKey": "auditing", "sourceId": "9c40…" }
+
+200 OK
+{ "entryId": "e2c4…" }
+```
+
+Anchoring is **idempotent**: the deterministic Id means concurrent callers
+converge on the same row. The shadow snapshots the source's body, author,
+and `OccurredAt` at anchor time — if the audit log later purges its row, the
+shadow keeps the snapshot so reactions remain meaningful (audit retention
+independence).
+
+:::note[Shadow rows preempt their source]
+Once a shadow exists for `(SourceKey, SourceId)`, the reader drops the
+matching projection from the source's emit and renders the shadow instead.
+Edits to a shadow body are still rejected (see edit gates below) — the snapshot
+is immutable, only reactions/replies layer on top.
+:::
+
+## Edit-own-message
+
+`PATCH /timeline/{entityType}/{entityId}/entries/{entryId}` lets the author
+revise the body of a comment or internal note within a configurable window.
+The writer enforces **four gates** server-side; the front-end mirrors them to
+hide the affordance but the writer is the source of truth.
+
+```ts
+canEdit = entry.origin === "Native"
+       && entry.entryType !== "SystemLog"
+       && entry.authorId === currentUser.id
+       && (now - entry.occurredAt) < TimelineOptions.EditWindow
+```
+
+| Gate failure | `Reason` returned in `extensions["reason"]` |
+|---|---|
+| Shadow row or live external projection | `ExternalOrigin` |
+| Native `SystemLog` | `SystemLog` |
+| Caller is not the author | `NotAuthor` |
+| `TimelineOptions.EditWindow` elapsed (or set to `TimeSpan.Zero`) | `WindowExpired` |
+
+Successful edits set `TimelineEntry.EditedAt` (surfaced as `EditedAt` on
+`TimelineStreamEntry`) and raise `TimelineEntryEditedEvent` — useful for
+invalidating AI summary caches or replicating into the audit trail. No
+permission separate from `Timeline.Entries.Create` is required; ownership +
+window do the gating. A moderator who wants to "correct" someone else's
+comment soft-deletes and reposts under their own name (chain-of-custody clean).
+
+## TimelineOptions
+
+```csharp
+public sealed class TimelineOptions
+{
+    public int MaxPage { get; set; } = 10;
+    public TimeSpan SourceTimeout { get; set; } = TimeSpan.FromSeconds(2);
+    public SourceFailurePolicy OnSourceFailure { get; set; }
+        = SourceFailurePolicy.DegradeGracefully;
+    public TimeSpan EditWindow { get; set; } = TimeSpan.FromMinutes(15);
+}
+```
+
+| Option | Default | Purpose |
+|---|---|---|
+| `MaxPage` | `10` | Federated pagination depth cap. Beyond it, `GET` returns `400 timeline-depth-exceeded`. |
+| `SourceTimeout` | `2 s` | Per-source timeout. Slower sources are dropped (Degrade) or rethrown (Throw). |
+| `OnSourceFailure` | `DegradeGracefully` | Drop + report via `X-Timeline-Degraded-Sources`. Set `ThrowAll` in dev/test to fail loud. |
+| `EditWindow` | `15 min` | `TimeSpan.Zero` disables edit entirely. |
 
 ### Permissions
 
@@ -209,11 +359,14 @@ await timeline.AddAttachmentAsync(
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Modules | `GranitTimelineModule`, `GranitTimelineEntityFrameworkCoreModule`, `GranitTimelineEndpointsModule`, `GranitTimelineNotificationsModule` | Timeline |
-| Timeline core | `ITimelined`, `ITimelineReader`, `ITimelineWriter`, `ITimelineFollowerService`, `ITimelineNotifier` | `Granit.Timeline` |
-| DTOs | `TimelineStreamEntry`, `TimelineStreamEntryType`, `TimelineAttachmentInfo`, `PostTimelineEntryRequest` | `Granit.Timeline` |
+| Modules | `GranitTimelineModule`, `GranitTimelineEntityFrameworkCoreModule`, `GranitTimelineEndpointsModule`, `GranitTimelineNotificationsModule`, `GranitTimelineAuditingModule` | Timeline |
+| Timeline core | `ITimelined`, `ITimelineReader`, `ITimelineWriter`, `ITimelineSource`, `ITimelineFollowerService`, `ITimelineNotifier` | `Granit.Timeline` |
+| Federation | `TimelineStreamResult`, `TimelineEntryOrigin`, `TimelineSourceKeys`, `TimelineDepthExceededException` | `Granit.Timeline` |
+| Edit | `TimelineEntryNotEditableException`, `TimelineEntryNotEditableReason`, `TimelineEntryEditedEvent` | `Granit.Timeline` |
+| Options | `TimelineOptions { MaxPage, SourceTimeout, OnSourceFailure, EditWindow }` | `Granit.Timeline` |
+| DTOs | `TimelineStreamEntry`, `TimelineStreamEntryType`, `TimelineAttachmentInfo`, `PostTimelineEntryRequest`, `UpdateTimelineEntryBodyRequest`, `AnchorTimelineEntryRequest/Response` | `Granit.Timeline*` |
 | Permissions | `TimelinePermissions.Entries.{Read,Create,Manage}`, `.InternalNotes.Read`, `.Followers.Manage` | `Granit.Timeline.Endpoints` |
-| Extensions | `AddGranitTimeline()`, `AddGranitTimelineEntityFrameworkCore()`, `MapGranitTimeline()` | — |
+| Extensions | `AddGranitTimeline()`, `AddGranitTimelineEntityFrameworkCore()`, `AddGranitTimelineAuditing()`, `MapGranitTimeline()` | — |
 
 ## See also
 

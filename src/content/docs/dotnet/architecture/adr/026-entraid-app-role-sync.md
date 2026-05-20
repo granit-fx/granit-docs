@@ -4,6 +4,8 @@ description: "Apply the ADR-025 client-role template to Microsoft Entra ID via t
 sidebar:
   order: 26
   label: "026 - Entra ID app roles"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-22

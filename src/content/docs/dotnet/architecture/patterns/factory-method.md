@@ -1,9 +1,11 @@
 ---
 title: "Factory Method — Provider-Agnostic Creation"
-description: "Defer object creation to runtime with named factory methods — resolve the right Vault client, AI provider, or tenant-isolated DbContext without tightly coupling callers."
+description: "Defer object creation to runtime with named factory methods — resolve Vault clients, AI providers, or tenant-isolated DbContexts without coupling callers."
 sidebar:
   label: Factory Method
   order: 29
+topic: backend
+
 ---
 
 ## Definition

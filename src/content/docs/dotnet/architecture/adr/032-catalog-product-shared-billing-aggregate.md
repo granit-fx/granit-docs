@@ -1,9 +1,11 @@
 ---
 title: "ADR-032: Catalog.Product shared billing aggregate"
-description: "Introduce a new Granit.Catalog module hosting the Product aggregate, referenced by Metering and Subscriptions via soft (no-FK) ProductId fields. MVP is Host-owned (mirror Plan); the multi-tenant e-commerce path is left open via a documented A/B choice."
+description: "New Granit.Catalog module hosts the Product aggregate, referenced by Metering and Subscriptions via soft no-FK ProductId fields. MVP is Host-owned."
 sidebar:
   order: 32
   label: "032 - Catalog Product"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-24

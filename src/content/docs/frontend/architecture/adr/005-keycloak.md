@@ -4,6 +4,8 @@ description: "Use Keycloak for OIDC/OAuth 2.0 authentication to meet HDS complia
 sidebar:
   order: 5
   label: "005 - Keycloak"
+topic: frontend
+
 ---
 
 > **Date:** 2026-02-27

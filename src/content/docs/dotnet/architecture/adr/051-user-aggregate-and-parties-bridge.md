@@ -1,9 +1,11 @@
 ---
 title: "ADR-051: User aggregate + Parties bridge"
-description: "Granit consolidates LocalIdentity and FederatedIdentity behind a canonical User aggregate that lives in Granit.Identity (foundation). When the optional Granit.Parties.Identity bridge is loaded, every UserCreated emits a Party of kind Person via Wolverine; the bridge is opt-in, so tiny apps that only need authentication keep zero Parties dependency."
+description: "Granit consolidates LocalIdentity and FederatedIdentity behind a canonical User aggregate in Granit.Identity, with an opt-in Parties.Identity bridge."
 sidebar:
   order: 51
   label: "051 - User aggregate"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-01
@@ -20,7 +22,7 @@ Today Granit models *"a person who can authenticate"* as two parallel hierarchie
 - **`GranitUser`** in `Granit.Identity.Local` — extends `IdentityUser<Guid>`. Carries 25+ properties: profile (`UserName`, `Email`, `FirstName`, `LastName`, `PhoneNumber`), auth secrets (`PasswordHash`, `SecurityStamp`, `ConcurrencyStamp`), security counters (`LockoutEnd`, `AccessFailedCount`, `TwoFactorEnabled`).
 - **`UserCacheEntry`** in `Granit.Identity.Federated` — cache projection of users authenticated against an external IdP (Cognito / Entra ID / Google / Keycloak). Holds `ExternalUserId`, encrypted profile fields, `LastSyncedAt`, `MetadataJson` for provider-specific claims.
 
-`IIdentityUser` (per [ADR-019](./019-user-lookup-dual-mode-cache-vs-local-store)) is implemented by both, but the abstraction is **lookup-only** — `IUserLookupService.FindByIdAsync` and friends — not `IQueryable`. One implementation is active per host (`AspNetIdentityUserLookupService` for local, `CachedUserLookupService` for federated); hybrid is not supported.
+`IIdentityUser` (per [ADR-019](/dotnet/architecture/adr/019-user-lookup-dual-mode/)) is implemented by both, but the abstraction is **lookup-only** — `IUserLookupService.FindByIdAsync` and friends — not `IQueryable`. One implementation is active per host (`AspNetIdentityUserLookupService` for local, `CachedUserLookupService` for federated); hybrid is not supported.
 
 **Three intertwined problems surface:**
 
@@ -286,9 +288,9 @@ it kept the bridge module to ~150 lines.
 
 ## Cross-references
 
-- [ADR-019](./019-user-lookup-dual-mode-cache-vs-local-store) — User Lookup dual mode. This ADR builds on the `IIdentityUser` contract introduced there; the new `User` aggregate is the canonical concrete implementation.
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. The User aggregate ships with its own `EntityDefinition` (Tier A).
-- [ADR-050](./050-odata-edm-whitelist-via-entity-definition) — OData EDM whitelist via EntityDefinition. The User aggregate becomes OData-eligible once B-step 1 lands.
+- [ADR-019](/dotnet/architecture/adr/019-user-lookup-dual-mode/) — User Lookup dual mode. This ADR builds on the `IIdentityUser` contract introduced there; the new `User` aggregate is the canonical concrete implementation.
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. The User aggregate ships with its own `EntityDefinition` (Tier A).
+- [ADR-050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/) — OData EDM whitelist via EntityDefinition. The User aggregate becomes OData-eligible once B-step 1 lands.
 
 ## References
 

@@ -1,6 +1,6 @@
 ---
 title: "CI/CD \u2014 GitHub Actions & Docker Pipelines"
-description: GitHub Actions CI/CD pipeline for Granit — compilation, dotnet format quality gates, Trivy security scanning, Roslyn analysis, NuGet packaging, and publication to nuget.org and GitHub Packages.
+description: GitHub Actions CI/CD for Granit — compilation, dotnet format gates, Trivy scanning, Roslyn analysis, and NuGet publication to nuget.org and GH Packages.
 sidebar:
   order: 4
   label: CI/CD
@@ -298,3 +298,11 @@ packages in the organization settings (**Settings › Actions › General**).
 Verify that `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set in the
 repository secrets. The token needs the **Cloudflare Pages: Edit** permission
 scoped to the `granit-docs` project.
+
+## See also
+
+- [Deployment](/dotnet/operations/deployment/) — what gets built and shipped by the pipeline
+- [Production Configuration](/dotnet/operations/configuration/) — secrets exposed to the CI workflow
+- [Production Checklist](/dotnet/operations/production-checklist/) — go-live verifications layered on top of CI
+- [Coding standards](/contributing/coding-standards/) — quality gates enforced in the pipeline
+- [Analyzers](/dotnet/core/analyzers/) — Roslyn analyzers that run in CI

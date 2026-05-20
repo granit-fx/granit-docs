@@ -4,6 +4,8 @@ description: "Adoption of FluentValidation for composable business validation wi
 sidebar:
   order: 6
   label: "006 - FluentValidation"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-24

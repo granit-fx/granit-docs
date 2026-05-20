@@ -39,6 +39,7 @@ export default defineConfig({
     "/dotnet/data/vault-encryption/#key-rotation": "/dotnet/data/vault/encryption/",
 
     // Pages renamed within /dotnet/.
+    "/dotnet/glossary/": "/dotnet/reference/glossary/",
     "/dotnet/infrastructure/settings/": "/dotnet/infrastructure/application-settings/",
     "/dotnet/infrastructure/wolverine/": "/dotnet/infrastructure/wolverine-messaging/",
     "/dotnet/infrastructure/features/": "/dotnet/infrastructure/feature-flags/",
@@ -99,6 +100,30 @@ export default defineConfig({
     "/reference/frontend/settings/": "/frontend/infrastructure/settings/",
     "/reference/frontend/reference-data/": "/frontend/business/reference-data/",
     "/reference/frontend/templating/": "/frontend/business/templating/",
+    "/reference/frontend/tracing/": "/frontend/observability/tracing/",
+    "/reference/modules/analyzers/": "/dotnet/core/analyzers/",
+
+    // Page moved out of /dotnet/guides/ into the tooling section.
+    "/dotnet/guides/use-with-ai-assistants/": "/tools/ai-assistants/",
+
+    // Getting Started was hoisted under /dotnet/ during the multi-stack split.
+    "/getting-started/your-first-api/": "/dotnet/getting-started/your-first-api/",
+
+    // ExtraProperties was renamed framework-wide to Metadata.
+    "/dotnet/core/extra-properties/": "/dotnet/core/metadata/",
+
+    // Indexed by Google because earlier ADR pages used `./NNN-name` relative
+    // links (no trailing slash). Starlight serves the parent as a directory
+    // route, so the link resolved as a child of the wrong ADR. Source links
+    // are now root-relative; these redirects clean up the indexed URLs.
+    "/dotnet/architecture/adr/042-view-catalog/040-three-tier-metadata-architecture":
+      "/dotnet/architecture/adr/040-three-tier-metadata-architecture/",
+    "/dotnet/architecture/adr/048-cross-module-entity-relations/042-view-catalog":
+      "/dotnet/architecture/adr/042-view-catalog/",
+    "/dotnet/architecture/adr/045-contributor-pattern/048-cross-module-entity-relations":
+      "/dotnet/architecture/adr/048-cross-module-entity-relations/",
+    "/dotnet/architecture/adr/044-workspace-navigation/045-contributor-pattern":
+      "/dotnet/architecture/adr/045-contributor-pattern/",
   },
   integrations: [
     starlight({
@@ -243,6 +268,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "dotnet/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -296,6 +322,7 @@ export default defineConfig({
                     },
                     { label: "Endpoint Registry", link: "/dotnet/api/endpoint-registry/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
@@ -330,8 +357,41 @@ export default defineConfig({
                   collapsed: true,
                 },
                 {
+                  label: "IoT",
+                  collapsed: true,
+                  items: [
+                    { label: "Overview", link: "/dotnet/iot/" },
+                    { label: "Getting Started", link: "/dotnet/iot/getting-started/" },
+                    { label: "Device Management", link: "/dotnet/iot/device-management/" },
+                    { label: "Data Model", link: "/dotnet/iot/data-model/" },
+                    { label: "Telemetry Ingestion", link: "/dotnet/iot/telemetry-ingestion/" },
+                    { label: "MQTT Transport", link: "/dotnet/iot/mqtt/" },
+                    { label: "Time-Series Storage", link: "/dotnet/iot/time-series/" },
+                    { label: "Operations", link: "/dotnet/iot/operations/" },
+                    {
+                      label: "Cross-Cutting Bridges",
+                      collapsed: true,
+                      items: [
+                        { label: "Notifications", link: "/dotnet/iot/notifications-bridge/" },
+                        { label: "Timeline", link: "/dotnet/iot/timeline-bridge/" },
+                        { label: "MCP (AI Tools)", link: "/dotnet/iot/mcp-bridge/" },
+                      ],
+                    },
+                    {
+                      label: "AWS IoT Core",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/iot/aws" } }],
+                    },
+                    { label: "Bundle Reference", link: "/dotnet/iot/bundle/" },
+                  ],
+                },
+                {
                   label: "Reference",
                   items: [
+                    {
+                      label: "Glossary",
+                      link: "/dotnet/reference/glossary/",
+                    },
                     {
                       label: "Configuration Keys",
                       link: "/dotnet/reference/configuration-keys/",
@@ -397,6 +457,7 @@ export default defineConfig({
                       ],
                     },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "MCP",
@@ -409,6 +470,7 @@ export default defineConfig({
                     { label: "Client (External Servers)", link: "/dotnet/mcp/client/" },
                     { label: "AI Integration", link: "/dotnet/mcp/ai-integration/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Architecture",
@@ -432,15 +494,14 @@ export default defineConfig({
                     },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/adr/",
                     },
                   ],
+                  collapsed: true,
                 },
               ],
             },
@@ -467,6 +528,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "frontend/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -481,6 +543,7 @@ export default defineConfig({
                 {
                   label: "API",
                   items: [{ autogenerate: { directory: "frontend/api" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
@@ -503,13 +566,11 @@ export default defineConfig({
                     { label: "Overview", link: "/frontend/architecture/" },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "frontend/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "frontend/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/adr/",
                     },
                   ],
                 },

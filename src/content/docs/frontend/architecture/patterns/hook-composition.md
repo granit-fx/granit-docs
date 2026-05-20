@@ -1,9 +1,11 @@
 ---
 title: "Hook Composition \u2014 React Custom Hooks"
-description: Build complex React features by composing low-level framework hooks with application logic — authentication state, data fetching, and lifecycle wrapped in custom hooks.
+description: Build React features by composing framework hooks with app logic — authentication state, data fetching, and lifecycle wrapped in custom hooks.
 sidebar:
   label: Hook Composition
   order: 8
+topic: frontend
+
 ---
 
 ## Definition

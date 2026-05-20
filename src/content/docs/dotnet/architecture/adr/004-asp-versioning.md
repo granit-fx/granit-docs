@@ -4,6 +4,8 @@ description: "How Asp.Versioning provides URL-segment and header-based REST API 
 sidebar:
   order: 4
   label: "004 - API Versioning"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-22

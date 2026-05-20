@@ -1,6 +1,6 @@
 ---
 title: "Deployment \u2014 Kubernetes, Helm & Docker"
-description: Deploy Granit applications on Kubernetes with Docker multi-stage builds, liveness/readiness/startup health probes, Helm values, resource sizing, graceful shutdown, and Alpine-based minimal images.
+description: Deploy Granit apps on Kubernetes with Docker multi-stage builds, liveness/readiness probes, Helm values, graceful shutdown, and Alpine images.
 sidebar:
   order: 1
   label: Deployment
@@ -238,3 +238,11 @@ ISO 27001 compliance.
 | Redis | All replicas share the same Redis instance for distributed cache. FusionCache (L1 in-process + L2 Redis) reduces Redis load. |
 | Background jobs | `Granit.BackgroundJobs` uses Wolverine scheduling. Jobs are durable and survive pod restarts. Only one replica executes each scheduled job (leader election via PostgreSQL advisory locks). |
 | Multi-tenancy | Tenant isolation is enforced at the query level (EF Core global filters). No per-tenant infrastructure is required unless data sovereignty demands physical separation. |
+
+## See also
+
+- [Production Configuration](/dotnet/operations/configuration/) — appsettings layering and Vault-backed secrets
+- [Observability](/dotnet/operations/observability/) — LGTM stack wiring and OTel export
+- [CI/CD](/dotnet/operations/ci-cd/) — build, scan, and publish pipelines
+- [Production Checklist](/dotnet/operations/production-checklist/) — pre-go-live verifications
+- [Vault module](/dotnet/data/vault/) — secret rotation and dynamic credentials in production

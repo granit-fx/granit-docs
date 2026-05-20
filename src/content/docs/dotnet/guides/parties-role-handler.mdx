@@ -34,7 +34,7 @@ idempotent `Party.AddRole(role)` call.
 
 The handler is a Wolverine-discovered `public class` in your module's `.Wolverine`
 package (or wherever your other event handlers live), with a `public static
-HandleAsync` method matching the [Granit handler discovery rules](../infrastructure/wolverine-messaging.md).
+HandleAsync` method matching the [Granit handler discovery rules](/dotnet/infrastructure/wolverine-messaging/).
 
 ```csharp
 using Granit.Parties;
@@ -101,3 +101,11 @@ A `RoleAddedAt` / `LastObservedAt` timestamp per role is intentionally NOT part 
 the current contract. Add it (and a corresponding event) only if a retention or
 decay rule lands on the roadmap; until then, the simpler `[Flags] int` keeps reads
 to a single index lookup.
+
+## See also
+
+- [Parties module](/dotnet/business/parties/) — `Party` aggregate, `PartyRoles` flags, and module reference
+- [Seed the default party at tenant provisioning](/dotnet/guides/parties-tenant-seeding/) — sibling guide for tenant lifecycle
+- [Wire a new external provider through Party.ExternalMappings](/dotnet/guides/parties-external-mappings/) — sibling guide for billing/accounting providers
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — integration event handler conventions
+- [Authorization roles](/dotnet/security/authorization-roles/) — distinct from `PartyRoles` (do not confuse RBAC roles with party roles)

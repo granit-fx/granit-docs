@@ -4,6 +4,8 @@ description: "Command Query Responsibility Segregation with enforced Reader/Writ
 sidebar:
   label: CQRS
   order: 2
+topic: backend
+
 ---
 
 :::tip[Core principle]

@@ -3,6 +3,8 @@ title: "Aggregate Root"
 description: "How Granit uses DDD aggregate roots to encapsulate business invariants, state machines, and domain events"
 sidebar:
   order: 25
+topic: backend
+
 ---
 
 ## Definition

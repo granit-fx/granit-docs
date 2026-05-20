@@ -4,6 +4,8 @@ description: "How Granit intercepts deletions to preserve audit trails for ISO 2
 sidebar:
   label: Soft Delete
   order: 41
+topic: backend
+
 ---
 
 ## Definition
@@ -88,3 +90,11 @@ using (dataFilter.Disable<ISoftDeletable>())
     List<Patient> allPatients = await db.Patients.ToListAsync(ct);
 }
 ```
+
+## Used by
+
+- [Persistence](/dotnet/data/persistence/) — `ISoftDeletable` interceptor turning DELETE into UPDATE
+- [Privacy module](/dotnet/compliance/privacy/) — soft-delete preserves audit trails for GDPR erasure flows
+- [Data Deletion](/dotnet/compliance/privacy/data-deletion/) — interacts with the soft-delete strategy
+- [Marker Interface pattern](/dotnet/architecture/patterns/marker-interface/) — `ISoftDeletable` is the convention trigger
+- [Data filtering pattern](/dotnet/architecture/patterns/data-filtering/) — global query filter that hides soft-deleted rows

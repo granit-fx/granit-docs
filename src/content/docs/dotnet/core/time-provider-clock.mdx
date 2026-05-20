@@ -157,3 +157,4 @@ services.AddSingleton<TimeProvider>(fakeTime);
 - [GUIDs module](/dotnet/core/sequential-guid-generation/) -- Sequential GUIDs using `IClock` for timestamp
 - [Persistence module](/dotnet/data/persistence/) -- `AuditedEntityInterceptor` uses `IClock` for timestamps
 - [Multi-Tenancy module](/dotnet/infrastructure/multi-tenancy/) -- Timezone per tenant
+- [Blog: Stop using DateTime.Now](/blog/stop-using-datetime-now/) -- why every Granit module depends on `IClock` instead

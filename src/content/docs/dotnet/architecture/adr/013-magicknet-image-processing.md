@@ -4,6 +4,8 @@ description: "Selection of Magick.NET (ImageMagick wrapper) for cross-platform i
 sidebar:
   order: 13
   label: "013 - Magick.NET"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-28

@@ -1,6 +1,6 @@
 ---
 title: "Granit Architecture — ADRs, patterns and design principles"
-description: "Why does Granit isolate every DbContext per module, ban shared Reader/Writer interfaces, mandate Microsoft.Extensions.AI, refuse silent OData defaults? Every load-bearing decision is captured as an Architecture Decision Record — context, alternatives, trade-offs, consequences. Plus 60 design patterns mapped to their concrete Granit implementation."
+description: "Architecture Decision Records covering Granit's per-module DbContext isolation, CQRS, Microsoft.Extensions.AI, and 60 design patterns mapped to source."
 sidebar:
   label: Architecture
   order: 0
@@ -64,3 +64,11 @@ Three reading paths depending on what you're trying to do:
   [Tech Stack](./tech-stack/) first (libraries Granit already uses) and the
   [Pattern Library](./patterns/) (idioms the rest of the framework follows).
   Aligning saves you from reinventing what's already tested.
+
+## See also
+
+- [Architecture Decision Records (ADRs)](/dotnet/architecture/adr/) — every load-bearing decision with context and consequences
+- [Pattern Library](/dotnet/architecture/patterns/) — 60+ patterns mapped to Granit implementations
+- [Dependency Graph](/dotnet/architecture/dependency-graph/) — visual map of package coupling
+- [Tech Stack](/dotnet/architecture/tech-stack/) — the libraries Granit already uses
+- [Core concepts](/dotnet/concepts/) — module system, DI, configuration, security model

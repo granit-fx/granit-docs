@@ -8,7 +8,7 @@ authors:
 tags:
   - security
   - compliance
-description: "GDPR compliance is not a checkbox. It is an architectural constraint enforced at the framework level. Here is how Granit implements data minimization, right to erasure, and pseudonymization by default."
+description: "GDPR compliance is an architectural constraint, not a checkbox. How Granit enforces data minimization, right to erasure and pseudonymization at framework level."
 excerpt: >
   GDPR compliance is not a checkbox. It is an architectural constraint that must
   be enforced at the framework level. Here is how Granit implements data minimization,

@@ -1,9 +1,11 @@
 ---
 title: "Data Lookup Pattern — Unified Typeahead Pickers"
-description: "One declarative primitive (Granit.DataLookup) feeds QueryEngine filter pickers, edit-form dropdowns, and ReferenceData sets from a single registry. Server-side label localization, scoped dependencies, and zero frontend boilerplate."
+description: "Granit.DataLookup feeds QueryEngine filter pickers, edit-form dropdowns, and ReferenceData from one registry with server-side label localization."
 sidebar:
   label: Data Lookup
   order: 58
+topic: backend
+
 ---
 
 ## Definition
@@ -260,7 +262,7 @@ labels automatically.
 - The "value" is a complex object that cannot be serialized as JSON
   (`Value` is typed as `object`, but stringified round-trip is assumed).
 
-## Related
+## See also
 
 - [ADR-028: Unified Data Lookup](/dotnet/architecture/adr/028-unified-data-lookup/)
   — architectural rationale and alternatives evaluated.

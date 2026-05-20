@@ -1,9 +1,11 @@
 ---
 title: "ADR-055: Extract URL safety + temp-file primitives"
-description: "The pre-1.0 Browsing security-hardening pass surfaced duplicate SSRF/IP-classification logic (Webhooks + Browsing) and duplicate temp-file usage (Browsing + Privacy). We extract two minimal shared packages — Granit.Http.Security (IUrlSafetyValidator, PrivateNetworkClassifier, ReservedTldClassifier) and Granit.IO (ITempFileFactory) — instead of inlining, folding into Granit core, repurposing Granit.BlobStorage.Temp, or shipping a separate Browsing analyzer."
+description: "Extract SSRF/IP-classification and temp-file logic shared by Webhooks, Browsing, and Privacy into Granit.Http.Security and Granit.IO packages."
 sidebar:
   order: 55
   label: "055 - Extract URL safety + temp files"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-11
@@ -154,7 +156,7 @@ benefit. The fold-in is the chosen path.
   against the inline duplication, which was strictly worse.
 - One more shard-filter entry for each (script auto-regenerates).
 
-## Related
+## See also
 
 - [`Granit.Http.Security` — URL Safety](/dotnet/api/url-safety/).
 - [`Granit.IO` — Secure Temp Files](/dotnet/infrastructure/io/temp-files/).

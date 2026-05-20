@@ -3,6 +3,8 @@ title: "Guard Clause (Fail-Fast)"
 description: "How Granit uses semantic exceptions and guard clauses to produce RFC 7807 ProblemDetails responses"
 sidebar:
   order: 52
+topic: backend
+
 ---
 
 ## Definition

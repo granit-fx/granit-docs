@@ -1,9 +1,11 @@
 ---
 title: "ADR-036: Invoicing line item source + product convention"
-description: "Formalize InvoiceLineItem.SourceType → SourceId as a typed audit chain (Guid for Usage/Subscription) and add an optional ProductId carried from MeterDefinition.ProductId / PlanPrice.ProductId so invoice lines stay attributable to a Granit.Catalog.Product across renames and price versioning."
+description: "Formalize InvoiceLineItem.SourceType → SourceId as a typed audit chain and add ProductId from MeterDefinition/PlanPrice for stable Catalog attribution."
 sidebar:
   order: 36
   label: "036 - Invoicing Line Source"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-25

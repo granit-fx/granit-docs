@@ -4,6 +4,8 @@ description: "JSON property bag on EF Core entities with optional SQL column pro
 sidebar:
   label: Metadata
   order: 59
+topic: backend
+
 ---
 
 ## Definition
@@ -167,3 +169,9 @@ JSON for the rest).
   encrypted (use `IStringEncryptionService` separately)
 - **Don't duplicate** — if a property is promoted to SQL, it must NOT also be in JSON
   (the interceptor enforces this)
+
+## Used by
+
+- [Persistence](/dotnet/data/persistence/) — `IMetadata` marker and the JSON property bag interceptor
+- [Entity Definition](/dotnet/data/entity-definition/) — exposes metadata fields in the UI surface
+- [Marker Interface pattern](/dotnet/architecture/patterns/marker-interface/) — `IMetadata` is the convention trigger

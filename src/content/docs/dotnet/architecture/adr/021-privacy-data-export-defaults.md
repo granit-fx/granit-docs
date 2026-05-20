@@ -1,9 +1,11 @@
 ---
 title: "ADR-021: Privacy Data Export — Framework Defaults"
-description: "The framework ships an end-to-end default implementation of the personal-data export pipeline: EF Core tracker persistence, IPrivacyDataProvider contract, streaming ZIP archive assembler, module-owned providers, and a presigned download endpoint. Apps opt into built-ins and only write a provider for data not covered by a module."
+description: "Granit ships the GDPR personal-data export pipeline: EF Core tracker, IPrivacyDataProvider, streaming ZIP assembler, and a presigned download endpoint."
 sidebar:
   order: 21
   label: "021 - Privacy Data Export Defaults"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-19
@@ -198,4 +200,4 @@ but never produces a fragment — the saga silently times out at
 - Stories #1050 (tracker EF + uploader), #1051 (module providers), #1052
   (download endpoint).
 - [Granit.Privacy.BlobStorage README](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Privacy.BlobStorage/README.md)
-- [`data-export.mdx`](../../compliance/privacy/data-export.mdx)
+- [`data-export.mdx`](/dotnet/compliance/privacy/data-export/)

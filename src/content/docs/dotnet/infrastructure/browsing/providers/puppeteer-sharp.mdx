@@ -1,6 +1,6 @@
 ---
 title: "Provider — PuppeteerSharp (Chromium)"
-description: "Granit.Browsing.PuppeteerSharp implements IHeadlessBrowser on PuppeteerSharp + bundled Chromium. Hardened with integrity-pinned BrowserFetcher, executable-path allowlist via IBrowserSandboxProfile, RequestRouter for sandbox/user route handlers, ITempFileFactory for the PDF viewer file:// handoff, and volatile _browser field with logged disposal."
+description: "Granit.Browsing.PuppeteerSharp — IHeadlessBrowser on PuppeteerSharp + Chromium with integrity-pinned BrowserFetcher, executable allowlist, and sandboxed routes."
 sidebar:
   label: PuppeteerSharp
   order: 10
@@ -74,7 +74,7 @@ services.AddSingleton<IBrowserSandboxProfile>(new SandboxProfile
 `ChromiumExecutablePath` must start with the prefix. Useful for hosts that
 ship a custom Chromium build under a non-standard path.
 
-## Related
+## See also
 
 - [Browsing security](/dotnet/infrastructure/browsing/security/).
 - [Browsing conventions](/dotnet/infrastructure/browsing/conventions/).

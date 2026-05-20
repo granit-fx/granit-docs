@@ -1,9 +1,11 @@
 ---
 title: "ADR-038: DashboardDefinition vs Dashboard Boundary"
-description: "Modules ship DashboardDefinition (declarative, in-code, immutable). Tenants persist Dashboard (aggregate root, mutable, composed by admins). Dashboards are imported on demand, not auto-instantiated. Once instantiated, they are frozen — module upgrades do not retro-edit user dashboards."
+description: "Modules ship immutable DashboardDefinition; tenants persist mutable Dashboard aggregates, imported on demand and frozen against module upgrades."
 sidebar:
   order: 38
   label: "038 - Dashboard Definition vs Aggregate"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-28
@@ -333,8 +335,8 @@ widgets) and keeps reorder updates to two rows.
 ## References
 
 - [`CLAUDE.md` — Analytics conventions section](../../../../../../../CLAUDE.md)
-- ADR-017 — [DDD Aggregate Root & Value Object Strategy](./017-ddd-aggregate-value-object-strategy.md)
-- ADR-018 — [FusionCache Caching Provider](./018-fusioncache-caching-provider.md)
-- ADR-020 — [Declarative Definitions Placement (Query & Export)](./020-declarative-definitions-placement.md)
+- ADR-017 — [DDD Aggregate Root & Value Object Strategy](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/)
+- ADR-018 — [FusionCache Caching Provider](/dotnet/architecture/adr/018-fusioncache-caching-provider/)
+- ADR-020 — [Declarative Definitions Placement (Query & Export)](/dotnet/architecture/adr/020-declarative-definitions-placement/)
 - Epic [#1366](https://github.com/granit-fx/granit-dotnet/issues/1366) — Business Intelligence
 - Feature [#1368](https://github.com/granit-fx/granit-dotnet/issues/1368) — Layer 2: Composable dashboards

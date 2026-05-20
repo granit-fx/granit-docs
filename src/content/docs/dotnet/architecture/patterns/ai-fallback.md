@@ -3,6 +3,8 @@ title: "Graceful AI Fallback"
 description: "Timeout + deterministic baseline ensuring AI-enhanced features degrade gracefully when the LLM is unavailable"
 sidebar:
   order: 58
+topic: backend
+
 ---
 
 ## Definition

@@ -1,6 +1,6 @@
 ---
 title: "Browsing Security & Hardening"
-description: "Deny-by-default sandbox model for Granit.Browsing — HTTPS-only, no private networks, CSP forced, console redacted, 30s render cap. Covers IBrowserSandboxProfile, RequestRouter, BrowsingTimeout, TenantAwareHeadlessBrowser, HeadlessBrowserDrainCoordinator, PrivilegedFlagGuard, ConsoleRedactor, GRBROWSING001 analyzer, audit events, and the five Browsing permissions."
+description: "Deny-by-default sandbox for Granit.Browsing — HTTPS-only, no private networks, forced CSP, redacted console, 30s render cap, and the five Browsing permissions."
 sidebar:
   label: Security
   order: 20
@@ -328,7 +328,7 @@ For URL safety, the in-process layer is sufficient; if your network policy
 allows pods to reach `169.254.169.254`, *also* add a `NetworkPolicy` egress
 deny — defense in depth.
 
-## Related
+## See also
 
 - [URL Safety](/dotnet/api/url-safety/) — the shared SSRF primitive.
 - [Secure Temp Files](/dotnet/infrastructure/io/temp-files/) — `file://` PDF viewer, HAR, trace.

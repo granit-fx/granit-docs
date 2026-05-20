@@ -1,9 +1,11 @@
 ---
 title: "Builder Pattern — Fluent Configuration in .NET"
-description: "Compose complex module configuration step-by-step with fluent AddGranit*() extension methods — readable DI registration without bloated constructors or config files."
+description: "Compose module configuration step-by-step with fluent AddGranit*() extensions — readable DI registration without bloated constructors or config files."
 sidebar:
   label: Builder
   order: 28
+topic: backend
+
 ---
 
 ## Definition

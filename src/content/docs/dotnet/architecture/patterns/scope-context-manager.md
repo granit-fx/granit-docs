@@ -4,6 +4,8 @@ description: "How Granit encapsulates context changes in IDisposable scopes with
 sidebar:
   label: Scope / Context Manager
   order: 47
+topic: backend
+
 ---
 
 ## Definition
@@ -66,3 +68,10 @@ using (dataFilter.Disable<ISoftDeletable>())
     List<Patient> allPatients = await db.Patients.ToListAsync(ct);
 } // Filter is automatically re-enabled
 ```
+
+## Used by
+
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — `ICurrentTenant` scopes for cross-tenant operations
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — tenant/user/trace context propagation across the bus
+- [Persistence](/dotnet/data/persistence/) — `IQueryFilterScope` to suppress global query filters
+- [Data filtering pattern](/dotnet/architecture/patterns/data-filtering/) — pairs with copy-on-write for thread safety

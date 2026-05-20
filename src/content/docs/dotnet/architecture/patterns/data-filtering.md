@@ -4,6 +4,8 @@ description: "How Granit automatically applies global query filters based on mar
 sidebar:
   label: Data Filtering
   order: 44
+topic: backend
+
 ---
 
 ## Definition

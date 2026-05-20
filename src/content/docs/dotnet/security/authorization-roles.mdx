@@ -1,6 +1,6 @@
 ---
 title: "Roles — RoleMetadata and /admin/roles CRUD"
-description: Declarative Host / Tenant / Both scoping on roles, a host and tenant admin CRUD surface with a visibility matrix, compensating-write orchestration between Identity and Authorization DbContexts, and seeded system roles.
+description: Declarative Host/Tenant/Both role scoping with admin CRUD, visibility matrix, compensating writes across Identity and Authorization DbContexts, seeded roles.
 sidebar:
   order: 5
   label: Roles & role metadata
@@ -195,8 +195,19 @@ every permission grant where `ProviderName == "R"`. See
 for the decision table and the `role_side_forbidden` / `role_tenant_mismatch` rejection
 codes.
 
-## Related
+## See also
 
 - [Authorization — Policies & RBAC](/dotnet/security/authorization/)
 - [Host/Tenant scope & multi-provider grants](/dotnet/security/authorization-multitenancy-side/)
 - [Identity providers](/dotnet/security/identity/)
+
+### Architecture decisions
+
+- [ADR-023](/dotnet/architecture/adr/023-tenant-aware-role-lookup/) — tenant-aware role lookup with `IGranitRoleLookup`
+- [ADR-024](/dotnet/architecture/adr/024-role-orchestrator-shared-connection-transaction/) — shared-connection transaction for the role orchestrator
+- [ADR-025](/dotnet/architecture/adr/025-keycloak-client-role-sync/) — Keycloak client-role distinction and boot-time sync
+- [ADR-026](/dotnet/architecture/adr/026-entraid-app-role-sync/) — Entra ID App Role sync via Graph API
+- [ADR-027](/dotnet/architecture/adr/027-cognito-app-client-group-sync/) — Cognito app-client group sync
+- [ADR-029](/dotnet/architecture/adr/029-client-role-orphan-cleanup-policy/) — `OrphanedRolePolicy` for client-role sync
+- [ADR-030](/dotnet/architecture/adr/030-client-role-scheduled-resync/) — per-provider scheduled re-sync jobs
+- [ADR-031](/dotnet/architecture/adr/031-client-role-write-operations/) — write operations on `IIdentityClientRoleManager`

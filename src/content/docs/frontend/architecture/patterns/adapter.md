@@ -1,9 +1,11 @@
 ---
 title: "Adapter Pattern \u2014 TypeScript API Adapters"
-description: How the Adapter pattern isolates React applications from third-party library APIs — wrapping imperative callbacks into reactive hooks with typed state in @granit/* packages.
+description: How the Adapter pattern isolates React apps from third-party APIs — wrapping imperative callbacks into reactive, typed hooks in @granit/* packages.
 sidebar:
   label: Adapter
   order: 3
+topic: frontend
+
 ---
 
 ## Definition

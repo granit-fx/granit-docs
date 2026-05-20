@@ -1,6 +1,6 @@
 ---
 title: "Production Checklist \u2014 Go-Live Readiness"
-description: Pre-production go-live checklist for Granit applications — security hardening, GDPR Art. 15/17/32 verification, ISO 27001 A.12.4 audit trail confirmation, and operational readiness gates.
+description: Go-live checklist for Granit apps — security hardening, GDPR Art. 15/17/32 verification, ISO 27001 A.12.4 audit trail, and operational readiness gates.
 sidebar:
   order: 5
   label: Production Checklist
@@ -121,3 +121,11 @@ After the first production deployment, verify:
 - [ ] Metrics appear in Grafana/Mimir (request rate, error rate)
 - [ ] Vault lease renewal (or Azure Key Vault secret rotation) succeeds (check logs for confirmation)
 - [ ] At least one end-to-end request completes successfully (smoke test)
+
+## See also
+
+- [Deployment](/dotnet/operations/deployment/) — Kubernetes manifests and probe configuration
+- [Production Configuration](/dotnet/operations/configuration/) — Vault wiring and env-var layering
+- [Observability](/dotnet/operations/observability/) — LGTM dashboards and OTel pipeline
+- [CI/CD](/dotnet/operations/ci-cd/) — gates that must pass before this checklist is exercised
+- [Security overview](/dotnet/security/security-overview/) — threat model behind the security items

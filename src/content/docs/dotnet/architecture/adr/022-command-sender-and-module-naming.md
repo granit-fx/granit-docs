@@ -1,9 +1,11 @@
 ---
 title: "ADR-022: ICommandSender + module naming"
-description: "Command dispatch is abstracted behind Granit.Commands.ICommandSender in the core Granit assembly. Business modules drop the .Wolverine suffix and rapatriate their handlers; adapter modules that carry genuine Wolverine-specific infrastructure keep the suffix; integration adapters get a descriptive suffix (.Privacy, .Provisioning) instead."
+description: "Granit.Commands.ICommandSender abstracts dispatch; business modules drop the .Wolverine suffix while genuine Wolverine adapters keep it."
 sidebar:
   order: 22
   label: "022 - ICommandSender + Module Naming"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-20
@@ -220,5 +222,5 @@ supplies by default per ADR-005.
 - [Granit.Commands.ICommandSender](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit/Commands/ICommandSender.cs)
 - [Granit.Wolverine.Internal.WolverineCommandSender](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Wolverine/Internal/WolverineCommandSender.cs)
 - [Granit.ArchitectureTests.WolverineCouplingTests](https://github.com/granit-fx/granit-dotnet/blob/develop/tests/Granit.ArchitectureTests/WolverineCouplingTests.cs)
-- [ADR-005: Wolverine & Cronos](../005-wolverine-cronos/) — the original choice of Wolverine as the messaging implementation
-- [ADR-020: Declarative Definitions Placement](../020-declarative-definitions-placement/) — same placement principle applied to query/export definitions
+- [ADR-005: Wolverine & Cronos](/dotnet/architecture/adr/005-wolverine-cronos/) — the original choice of Wolverine as the messaging implementation
+- [ADR-020: Declarative Definitions Placement](/dotnet/architecture/adr/020-declarative-definitions-placement/) — same placement principle applied to query/export definitions

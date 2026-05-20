@@ -105,3 +105,13 @@ public sealed record RecipientInfo
     public string? DisplayName { get; init; }
 }
 ```
+
+## See also
+
+- [Overview](./) — fan-out engine, channels, dependency graph
+- [Fan-out engine](./fan-out-engine/) — dispatch mechanics and `INotificationPublisher`
+- [Email channel](./email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo provider configuration
+- [SMS, push & real-time](./sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push, Zulip
+- [Data model](./data-model/) — entities, CQRS stores, preferences
+- [Configuration](./configuration/) — options and health checks
+- [Identity module](/dotnet/security/identity/) — user lookup for `IRecipientResolver` implementations

@@ -1,6 +1,6 @@
 ---
 title: "Anti-Patterns \u2014 Common .NET Mistakes to Avoid"
-description: Avoid these .NET anti-patterns in Granit — DateTime.Now, new Regex, string interpolation in logs, lock on object, unnamed HasQueryFilter, and more with correct alternatives.
+description: Avoid common .NET anti-patterns in Granit — DateTime.Now, new Regex, string interpolation in logs, lock on object, and unnamed HasQueryFilter.
 sidebar:
   label: Anti-patterns
   order: 2

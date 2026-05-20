@@ -1,6 +1,6 @@
 ---
 title: "Granit.AI — Run LLMs without locking yourself into a vendor"
-description: Provider-agnostic AI for .NET built on Microsoft.Extensions.AI. Swap OpenAI, Azure OpenAI, and Ollama per environment. Multi-tenant workspaces, per-tenant quotas, token cost tracking, and an ISO 27001 audit trail — out of the box.
+description: Provider-agnostic AI for .NET on Microsoft.Extensions.AI. Swap OpenAI, Azure OpenAI, Ollama per env. Multi-tenant workspaces, quotas, ISO 27001 audit.
 sidebar:
   label: Setup
   order: 2
@@ -58,6 +58,7 @@ tenancy, audit, quota, cost) that the abstraction alone doesn't provide.
 - Granit.AI/ Core abstractions, workspace + capability resolver, factories, quota guard
   - Granit.AI.OpenAI OpenAI provider (GPT-4o, o3/o4-mini, embeddings) + dynamic model catalog
   - Granit.AI.AzureOpenAI Azure OpenAI with `DefaultAzureCredential` + deployment catalog
+  - Granit.AI.Anthropic Anthropic provider (Claude Opus/Sonnet/Haiku), chat completion only — no embeddings
   - Granit.AI.Ollama Local models via OllamaSharp (dev, on-premise, GDPR strict)
   - Granit.AI.EntityFrameworkCore Isolated DbContext for workspaces and usage records
   - Granit.AI.Extraction Structured document extraction (PDF → typed C# record)
@@ -74,6 +75,7 @@ tenancy, audit, quota, cost) that the abstraction alone doesn't provide.
 | `Granit.AI` | `IAIChatClientFactory`, `IAIWorkspaceManager`, `IAIQuotaGuard`, usage tracking | `Granit` |
 | `Granit.AI.OpenAI` | OpenAI provider + `IAIModelCatalog` (live `/v1/models` listing) | `Granit.AI` |
 | `Granit.AI.AzureOpenAI` | Azure OpenAI with API key or Managed Identity | `Granit.AI` |
+| `Granit.AI.Anthropic` | Anthropic (Claude) provider, chat-only | `Granit.AI` |
 | `Granit.AI.Ollama` | Local models, `/api/show` capability resolution, health check | `Granit.AI` |
 | `Granit.AI.EntityFrameworkCore` | `AIDbContext`, `EfAIWorkspaceStore`, `EfAIUsageStore` | `Granit.AI`, `Granit.Persistence` |
 | `Granit.AI.Endpoints` | Workspace CRUD, provider discovery, usage query, chat/embedding proxy | `Granit.AI`, `Granit.Authorization`, `Granit.QueryEngine.AspNetCore` |
@@ -85,7 +87,7 @@ tenancy, audit, quota, cost) that the abstraction alone doesn't provide.
 
 ## Pick your provider
 
-Three providers ship in-box. They share the same `IAIProviderFactory` contract — pick
+Four providers ship in-box. They share the same `IAIProviderFactory` contract — pick
 based on what the deployment environment requires, not on what your code expects.
 
 | Provider | Best for | Auth | Model catalog |
@@ -93,11 +95,12 @@ based on what the deployment environment requires, not on what your code expects
 | **Ollama** | Dev laptops, on-premise, strict GDPR (data never leaves) | None | Live via `GET /api/tags` (30s cache); capabilities from `/api/show` |
 | **OpenAI** | Cloud SaaS, fast iteration, frontier models | API key | Live via `GET /v1/models`, enriched with known capabilities |
 | **Azure OpenAI** | EU data residency, HDS, enterprise compliance | API key or Managed Identity | Configured deployments |
+| **Anthropic** | Claude Opus/Sonnet/Haiku, extended thinking | API key | Static (no catalog API) |
 
 <Aside type="note">
-Anthropic, Mistral, and other providers compatible with `Microsoft.Extensions.AI` can
-be plugged in by implementing `IAIProviderFactory` (and optionally `IAIModelCatalog`).
-Only the three above ship as first-party packages.
+Mistral and other providers compatible with `Microsoft.Extensions.AI` can be plugged
+in by implementing `IAIProviderFactory` (and optionally `IAIModelCatalog`). Only the
+four above ship as first-party packages.
 </Aside>
 
 ## Setup
@@ -175,6 +178,33 @@ builder.AddGranitAIAzureOpenAI();
 
 Leave `ApiKey` empty in production — `DefaultAzureCredential` (Managed Identity) is used
 automatically. Zero secrets to rotate, zero secrets to leak.
+
+</TabItem>
+<TabItem label="Anthropic">
+
+```csharp
+[DependsOn(typeof(GranitAIAnthropicModule))]
+public class AppModule : GranitModule;
+```
+
+```csharp
+builder.AddGranitAI();
+builder.AddGranitAIAnthropic();
+```
+
+```json
+{
+  "AI": {
+    "Anthropic": {
+      "ApiKey": "<from-vault>",
+      "DefaultModel": "claude-sonnet-4-6"
+    }
+  }
+}
+```
+
+Chat completion only — Anthropic does not provide an embedding API. For embeddings,
+pair Anthropic for chat with OpenAI/Ollama for embeddings via a second workspace.
 
 </TabItem>
 </Tabs>
@@ -476,7 +506,7 @@ Without the AI package, the feature is silently skipped. With it, it activates. 
 | `DefaultDeployment` | `string` | `"gpt-4o"` | Fallback deployment name |
 | `DefaultEmbeddingDeployment` | `string` | `"text-embedding-3-small"` | Fallback embedding deployment |
 
-### `OllamaOptions` (section: `AI:Ollama`)
+### `OllamaProviderOptions` (section: `AI:Ollama`)
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|

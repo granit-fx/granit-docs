@@ -4,6 +4,8 @@ description: "How Granit uses marker interfaces to apply cross-cutting behaviors
 sidebar:
   label: Marker Interface
   order: 50
+topic: backend
+
 ---
 
 ## Definition
@@ -117,3 +119,11 @@ public sealed class MedicalRecord : FullAuditedEntity, IMultiTenant, IActive
 // - Audit interceptor: CreatedAt/By, ModifiedAt/By, TenantId
 // - Soft delete interceptor: DELETE -> UPDATE IsDeleted=true
 ```
+
+## Used by
+
+- [Persistence](/dotnet/data/persistence/) — `IAuditedEntity`, `ISoftDeletable`, `IMultiTenant`, `IMetadata` interceptors
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — `IMultiTenant` query filter wiring
+- [Soft Delete pattern](/dotnet/architecture/patterns/soft-delete/) — relies on `ISoftDeletable`
+- [Metadata pattern](/dotnet/architecture/patterns/metadata/) — `IMetadata` triggers the property-bag interceptor
+- [Module System pattern](/dotnet/architecture/patterns/module-system/) — `GranitModule` discovery via marker

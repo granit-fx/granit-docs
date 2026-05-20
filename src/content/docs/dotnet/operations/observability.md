@@ -1,6 +1,6 @@
 ---
 title: "Observability \u2014 Grafana LGTM & OpenTelemetry"
-description: Production observability with Serilog structured logging, OpenTelemetry OTLP export, and the Grafana LGTM stack — Loki for logs, Tempo for traces, Mimir for metrics, with pre-built alert rules.
+description: Production observability with Serilog, OpenTelemetry OTLP, and the Grafana LGTM stack — Loki for logs, Tempo for traces, Mimir for metrics, with alerts.
 sidebar:
   order: 3
   label: Observability
@@ -258,3 +258,12 @@ service:
       receivers: [otlp]
       exporters: [prometheusremotewrite]
 ```
+
+## See also
+
+- [Core observability](/dotnet/core/observability/) — `ILogger`, `IActivitySourceRegistry`, meters convention
+- [Event Catalog](/dotnet/infrastructure/event-catalog/) — domain and integration events that surface in traces
+- [Deployment](/dotnet/operations/deployment/) — sidecar / collector wiring on Kubernetes
+- [Production Checklist](/dotnet/operations/production-checklist/) — pre-go-live observability items
+- [End-to-end tracing guide](/dotnet/guides/end-to-end-tracing/) — verify traces survive through Wolverine handlers
+- [Blog: Observability in .NET 10: Serilog + OpenTelemetry + Grafana](/blog/observability-dotnet-10-serilog-opentelemetry-grafana/) — full stack walkthrough of the operational observability story

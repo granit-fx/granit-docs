@@ -1,9 +1,11 @@
 ---
 title: "Observer / Event — Distributed Event Bus"
-description: "Decouple publishers from subscribers using Wolverine's convention-based handler discovery — no explicit wiring, supports both in-process and distributed event delivery."
+description: "Decouple publishers from subscribers via Wolverine's convention-based handler discovery — no explicit wiring, in-process or distributed delivery."
 sidebar:
   label: Observer / Event
   order: 24
+topic: backend
+
 ---
 
 ## Definition

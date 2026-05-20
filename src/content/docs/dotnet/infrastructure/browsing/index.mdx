@@ -1,6 +1,6 @@
 ---
 title: "Browsing — Headless Browser Abstraction"
-description: Provider-agnostic IHeadlessBrowser with capability discovery (PDF generation, native PDF viewer rendering, screenshots, network interception, accessibility tree, tracing, HAR recording). Implementations ship for PuppeteerSharp (Chromium) and Microsoft.Playwright (Chromium / Firefox / WebKit).
+description: Provider-agnostic IHeadlessBrowser with capability discovery — PDF, screenshots, network interception, tracing, HAR. Backed by PuppeteerSharp or Playwright.
 sidebar:
   label: Browsing
   order: 12
@@ -197,7 +197,12 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 }
 ```
 
-## Related
+## Section contents
+
+- [Conventions](./conventions/) — provider registration, capability lookup, pool lifecycle
+- [Security](./security/) — sandboxing untrusted content, URL allow-lists, resource limits
+
+## See also
 
 - [`Granit.BlobStorage`](/dotnet/data/blob-storage/) — same abstraction-then-provider
   pattern for binary storage.
@@ -205,3 +210,5 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - [`Granit.Documents.Renditions`](/dotnet/business/documents-renditions/) —
   consumes `IPdfViewerCapability` to rasterise PDF uploads into thumbnails
   through the rendition pipeline.
+- [`Granit.Templating`](/dotnet/building-blocks/templating/) — pairs with the
+  PDF capability to render HTML templates into PDF documents.

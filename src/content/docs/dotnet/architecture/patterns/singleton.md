@@ -1,9 +1,11 @@
 ---
 title: "Singleton Pattern — DI-Managed Instances"
-description: "Manage shared state safely in .NET — DI-registered singletons for stateless services, AsyncLocal for per-request tenant context and data filter state without thread leaks."
+description: "Manage shared state safely in .NET — DI singletons for stateless services, AsyncLocal for per-request tenant context and data filters, no thread leaks."
 sidebar:
   label: Singleton
   order: 30
+topic: backend
+
 ---
 
 ## Definition

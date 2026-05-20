@@ -1,9 +1,11 @@
 ---
 title: "ADR-039: Widget renderer architecture"
-description: "Each WidgetType ships a typed IWidgetSource<TSnapshot> (per EPIC #1366 invariant #1). A non-generic IWidgetInstanceRenderer adapter sits in front for runtime dispatch by WidgetType, keeping per-kind source code typed end-to-end while still allowing a single dashboard render endpoint to compose heterogeneous widgets."
+description: "Each WidgetType ships a typed IWidgetSource<TSnapshot>; a non-generic IWidgetInstanceRenderer adapter dispatches at runtime for one dashboard endpoint."
 sidebar:
   order: 39
   label: "039 - Widget Renderer Architecture"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-29

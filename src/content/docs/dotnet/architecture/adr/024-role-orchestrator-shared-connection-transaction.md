@@ -4,6 +4,8 @@ description: "Upgrade IGranitRoleOrchestrator from compensating-write to atomic 
 sidebar:
   order: 24
   label: "024 - Role orchestrator atomic transaction"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-22

@@ -4,6 +4,8 @@ description: "Resource compartmentalization preventing cascade failures across q
 sidebar:
   label: Bulkhead Isolation
   order: 13
+topic: backend
+
 ---
 
 ## Definition

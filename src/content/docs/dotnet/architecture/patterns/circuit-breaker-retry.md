@@ -4,6 +4,8 @@ description: "Resilience for HTTP clients and async messaging with exponential b
 sidebar:
   label: Circuit Breaker and Retry
   order: 15
+topic: backend
+
 ---
 
 ## Definition

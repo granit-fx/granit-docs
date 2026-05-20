@@ -1,9 +1,11 @@
 ---
 title: "ADR-053: Entities Customization — Layer 1"
-description: "Granit introduces a Layer 1 customization model that lets tenant administrators reorder, regroup, and hide compiled fields on any EntityDefinition without touching code. The vocabulary is closed (reorder / regroup / hide; never add) and resolves through a 5-layer hierarchy beneath URL state, saved views, and workspace presets. Every override is captured by ISO 27001 audit, gated by an RBAC permission, and surfaced in the runtime manifest with per-field provenance so a dev-mode field inspector can attribute every rendered field to its source layer."
+description: "Layer 1 lets tenant admins reorder, regroup, and hide compiled EntityDefinition fields without code, with ISO 27001 audit and per-field provenance."
 sidebar:
   order: 53
   label: "053 - Layer 1 Customization"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-02
@@ -15,15 +17,15 @@ sidebar:
 
 ## Context
 
-Granit's entity surface is **compiled-first**: every form, list, calendar, gallery, and detail layout is declared in C# via `EntityDefinition<T>` and surfaces to the React shell through the runtime manifest endpoint (`GET /api/entities/{name}/manifest`, see [ADR-040](./040-three-tier-metadata.md) for the three-tier metadata architecture). Compiled-first gives the framework type-safety, refactor-safety, and IDE-aided discoverability — at the cost of zero per-tenant flexibility out of the box.
+Granit's entity surface is **compiled-first**: every form, list, calendar, gallery, and detail layout is declared in C# via `EntityDefinition<T>` and surfaces to the React shell through the runtime manifest endpoint (`GET /api/entities/{name}/manifest`, see [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) for the three-tier metadata architecture). Compiled-first gives the framework type-safety, refactor-safety, and IDE-aided discoverability — at the cost of zero per-tenant flexibility out of the box.
 
 Real deployments need at least three flavours of customization:
 
 1. **Cosmetic re-ordering / hiding** — the tenant accountant wants the *Currency* field next to *Total* on the invoice form, and wants the *Internal notes* group hidden from the sales role. Compile-time changes are out of scope (one tenant cannot fork the core).
-2. **Saved filtered views** — already partially covered by [ADR-047 (Entity View)](./047-entity-view.md): personal / shared / tenant-level saved query/filter combinations on list, calendar, and gallery layouts.
+2. **Saved filtered views** — already partially covered by [ADR-047 (Entity View)](/dotnet/architecture/adr/047-entity-view/): personal / shared / tenant-level saved query/filter combinations on list, calendar, and gallery layouts.
 3. **Custom fields** — adding a *Vehicle plate* field to `Party` because the tenant runs a fleet-management vertical. **This is not in scope here**; it is the Layer 2 problem and is deferred to Phase 4 (see §[Out of scope](#out-of-scope)).
 
-This ADR locks the shape of category 1 — call it **Layer 1 customization** — and the resolution hierarchy that integrates it with categories 2 (saved views), URL state, and workspace presets ([ADR-044](./044-workspace-navigation.md)).
+This ADR locks the shape of category 1 — call it **Layer 1 customization** — and the resolution hierarchy that integrates it with categories 2 (saved views), URL state, and workspace presets ([ADR-044](/dotnet/architecture/adr/044-workspace-navigation/)).
 
 The competitive landscape shapes the design space:
 
@@ -93,7 +95,7 @@ Validation rules at write time, enforced by the B3 endpoints layer before persis
 - `Reorder` MUST set exactly one of `BeforeFieldName` / `AfterFieldName`; both null or both set → `400`.
 - `Regroup.GroupKey` MUST resolve in the compiled definition's group catalogue.
 - `Hide` MUST NOT target a field whose compiled metadata is `IsRequired = true` and is the entity's primary key — the manifest still has to carry an identifier. Other required fields can be hidden; the form layer surfaces a server-side validation error if the user attempts to save without a value.
-- Field permissions ([ADR-040](./040-three-tier-metadata.md) §3) are **not** mutated — `Hide` removes the field from the rendered layout but the underlying authorization gate is untouched. A tenant cannot grant a permission this way.
+- Field permissions ([ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) §3) are **not** mutated — `Hide` removes the field from the rendered layout but the underlying authorization gate is untouched. A tenant cannot grant a permission this way.
 
 #### Never `Add`
 
@@ -112,8 +114,8 @@ The manifest endpoint resolves the layout by walking five layers, highest priori
 | Priority | Layer | Source | Scope | Mutable at runtime? |
 | -------- | ----- | ------ | ----- | ------------------- |
 | 1 | URL state | Query string (`?sort=…&filter=…`) | Per request | Yes — every request |
-| 2 | Saved Entity View | `Granit.Entities.Views` ([ADR-047](./047-entity-view.md)) | Personal > Shared > Tenant | Yes — by user (CRUD) |
-| 3 | Workspace preset | Workspace `*Page.SetDefault*` calls ([ADR-044](./044-workspace-navigation.md)) | Per workspace, additive only | Yes — by workspace admin |
+| 2 | Saved Entity View | `Granit.Entities.Views` ([ADR-047](/dotnet/architecture/adr/047-entity-view/)) | Personal > Shared > Tenant | Yes — by user (CRUD) |
+| 3 | Workspace preset | Workspace `*Page.SetDefault*` calls ([ADR-044](/dotnet/architecture/adr/044-workspace-navigation/)) | Per workspace, additive only | Yes — by workspace admin |
 | 4 | **Tenant customization (Layer 1) — this ADR** | `Granit.Entities.Customization` aggregates | Per tenant, per layout | Yes — by tenant admin via PUT |
 | 5 | Compiled defaults | C# `EntityDefinition<T>` | Global | No — code change |
 
@@ -164,7 +166,7 @@ Audit captures user intent (the delta vocabulary is human-readable) rather than 
 
 ### Permission gate
 
-Single permission, [`Group.Resource.Action`](../../../CLAUDE.md#permissions--naming-convention-strict) format:
+Single permission, [`Group.Resource.Action`](https://github.com/granit-fx/granit-dotnet/blob/develop/CLAUDE.md#permissions--naming-convention-strict) format:
 
 - `Entities.Customization.Manage` — read + write the tenant's customization for any entity. Required on the B3 PUT endpoint.
 
@@ -199,7 +201,7 @@ The manifest composer caches the resolved per-tenant payload for hot reads. Laye
 - Tag: `entity-customization:{tenantId}:{entityName}` — emitted by the PUT endpoint after a successful write.
 - Wolverine handler `EntityCustomizationCacheInvalidator` consumes `EntityCustomizationUpdatedEto` and calls `IFusionCache.RemoveByTagAsync(tag)`.
 
-Same pattern as relation aggregate invalidation ([ADR-048](./048-cross-module-entity-relations.md) — `RelationAggregateCacheInvalidator`).
+Same pattern as relation aggregate invalidation ([ADR-048](/dotnet/architecture/adr/048-cross-module-entity-relations/) — `RelationAggregateCacheInvalidator`).
 
 ## Consequences
 
@@ -219,21 +221,21 @@ Same pattern as relation aggregate invalidation ([ADR-048](./048-cross-module-en
 
 ### Neutral
 
-- Per-tenant only in Phase 2. Per-user UI overrides remain functionally available through saved Entity Views ([ADR-047](./047-entity-view.md)) and are not on the Layer 1 roadmap.
-- Workspace presets ([ADR-044](./044-workspace-navigation.md)) remain additive-only — Layer 1 owns the structural overrides.
+- Per-tenant only in Phase 2. Per-user UI overrides remain functionally available through saved Entity Views ([ADR-047](/dotnet/architecture/adr/047-entity-view/)) and are not on the Layer 1 roadmap.
+- Workspace presets ([ADR-044](/dotnet/architecture/adr/044-workspace-navigation/)) remain additive-only — Layer 1 owns the structural overrides.
 
 ## Out of scope
 
 - **Layer 2 — custom fields.** Adding new columns to the underlying aggregate, with their own permissions, validation, query whitelisting, export whitelisting, and EF Core configuration. Phase 4 initiative.
-- **Per-user UI overrides.** Use saved Entity Views ([ADR-047](./047-entity-view.md)) for personal layouts; no per-user row in `entity_customizations`.
+- **Per-user UI overrides.** Use saved Entity Views ([ADR-047](/dotnet/architecture/adr/047-entity-view/)) for personal layouts; no per-user row in `entity_customizations`.
 - **Conditional visibility / formula defaults.** Out of vocabulary in Layer 1; revisit in a follow-up ADR if Phase 4 picks them up.
 - **Cross-tenant template customization.** A tenant cannot publish their customization for another tenant to inherit; the platform admin can ship vertical-app defaults at compile time only.
 
 ## References
 
-- [ADR-040 — Three-tier metadata architecture](./040-three-tier-metadata.md)
-- [ADR-044 — Workspace navigation](./044-workspace-navigation.md)
-- [ADR-047 — Entity View (saved query/filter combinations)](./047-entity-view.md)
-- [ADR-048 — Cross-module entity relations](./048-cross-module-entity-relations.md)
+- [ADR-040 — Three-tier metadata architecture](/dotnet/architecture/adr/040-three-tier-metadata-architecture/)
+- [ADR-044 — Workspace navigation](/dotnet/architecture/adr/044-workspace-navigation/)
+- [ADR-047 — Entity View (saved query/filter combinations)](/dotnet/architecture/adr/047-entity-view/)
+- [ADR-048 — Cross-module entity relations](/dotnet/architecture/adr/048-cross-module-entity-relations/)
 - [Phase 2 epic #1510](https://github.com/granit-fx/granit-dotnet/issues/1510)
 - [Master plan #1506 §Resolution hierarchy](https://github.com/granit-fx/granit-dotnet/issues/1506)

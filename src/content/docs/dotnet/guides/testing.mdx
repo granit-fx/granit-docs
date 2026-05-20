@@ -1,6 +1,6 @@
 ---
 title: "Testing \u2014 Unit & Integration Test Patterns"
-description: Eliminate xUnit boilerplate with GranitTestFixture — NSubstitute fakes for IClock, ICurrentTenant, and ICurrentUserService, EF Core in-memory factories, and Bogus data generators pre-wired.
+description: Cut xUnit boilerplate with GranitTestFixture — NSubstitute fakes for IClock, ICurrentTenant, ICurrentUserService, EF Core in-memory, and Bogus generators.
 sidebar:
   order: 99
   label: Testing
@@ -224,3 +224,11 @@ List<Invoice> invoices = new Faker<Invoice>()
 | `RuleForAudit<T>()` | `T : AuditedEntity` | + `ModifiedAt`, `ModifiedBy` |
 | `RuleForFullAudit<T>()` | `T : FullAuditedEntity` | + `IsDeleted`, `DeletedAt`, `DeletedBy` |
 | `RuleForMultiTenant<T>()` | `T : IMultiTenant` | `TenantId` |
+
+## See also
+
+- [Testing guide (contributing)](/contributing/testing-guide/) — repo-wide testing conventions and CI expectations
+- [Persistence module](/dotnet/data/persistence/) — `AuditedEntity`, `FullAuditedEntity`, `IMultiTenant`
+- [Multi-tenancy module](/dotnet/infrastructure/multi-tenancy/) — `ICurrentTenant` fake setup
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — `ICurrentUserService` propagation under test
+- [Don't mock the database — use Testcontainers](/blog/dont-mock-the-database-use-testcontainers/) — companion blog post

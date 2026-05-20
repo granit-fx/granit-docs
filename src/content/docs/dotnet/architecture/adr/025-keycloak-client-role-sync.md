@@ -4,6 +4,8 @@ description: "Introduce IIdentityClientRoleManager, the Keycloak implementation,
 sidebar:
   order: 25
   label: "025 - Keycloak client roles"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-22

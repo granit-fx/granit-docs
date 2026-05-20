@@ -7,7 +7,7 @@ tags:
   - best-practice
   - persistence
   - performance
-description: "From accidental client evaluation to N+1 queries and tracked reads, these are the five EF Core anti-patterns that turn 50 ms endpoints into 5-second ones — and the exact fix for each."
+description: "From client evaluation to N+1 queries and tracked reads, the five EF Core anti-patterns that turn 50 ms endpoints into 5-second ones — with the fix for each."
 excerpt: >
   From accidental client evaluation to N+1 queries and tracked reads, these are
   the five EF Core anti-patterns that turn 50 ms endpoints into 5-second ones —

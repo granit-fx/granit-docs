@@ -4,6 +4,8 @@ description: "Selection of Sep for SIMD-vectorized zero-allocation CSV parsing i
 sidebar:
   order: 15
   label: "015 - Sep CSV Parsing"
+topic: backend
+
 ---
 
 > **Date:** 2026-03-01

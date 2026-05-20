@@ -1,6 +1,6 @@
 ---
 title: Entity Definition
-description: Declarative manifest for an entity's UI surface — identity, forms, detail view, list collection, kanban layout, relations, and actions. The frontend renders everything from the manifest with no per-entity React.
+description: Declarative manifest for an entity's UI — identity, forms, detail view, lists, kanban, relations, actions. Frontend renders it with no per-entity React.
 sidebar:
   label: Entity Definition
   order: 5
@@ -288,7 +288,7 @@ Two architecture tests keep the contract honest at boot time:
 - `GalleryImageFieldTypeTests` — every `GalleryLayoutDescriptor.ImageProperty` resolves to a `BlobReference` (or nullable) property.
 - `GalleryFieldWhitelistPairingTests` — every property a gallery card surfaces (image, title, subtitle) is whitelisted in the matching `QueryDefinition.GetColumns()`.
 
-## Related
+## See also
 
 - [Entity View](/dotnet/data/entity-view/) — user-saved view configurations (filters, sort, columns, kanban overlays)
 - [Workspace](/dotnet/data/workspace/) — navigation tree that hosts entities
@@ -297,3 +297,4 @@ Two architecture tests keep the contract honest at boot time:
 - [ADR-042](/dotnet/architecture/adr/042-view-catalog/) — view catalog
 - [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) — IoC contributor pattern
 - [ADR-048](/dotnet/architecture/adr/048-cross-module-entity-relations/) — cross-module relations
+- [ADR-053](/dotnet/architecture/adr/053-entities-customization-layer-1/) — layer 1 customization (reorder, regroup, hide)

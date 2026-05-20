@@ -1,9 +1,11 @@
 ---
 title: "ADR-020: Declarative Definitions Placement (Query & Export)"
-description: "Concrete *QueryDefinition and *ExportDefinition classes live in the base module alongside the domain, not in the .Endpoints HTTP layer. Each module owns its definitions; no central aggregation package."
+description: "*QueryDefinition and *ExportDefinition classes live in the base module alongside the domain, not in .Endpoints. Each module owns its definitions."
 sidebar:
   order: 20
   label: "020 - Declarative Definitions Placement"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-18
@@ -179,6 +181,6 @@ deleted as part of this ADR.
 ## References
 
 - [`CLAUDE.md` — Declarative definitions section](../../../../../../../CLAUDE.md)
-- ADR-015 — [Sep CSV Parsing](./015-sep-csv-parsing.md)
-- ADR-016 — [Sylvan.Data.Excel Parsing](./016-sylvan-data-excel-parsing.md)
-- ADR-017 — [DDD Aggregate Root & Value Object Strategy](./017-ddd-aggregate-value-object-strategy.md)
+- ADR-015 — [Sep CSV Parsing](/dotnet/architecture/adr/015-sep-csv-parsing/)
+- ADR-016 — [Sylvan.Data.Excel Parsing](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/)
+- ADR-017 — [DDD Aggregate Root & Value Object Strategy](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/)

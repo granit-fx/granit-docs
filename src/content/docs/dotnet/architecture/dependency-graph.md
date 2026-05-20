@@ -1,6 +1,6 @@
 ---
 title: "Granit Dependency Graph"
-description: "Visual map of every Granit package, how it depends on the rest, and which of the two repositories (granit-dotnet framework or granit-business commercial) it ships from. Read this before adding a reference — it tells you which couplings are safe, which are accidental, and which are explicitly forbidden by architecture tests."
+description: "Visual map of every Granit package, its dependencies, and source repo — read before adding a reference to know which couplings architecture tests forbid."
 sidebar:
   label: Dependency Graph
   order: 32
@@ -873,3 +873,11 @@ rendering) and the polymorphic `RenderedContent` types.
 All notification endpoints are per-user self-service operations (inbox, preferences,
 subscriptions). Each endpoint filters by `GetUserId(user)` and cannot access another
 user's data. `.RequireAuthorization()` without a RBAC policy is sufficient.
+
+## See also
+
+- [Architecture overview](/dotnet/architecture/) — design principles and decision records
+- [Pattern library](/dotnet/architecture/patterns/) — the idioms behind the graph
+- [Module system](/dotnet/core/module-system/) — `[DependsOn]` and topological sort
+- [Module structure guide](/contributing/module-structure/) — conventions for new packages
+- [Module System pattern](/dotnet/architecture/patterns/module-system/) — rationale for the dependency model

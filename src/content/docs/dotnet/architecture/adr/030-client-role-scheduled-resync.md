@@ -1,9 +1,11 @@
 ---
 title: "ADR-030: Client-role scheduled re-sync"
-description: "Extend the Phase 2 boot-time client-role sync with per-provider recurring jobs so drift between provider and RoleMetadata is bounded by the job cadence rather than by host uptime"
+description: "Extend Phase 2 boot-time client-role sync with per-provider recurring jobs so drift between provider and RoleMetadata is bounded by job cadence."
 sidebar:
   order: 30
   label: "030 - Scheduled re-sync"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

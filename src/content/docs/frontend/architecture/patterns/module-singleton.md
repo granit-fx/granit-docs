@@ -1,9 +1,11 @@
 ---
 title: "Module Singleton \u2014 TypeScript Module State"
-description: Share state across @granit/* packages using the ES module cache — a zero-boilerplate singleton for Bearer tokens, global log level, and other cross-package TypeScript state.
+description: Share state across @granit/* packages via the ES module cache — a zero-boilerplate singleton for Bearer tokens, log level, and cross-package state.
 sidebar:
   label: Module Singleton
   order: 2
+topic: frontend
+
 ---
 
 ## Definition

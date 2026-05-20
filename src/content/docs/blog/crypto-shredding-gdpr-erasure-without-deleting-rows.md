@@ -9,7 +9,7 @@ tags:
   - security
   - compliance
   - deep-dive
-description: "Destroy the encryption key, not the data. How Granit implements GDPR Art. 17 crypto-shredding with per-entity key isolation — one API call, permanent erasure, zero rows deleted."
+description: "Destroy the key, not the data. How Granit implements GDPR Art. 17 crypto-shredding with per-entity key isolation — one API call, permanent, zero deletes."
 excerpt: >
   Physical deletion breaks audit trails, conflicts with legal holds, and fails on
   append-only systems. Crypto-shredding solves all three: destroy the key, and the

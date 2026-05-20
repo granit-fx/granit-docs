@@ -100,3 +100,13 @@ Zulip Bot API chat integration for team notifications.
 ```csharp
 context.Services.AddGranitNotificationsZulip();
 ```
+
+## See also
+
+- [Channels overview](./channels/) — channel abstraction and registration
+- [Email channel](./email-channel/) — sibling channel implementation
+- [Configuration](./configuration/) — provider-specific options (FCM, SignalR, VAPID, Twilio…)
+- [Endpoints](./endpoints/) — mobile push token registration, inbox, preferences
+- [Wolverine integration](./wolverine-integration/) — durable retry for real-time delivery failures
+- [Blog: Server-Sent Events in .NET 10](/blog/server-sent-events-dotnet-10/) — how the real-time channel uses native SSE support
+- [Blog: SSE vs SignalR vs WebSockets](/blog/sse-vs-signalr-vs-websockets/) — picking the right transport for your real-time notifications

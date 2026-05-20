@@ -84,6 +84,24 @@ const layers: Layer[] = [
     ],
   },
   {
+    id: "iot",
+    label: "IoT",
+    sublabel: "granit-iot · paid",
+    color: "iot",
+    modules: [
+      { name: "IoT",                  pkg: "Granit.IoT",                          href: "/dotnet/iot/device-management/",     tip: "Ring 1 — Device aggregate, value objects, CQRS readers/writers, domain events" },
+      { name: "IoT.BackgroundJobs",   pkg: "Granit.IoT.BackgroundJobs",           href: "/dotnet/iot/operations/",            tip: "Bucketed telemetry purge, heartbeat timeout, partition maintenance" },
+      { name: "IoT.Ingestion",        pkg: "Granit.IoT.Ingestion",                href: "/dotnet/iot/telemetry-ingestion/",   tip: "Provider-agnostic pipeline: validate → parse → dedup → outbox" },
+      { name: "IoT.Ingestion.Scaleway", pkg: "Granit.IoT.Ingestion.Scaleway",     href: "/dotnet/iot/telemetry-ingestion/",   tip: "Scaleway IoT Hub provider — HMAC-SHA256, Base64 envelope, MQTT topic mapper" },
+      { name: "IoT.Ingestion.Aws",    pkg: "Granit.IoT.Ingestion.Aws",            href: "/dotnet/iot/telemetry-ingestion/",   tip: "AWS IoT Core ingestion — SNS (RSA-SHA256), Direct + API Gateway (SigV4)" },
+      { name: "IoT.Mqtt",             pkg: "Granit.IoT.Mqtt.Mqttnet",             href: "/dotnet/iot/mqtt/",                  tip: "MQTT 3.1.1 / 5.0 broker — Mosquitto, EMQX, HiveMQ, mTLS via Vault, auto-reconnect" },
+      { name: "IoT.Notifications",    pkg: "Granit.IoT.Notifications",            href: "/dotnet/iot/notifications-bridge/",  tip: "Threshold + offline alerts → Granit.Notifications, per-tenant throttling" },
+      { name: "IoT.Timeline",         pkg: "Granit.IoT.Timeline",                 href: "/dotnet/iot/timeline-bridge/",       tip: "Device lifecycle events → Granit.Timeline audit chatter (ISO 27001 A.8.1.1)" },
+      { name: "IoT.Mcp",              pkg: "Granit.IoT.Mcp",                      href: "/dotnet/iot/mcp-bridge/",            tip: "Four read-only MCP tools for AI assistants, tenant-scoped, context-window-capped" },
+      { name: "IoT.Aws",              pkg: "Granit.IoT.Aws (family)",             href: "/dotnet/iot/aws/",                   tip: "AWS bridge family: AwsThingBinding, provisioning saga, Device Shadow sync, IoT Jobs, JITP" },
+    ],
+  },
+  {
     id: "building-blocks",
     label: "Building Blocks",
     sublabel: "framework · open-source",
@@ -377,6 +395,7 @@ const layers: Layer[] = [
   .arch-layer--mcp      { --lc: #f97316; --lt: #c2410c; }  /* orange       */
   .arch-layer--business { --lc: #e879f9; --lt: #c026d3; }  /* fuchsia      */
   .arch-layer--saas     { --lc: #d946ef; --lt: #a21caf; }  /* fuchsia-darker */
+  .arch-layer--iot      { --lc: #e11d48; --lt: #9f1239; }  /* rose-600 — IoT bridge between SaaS & Building Blocks */
   .arch-layer--building-blocks { --lc: #f43f5e; --lt: #e11d48; }  /* rose         */
   .arch-layer--api      { --lc: #ec4899; --lt: #db2777; }  /* pink         */
   .arch-layer--infra    { --lc: #7c3aed; --lt: #6d28d9; }  /* violet       — Granit accent */

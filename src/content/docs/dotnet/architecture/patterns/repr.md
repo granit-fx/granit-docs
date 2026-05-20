@@ -4,6 +4,8 @@ description: "Request-Endpoint-Response pattern adapted for .NET Minimal APIs wi
 sidebar:
   label: REPR
   order: 7
+topic: backend
+
 ---
 
 ## Definition

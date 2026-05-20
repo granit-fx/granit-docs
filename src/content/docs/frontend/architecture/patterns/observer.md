@@ -1,9 +1,11 @@
 ---
 title: "Observer Pattern \u2014 React Event Subscriptions"
-description: Decouple event producers from consumers in React apps using the Observer pattern — Keycloak session lifecycle events and SignalR/SSE notification transport state changes.
+description: Decouple event producers and consumers in React with the Observer pattern — Keycloak session lifecycle and SignalR/SSE transport state changes.
 sidebar:
   label: Observer
   order: 6
+topic: frontend
+
 ---
 
 ## Definition

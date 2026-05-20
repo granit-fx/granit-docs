@@ -1,9 +1,11 @@
 ---
 title: "Mediator Pattern — In-Process Command Routing"
-description: "Route commands, queries, and events through Wolverine as a central in-process mediator — eliminates direct service dependencies and enables cross-cutting pipeline behaviors."
+description: "Route commands, queries, and events through Wolverine as a central in-process mediator — removes direct service deps, enables cross-cutting pipelines."
 sidebar:
   label: Mediator
   order: 22
+topic: backend
+
 ---
 
 ## Definition

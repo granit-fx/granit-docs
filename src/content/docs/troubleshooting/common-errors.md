@@ -1,6 +1,6 @@
 ---
 title: "Common Errors \u2014 Diagnostic & Resolution Guide"
-description: Diagnose and fix common Granit errors — missing DependsOn, DbContext misconfiguration, FluentValidation registration, multi-tenancy setup, and OpenTelemetry tracing issues.
+description: Diagnose common Granit errors — missing DependsOn, DbContext misconfiguration, FluentValidation registration, multi-tenancy, and OpenTelemetry tracing.
 sidebar:
   label: Common Errors
   order: 1

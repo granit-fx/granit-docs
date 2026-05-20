@@ -1,9 +1,11 @@
 ---
 title: "ADR-027: Cognito app-client group sync"
-description: "Apply the ADR-025 client-role template to AWS Cognito User Pools using a {appClientId}:role naming prefix, since Cognito has no native group-to-app-client binding"
+description: "Apply the ADR-025 client-role template to AWS Cognito User Pools via {appClientId}:role naming, since Cognito has no native group-to-app-client binding."
 sidebar:
   order: 27
   label: "027 - Cognito app-client groups"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

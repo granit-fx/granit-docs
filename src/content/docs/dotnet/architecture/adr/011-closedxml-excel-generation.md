@@ -4,6 +4,8 @@ description: "ClosedXML generates xlsx files from .NET objects with no Excel dep
 sidebar:
   order: 11
   label: "011 - ClosedXML"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-27

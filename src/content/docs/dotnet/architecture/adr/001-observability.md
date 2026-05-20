@@ -4,6 +4,8 @@ description: "Adoption of Serilog and OpenTelemetry for structured logging, dist
 sidebar:
   order: 1
   label: "001 - Observability Stack"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-21

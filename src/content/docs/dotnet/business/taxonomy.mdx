@@ -1,6 +1,6 @@
 ---
 title: "Taxonomy — Cross-Cutting Tags and Categories"
-description: One Tag aggregate, one polymorphic TagAssignment table, per-scope autocomplete for clean per-domain UX, opt-in cross-entity search, and a hierarchical Category sibling — the shared taxonomy primitive any Granit aggregate can plug into.
+description: Shared Tag aggregate, polymorphic TagAssignment table, per-scope autocomplete, cross-entity search, and a hierarchical Category sibling for any aggregate.
 sidebar:
   label: Taxonomy
   order: 22
@@ -251,7 +251,7 @@ that would be unmanageable for tenant-facing administrators.
 | Mixed — some shared, some isolated | Use distinct scopes for isolated domains; `"global"` for tags that should appear everywhere. |
 | Cross-entity search across all scopes | `GET /api/v1/taxonomy/search?scope=*` — requires `Taxonomy.Search.Read`. |
 
-## Related
+## See also
 
 - [ADR-054 — Taxonomy module](/dotnet/architecture/adr/054-taxonomy-module/) — design decision and considered alternatives.
 - [Documents](/dotnet/business/documents/) — the first consumer; its F5 stories were re-scoped onto Taxonomy.

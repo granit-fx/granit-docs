@@ -1,6 +1,6 @@
 ---
 title: "Browsing Conventions"
-description: "Conventions for code that consumes Granit.Browsing: deny-by-default sandbox, no per-call CSP bypass, typed Uri + RoutePattern APIs, mandatory permissions, parameterised EvaluateAsync, and ITempFileFactory for any file:// handoff."
+description: "Conventions for Granit.Browsing consumers: deny-by-default sandbox, no CSP bypass, typed Uri APIs, mandatory permissions, ITempFileFactory for file:// handoffs."
 sidebar:
   label: Conventions
   order: 15
@@ -109,7 +109,7 @@ Tests that fake `ICurrentTenant` need to set it *before* `AcquirePageAsync`,
 not after — the canonical "tenant leaked across an `await`" bug surfaces as
 a `CrossTenantPageAcquisitionException`.
 
-## Related
+## See also
 
 - [Browsing security](/dotnet/infrastructure/browsing/security/).
 - [Browsing overview](/dotnet/infrastructure/browsing/).

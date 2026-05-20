@@ -4,6 +4,8 @@ description: "Toggle features at runtime without redeployment — per-tenant, pe
 sidebar:
   label: Feature Flags
   order: 16
+topic: backend
+
 ---
 
 ## Definition

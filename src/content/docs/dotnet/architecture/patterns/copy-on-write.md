@@ -4,6 +4,8 @@ description: "How Granit uses immutable state with ImmutableDictionary to ensure
 sidebar:
   label: Copy-on-Write
   order: 45
+topic: backend
+
 ---
 
 ## Definition
@@ -81,3 +83,9 @@ using (dataFilter.Disable<ISoftDeletable>())
 }
 // Dispose() restores the original ImmutableDictionary
 ```
+
+## Used by
+
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — `ICurrentTenant` immutable claim snapshots
+- [Persistence](/dotnet/data/persistence/) — query-filter override snapshots
+- [Scope / Context Manager](/dotnet/architecture/patterns/scope-context-manager/) — companion pattern that wraps the snapshot in `IDisposable`

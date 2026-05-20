@@ -1,6 +1,6 @@
 ---
 title: "Localization \u2014 17 Cultures & CLDR Plurals"
-description: JSON-based i18n covering 18 cultures with CLDR plural rules, source-generated translation keys, per-tenant database overrides at runtime, culture fallback chains, and Minimal API endpoints.
+description: JSON-based i18n across 18 cultures with CLDR plural rules, source-generated keys, per-tenant runtime overrides, fallback chains, and Minimal API endpoints.
 sidebar:
   label: Localization
   order: 18
@@ -441,9 +441,16 @@ All override endpoints require the `Localization.Overrides.Manage` permission.
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `GET` | `/localization/overrides?resourceName=X&cultureName=fr` | List overrides for a resource/culture |
+| `GET` | `/localization/overrides` | Query-engine list of overrides (`page`, `pageSize`, `sort`, `filter[...]`, `search`, `presets[...]`, `groupBy`) |
+| `GET` | `/localization/overrides/meta` | Query metadata (columns, filters, sorts, presets) for dynamic UI generation |
 | `PUT` | `/localization/overrides/{resourceName}/{cultureName}/{key}` | Create or update an override |
 | `DELETE` | `/localization/overrides/{resourceName}/{cultureName}/{key}` | Remove an override |
+
+`MapGranitLocalizationOverrides()` mounts the query-engine contract on `GET /`
+and `GET /meta` — the legacy `?resourceName=X&cultureName=Y` lookup was removed
+in Granit 0.1.0-dev (May 2026). Filter on `resourceName` / `cultureName` via
+`filter[...]` parameters instead. See
+[query-engine](/frontend/data/query-engine/) for the parameter shape.
 
 If no `ILocalizationOverrideStoreReader`/`Writer` is registered (EF Core package not
 installed), all override endpoints return `501 Not Implemented`.

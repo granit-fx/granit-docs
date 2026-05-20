@@ -8,7 +8,7 @@ authors:
 tags:
   - architecture
   - persistence
-description: "Shared DbContexts create hidden coupling between modules. Here is how Granit enforces database isolation per module — and why it makes microservice extraction mechanical."
+description: "Shared DbContexts create hidden coupling between modules. How Granit enforces database isolation per module — and why it makes microservice extraction trivial."
 excerpt: >
   Shared DbContexts create hidden coupling between modules. Here is how Granit
   enforces database isolation per module — and why it makes microservice extraction

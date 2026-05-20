@@ -12,6 +12,10 @@
   --sl-font: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sl-font-mono: "Fira Code Variable", ui-monospace, monospace;
 
+  /* Smaller article h2 — Starlight default is 4xl (35px) which dwarfs body text;
+     bring it closer to h3 so section starts feel less like banners. */
+  --sl-text-h2: 1.5rem;       /* 24px (was 1.8125rem / 29px) */
+
   /* .NET-inspired purple accent (replaces default blue) */
   --sl-color-accent-low: #2a1a3e;
   --sl-color-accent: #7c3aed;
@@ -23,6 +27,11 @@
   --sl-color-black: #14111b;
   --sl-color-gray-6: #201c28;
   --sl-color-gray-5: #2c2834;
+}
+@media (min-width: 50em) {
+  :root {
+    --sl-text-h2: 1.625rem;   /* 26px (was 2.1875rem / 35px) */
+  }
 }
 :root[data-theme="light"] {
   --sl-color-accent-low: #f3e8ff;

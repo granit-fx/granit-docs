@@ -4,6 +4,8 @@ description: "Testcontainers spins up ephemeral PostgreSQL containers for integr
 sidebar:
   order: 7
   label: "007 - Testcontainers"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-24

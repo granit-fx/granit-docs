@@ -1,6 +1,6 @@
 ---
 title: "Multi-Regulation Engine"
-description: Granit.Privacy.Regulations — 14 built-in regulation profiles (GDPR, LGPD, CCPA, PIPL, DPDPA, and more) with per-tenant resolution via IPrivacyRegulationResolver.
+description: Granit.Privacy.Regulations — 14 built-in profiles (GDPR, LGPD, CCPA, PIPL, DPDPA, more) with per-tenant resolution via IPrivacyRegulationResolver.
 sidebar:
   order: 2
   label: Regulations
@@ -138,3 +138,13 @@ DateTimeOffset deadline = await deadlineTracker.CalculateDeadlineAsync(
 
 All Tier 1 and Tier 2 regulations use calendar days. Applications needing business
 day calculation can provide a custom `IResponseDeadlineTracker` implementation.
+
+## See also
+
+- [Privacy overview](/dotnet/compliance/privacy/) — module setup and data provider registry
+- [Data Export](/dotnet/compliance/privacy/data-export/) — deadline-driven export workflow
+- [Data Deletion](/dotnet/compliance/privacy/data-deletion/) — deletion deadlines per regulation
+- [Opt-Out (CCPA)](/dotnet/compliance/privacy/opt-out/) — CCPA-specific sale/share opt-out
+- [Processing Purposes](/dotnet/compliance/privacy/processing-purposes/) — legal basis tied to active profile
+- [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) — surfaces profile choices into cookie consent
+- [Multi-tenancy module](/dotnet/infrastructure/multi-tenancy/) — per-tenant `IPrivacyRegulationResolver`

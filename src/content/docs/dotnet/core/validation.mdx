@@ -1,6 +1,6 @@
 ---
 title: "Validation \u2014 FluentValidation & Auto-Filters"
-description: FluentValidation integration with automatic endpoint validation, structured error codes, OpenAPI schema enrichment, and international validators (IBAN, BIC, E.164, ISO 3166).
+description: FluentValidation with auto endpoint validation, structured error codes, OpenAPI schema enrichment, and validators for IBAN, BIC, E.164, ISO 3166.
 sidebar:
   label: Validation
   order: 6
@@ -535,3 +535,4 @@ For async validators that query the database, inject a mock `DbContext` or use
 - [Exception Handling](/dotnet/api/exception-handling/) -- `IExceptionStatusCodeMapper` for validation exceptions
 - [Core module](/dotnet/core/module-system/) -- Exception hierarchy, `IHasValidationErrors`
 - [Persistence module](/dotnet/data/persistence/) -- `AuditedEntityInterceptor` uses `IClock` for timestamps
+- [Blog: Validation at the right layer](/blog/validation-at-the-right-layer/) -- where to put validation and why Granit splits it across layers

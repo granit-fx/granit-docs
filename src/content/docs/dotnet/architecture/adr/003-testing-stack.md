@@ -4,6 +4,8 @@ description: "Why Granit chose xUnit v3, NSubstitute, and Bogus — parallel tes
 sidebar:
   order: 3
   label: "003 - Testing Stack"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-21
@@ -65,7 +67,7 @@ Requirements:
 - Disadvantage: young project (v1.x), single maintainer, limited ecosystem
   (Testcontainers, Verify primarily target xUnit/NUnit)
 - Re-evaluation planned via a future ADR when the project reaches sufficient
-  maturity (cf. [ADR-014](./014-migration-shouldly/))
+  maturity (cf. [ADR-014](/dotnet/architecture/adr/014-migration-shouldly/))
 
 ### Mocking
 

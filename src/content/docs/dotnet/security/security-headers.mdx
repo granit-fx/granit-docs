@@ -1,6 +1,6 @@
 ---
 title: "Security Headers"
-description: HTTP security response headers for Granit APIs — Server header suppression, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, Cross-Origin policies. OWASP ASVS V14.4 compliant.
+description: HTTP security response headers for Granit APIs — strict per-endpoint CSP via ICspContributor composition, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy. OWASP ASVS V14.4 compliant.
 sidebar:
   order: 2
   label: Security Headers
@@ -36,7 +36,7 @@ and injects defensive headers on every response per the
 | `Cross-Origin-Opener-Policy` | `same-origin` | Spectre isolation |
 | `Cross-Origin-Resource-Policy` | `same-origin` | Resource sharing control |
 | `Cross-Origin-Embedder-Policy` | *(not set)* | Optional Spectre isolation |
-| `Content-Security-Policy` | *(not set)* | Application-specific |
+| `Content-Security-Policy` | `default-src 'none'; base-uri 'none'; frame-ancestors 'none'` | Composed per-endpoint from `CspOptions` base + registered `ICspContributor` implementations |
 
 ## Setup
 
@@ -68,7 +68,6 @@ All headers are configurable via `appsettings.json`:
     "ReferrerPolicy": "strict-origin-when-cross-origin",
     "DisableXssProtection": true,
     "PermissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), accelerometer=(), gyroscope=(), magnetometer=(), usb=()",
-    "ContentSecurityPolicy": null,
     "EnableHsts": true,
     "HstsMaxAgeSeconds": 31536000,
     "HstsIncludeSubDomains": true,
@@ -93,20 +92,233 @@ Set the header value to `null` or the enable flag to `false`:
 }
 ```
 
-### Content Security Policy
+## Content Security Policy
 
-CSP is highly application-specific and is **not set by default**. Configure it per
-application:
+CSP in Granit is **composed per-endpoint** rather than configured as a single
+application-wide string. The composer starts from a typed base policy
+(`SecurityHeaders:Csp` in configuration) and then lets every package that owns
+a UI surface declare its own relaxations through an `ICspContributor` — without
+the consuming application having to know about them.
+
+### Default policy
+
+The base policy is API-grade strict, suitable for JSON-only endpoints:
+
+```text
+default-src 'none'; base-uri 'none'; frame-ancestors 'none'
+```
+
+Every other directive is empty by default and inherits from `default-src 'none'`
+per CSP semantics. UI surfaces that need relaxations (e.g. Scalar, an admin UI,
+the BFF login flow) ship a contributor scoped to their own route.
+
+### Typed configuration
+
+`CspOptions` exposes one strongly-typed property per directive. Bind from the
+`SecurityHeaders:Csp` section:
 
 ```json
 {
   "SecurityHeaders": {
-    "ContentSecurityPolicy": "default-src 'self'; script-src 'self'"
+    "Csp": {
+      "DefaultSrc": ["'self'"],
+      "ScriptSrc": ["'self'", "'unsafe-inline'"],
+      "FontSrc": ["'self'", "https://fonts.scalar.com"]
+    }
   }
 }
 ```
 
-The BFF module sets `frame-ancestors 'none'` on login/callback routes independently.
+| Property | Directive |
+| --- | --- |
+| `DefaultSrc` | `default-src` |
+| `ScriptSrc`, `ScriptSrcElem`, `ScriptSrcAttr` | `script-src`, `script-src-elem`, `script-src-attr` |
+| `StyleSrc`, `StyleSrcElem`, `StyleSrcAttr` | `style-src`, `style-src-elem`, `style-src-attr` |
+| `FontSrc`, `ImgSrc`, `ConnectSrc`, `MediaSrc`, `ObjectSrc`, `ManifestSrc` | `font-src`, `img-src`, `connect-src`, `media-src`, `object-src`, `manifest-src` |
+| `FrameSrc`, `WorkerSrc`, `ChildSrc` | `frame-src`, `worker-src`, `child-src` |
+| `BaseUri`, `FormAction`, `FrameAncestors` | `base-uri`, `form-action`, `frame-ancestors` |
+| `ReportUri`, `ReportTo` | `report-uri`, `report-to` |
+| `ReportOnly` | Emit `Content-Security-Policy-Report-Only` instead of the enforcing header |
+| `UpgradeInsecureRequests` | Emit `upgrade-insecure-requests` |
+| `RawOverride` | Emergency escape hatch — emitted verbatim, contributors skipped |
+
+### CSP contributors
+
+A contributor is the unit of CSP composition: a small class — usually `internal sealed` —
+that declares "on routes matching X, add Y to the policy." The composer collects
+every registered contributor, runs them against the matched endpoint, merges
+their additions into the base policy, and emits a single header per response.
+
+The contracts ship in **`Granit.Http.SecurityHeaders.Abstractions`** — a
+zero-runtime-dependency contracts package. A package that wants to declare a
+relaxation references only the Abstractions package, not the runtime, mirroring
+the `Microsoft.Extensions.Logging.Abstractions` pattern.
+
+Example contributor for a hypothetical `/admin` UI:
+
+```csharp
+internal sealed class AdminUiCspContributor : ICspContributor
+{
+    public void Contribute(HttpContext context, CspBuilder builder)
+    {
+        if (context.GetEndpoint()?.Metadata.GetMetadata<AdminUiMetadata>() is null)
+        {
+            return;
+        }
+
+        builder
+            .AddScriptSrc("'self'", "'unsafe-inline'")
+            .AddStyleSrc("'self'", "'unsafe-inline'");
+    }
+}
+```
+
+Registration happens in the package's `Use*` extension, after the activation gate:
+
+```csharp
+public static IApplicationBuilder UseAdminUi(this IApplicationBuilder app)
+{
+    var registry = app.ApplicationServices.GetService<ICspContributorRegistry>();
+    registry?.Add(new AdminUiCspContributor());
+    // ... map admin endpoints with WithMetadata(new AdminUiMetadata()) ...
+    return app;
+}
+```
+
+The registry locks on the first call from the composer (i.e. the first request
+served). Registering a contributor after that throws `InvalidOperationException`
+with an actionable message — register during application configuration, not
+lazily on first use.
+
+:::caution[Contributors must be pure functions of the endpoint]
+Contributors MUST branch only on `context.GetEndpoint()?.Metadata` and
+compile-time constants. The composer caches the composed CSP **per endpoint**,
+so branching on tenant, authenticated user, request headers, or any other
+request-scoped state would leak across requests once the cache warms.
+:::
+
+### Disabling a contributor from configuration
+
+When an internal policy is stricter than the framework default, opt a
+contributor out without forking the owning package:
+
+```json
+{
+  "SecurityHeaders": {
+    "DisabledContributors": ["ScalarCspContributor"]
+  }
+}
+```
+
+Matched against `ICspContributor.Name`, which defaults to the runtime type name
+via a default interface method. Override `Name` only when the type name is not
+stable across refactors.
+
+### Worked example — Keycloak silent SSO
+
+Consumers using the Keycloak JS adapter need `/silent-check-sso.html` to be
+embeddable in a same-origin iframe. The strict default `frame-ancestors 'none'`
+blocks that. Ship a small contributor in the consuming application:
+
+```csharp
+internal sealed class SilentCheckSsoCspContributor : ICspContributor
+{
+    public void Contribute(HttpContext context, CspBuilder builder)
+    {
+        if (!context.Request.Path.Equals(
+                "/silent-check-sso.html",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        builder.AddFrameAncestors("'self'");
+    }
+}
+```
+
+```csharp
+var registry = app.Services.GetService<ICspContributorRegistry>();
+registry?.Add(new SilentCheckSsoCspContributor());
+```
+
+This relaxes `frame-ancestors` only on that one route; the rest of the app
+keeps the strict default. For modern browsers, CSP `frame-ancestors` supersedes
+the legacy `X-Frame-Options` — the global `XFrameOptions: "DENY"` setting stays
+unchanged.
+
+:::caution[Single source of truth — the composer wins]
+Any external `[ResponseHeader("Content-Security-Policy", ...)]` attribute or
+middleware writing the CSP is **silently overwritten** by the composer.
+Browsers intersect multiple CSP headers and pick the strictest, which would
+neutralise contributor relaxations and produce confusing UI breakage. If
+unconditional control over the header is required, set `Csp.RawOverride` — the
+composer will emit that string verbatim and skip every contributor.
+:::
+
+:::caution[`'unsafe-inline'` is suppressed by nonces and hashes]
+Per the CSP specification, a nonce-source or hash-source in a directive
+suppresses `'unsafe-inline'` in the same directive. If a contributor adds both
+into the same directive (e.g. `'unsafe-inline'` next to a nonce), the composer
+emits a `LogWarning` once per affected endpoint. Migrate to a nonce-only or
+hash-only policy.
+:::
+
+:::caution[`'unsafe-inline'` in production — ASVS V14.4.7]
+When `IHostEnvironment.IsProduction()` is true, any contributor emitting
+`'unsafe-inline'` triggers a startup-equivalent `LogWarning`. The composer does
+not block the response — production traffic is not the place to surface a
+hardening bug for the first time — but the warning is your signal to migrate to
+a nonce- or hash-based policy.
+:::
+
+### Audit endpoint
+
+`Granit.Http.SecurityHeaders.Endpoints` ships a single audit endpoint so
+security auditors can introspect the effective per-route CSP from outside the
+deployment. The package is **opt-in** — reference it explicitly and map the
+endpoint in `Program.cs`:
+
+```csharp
+app.MapGranitSecurityHeadersAudit();
+// GET /security-headers/csp
+// Gated by DiagnosticsPermissions.Monitoring.Read
+```
+
+The endpoint reuses the existing Diagnostics permission — no new permission,
+no new localisation. Returns a JSON snapshot shaped like:
+
+```json
+{
+  "baseDirectives": {
+    "default-src": ["'none'"],
+    "base-uri": ["'none'"],
+    "frame-ancestors": ["'none'"]
+  },
+  "rawOverride": null,
+  "reportOnly": false,
+  "contributors": [
+    { "name": "ScalarCspContributor", "fullTypeName": "Granit.Http.ApiDocumentation.Internal.ScalarCspContributor" }
+  ],
+  "endpoints": [
+    {
+      "httpMethods": ["GET"],
+      "pattern": "/scalar",
+      "displayName": "Scalar",
+      "headerName": "Content-Security-Policy",
+      "composedCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; ..."
+    }
+  ]
+}
+```
+
+:::note[Synthetic-request caveat]
+The audit synthesises requests carrying only the matched endpoint —
+`HttpContext.Request.Path`, headers, user, and tenant are not populated.
+Contributors that respect the [purity contract](#csp-contributors) (branching
+only on `Endpoint.Metadata`) report identically to runtime; contributors that
+branch on request-scoped state beyond endpoint metadata will **under-report**.
+:::
 
 ### HSTS preload
 
@@ -157,4 +369,5 @@ hardening is overridden.
 
 - [Security Overview](/dotnet/security/security-overview/) — authentication, authorization, encryption modules
 - [BFF Security](/dotnet/security/bff/token-security/) — clickjacking protection on BFF auth endpoints
+- [API Documentation](/dotnet/api/api-documentation/) — Scalar's bundled `ICspContributor` and how to disable it
 - [HTTP Conventions](/dotnet/architecture/http-conventions/) — CORS, caching, API versioning

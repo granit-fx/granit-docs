@@ -1,9 +1,11 @@
 ---
 title: "ADR-029: Client-role sync — opt-in orphan cleanup policy"
-description: "Add an OrphanedRolePolicy (KeepAndLog / SoftDelete / HardDelete) to the Phase 2 client-role sync pipeline, with soft-delete as the first safe step-up from the default keep-and-log behaviour"
+description: "Add an OrphanedRolePolicy (KeepAndLog / SoftDelete / HardDelete) to the client-role sync pipeline, with soft-delete as the safe step-up from default."
 sidebar:
   order: 29
   label: "029 - Orphan cleanup policy"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23
