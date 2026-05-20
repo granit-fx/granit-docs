@@ -330,6 +330,35 @@ export default defineConfig({
                   collapsed: true,
                 },
                 {
+                  label: "IoT",
+                  collapsed: true,
+                  items: [
+                    { label: "Overview", link: "/dotnet/iot/" },
+                    { label: "Getting Started", link: "/dotnet/iot/getting-started/" },
+                    { label: "Device Management", link: "/dotnet/iot/device-management/" },
+                    { label: "Data Model", link: "/dotnet/iot/data-model/" },
+                    { label: "Telemetry Ingestion", link: "/dotnet/iot/telemetry-ingestion/" },
+                    { label: "MQTT Transport", link: "/dotnet/iot/mqtt/" },
+                    { label: "Time-Series Storage", link: "/dotnet/iot/time-series/" },
+                    { label: "Operations", link: "/dotnet/iot/operations/" },
+                    {
+                      label: "Cross-Cutting Bridges",
+                      collapsed: true,
+                      items: [
+                        { label: "Notifications", link: "/dotnet/iot/notifications-bridge/" },
+                        { label: "Timeline", link: "/dotnet/iot/timeline-bridge/" },
+                        { label: "MCP (AI Tools)", link: "/dotnet/iot/mcp-bridge/" },
+                      ],
+                    },
+                    {
+                      label: "AWS IoT Core",
+                      collapsed: true,
+                      items: [{ autogenerate: { directory: "dotnet/iot/aws" } }],
+                    },
+                    { label: "Bundle Reference", link: "/dotnet/iot/bundle/" },
+                  ],
+                },
+                {
                   label: "Reference",
                   items: [
                     {
