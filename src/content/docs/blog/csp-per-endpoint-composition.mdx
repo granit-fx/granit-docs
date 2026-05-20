@@ -1,5 +1,5 @@
 ---
-title: "One Strict CSP, Many UI Surfaces: Per-Endpoint Composition"
+title: "Content Security Policy in ASP.NET Core Without the appsettings Hack"
 date: 2026-06-02
 authors:
   - jfmeyers
@@ -7,58 +7,33 @@ tags:
   - deep-dive
   - security
   - architecture
-description: "A single application-wide Content-Security-Policy string breaks the moment one route serves HTML. Granit inverts ownership: the package that mounts the UI declares its own CSP relaxation, composed per endpoint."
+description: "Your strict Content Security Policy breaks the moment one ASP.NET Core route serves HTML. The usual fix weakens every other endpoint. Here is the per-endpoint CSP composition pattern that solves it without compromise."
 excerpt: >
-  A single application-wide Content-Security-Policy string breaks the moment one
-  route serves HTML. Granit inverts ownership: the package that mounts the UI
-  declares its own CSP relaxation, composed per endpoint — strict everywhere else,
-  with an audit endpoint so security teams can verify it from outside.
+  Your strict Content Security Policy breaks the moment one ASP.NET Core route
+  serves HTML — Scalar, an admin page, a Keycloak iframe. The usual band-aid
+  weakens every other endpoint. Granit's per-endpoint CSP composition keeps
+  strict defaults strict and lets the package that mounts the UI declare its
+  own relaxation.
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-`Content-Security-Policy` is two policies in one header. A strict API-grade
-policy — `default-src 'none'; base-uri 'none'; frame-ancestors 'none'` — is
-exactly right for the JSON endpoints that serve 99% of an API's traffic. The
-moment a single route serves HTML (Scalar, an admin page, Keycloak's
-silent-check-sso), the strict policy breaks the page, you relax the policy
-application-wide in `appsettings.Development.json`, and the strict default is
-now a strict default that nobody actually runs.
+You added Scalar to your ASP.NET Core API. You enabled `Granit.Http.SecurityHeaders`
+(or another strict-by-default CSP middleware). You opened `/scalar` in the
+browser. The page is blank. The console is red:
 
-Granit 0.31 inverts the ownership model. The package that **mounts the UI
-surface** declares its own CSP relaxation. The composer in
-`Granit.Http.SecurityHeaders` reads the matched endpoint at response-emission
-time, merges every contributor that applies, and emits a per-endpoint policy.
-The consumer's `appsettings.json` keeps its strict default — unchanged,
-unconditionally.
+```text
+Refused to execute inline script because it violates the following Content
+Security Policy directive: "default-src 'none'".
 
-This article walks through the design: the `ICspContributor` interface that
-makes the inversion possible, why it ships in a separate
-`.Abstractions` package, the purity contract that lets the composer cache
-aggressively, the escape hatches for stricter internal policies, and the
-audit endpoint that gives security auditors a snapshot of the effective
-per-route policy from outside the deployment.
-
-## The pain — a single string, many surfaces
-
-Before 0.31, `Granit.Http.SecurityHeaders` exposed CSP as a single string
-property:
-
-```json title="appsettings.json — old model"
-{
-  "SecurityHeaders": {
-    "ContentSecurityPolicy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
-  }
-}
+Refused to load the font 'https://fonts.scalar.com/...' because it violates
+the following Content Security Policy directive: "default-src 'none'".
 ```
 
-`Granit.Http.ApiDocumentation` mounts Scalar at `/scalar`. Scalar needs an
-inline bootstrap script, inline styles, and `https://fonts.scalar.com`. The
-strict default blocks all three, the Scalar page renders blank, the developer
-opens the browser console, sees a wall of CSP violations, and ends up writing
-this in `appsettings.Development.json`:
+You search the issue, end up on Stack Overflow, and reach for the usual fix —
+relax the **Content Security Policy** in `appsettings.Development.json`:
 
-```json title="appsettings.Development.json — the band-aid"
+```json title="The band-aid everyone reaches for"
 {
   "SecurityHeaders": {
     "ContentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.scalar.com; img-src 'self' data: https:; connect-src 'self'"
@@ -66,22 +41,44 @@ this in `appsettings.Development.json`:
 }
 ```
 
-This override now applies to **every endpoint** in development — the strict
-policy on JSON endpoints disappears, replaced by `'unsafe-inline'` everywhere.
-The override gets copy-pasted into every new service. When the next framework
-package ships an HTML surface (a Razor consent UI, a job dashboard, a
-documented BFF challenge page), the band-aid grows another paragraph. The
-strict default becomes folklore.
+Scalar renders again. Six months later, the same override has been
+copy-pasted into every new service, the `'unsafe-inline'` from one HTML page
+is now applied to **every JSON endpoint** in your API, and the strict
+default you carefully chose at the start has quietly become folklore.
 
-The structural problem is ownership. **The consumer is forced to know which
-packages need which CSP relaxations.** That coupling is wrong: the package
-that mounts the UI knows exactly what it needs; the consumer doesn't, and
-shouldn't have to.
+This is not a Granit problem. It is not a Scalar problem. It is the
+**structural limit of treating CSP as a single application-wide string** —
+and Granit 0.31 fixes it for good. This article walks through the pain,
+the pattern, and the audit hook you can show your security team.
 
-## The inversion — `ICspContributor`
+## Why a single CSP string can't survive contact with reality
 
-The new contract ships in `Granit.Http.SecurityHeaders.Abstractions`, a
-zero-runtime-dependency contracts package:
+A Content Security Policy is conceptually one rule per HTML response. The
+ASP.NET Core machinery is route-shaped: each endpoint can have its own
+metadata, its own auth requirements, its own response shape. Routes that
+serve JSON, routes that serve HTML, and routes that serve binary downloads
+have **fundamentally different CSP needs** — and yet most middleware
+exposes CSP as a single string applied to every response.
+
+The moment one package in your application mounts an HTML surface, you have
+a structural conflict:
+
+- **Strict everywhere** — Scalar (or your admin page, or your Keycloak silent-SSO iframe) breaks.
+- **Relaxed everywhere** — `'unsafe-inline'` leaks into every API response. ASVS V14.4.7 starts caring. Your security team starts caring.
+
+The override gets pushed to dev-only as a compromise. Then the override gets
+mirrored to production for "consistency." Then the next framework package
+ships another HTML route. The override grows another paragraph. **Nobody
+remembers what the strict default looked like.**
+
+The fix is not a better string. The fix is to stop treating CSP as a single
+string at all.
+
+## The pattern: packages declare, the framework composes
+
+Granit 0.31 ships an inverted ownership model. The package that **mounts the
+UI surface** owns the CSP relaxation **for that route only**. A small
+contract lives in `Granit.Http.SecurityHeaders.Abstractions`:
 
 ```csharp title="ICspContributor.cs"
 public interface ICspContributor
@@ -92,10 +89,57 @@ public interface ICspContributor
 }
 ```
 
-A contributor is the unit of CSP composition: a small class — usually
-`internal sealed` — that declares "on routes matching X, add Y to the
-policy." The implementation for Scalar lives inside
-`Granit.Http.ApiDocumentation`, alongside the code that mounts the UI:
+A contributor is a tiny class — usually `internal sealed` — that says "on
+routes matching X, add Y to the policy." Every package that needs a CSP
+relaxation ships one. At response-emission time, the composer in
+`Granit.Http.SecurityHeaders`:
+
+1. Resolves the matched endpoint.
+2. Seeds a `CspBuilder` from the typed base policy (`SecurityHeaders:Csp`).
+3. Lets every contributor that applies layer its sources on top.
+4. Emits a single `Content-Security-Policy` header for that response.
+5. Caches the result keyed by the matched `Endpoint`.
+
+Your `appsettings.json` keeps its strict default. **Unchanged. Forever.**
+
+## For the consumer: literally nothing changes
+
+If you're consuming Granit, you write zero CSP code. Reference the bundle,
+use the middleware, you're done:
+
+```csharp title="Program.cs"
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddGranit<AppModule>(granit => granit.AddApi());
+
+var app = builder.Build();
+app.UseGranitExceptionHandling();
+app.UseGranitSecurityHeaders();
+app.UseGranitApiDocumentation();   // Mounts /scalar
+app.MapControllers();
+app.Run();
+```
+
+Inside `UseGranitApiDocumentation`, the framework registers a
+`ScalarCspContributor` automatically. The Scalar route gets exactly the
+sources it needs (`'unsafe-inline'`, `https://fonts.scalar.com`, …). Every
+other route — your API endpoints, your health checks, your auth callbacks —
+keeps the strict baseline:
+
+```text
+default-src 'none'; base-uri 'none'; frame-ancestors 'none'
+```
+
+Open `/scalar` in your browser. It works. Open the `/api/v1/patients`
+endpoint and inspect the response headers. The CSP is strict. No
+`appsettings.Development.json` override. No `'unsafe-inline'` leaking into
+your JSON responses. No band-aid to maintain.
+
+## For framework authors: writing a contributor
+
+If you publish a NuGet package that mounts an HTML route, you ship the
+contributor alongside it. Total cost: one file, ~15 lines. Here is the
+real implementation that ships with `Granit.Http.ApiDocumentation`:
 
 ```csharp title="ScalarCspContributor.cs"
 internal sealed class ScalarCspContributor : ICspContributor
@@ -118,8 +162,20 @@ internal sealed class ScalarCspContributor : ICspContributor
 }
 ```
 
-Registration happens in `UseGranitApiDocumentation`, gated by the same
-condition that mounts the Scalar endpoint in the first place:
+Two design choices worth noting:
+
+- **Endpoint metadata, not URL paths.** The contributor branches on
+  `Endpoint.Metadata`, not on `Request.Path`. The marker
+  (`ScalarApiReferenceMetadata`) is attached when the route is mapped, and
+  the composer caches results per `Endpoint`. URL renaming, route prefixes,
+  versioning — none of it breaks the relaxation, because the metadata
+  travels with the endpoint.
+- **No-op when not matched.** If the contributor doesn't apply, `Contribute`
+  returns immediately. Every contributor runs on every request, but the
+  cost of "not me" is a single null-check.
+
+Registration happens in the package's `Use*` extension, behind the same
+gate that mounts the UI:
 
 ```csharp title="ApiDocumentationApplicationBuilderExtensions.cs"
 public static IApplicationBuilder UseGranitApiDocumentation(this WebApplication app)
@@ -137,36 +193,115 @@ public static IApplicationBuilder UseGranitApiDocumentation(this WebApplication 
 ```
 
 One source of truth: "Scalar is on" implies "Scalar's CSP relaxation is on,"
-because both branches happen behind the same gate. The consumer's
-`Program.cs` never mentions CSP — and never has to.
+because both branches happen behind the same condition. Drop Scalar from
+your build and the relaxation drops with it.
 
-## Why a separate `.Abstractions` package
+## For your own app: relax one route, leave the rest strict
 
-`Granit.Http.ApiDocumentation` references **only**
-`Granit.Http.SecurityHeaders.Abstractions`, not the runtime middleware. The
-runtime — middleware, options validators, HSTS extensions, composer — is
-pulled in by the consumer's `Granit.Bundle.Essentials`. ApiDocumentation has
-no opinion on whether the consumer wants Granit-managed security headers, an
-external middleware, or none at all.
+The same interface is public, which means **your application can write
+contributors too** — for routes that aren't owned by any framework package.
 
-If `Granit.Http.SecurityHeaders` is absent from the host,
-`GetService<ICspContributorRegistry>()` returns `null`, the registration
-silently no-ops with a `LogDebug`, and Scalar renders against whatever CSP
-(or absence thereof) the consumer has chosen. This mirrors the
-`Microsoft.Extensions.Logging.Abstractions` pattern — a library can target
-`ILogger` without forcing a logging provider.
+The canonical case: Keycloak's JS adapter loads `/silent-check-sso.html`
+in a same-origin iframe to refresh tokens silently. The strict default
+`frame-ancestors 'none'` blocks the iframe. The file lives in your SPA's
+`public/` directory; no framework package can ship a contributor for it.
 
-The split has a second benefit: the `.Abstractions` package contains pure
-contracts and a validating builder. No `InternalsVisibleTo`, no shared state,
-no runtime dependencies beyond `Microsoft.AspNetCore.Http.Abstractions`. An
-alternative composer implementation (a different middleware, a test harness,
-a static analyzer) can consume the same contributors without touching
-Granit's runtime.
+Six lines of code:
 
-## The composer and the per-endpoint cache
+```csharp title="SilentCheckSsoCspContributor.cs"
+internal sealed class SilentCheckSsoCspContributor : ICspContributor
+{
+    public void Contribute(HttpContext context, CspBuilder builder)
+    {
+        if (!context.Request.Path.Equals(
+                "/silent-check-sso.html",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
-Composition happens inside `Response.OnStarting`, which fires **after**
-routing has resolved the endpoint. The composer flow per request:
+        builder.AddFrameAncestors("'self'");
+    }
+}
+```
+
+```csharp title="Program.cs"
+var registry = app.Services.GetService<ICspContributorRegistry>();
+registry?.Add(new SilentCheckSsoCspContributor());
+```
+
+`frame-ancestors 'self'` is relaxed only on `/silent-check-sso.html`. Every
+other route keeps `frame-ancestors 'none'`. Your global `XFrameOptions:
+"DENY"` setting stays unchanged — for modern browsers, CSP
+`frame-ancestors` supersedes `X-Frame-Options`, and the composer handles
+that for you.
+
+The pattern is the same whether you're consuming a Granit package, writing
+one, or relaxing a single route in your own app. **The unit of CSP
+composition is the route, never the application.**
+
+## Verifying what's actually applied: the audit endpoint
+
+"Trust me, the CSP is strict on every API route" is not a conversation that
+ends well with a security auditor. `Granit.Http.SecurityHeaders.Endpoints`
+ships an opt-in audit endpoint:
+
+```csharp title="Program.cs"
+app.MapGranitSecurityHeadersAudit();
+// GET /security-headers/csp
+// Gated by DiagnosticsPermissions.Monitoring.Read
+```
+
+Curl it from outside the deployment:
+
+```json title="GET /security-headers/csp"
+{
+  "baseDirectives": {
+    "default-src": ["'none'"],
+    "base-uri": ["'none'"],
+    "frame-ancestors": ["'none'"]
+  },
+  "contributors": [
+    { "name": "ScalarCspContributor", "fullTypeName": "Granit.Http.ApiDocumentation.Internal.ScalarCspContributor" }
+  ],
+  "endpoints": [
+    {
+      "pattern": "/scalar",
+      "headerName": "Content-Security-Policy",
+      "composedCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; ..."
+    },
+    {
+      "pattern": "/api/v1/patients/{id}",
+      "headerName": "Content-Security-Policy",
+      "composedCsp": "default-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    }
+  ]
+}
+```
+
+Three concrete uses:
+
+- **Security review** — auditors verify per-route CSP from a black-box
+  position, no code access, no container access.
+- **CI drift detection** — snapshot the response in your pipeline; fail the
+  build if a contributor silently relaxes a route that shouldn't be
+  relaxed.
+- **Onboarding** — new developers see at a glance which routes are
+  permissive and which aren't, without grepping the codebase.
+
+The endpoint reuses the existing `DiagnosticsPermissions.Monitoring.Read`
+permission — no new permission, no new ABAC policy, no new 18-language
+localisation keys.
+
+## How the composer keeps strict routes strict
+
+The pattern only works if you can trust two things:
+
+- A contributor can only relax CSP **on routes it owns**.
+- No contributor (and no buggy upstream middleware) can sneak a relaxation
+  onto your API routes.
+
+The composer enforces both. Here's the per-request flow:
 
 ```mermaid
 flowchart LR
@@ -187,235 +322,68 @@ flowchart LR
     style X fill:#e0e7ff,color:#312e81
 ```
 
-The cache key is `Endpoint` itself — the exact reference ASP.NET Core's
-routing system holds, not the route pattern, not the URL. A 100-endpoint
-application warms 100 cache slots and never recomposes again.
+Three guarantees baked in:
 
-That cache only works if contributors are **pure functions of the matched
-endpoint**. This is the purity contract, documented on `ICspContributor`:
+- **The composer is the sole writer of `Content-Security-Policy`.** Any
+  upstream code that wrote the header — a `[ResponseHeader]` attribute,
+  output cache layer, another middleware — gets unconditionally
+  overwritten. Browsers intersect multiple CSP headers and pick the
+  strictest combination, which would silently neutralise relaxations and
+  break the UI with no log line to explain why.
+- **Contributors are pure functions of the endpoint.** The contract says
+  contributors must branch only on `Endpoint.Metadata` and compile-time
+  constants — not on the user, the tenant, or request headers. The cache
+  is keyed by `Endpoint`, so request-scoped variation would leak across
+  tenants once warm. Violations show up immediately in the audit endpoint
+  (which under-reports them), making the bug visible.
+- **You can opt a contributor out.** When an internal policy is stricter
+  than the framework default — for instance, no `'unsafe-inline'` even in
+  dev — disable the contributor by name in configuration:
 
-<Aside type="caution">
-Implementations MUST branch only on `context.GetEndpoint()?.Metadata` and
-compile-time constants. Branching on the authenticated user, tenant,
-request headers, or any other request-scoped state is forbidden — the cache
-would leak that variation across tenants and users once it warms.
-</Aside>
-
-The cache is a `ConcurrentDictionary<Endpoint, string>`. It's cleared
-automatically when `IOptionsMonitor<GranitSecurityHeadersOptions>` reports a
-change (so toggling `DisabledContributors` at runtime takes effect without a
-restart). A future `IsPure => false` opt-out is sketched in the source for
-when a per-request nonce contributor lands, but **purity is the default and
-the explicit contract today.**
-
-## The composer owns the header
-
-There is exactly one writer of `Content-Security-Policy` in a Granit
-application: the composer. Before writing, it unconditionally removes any
-existing CSP header from the response. Rationale: browsers intersect multiple
-CSP headers and pick the **strictest** combination of every directive — which
-silently neutralises the contributor's relaxation and produces UI breakage
-that no log line explains.
-
-<Aside type="caution" title="Trap — `[ResponseHeader]` is silently overwritten">
-Any external `[ResponseHeader("Content-Security-Policy", ...)]` attribute,
-output cache layer, or upstream middleware that writes CSP **will be silently
-overwritten** by the composer. This is intentional — the framework owns the
-header end-to-end — but surprising when you're debugging an attribute that
-"doesn't take." If unconditional control is required, set
-`CspOptions.RawOverride`; the composer will emit that string verbatim and
-skip every contributor.
-</Aside>
-
-## Configuration surface
-
-The base policy comes from `CspOptions`, bound from `SecurityHeaders:Csp`.
-Named properties per directive — no `IDictionary<string, IList<string>>`,
-because dictionary keys are typo-silent and environment-variable binding
-across shells is fragile with hyphenated keys (`SecurityHeaders__Csp__Directives__script-src__0`
-is asking for trouble).
-
-```json title="appsettings.json — typed base policy"
-{
-  "SecurityHeaders": {
-    "Csp": {
-      "DefaultSrc": ["'self'"],
-      "ScriptSrc": ["'self'"],
-      "FontSrc": ["'self'", "https://fonts.granitfx.io"]
-    },
-    "DisabledContributors": []
+  ```json title="appsettings.json — internal policy wins"
+  {
+    "SecurityHeaders": {
+      "DisabledContributors": ["ScalarCspContributor"]
+    }
   }
-}
-```
+  ```
 
-Defaults are deliberately strict: `DefaultSrc`, `BaseUri`, and
-`FrameAncestors` all default to `['none']`; every other directive is empty
-and inherits from `default-src 'none'` per CSP semantics. The composer drops
-`'none'` from any directive that ends up containing real sources (CSP spec
-rule — `'none'` cannot coexist).
-
-Two escape hatches for the operator:
-
-- **`DisabledContributors: ["ScalarCspContributor"]`** — opt out of a
-  contributor by name when an internal policy is stricter than the framework
-  default. Matched against `ICspContributor.Name` (defaults to the runtime
-  type name via a C# default interface method).
-- **`Csp.RawOverride: "..."`** — emergency override. Emitted verbatim,
-  contributors skipped. A `LogWarning` fires at startup so the bypass is
-  visible to operators; this is documented as a hatch for emergencies, not a
-  permanent contract.
-
-## A consumer-side worked example — Keycloak silent SSO
-
-The pattern is not framework-only. The same interface lives in
-`.Abstractions`, which means consumer applications can write their own
-contributors without forking anything. Take Keycloak's JS adapter: it loads
-`/silent-check-sso.html` in a same-origin iframe to refresh tokens silently.
-The strict default `frame-ancestors 'none'` blocks the iframe.
-
-```csharp title="SilentCheckSsoCspContributor.cs"
-internal sealed class SilentCheckSsoCspContributor : ICspContributor
-{
-    public void Contribute(HttpContext context, CspBuilder builder)
-    {
-        if (!context.Request.Path.Equals(
-                "/silent-check-sso.html",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        builder.AddFrameAncestors("'self'");
-    }
-}
-```
-
-Register the contributor in `Program.cs`, scope the relaxation to that one
-route, keep `frame-ancestors 'none'` everywhere else. For modern browsers,
-CSP `frame-ancestors` supersedes the legacy `X-Frame-Options` — the global
-`XFrameOptions: "DENY"` setting stays unchanged. The composer takes care of
-the conflict-resolution semantics; the consumer writes six lines of code and
-never edits the global policy again.
-
-## The audit endpoint
-
-`Granit.Http.SecurityHeaders.Endpoints` is a separately-packaged opt-in that
-ships a single endpoint: `GET /security-headers/csp`. It returns the
-effective per-endpoint CSP, the base directives, and the list of registered
-contributors as a JSON snapshot:
-
-```csharp title="Program.cs — opt-in audit endpoint"
-app.MapGranitSecurityHeadersAudit();
-```
-
-```json title="GET /security-headers/csp"
-{
-  "baseDirectives": {
-    "default-src": ["'none'"],
-    "base-uri": ["'none'"],
-    "frame-ancestors": ["'none'"]
-  },
-  "rawOverride": null,
-  "reportOnly": false,
-  "contributors": [
-    { "name": "ScalarCspContributor", "fullTypeName": "Granit.Http.ApiDocumentation.Internal.ScalarCspContributor" }
-  ],
-  "endpoints": [
-    {
-      "httpMethods": ["GET"],
-      "pattern": "/scalar",
-      "displayName": "Scalar",
-      "headerName": "Content-Security-Policy",
-      "composedCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; ..."
-    },
-    {
-      "httpMethods": ["GET"],
-      "pattern": "/api/v1/patients/{id}",
-      "displayName": "GET /api/v1/patients/{id}",
-      "headerName": "Content-Security-Policy",
-      "composedCsp": "default-src 'none'; base-uri 'none'; frame-ancestors 'none'"
-    }
-  ]
-}
-```
-
-The endpoint is gated by `DiagnosticsPermissions.Monitoring.Read` — the same
-permission already used by health checks and the diagnostics API. No new
-permission, no new 18-language localisation keys, no new ABAC policy to
-write.
-
-A security auditor verifying the deployment doesn't need access to the
-container, the source code, or the build pipeline. They `curl` the endpoint
-from outside, pipe the response to `jq`, and compare against the
-organisation's CSP baseline. Drift detection runs in CI by comparing two
-snapshots.
-
-There's a caveat, documented in the response payload and the OpenAPI
-description: the audit synthesises requests carrying only the matched
-endpoint. Contributors that respect the purity contract report identically
-to runtime; contributors that branch on request-scoped state beyond
-`Endpoint.Metadata` will under-report. That's a feature, not a bug — it's
-also the diagnostic that surfaces purity violations during a security
-review.
-
-## Trade-offs and what's deferred
-
-The pattern is **CSP-only by design**. Multi-package composition only makes
-sense for headers with additive semantics — multiple sources can coexist in
-one CSP directive. `X-Frame-Options`, `Referrer-Policy`, COOP/COEP/CORP are
-scalar single-value headers where "combining two contributors" has no defined
-meaning. They remain global scalar settings in
-`GranitSecurityHeadersOptions`. `Permissions-Policy` technically qualifies
-but no framework package currently needs to relax it; the generalisation
-will land when a real case arrives.
-
-`prefetch-src` is dropped (deprecated in CSP Level 3). `sandbox` is deferred
-to a dedicated PR — its token-based semantics and "empty directive equals
-maximum sandboxing" rule warrant a separate design pass.
-
-Two runtime hardenings worth knowing:
-
-- **Production + `'unsafe-inline'`** — when `IHostEnvironment.IsProduction()`
-  is true and any contributor emits `'unsafe-inline'`, the composer logs a
-  warning once per contributor at startup-equivalent time. ASVS V14.4.7
-  considers `'unsafe-inline'` an XSS surface; the warning is a hint to
-  migrate to nonces or hashes before that surface becomes an incident.
-- **Nonce × `'unsafe-inline'` collision** — per CSP spec, a nonce or hash
-  source suppresses `'unsafe-inline'` in the same directive. The composer
-  detects the coexistence and logs a warning once per affected endpoint
-  (cache-bounded). This is silent breakage in waiting; the log line catches
-  it before browsers do.
+<Aside type="caution" title="Trap: `[ResponseHeader]` is silently overwritten">
+If you previously set CSP via a `[ResponseHeader("Content-Security-Policy", ...)]`
+attribute or another middleware, your value is **silently discarded** after
+upgrading. This is intentional — the framework owns the header end-to-end —
+but worth knowing when debugging an attribute that "doesn't take." If you
+need unconditional control, set `Csp.RawOverride` to emit a string verbatim;
+the composer will skip every contributor.
+</Aside>
 
 ## Takeaways
 
-- A single application-wide CSP string forces consumers to know which
-  packages need which relaxations. **Wrong ownership.**
-- `ICspContributor` in `Granit.Http.SecurityHeaders.Abstractions` lets each
-  package declare its own relaxation, scoped to the endpoint it owns via
-  metadata.
-- The composer runs in `Response.OnStarting` (after routing), caches the
-  composed header per `Endpoint`, and is the **sole writer** of
-  `Content-Security-Policy` — silently overwriting any upstream attempt to
-  set it.
-- **Purity contract**: contributors branch only on endpoint metadata. The
-  cache enforces it via under-reporting in the audit endpoint, not via
-  runtime guards.
-- Operator escape hatches: `DisabledContributors` to opt a contributor out;
-  `Csp.RawOverride` for emergencies.
-- `Granit.Http.SecurityHeaders.Endpoints` ships a `/security-headers/csp`
-  audit endpoint gated by the existing
-  `DiagnosticsPermissions.Monitoring.Read` permission — auditable from
-  outside the deployment, scriptable in CI.
+- A single application-wide CSP string can't model a route-shaped reality.
+  The moment one endpoint serves HTML, the global override starts.
+- **Inverted ownership**: the package that mounts the UI declares its CSP
+  relaxation via `ICspContributor`. Strict defaults stay strict on every
+  other route.
+- For consumers, **zero CSP code**: `UseGranitApiDocumentation` registers
+  Scalar's contributor automatically. Your `appsettings.json` is untouched.
+- For your own routes (Keycloak silent SSO, an admin page, anything),
+  write a six-line contributor. Scoped to that route, no global impact.
+- **Auditable from outside** the deployment via
+  `GET /security-headers/csp`, gated by the existing diagnostics
+  permission. Drop it into CI for drift detection.
+- Three guarantees from the composer: sole writer of the header,
+  contributors must be pure, opt-out by config name.
 
 ## Further reading
 
 - [Security Headers — CSP contributors](/dotnet/security/security-headers/#csp-contributors) —
-  full reference for `ICspContributor`, `CspBuilder`, `CspOptions`, and the
-  audit endpoint.
+  full reference for `ICspContributor`, `CspBuilder`, `CspOptions`,
+  `DisabledContributors`, and the audit endpoint.
 - [API Documentation — CSP relaxation for Scalar](/dotnet/api/api-documentation/#csp-relaxation-for-scalar) —
-  the `ScalarCspContributor` and how to disable it.
-- [Scalar Is the New Swagger UI — Here's How to Switch](/blog/scalar-is-the-new-swagger-ui/) —
-  the UI surface that motivated the inversion.
-- [100+ Packages, Zero Circular Dependencies](/blog/zero-circular-dependencies/) —
-  why splitting `.Abstractions` from runtime is a recurring Granit pattern,
-  not a one-off.
+  the `ScalarCspContributor` shipped with `Granit.Http.ApiDocumentation`
+  and how to disable it.
+- [Scalar Is the New Swagger UI](/blog/scalar-is-the-new-swagger-ui/) —
+  the UI surface that motivated this redesign.
+- [Adding Authentication with Keycloak in Granit](/blog/adding-authentication-with-keycloak-in-granit/) —
+  the silent-SSO setup whose CSP need is solved by the consumer-side
+  contributor.
