@@ -1,6 +1,6 @@
 ---
 title: "Production Configuration \u2014 Vault & Env Vars"
-description: Production configuration for Granit apps — HashiCorp Vault secret management, dynamic database credentials, environment variable overrides, appsettings layering, and zero-secret-in-code enforcement.
+description: Production configuration for Granit apps — HashiCorp Vault secrets, dynamic database credentials, env var overrides, and zero-secret-in-code enforcement.
 sidebar:
   order: 2
   label: Configuration

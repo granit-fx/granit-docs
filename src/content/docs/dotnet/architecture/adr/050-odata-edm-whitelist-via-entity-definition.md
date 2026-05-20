@@ -1,6 +1,6 @@
 ---
 title: "ADR-050 — OData EDM whitelist via EntityDefinition"
-description: "The Granit.Http.ODataExposure module derives its EDM property whitelist from the registered EntityDefinition (gate) and the referenced ExportDefinition (field source). Convention-based AddEntityType is rejected because it leaks framework-internal collections (DomainEvents, IntegrationEvents) into $metadata."
+description: "Granit.Http.ODataExposure derives its EDM whitelist from EntityDefinition + ExportDefinition, avoiding AddEntityType leaks of internal event collections."
 sidebar:
   label: ADR-050 OData EDM via EntityDefinition
   order: 50

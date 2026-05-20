@@ -8,7 +8,7 @@ tags:
   - async
   - performance
   - code-quality
-description: "ASP.NET Core dropped the synchronization context years ago. So why do every Granit library and the .NET runtime itself still write ConfigureAwait(false) on every await? Because libraries do not get to choose their host."
+description: "ASP.NET Core dropped the sync context years ago. So why do Granit libraries still write ConfigureAwait(false) on every await? Because hosts still vary."
 excerpt: >
   ASP.NET Core dropped the synchronization context years ago. So why do every
   Granit library and the .NET runtime itself still write ConfigureAwait(false)

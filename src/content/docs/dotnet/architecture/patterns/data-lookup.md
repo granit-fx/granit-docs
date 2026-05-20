@@ -1,6 +1,6 @@
 ---
 title: "Data Lookup Pattern — Unified Typeahead Pickers"
-description: "One declarative primitive (Granit.DataLookup) feeds QueryEngine filter pickers, edit-form dropdowns, and ReferenceData sets from a single registry. Server-side label localization, scoped dependencies, and zero frontend boilerplate."
+description: "Granit.DataLookup feeds QueryEngine filter pickers, edit-form dropdowns, and ReferenceData from one registry with server-side label localization."
 sidebar:
   label: Data Lookup
   order: 58

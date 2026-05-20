@@ -1,6 +1,6 @@
 ---
 title: "ADR-049: Default landing route resolution"
-description: "GET /api/me/landing-route resolves where the user lands at login via a 5-tier precedence (user-sticky > user-pinned > role-default > tenant-default > framework-default). The result is a URL/route, not just a workspace name — supports deep-link with query string (Frappe-style). URL whitelist enforced at write time. Falls through gracefully if a tier resolves to a route the user can't access."
+description: "GET /api/me/landing-route resolves login destinations via 5-tier precedence (user-sticky, user-pinned, role, tenant, framework) with URL whitelist."
 sidebar:
   order: 49
   label: "049 - Default Landing Route"

@@ -1,6 +1,6 @@
 ---
 title: "FAQ \u2014 Frequently Asked Questions"
-description: Answers to the most common questions about Granit — Wolverine optionality, EF Core vs repository pattern, multi-tenancy without GDPR enforcement, and NuGet publishing.
+description: Common Granit questions — Wolverine optionality, EF Core vs repository pattern, multi-tenancy without GDPR enforcement, and NuGet publishing.
 sidebar:
   label: FAQ
   order: 3

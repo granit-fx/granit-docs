@@ -1,6 +1,6 @@
 ---
 title: "ADR-002: Redis via StackExchange.Redis — Distributed Cache"
-description: "StackExchange.Redis powers Granit's L2 distributed cache layer — selected for pub/sub invalidation, Lua scripting for atomic rate limiting, and FusionCache backplane support."
+description: "StackExchange.Redis powers Granit's L2 cache — picked for pub/sub invalidation, Lua scripting for atomic rate limiting, and FusionCache backplane."
 sidebar:
   order: 2
   label: "002 - Redis Distributed Cache"

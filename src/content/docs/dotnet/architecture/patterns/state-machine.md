@@ -1,6 +1,6 @@
 ---
 title: "State Machine — Workflow State Transitions"
-description: "Model workflow and lifecycle states as explicit finite-state machines — prevents invalid transitions, powers idempotency tracking, and drives Wolverine saga orchestration."
+description: "Model workflow and lifecycle states as explicit finite-state machines — blocks invalid transitions, tracks idempotency, drives Wolverine sagas."
 sidebar:
   label: State Machine
   order: 25

@@ -1,6 +1,6 @@
 ---
 title: "ADR-045: Inversion-of-control contributor pattern"
-description: "Three Granit primitives — workspaces, entity relations (smart buttons), activity types — share a single Inversion-of-Control contribution pattern. A module declares a target by name; other modules graft items onto that target via a typed IContributor interface, registered in DI, resolved at boot. Zero hard dependency between extender and target. Missing target = silent drop. Conflict order = explicit Order property + alphabetical fallback. Same shape as IConfigureOptions<T>."
+description: "Workspaces, entity relations, and activity types share one IoC IContributor pattern — modules graft items onto named targets via DI, with no hard deps."
 sidebar:
   order: 45
   label: "045 - IoC Contributor Pattern"

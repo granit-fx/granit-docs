@@ -1,6 +1,6 @@
 ---
 title: "Granit Tech Stack — ADR-justified dependencies"
-description: "Complete third-party library reference for the Granit framework — OpenTelemetry, Wolverine, EF Core, Redis, FusionCache, Microsoft.Extensions.AI, ModelContextProtocol, AspNetCore.OData and more. Every library was picked through an Architecture Decision Record when an alternative existed."
+description: "Third-party library reference for Granit — OpenTelemetry, Wolverine, EF Core, Redis, FusionCache, Microsoft.Extensions.AI, OData. Each picked via ADR."
 sidebar:
   order: 34
 ---

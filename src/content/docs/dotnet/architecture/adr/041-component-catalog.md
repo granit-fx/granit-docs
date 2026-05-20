@@ -1,6 +1,6 @@
 ---
 title: "ADR-041: Field component catalog and naming convention"
-description: "Granit ships a closed catalog of standard component names that the manifest exposes for form fields and detail panels (text, money, date, lookup, file, textarea, select, …). The backend declares names; the front interprets them. App-custom components are namespaced as `custom:<app-prefix>-<name>` to avoid collisions and signal to the renderer that no built-in implementation exists."
+description: "Granit ships a closed catalog of form-field component names (text, money, date, lookup, file…) with a custom:<app-prefix>-<name> extension convention."
 sidebar:
   order: 41
   label: "041 - Component Catalog"

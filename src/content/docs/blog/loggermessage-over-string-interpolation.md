@@ -10,7 +10,7 @@ tags:
   - performance
   - observability
   - code-quality
-description: "String interpolation in log calls allocates on every invocation, even when the log level is disabled. Source-generated [LoggerMessage] eliminates that cost entirely."
+description: "String interpolation in log calls allocates on every call, even when the level is disabled. Source-generated [LoggerMessage] removes that cost entirely."
 excerpt: >
   String interpolation in log calls allocates on every invocation, even when the
   log level is disabled. Source-generated [LoggerMessage] eliminates that cost

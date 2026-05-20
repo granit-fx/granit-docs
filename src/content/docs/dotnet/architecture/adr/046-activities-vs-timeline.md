@@ -1,6 +1,6 @@
 ---
 title: "ADR-046: Activities vs Timeline split"
-description: "Granit splits its collaborative layer into two peer modules with orthogonal concerns. Granit.Timeline holds the past — audit log, comments, attachments, followers, reactions, @-mentions. The new Granit.Activities holds the future — to-dos with deadlines and assignees, polymorphic across entities. Past vs future. Passive narrative vs action required. Notification to followers vs notification to assignees. Same shape as Odoo's mail.thread vs mail.activity split — without the inheritance mess."
+description: "Split collaboration into two peer modules: Granit.Timeline holds the past (audit, comments, mentions); Granit.Activities holds future to-dos."
 sidebar:
   order: 46
   label: "046 - Activities vs Timeline"

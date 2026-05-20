@@ -1,6 +1,6 @@
 ---
 title: "ADR-028: Unified Data Lookup"
-description: "Introduce Granit.DataLookup — a single declarative primitive that feeds typeahead pickers across QueryEngine filter bars, edit-form dropdowns, and ReferenceData sets. Backed by a scoped registry, a canonical LookupItem shape, and a server-side label projection honoring 18 cultures."
+description: "Granit.DataLookup is one declarative primitive feeding typeahead pickers across QueryEngine filters, edit-form dropdowns, and ReferenceData sets."
 sidebar:
   order: 28
   label: "028 - Unified Data Lookup"

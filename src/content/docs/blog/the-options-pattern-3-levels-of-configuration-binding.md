@@ -9,7 +9,7 @@ tags:
   - best-practice
   - architecture
   - tutorial
-description: "IOptions, IOptionsSnapshot, and IOptionsMonitor solve different problems. Picking the wrong one causes stale config, unnecessary allocations, or subtle concurrency bugs."
+description: "IOptions, IOptionsSnapshot and IOptionsMonitor solve different problems. The wrong choice causes stale config, extra allocations, or subtle concurrency bugs."
 excerpt: >
   IOptions, IOptionsSnapshot, and IOptionsMonitor solve different problems. Picking
   the wrong one causes stale config, unnecessary allocations, or subtle concurrency

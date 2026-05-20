@@ -1,6 +1,6 @@
 ---
 title: "ADR-042: View catalog and per-kind config schema"
-description: "Granit's collection facet exposes a closed catalog of view kinds (List, Kanban, Calendar, Gallery, plus Timeline/Map/Tree/Gantt on demand). Each kind has a typed configuration schema validated at startup. The same closed-set + namespaced-extension pattern as ADR-041 applies to view kinds. Saved views (EntityView) are bound to the kind of their base compiled collection — switching kind requires saving from a different collection."
+description: "Closed catalog of view kinds (List, Kanban, Calendar, Gallery, plus Timeline/Map/Tree/Gantt) with typed per-kind config schemas validated at startup."
 sidebar:
   order: 42
   label: "042 - View Catalog"

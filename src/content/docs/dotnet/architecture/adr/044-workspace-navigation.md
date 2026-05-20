@@ -1,6 +1,6 @@
 ---
 title: "ADR-044: Workspace navigation"
-description: "Granit ships hierarchical workspaces (à la Frappe) with cross-workspace entity sharing via additive preset overlays (à la Odoo Apps). Detail routes are workspace-agnostic (à la Notion). Permissions intersect: a workspace item is visible iff the user has both Workspace.{Name}.Read AND the underlying entity's read permission. Depth is capped at 4 by an architecture test."
+description: "Granit ships hierarchical workspaces with additive preset overlays, workspace-agnostic detail routes, intersecting permissions, and depth capped at 4."
 sidebar:
   order: 44
   label: "044 - Workspace Navigation"

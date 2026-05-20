@@ -1,6 +1,6 @@
 ---
 title: "ADR-047: EntityView supersedes Granit.QueryEngine.SavedViews"
-description: "EntityView replaces the legacy filter-only SavedView with a richer first-class primitive: a basedOn delta over a compiled collection, kind inherited and immutable, three visibility levels (Personal / Shared / Tenant), three promotion flags (isPinned / isDefault / isPersonalDefault), JSONB state validated by JSON Schema per kind. Notion-style 'Save for everyone' UX. Clean break from the legacy module per Granit's pre-1.0 stance — no [Obsolete] graduation."
+description: "EntityView replaces SavedView: basedOn delta over a compiled collection, immutable kind, Personal/Shared/Tenant visibility, JSONB state validated per kind."
 sidebar:
   order: 47
   label: "047 - EntityView"

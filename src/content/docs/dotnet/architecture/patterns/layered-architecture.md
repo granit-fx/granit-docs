@@ -1,6 +1,6 @@
 ---
 title: "Layered Architecture — Module Layer Split"
-description: "Structure modules in three strict layers — Abstractions, Provider, and Endpoints — with unidirectional dependencies from infrastructure to domain, enforced by architecture tests."
+description: "Structure modules in three strict layers — Abstractions, Provider, Endpoints — with one-way deps from infrastructure to domain, enforced by arch tests."
 sidebar:
   label: Layered Architecture
   order: 5

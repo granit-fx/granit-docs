@@ -1,6 +1,6 @@
 ---
 title: "ADR-040: Three-tier metadata architecture"
-description: "Granit splits its declarative metadata into three orthogonal tiers: compiled (versioned in Git, the framework's identity), tenant customization (runtime layout overrides only — no schema change), and Niveau B custom fields (JSONB extension table, deferred to Phase 4). Tier A never depends on Tier B; business logic operates exclusively on the compiled schema."
+description: "Granit splits declarative metadata into three tiers: compiled (Git-versioned), tenant layout overrides, and JSONB custom fields — fully orthogonal."
 sidebar:
   order: 40
   label: "040 - Three-Tier Metadata Architecture"

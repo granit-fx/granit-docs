@@ -1,0 +1,256 @@
+---
+title: "Building an Import Pipeline: CSV and Excel with Validation"
+date: 2026-05-23
+authors:
+  - jfmeyers
+tags:
+  - data-exchange
+  - persistence
+  - tutorial
+  - best-practice
+description: "Extract, Map, Validate, Execute — four streaming stages for a production CSV/Excel importer in .NET 10, with column suggestions and correction files."
+excerpt: >
+  Every line-of-business app eventually grows an "import CSV" button. Done
+  wrong it OOMs on the first 100k row file. Done right it streams, validates,
+  resolves identity, and hands the user a correction file for the rows that
+  failed.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A user uploads a 200,000-row Excel file with headers in French and a column called `Nom_Clt_V2_Final`. They expect it to map cleanly to `Customer.LastName`, validate every row, INSERT the new customers, UPDATE the existing ones by national ID, and let them re-upload the rows that failed after fixing them. They expect this in 30 seconds.
+
+You can wire this up in three weeks with CsvHelper, EPPlus, a homegrown validator, a state machine, and a queue. Or you can declare an `ImportDefinition<T>`, register two parser packages, and get the pipeline for free. The hard parts — streaming the file, suggesting column mappings, batching INSERT/UPDATE, generating a correction CSV — are already solved in `Granit.DataExchange`. This article walks the four stages and shows the wiring that turns a 30-line definition into a production importer.
+
+## The four stages
+
+The pipeline is **Extract, Map, Validate, Execute**. Each stage streams via `IAsyncEnumerable<T>`. Only the current batch (500 rows by default) and accumulated errors live in memory — a 1M-row import never holds more than ~500 entities at a time.
+
+```mermaid
+flowchart LR
+    A[Upload file] --> B[Extract headers]
+    B --> C[Preview rows]
+    C --> D["Suggest mappings<br/>4-tier"]
+    D --> E["User confirms<br/>mappings"]
+    E --> F[Parse rows]
+    F --> G[Map to entities]
+    G --> H[Validate rows]
+    H --> I[Resolve identity]
+    I --> J["Execute batch<br/>INSERT / UPDATE"]
+    J --> K[Report + correction file]
+```
+
+The user journey is **upload → preview → confirm → execute**. Each step is a REST endpoint that returns the next step's input, so a thin React component can drive the wizard without holding state on the backend.
+
+## Install the packages
+
+The core pipeline plus two parsers and EF persistence:
+
+```bash
+dotnet add package Granit.DataExchange
+dotnet add package Granit.DataExchange.Csv
+dotnet add package Granit.DataExchange.Excel
+dotnet add package Granit.DataExchange.EntityFrameworkCore
+dotnet add package Granit.DataExchange.Endpoints
+```
+
+CSV uses [Sep](https://github.com/nietras/Sep) (SIMD AVX-512/NEON, MIT). Excel uses [Sylvan.Data.Excel](https://github.com/MarkPflug/Sylvan.Data.Excel) (zero-dep streaming, MIT). Both ship through `DbDataReader`-style streams — no full file materialization, no OOM on large files.
+
+## Declare an import definition
+
+The definition is the contract between the file and the database. **Whitelist**: only properties declared here can be mapped, regardless of what columns the file contains.
+
+```csharp title="PatientImportDefinition.cs"
+public sealed class PatientImportDefinition : ImportDefinition<Patient>
+{
+    public override string Name => "Clinic.PatientImport";
+
+    protected override void Configure(ImportDefinitionBuilder<Patient> builder)
+    {
+        builder
+            .HasBusinessKey(p => p.Niss)
+            .Property(p => p.Niss, p => p
+                .DisplayName("NISS")
+                .Aliases("National ID", "Numero national")
+                .Required())
+            .Property(p => p.LastName, p => p
+                .DisplayName("Last name")
+                .Aliases("Nom", "Achternaam"))
+            .Property(p => p.FirstName, p => p
+                .DisplayName("First name")
+                .Aliases("Prenom", "Voornaam"))
+            .Property(p => p.Email, p => p
+                .DisplayName("Email")
+                .Aliases("Courriel", "E-mail"))
+            .Property(p => p.BirthDate, p => p
+                .DisplayName("Date of birth")
+                .Format("dd/MM/yyyy"))
+            .ExcludeOnUpdate(p => p.Niss);
+    }
+}
+```
+
+Three things to notice:
+
+* **`HasBusinessKey(p => p.Niss)`** drives the INSERT vs UPDATE decision. For each parsed row, an `IRecordIdentityResolver<Patient>` queries the database by `Niss` and decides the operation. Composite keys (`HasCompositeKey`) and external IDs (`HasExternalId`) are also supported for cross-system imports.
+* **`Aliases`** feed the exact-match tier of the mapping suggester. A French CSV with `Prenom` resolves to `FirstName` on first try, with confidence `Exact`.
+* **`ExcludeOnUpdate`** protects fields on UPDATE — the national ID is set on INSERT and never overwritten.
+
+## Register and map
+
+```csharp title="AppModule.cs"
+[DependsOn(
+    typeof(GranitDataExchangeEntityFrameworkCoreModule),
+    typeof(GranitDataExchangeEndpointsModule),
+    typeof(GranitDataExchangeCsvModule),
+    typeof(GranitDataExchangeExcelModule))]
+public sealed class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddImportDefinition<Patient, PatientImportDefinition>();
+        context.Services.AddImportExecutor<Patient, ClinicDbContext>();
+        context.Services.AddBusinessKeyResolver<Patient, ClinicDbContext>();
+    }
+}
+```
+
+```csharp title="Program.cs"
+app.MapGranitDataExchange();
+```
+
+You now have 10 import endpoints under `/data-exchange` and 4 export endpoints under `/export/jobs`. Each requires the `DataExchange.Imports.Execute` permission (set up via [`Granit.Authorization`](/dotnet/security/authorization/)).
+
+## The 4-tier mapping suggester
+
+Users do not type `FirstName` into a French Excel file. Headers in the wild look like `Nom_Clt_V2_Final`, `Prenom`, `Date de naissance`. The mapping suggester runs four tiers in decreasing confidence order; columns matched by a higher tier are excluded from lower tiers.
+
+| Tier     | Source                                                       | Cost            |
+| -------- | ------------------------------------------------------------ | --------------- |
+| Saved    | Mappings the user confirmed for this definition before       | DB lookup       |
+| Exact    | Case-insensitive match on property name, display name, alias | In-memory       |
+| Fuzzy    | Levenshtein similarity above `FuzzyMatchThreshold` (0.8)     | In-memory       |
+| Semantic | AI-backed `ISemanticMappingService` (opt-in)                 | LLM round-trip  |
+
+The semantic tier only receives **column headers and field metadata** — never row data. This is the GDPR/ISO 27001 guarantee: an LLM never sees your patient data even when it helps name the columns.
+
+```csharp title="Program.cs — opt in to AI mapping"
+services.AddSemanticMappingService<OpenAiMappingService>();
+```
+
+Without this line, the semantic tier is a no-op and the first three tiers handle 95% of real-world files anyway.
+
+## The wizard, in REST
+
+The endpoints follow the natural state machine. Each transition returns the input the UI needs for the next step.
+
+| Step    | Method | Path                       | Returns                            |
+| ------- | ------ | -------------------------- | ---------------------------------- |
+| Upload  | `POST` | `/`                        | `jobId`, `Created`                 |
+| Preview | `POST` | `/{jobId}/preview`         | Headers, 10-row sample, mappings   |
+| Confirm | `PUT`  | `/{jobId}/mappings`        | `Mapped`                           |
+| Execute | `POST` | `/{jobId}/execute`         | 202 Accepted                       |
+| Status  | `GET`  | `/{jobId}`                 | `Executing` / `Completed` / `…`    |
+| Report  | `GET`  | `/{jobId}/report`          | Counts + error rows                |
+| Errors  | `GET`  | `/{jobId}/correction-file` | CSV of failed rows + error message |
+
+States are **guarded**. Calling `/execute` on a job still in `Created` throws `InvalidOperationException` — you cannot execute before mappings are confirmed. The valid transition graph is:
+
+```text
+Created → Previewed → Mapped → Executing → Completed / PartiallyCompleted / Failed
+                                    ↑
+Created / Previewed / Mapped → Cancelled
+```
+
+For a dry run that exercises the full pipeline and then rolls the transaction back, swap `/execute` for `/dry-run`. Same code path, same validation, no committed rows.
+
+## Validation, error behavior, and the correction file
+
+`IRowValidator<T>` runs FluentValidation on each mapped entity. The execution loop honors one of three error behaviors:
+
+```csharp title="ImportExecutionOptions.cs"
+new ImportExecutionOptions
+{
+    BatchSize = 500,
+    DryRun = false,
+    ErrorBehavior = ImportErrorBehavior.SkipErrors,
+}
+```
+
+| Behavior     | What happens                                          | When to use                  |
+| ------------ | ----------------------------------------------------- | ---------------------------- |
+| `FailFast`   | Stop on the first error                               | Strict batch imports         |
+| `SkipErrors` | Skip errored rows, continue (default)                 | Best-effort imports          |
+| `CollectAll` | Process every row, return every error                 | Diagnostic / audit imports   |
+
+The report contains aggregate counts and **only the failed rows** — not the successful ones. For 100,000 rows with 50 errors, the in-memory footprint of the report is ~50 error objects, not 100,000.
+
+```csharp title="Reading the report"
+ImportReport report = await executor.ExecuteAsync(entities, options, ct);
+
+report.TotalRows;       // 100000
+report.SucceededRows;   // 99950
+report.FailedRows;      // 50
+report.InsertedRows;    // 80000
+report.UpdatedRows;     // 19950
+report.Duration;        // TimeSpan
+```
+
+The matching `GET /{jobId}/correction-file` endpoint streams a CSV with the failed rows and an extra `_error` column. The user fixes the rows in Excel and re-uploads the corrected file — the roundtrip closes itself.
+
+## Parent/child imports
+
+Invoices with line items, orders with shipments, patients with vaccinations — the same definition supports a grouped import:
+
+```csharp title="InvoiceImportDefinition.cs"
+protected override void Configure(ImportDefinitionBuilder<Invoice> builder)
+{
+    builder
+        .GroupBy("InvoiceNumber")
+        .HasBusinessKey(i => i.InvoiceNumber)
+        .Property(i => i.InvoiceNumber, p => p.Required())
+        .Property(i => i.CustomerName)
+        .HasMany(i => i.Lines, child =>
+        {
+            child.Property(l => l.ProductCode, p => p.Required());
+            child.Property(l => l.Quantity);
+            child.Property(l => l.UnitPrice);
+        });
+}
+```
+
+The CSV is flat (one row per line item, repeated invoice number on every row). The pipeline groups by `InvoiceNumber`, builds the parent entity once, and attaches the child collection.
+
+## Wolverine, or not
+
+Without Wolverine, the `/execute` endpoint dispatches the work through a bounded in-memory `Channel<T>` (capacity 100, back-pressure on full). It works, it is fast, and a crash drops in-flight imports.
+
+Add `Granit.DataExchange.Wolverine` and the dispatchers switch to the transactional outbox. The job survives a crash, is retried on transient failures, and lands in the dead-letter queue if it permanently fails. Same handlers, same `ImportDefinition<T>`, durable. We unpack the upgrade path in [From Channels to Wolverine](/blog/from-channels-to-wolverine-upgrading-messaging/).
+
+## Hardening that ships in the box
+
+Importers are an exploitation surface. A few things `Granit.DataExchange` enforces:
+
+* **Formula injection guard** — CSV and Excel writers neutralize cell values starting with `=`, `+`, `-`, `@`, `\t`, or `\r`. Re-exporting an imported file does not turn user input into a spreadsheet formula (CWE-1236).
+* **`.xlsb` is rejected** — macro-enabled binary workbooks are blocked at upload. You cannot import a file you would refuse to re-serve.
+* **Multi-tenancy on every entity** — `ImportJobEntity`, `SavedMappingEntity`, `ExternalIdMappingEntity` all implement `IMultiTenant`. The query filter from [the interceptor stack](/blog/soft-deletes-audit-trails-query-filters-interceptor-stack/) keeps tenants from seeing each other's import history.
+* **Filename sanitization** — `Path.GetFileName()` on every upload, MIME cross-validated against the extension.
+* **AI output validated** — the semantic mapping service's suggestions are clamped to `[0.0, 1.0]` and verified against the property whitelist before being returned.
+
+<Aside type="tip" title="Roundtrip import/export">
+Set `IncludeIdForImport = true` on the matching `ExportDefinition<Patient>` and the exported CSV includes the entity `Id`. Re-importing the same file targets the existing rows by `Id` instead of creating duplicates — a one-button "edit in Excel, save back" loop.
+</Aside>
+
+## Three takeaways
+
+* **Declare the definition once, get the wizard for free.** Upload, preview, mapping suggestions, confirm, execute, report, correction file — none of it is your code.
+* **Stream every stage.** `IAsyncEnumerable<T>` plus a 500-row batch keeps memory flat regardless of file size. 1M rows is not a special case.
+* **The mapping suggester is the UX.** Aliases on the definition turn cryptic French headers into clean mappings on first preview. The semantic tier covers the long tail without ever seeing user data.
+
+## Further reading
+
+* [DataExchange reference](/dotnet/building-blocks/data-exchange/) — full pipeline, export side, fluent API
+* [Implement Data Import guide](/dotnet/guides/implement-data-import/) — step-by-step from zero
+* [React data-exchange package](/frontend/business/data-exchange/) — the wizard UI on the frontend
+* [ADR-015: Sep](/dotnet/architecture/adr/015-sep-csv-parsing/) — why Sep beats CsvHelper for streaming
+* [ADR-016: Sylvan.Data.Excel](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/) — why Sylvan beats ClosedXML for reading

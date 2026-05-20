@@ -1,6 +1,6 @@
 ---
 title: "Getting Started with Granit for .NET 10"
-description: Build a production-ready REST API with Granit for .NET 10 in 5 progressive steps — module system, EF Core PostgreSQL persistence, Keycloak authentication, and OpenTelemetry observability.
+description: Build a production-ready REST API with Granit for .NET 10 in 5 steps — modules, EF Core PostgreSQL, Keycloak auth, and OpenTelemetry observability.
 sidebar:
   label: Getting Started
   order: 0

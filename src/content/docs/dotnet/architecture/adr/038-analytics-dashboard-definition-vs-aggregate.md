@@ -1,6 +1,6 @@
 ---
 title: "ADR-038: DashboardDefinition vs Dashboard Boundary"
-description: "Modules ship DashboardDefinition (declarative, in-code, immutable). Tenants persist Dashboard (aggregate root, mutable, composed by admins). Dashboards are imported on demand, not auto-instantiated. Once instantiated, they are frozen — module upgrades do not retro-edit user dashboards."
+description: "Modules ship immutable DashboardDefinition; tenants persist mutable Dashboard aggregates, imported on demand and frozen against module upgrades."
 sidebar:
   order: 38
   label: "038 - Dashboard Definition vs Aggregate"

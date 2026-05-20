@@ -1,6 +1,6 @@
 ---
 title: "ADR-052: Granit.Documents — user-managed file & asset module"
-description: "Granit introduces a new Granit.Documents module for user-managed files organised in folders, with owners, ACL sharing, mandatory versioning, tenant-level quota, and tags. The module composes on top of Granit.BlobStorage (which keeps its role as the binary store) and absorbs DAM concerns (renditions, asset metadata) as opt-in extensions in later phases."
+description: "New Granit.Documents module: user-managed files in folders with ACL sharing, mandatory versioning, tenant quota, and tags — composes on Granit.BlobStorage."
 sidebar:
   order: 52
   label: "052 - Documents module"

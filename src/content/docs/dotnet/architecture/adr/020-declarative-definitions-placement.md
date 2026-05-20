@@ -1,6 +1,6 @@
 ---
 title: "ADR-020: Declarative Definitions Placement (Query & Export)"
-description: "Concrete *QueryDefinition and *ExportDefinition classes live in the base module alongside the domain, not in the .Endpoints HTTP layer. Each module owns its definitions; no central aggregation package."
+description: "*QueryDefinition and *ExportDefinition classes live in the base module alongside the domain, not in .Endpoints. Each module owns its definitions."
 sidebar:
   order: 20
   label: "020 - Declarative Definitions Placement"

@@ -1,6 +1,6 @@
 ---
 title: "ADR-051: User aggregate + Parties bridge"
-description: "Granit consolidates LocalIdentity and FederatedIdentity behind a canonical User aggregate that lives in Granit.Identity (foundation). When the optional Granit.Parties.Identity bridge is loaded, every UserCreated emits a Party of kind Person via Wolverine; the bridge is opt-in, so tiny apps that only need authentication keep zero Parties dependency."
+description: "Granit consolidates LocalIdentity and FederatedIdentity behind a canonical User aggregate in Granit.Identity, with an opt-in Parties.Identity bridge."
 sidebar:
   order: 51
   label: "051 - User aggregate"

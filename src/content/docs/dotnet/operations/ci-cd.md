@@ -1,6 +1,6 @@
 ---
 title: "CI/CD \u2014 GitHub Actions & Docker Pipelines"
-description: GitHub Actions CI/CD pipeline for Granit — compilation, dotnet format quality gates, Trivy security scanning, Roslyn analysis, NuGet packaging, and publication to nuget.org and GitHub Packages.
+description: GitHub Actions CI/CD for Granit — compilation, dotnet format gates, Trivy scanning, Roslyn analysis, and NuGet publication to nuget.org and GH Packages.
 sidebar:
   order: 4
   label: CI/CD

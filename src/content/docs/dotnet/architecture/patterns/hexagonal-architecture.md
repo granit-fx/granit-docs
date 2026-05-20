@@ -1,6 +1,6 @@
 ---
 title: "Hexagonal Architecture — Ports & Adapters"
-description: "Ports and adapters keep business logic independent of databases, queues, and cloud providers — swap EF Core for in-memory or S3 for Azure Blob without touching domain code."
+description: "Ports and adapters keep business logic independent of databases, queues, and cloud — swap EF Core for in-memory or S3 for Azure Blob without code change."
 sidebar:
   label: Hexagonal Architecture
   order: 4

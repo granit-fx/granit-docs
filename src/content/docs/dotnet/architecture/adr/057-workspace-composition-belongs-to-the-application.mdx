@@ -1,6 +1,6 @@
 ---
 title: "ADR-057: Workspace composition belongs to the application, not the module"
-description: "ADR-044/045 made modules contribute to workspace shells declared in the framework, on the premise that loading a module gives you UI for free. That premise leaks UI authority into business code: each module dictates its menu placement, icon, route URL, and section ordering, and ships a non-trivial WorkspaceContribution at the same time as it ships its endpoints. This ADR splits the concern: modules expose a feature catalog (capability + permission + route name + display hints, zero placement), the host application composes workspaces from that catalog. Workspaces become an application-level concern. The framework still ships opt-in default bundles for hosts that want batteries-included admin UI. ADR-044 keeps the navigation primitives; ADR-045 keeps the IoC contributor pattern for entity relations and activity types but is amended for workspaces."
+description: "Split workspace composition from modules: modules expose a feature catalog, the host application composes workspaces from it. Amends ADR-044/045."
 sidebar:
   order: 57
   label: "057 - Workspace composition is an app concern"
