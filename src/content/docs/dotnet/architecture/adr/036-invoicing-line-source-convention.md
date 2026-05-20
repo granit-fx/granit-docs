@@ -4,6 +4,8 @@ description: "Formalize InvoiceLineItem.SourceType → SourceId as a typed audit
 sidebar:
   order: 36
   label: "036 - Invoicing Line Source"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-25

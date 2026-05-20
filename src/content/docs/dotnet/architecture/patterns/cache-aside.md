@@ -4,6 +4,8 @@ description: "Lazy-loading cache with FusionCache (L1 in-process + L2 Redis) wit
 sidebar:
   label: Cache-Aside
   order: 14
+topic: backend
+
 ---
 
 ## Definition

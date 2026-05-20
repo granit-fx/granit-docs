@@ -4,6 +4,8 @@ description: "Modules ship DashboardDefinition (declarative, in-code, immutable)
 sidebar:
   order: 38
   label: "038 - Dashboard Definition vs Aggregate"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-28

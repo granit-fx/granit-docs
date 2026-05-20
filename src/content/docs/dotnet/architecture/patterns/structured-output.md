@@ -4,6 +4,8 @@ description: "Constraining LLM responses to a strongly-typed JSON schema, elimin
 sidebar:
   label: Structured Output
   order: 59
+topic: backend
+
 ---
 
 ## Definition

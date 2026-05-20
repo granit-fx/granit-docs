@@ -4,6 +4,8 @@ description: "Isolate tenant data with three EF Core strategies — shared schem
 sidebar:
   label: Multi-Tenancy
   order: 17
+topic: backend
+
 ---
 
 ## Definition

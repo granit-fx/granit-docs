@@ -4,6 +4,8 @@ description: "Each WidgetType ships a typed IWidgetSource<TSnapshot> (per EPIC #
 sidebar:
   order: 39
   label: "039 - Widget Renderer Architecture"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-29

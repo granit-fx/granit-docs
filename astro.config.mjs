@@ -243,6 +243,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "dotnet/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -296,6 +297,7 @@ export default defineConfig({
                     },
                     { label: "Endpoint Registry", link: "/dotnet/api/endpoint-registry/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
@@ -430,6 +432,7 @@ export default defineConfig({
                       ],
                     },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "MCP",
@@ -442,6 +445,7 @@ export default defineConfig({
                     { label: "Client (External Servers)", link: "/dotnet/mcp/client/" },
                     { label: "AI Integration", link: "/dotnet/mcp/ai-integration/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Architecture",
@@ -465,15 +469,14 @@ export default defineConfig({
                     },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/adr/",
                     },
                   ],
+                  collapsed: true,
                 },
               ],
             },
@@ -500,6 +503,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "frontend/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -514,6 +518,7 @@ export default defineConfig({
                 {
                   label: "API",
                   items: [{ autogenerate: { directory: "frontend/api" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
@@ -536,13 +541,11 @@ export default defineConfig({
                     { label: "Overview", link: "/frontend/architecture/" },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "frontend/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "frontend/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/adr/",
                     },
                   ],
                 },

@@ -4,6 +4,8 @@ description: "Organize application code by feature instead of by technical layer
 sidebar:
   label: Vertical Slice Architecture
   order: 6
+topic: backend
+
 ---
 
 ## Definition

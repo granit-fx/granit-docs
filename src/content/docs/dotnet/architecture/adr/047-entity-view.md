@@ -4,6 +4,8 @@ description: "EntityView replaces the legacy filter-only SavedView with a richer
 sidebar:
   order: 47
   label: "047 - EntityView"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

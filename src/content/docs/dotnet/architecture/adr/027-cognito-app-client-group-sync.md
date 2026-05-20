@@ -4,6 +4,8 @@ description: "Apply the ADR-025 client-role template to AWS Cognito User Pools u
 sidebar:
   order: 27
   label: "027 - Cognito app-client groups"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

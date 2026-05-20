@@ -4,6 +4,8 @@ description: "Dual ASP.NET Core and Wolverine middleware pipeline for cross-cutt
 sidebar:
   label: Middleware Pipeline
   order: 6
+topic: backend
+
 ---
 
 ## Definition

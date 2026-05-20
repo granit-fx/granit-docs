@@ -4,6 +4,8 @@ description: "Selection of Sylvan.Data.Excel for zero-dependency streaming Excel
 sidebar:
   order: 16
   label: "016 - Sylvan Excel Reading"
+topic: backend
+
 ---
 
 > **Date:** 2026-03-01

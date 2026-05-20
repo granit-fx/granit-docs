@@ -4,6 +4,8 @@ description: "Migration from FluentAssertions to Shouldly due to license change 
 sidebar:
   order: 14
   label: "014 - Migrate to Shouldly"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-28

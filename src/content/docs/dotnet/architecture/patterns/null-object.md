@@ -4,6 +4,8 @@ description: "Eliminate null guard boilerplate with no-op default implementation
 sidebar:
   label: Null Object
   order: 23
+topic: backend
+
 ---
 
 ## Definition

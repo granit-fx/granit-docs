@@ -4,6 +4,8 @@ description: "JSON property bag on EF Core entities with optional SQL column pro
 sidebar:
   label: Metadata
   order: 59
+topic: backend
+
 ---
 
 ## Definition

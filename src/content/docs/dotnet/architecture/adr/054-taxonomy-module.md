@@ -4,6 +4,8 @@ description: "Granit introduces a new Granit.Taxonomy module providing tags and 
 sidebar:
   order: 54
   label: "054 - Taxonomy module"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-02

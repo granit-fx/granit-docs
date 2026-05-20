@@ -4,6 +4,8 @@ description: "Export raw TypeScript source files via package.json exports, relyi
 sidebar:
   order: 1
   label: "001 - Source-Direct"
+topic: frontend
+
 ---
 
 > **Date:** 2026-02-27

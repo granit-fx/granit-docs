@@ -4,6 +4,8 @@ description: "Granit splits its declarative metadata into three orthogonal tiers
 sidebar:
   order: 40
   label: "040 - Three-Tier Metadata Architecture"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

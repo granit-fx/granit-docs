@@ -4,6 +4,8 @@ description: "How Granit uses immutable state with ImmutableDictionary to ensure
 sidebar:
   label: Copy-on-Write
   order: 45
+topic: backend
+
 ---
 
 ## Definition

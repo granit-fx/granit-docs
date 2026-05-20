@@ -4,6 +4,8 @@ description: "FusionCache replaces ICacheService<T> and Granit.Caching.Hybrid as
 sidebar:
   order: 18
   label: "018 - FusionCache Caching Provider"
+topic: backend
+
 ---
 
 > **Date:** 2026-03-20

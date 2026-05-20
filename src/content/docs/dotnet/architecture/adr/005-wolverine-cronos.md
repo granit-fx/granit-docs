@@ -4,6 +4,8 @@ description: "Selection of Wolverine for messaging and CQRS with PostgreSQL tran
 sidebar:
   order: 5
   label: "005 - Wolverine + Cronos"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-22

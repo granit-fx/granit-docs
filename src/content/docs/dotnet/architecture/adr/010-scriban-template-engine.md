@@ -4,6 +4,8 @@ description: "Scriban provides a sandboxed, high-performance Liquid-compatible t
 sidebar:
   order: 10
   label: "010 - Scriban"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-27

@@ -4,6 +4,8 @@ description: "The framework ships an end-to-end default implementation of the pe
 sidebar:
   order: 21
   label: "021 - Privacy Data Export Defaults"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-19

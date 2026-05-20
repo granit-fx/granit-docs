@@ -4,6 +4,8 @@ description: "Granit consolidates LocalIdentity and FederatedIdentity behind a c
 sidebar:
   order: 51
   label: "051 - User aggregate"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-01

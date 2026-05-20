@@ -4,6 +4,8 @@ description: "Swap algorithms at runtime without changing callers — pluggable 
 sidebar:
   label: Strategy
   order: 26
+topic: backend
+
 ---
 
 ## Definition

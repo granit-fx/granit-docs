@@ -4,6 +4,8 @@ description: How the Factory pattern drives every @granit/* package — encapsul
 sidebar:
   label: Factory
   order: 1
+topic: frontend
+
 ---
 
 ## Definition

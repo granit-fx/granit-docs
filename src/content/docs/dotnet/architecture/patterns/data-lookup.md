@@ -4,6 +4,8 @@ description: "One declarative primitive (Granit.DataLookup) feeds QueryEngine fi
 sidebar:
   label: Data Lookup
   order: 58
+topic: backend
+
 ---
 
 ## Definition

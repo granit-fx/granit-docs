@@ -4,6 +4,8 @@ description: "Adoption of PuppeteerSharp with headless Chromium for pixel-perfec
 sidebar:
   order: 12
   label: "012 - PuppeteerSharp"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-28

@@ -4,6 +4,8 @@ description: "Expose complex subsystems through a single, simplified API — Gra
 sidebar:
   label: Facade
   order: 34
+topic: backend
+
 ---
 
 ## Definition

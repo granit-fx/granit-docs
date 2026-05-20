@@ -4,6 +4,8 @@ description: "How every Granit module structures configuration as strongly-typed
 sidebar:
   label: Options Pattern
   order: 48
+topic: backend
+
 ---
 
 ## Definition

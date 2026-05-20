@@ -4,6 +4,8 @@ description: "Bridge incompatible interfaces without modifying existing code —
 sidebar:
   label: Adapter
   order: 31
+topic: backend
+
 ---
 
 ## Definition

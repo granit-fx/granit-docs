@@ -4,6 +4,8 @@ description: "Framework packages export only hooks, types, providers, and utilit
 sidebar:
   order: 4
   label: "004 - Headless Packages"
+topic: frontend
+
 ---
 
 > **Date:** 2026-03-06

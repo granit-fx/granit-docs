@@ -4,6 +4,8 @@ description: "Use TanStack Query v5 as the data fetching layer with intelligent 
 sidebar:
   order: 6
   label: "006 - TanStack Query"
+topic: frontend
+
 ---
 
 > **Date:** 2026-03-04

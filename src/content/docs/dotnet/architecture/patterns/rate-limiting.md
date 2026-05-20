@@ -4,6 +4,8 @@ description: "Per-tenant throttling with Redis Lua scripts, dynamic quotas, and 
 sidebar:
   label: Rate Limiting
   order: 19
+topic: backend
+
 ---
 
 ## Definition

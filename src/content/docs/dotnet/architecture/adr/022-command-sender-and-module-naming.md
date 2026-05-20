@@ -4,6 +4,8 @@ description: "Command dispatch is abstracted behind Granit.Commands.ICommandSend
 sidebar:
   order: 22
   label: "022 - ICommandSender + Module Naming"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-20

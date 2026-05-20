@@ -4,6 +4,8 @@ description: Build complex React features by composing low-level framework hooks
 sidebar:
   label: Hook Composition
   order: 8
+topic: frontend
+
 ---
 
 ## Definition

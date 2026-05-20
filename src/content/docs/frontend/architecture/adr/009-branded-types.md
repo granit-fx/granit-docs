@@ -4,6 +4,8 @@ description: "Use TypeScript branded types in @granit/types to distinguish ISODa
 sidebar:
   order: 9
   label: "009 - Branded Types"
+topic: frontend
+
 ---
 
 > **Date:** 2026-04-06

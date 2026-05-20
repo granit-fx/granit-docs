@@ -4,6 +4,8 @@ description: "Promote MeterDefinition to a workflow-managed lifecycle (Draft / P
 sidebar:
   order: 33
   label: "033 - Metering Hybrid"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-25

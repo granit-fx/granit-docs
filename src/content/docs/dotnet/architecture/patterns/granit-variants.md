@@ -4,6 +4,8 @@ description: 10 hybrid patterns unique to Granit — adaptations of classic patt
 sidebar:
   label: Granit-Specific Variants
   order: 55
+topic: backend
+
 ---
 
 Some patterns in Granit are variants or hybrids of classic patterns, adapted to

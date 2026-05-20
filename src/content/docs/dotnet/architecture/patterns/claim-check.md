@@ -4,6 +4,8 @@ description: "Offload large Wolverine message payloads to blob storage and pass 
 sidebar:
   label: Claim Check
   order: 11
+topic: backend
+
 ---
 
 ## Definition

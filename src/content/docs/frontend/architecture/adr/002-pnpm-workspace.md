@@ -4,6 +4,8 @@ description: "Use pnpm as the exclusive package manager for the monorepo with wo
 sidebar:
   order: 2
   label: "002 - pnpm Workspace"
+topic: frontend
+
 ---
 
 > **Date:** 2026-02-27

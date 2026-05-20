@@ -4,6 +4,8 @@ description: "EF Core interceptors and query filter proxies for transparent audi
 sidebar:
   label: Proxy
   order: 35
+topic: backend
+
 ---
 
 ## Definition

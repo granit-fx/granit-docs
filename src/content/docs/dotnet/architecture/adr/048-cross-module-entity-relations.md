@@ -4,6 +4,8 @@ description: "An entity gets cross-module 'smart button' badges (and sidebars, t
 sidebar:
   order: 48
   label: "048 - Cross-Module Entity Relations"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

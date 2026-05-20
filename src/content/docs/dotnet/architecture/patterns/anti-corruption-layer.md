@@ -4,6 +4,8 @@ description: "Protect your domain model from external API churn — the Anti-Cor
 sidebar:
   label: Anti-Corruption Layer
   order: 8
+topic: backend
+
 ---
 
 ## Definition

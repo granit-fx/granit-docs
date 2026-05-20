@@ -3,6 +3,8 @@ title: "Provider (React Context)"
 description: Use React Context as a dependency injection mechanism in @granit/* packages — typed Provider components and generic createContext factories that eliminate prop drilling.
 sidebar:
   order: 7
+topic: frontend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Decouple publishers from subscribers using Wolverine's convention-
 sidebar:
   label: Observer / Event
   order: 24
+topic: backend
+
 ---
 
 ## Definition

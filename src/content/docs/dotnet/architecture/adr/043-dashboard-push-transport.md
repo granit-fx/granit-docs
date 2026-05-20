@@ -4,6 +4,8 @@ description: "Push transport for dashboards is a Granit framework concern, not d
 sidebar:
   order: 43
   label: "043 - Dashboard Push Transport"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

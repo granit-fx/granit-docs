@@ -4,6 +4,8 @@ description: "Named, per-tenant AI provider configuration resolved at runtime â€
 sidebar:
   label: AI Workspace
   order: 57
+topic: backend
+
 ---
 
 ## Definition

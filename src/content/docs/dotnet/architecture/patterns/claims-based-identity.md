@@ -3,6 +3,8 @@ title: "Claims-Based Identity / RBAC"
 description: "How Granit combines JWT Keycloak authentication with strict role-based access control"
 sidebar:
   order: 51
+topic: backend
+
 ---
 
 ## Definition
