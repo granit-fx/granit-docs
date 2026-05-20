@@ -53,3 +53,10 @@ context.Services.AddGranitCookies(cookies =>
 3. Find all service names mapped to the requested `CookieCategory` via `IThirdPartyServiceRegistry`
 4. Return `true` only if **all** mapped services have consent granted
 5. If no services are mapped for the category → return `false` (fail-safe)
+
+## See also
+
+- [Cookies overview](/dotnet/compliance/cookies/) — module setup and cookie categories
+- [Consent & GPC](/dotnet/compliance/cookies/consent/) — `IConsentResolver`, opt-in/opt-out models
+- [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) — wiring Klaro to regulation profiles
+- [Legal Agreements](/dotnet/compliance/privacy/legal-agreements/) — surface terms/privacy notices alongside the CMP banner

@@ -69,3 +69,11 @@ Mapped separately via `MapGranitMobilePushTokens()` under
 | POST | `/api/notifications/mobile-push/tokens` | `Manage` | Register a device token |
 | DELETE | `/api/notifications/mobile-push/tokens/{deviceToken}` | `Manage` | Remove a device token (owner-scoped) |
 | GET | `/api/notifications/mobile-push/tokens` | `Read` | List current user's device tokens |
+
+## See also
+
+- [Overview](./) — fan-out engine and setup
+- [Data model](./data-model/) — entities behind these endpoints
+- [Configuration](./configuration/) — health checks and OpenTelemetry tags
+- [SMS, push & real-time](./sms-push-realtime/) — channels behind the mobile push token endpoints
+- [Authorization module](/dotnet/security/authorization/) — permission gating for `Manage` and `Read`

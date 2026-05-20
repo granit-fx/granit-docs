@@ -218,3 +218,12 @@ public class Patient : AuditedAggregateRoot, ITrackedEntity
 
 When `Patient.Status` changes, the interceptor publishes an
 `EntityStateChangedData` notification to all followers of that patient.
+
+## See also
+
+- [Overview](./) — fan-out engine and package structure
+- [Fan-out engine](./fan-out-engine/) — how preferences and definitions drive dispatch
+- [Endpoints](./endpoints/) — REST API exposing preferences, subscriptions, followers
+- [Package conventions](./conventions/) — module-local notification definition layout
+- [Persistence module](/dotnet/data/persistence/) — `AuditedEntity`, `Entity`, EF Core interceptors
+- [Timeline module](/dotnet/building-blocks/timeline/) — companion audit trail for entity changes

@@ -58,3 +58,11 @@ public sealed class HtmlMinificationTransformer : IRenderedContentTransformer
 | 300+ | Cosmetic | Minification, cleanup |
 
 The built-in `MjmlTransformer` (Order=100) runs first to convert MJML markup into table-based HTML. Application-level transformers should use Order 200+ to process the already-compiled HTML. See [MJML Email Templates](./mjml-email-templates/) for details on the MJML transformer, and [Rendering Pipeline](./rendering-pipeline/) for how transformers fit into the five-stage pipeline.
+
+## See also
+
+- [Overview](./) — package structure and setup
+- [Rendering Pipeline](./rendering-pipeline/) — the five-stage pipeline
+- [MJML Email Templates](./mjml-email-templates/) — the built-in Order=100 transformer
+- [Scriban Engine](./scriban-engine/) — what runs before transformers
+- [Configuration & API Reference](./reference/) — `ITextTemplateTransformer` contract

@@ -197,6 +197,11 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 }
 ```
 
+## Section contents
+
+- [Conventions](./conventions/) — provider registration, capability lookup, pool lifecycle
+- [Security](./security/) — sandboxing untrusted content, URL allow-lists, resource limits
+
 ## Related
 
 - [`Granit.BlobStorage`](/dotnet/data/blob-storage/) — same abstraction-then-provider
@@ -205,3 +210,5 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - [`Granit.Documents.Renditions`](/dotnet/business/documents-renditions/) —
   consumes `IPdfViewerCapability` to rasterise PDF uploads into thumbnails
   through the rendition pipeline.
+- [`Granit.Templating`](/dotnet/building-blocks/templating/) — pairs with the
+  PDF capability to render HTML templates into PDF documents.
