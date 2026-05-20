@@ -142,7 +142,7 @@ Three packages following the standard Granit module anatomy:
 | `src/Granit.Bff.Endpoints/Extensions/BffEndpointRouteBuilderExtensions.cs` | Endpoint registration |
 | `src/Granit.Bff.Yarp/Internal/BffTokenInjectionTransform.cs` | YARP token injection |
 
-## Related
+## See also
 
 - [BFF full documentation](/dotnet/security/bff/) — complete guide with getting started, architecture, security
 - [Metadata pattern](/dotnet/architecture/patterns/metadata/) — entity extensibility

@@ -164,7 +164,7 @@ Audit captures user intent (the delta vocabulary is human-readable) rather than 
 
 ### Permission gate
 
-Single permission, [`Group.Resource.Action`](../../../CLAUDE.md#permissions--naming-convention-strict) format:
+Single permission, [`Group.Resource.Action`](https://github.com/granit-fx/granit-dotnet/blob/develop/CLAUDE.md#permissions--naming-convention-strict) format:
 
 - `Entities.Customization.Manage` — read + write the tenant's customization for any entity. Required on the B3 PUT endpoint.
 

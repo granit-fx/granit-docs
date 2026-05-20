@@ -260,7 +260,7 @@ labels automatically.
 - The "value" is a complex object that cannot be serialized as JSON
   (`Value` is typed as `object`, but stringified round-trip is assumed).
 
-## Related
+## See also
 
 - [ADR-028: Unified Data Lookup](/dotnet/architecture/adr/028-unified-data-lookup/)
   — architectural rationale and alternatives evaluated.

@@ -220,5 +220,5 @@ supplies by default per ADR-005.
 - [Granit.Commands.ICommandSender](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit/Commands/ICommandSender.cs)
 - [Granit.Wolverine.Internal.WolverineCommandSender](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Wolverine/Internal/WolverineCommandSender.cs)
 - [Granit.ArchitectureTests.WolverineCouplingTests](https://github.com/granit-fx/granit-dotnet/blob/develop/tests/Granit.ArchitectureTests/WolverineCouplingTests.cs)
-- [ADR-005: Wolverine & Cronos](../005-wolverine-cronos/) — the original choice of Wolverine as the messaging implementation
-- [ADR-020: Declarative Definitions Placement](../020-declarative-definitions-placement/) — same placement principle applied to query/export definitions
+- [ADR-005: Wolverine & Cronos](/dotnet/architecture/adr/005-wolverine-cronos/) — the original choice of Wolverine as the messaging implementation
+- [ADR-020: Declarative Definitions Placement](/dotnet/architecture/adr/020-declarative-definitions-placement/) — same placement principle applied to query/export definitions

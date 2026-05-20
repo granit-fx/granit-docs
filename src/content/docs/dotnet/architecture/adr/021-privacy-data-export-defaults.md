@@ -198,4 +198,4 @@ but never produces a fragment — the saga silently times out at
 - Stories #1050 (tracker EF + uploader), #1051 (module providers), #1052
   (download endpoint).
 - [Granit.Privacy.BlobStorage README](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Privacy.BlobStorage/README.md)
-- [`data-export.mdx`](../../compliance/privacy/data-export.mdx)
+- [`data-export.mdx`](/dotnet/compliance/privacy/data-export/)
