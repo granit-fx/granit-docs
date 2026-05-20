@@ -250,7 +250,7 @@ Follow-up items explicitly out of scope:
   depend on enum lookup sources being registered in the showcase host.
 - Cursor-based lookup sources for datasets over 50k rows.
 
-## Related
+## See also
 
 - [ADR-020: Declarative definitions placement](/dotnet/architecture/adr/020-declarative-definitions-placement/)
   — why `QueryDefinition` lives in base modules (applies to
