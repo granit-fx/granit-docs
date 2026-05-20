@@ -243,6 +243,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "dotnet/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -296,6 +297,7 @@ export default defineConfig({
                     },
                     { label: "Endpoint Registry", link: "/dotnet/api/endpoint-registry/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
@@ -430,6 +432,7 @@ export default defineConfig({
                       ],
                     },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "MCP",
@@ -442,6 +445,7 @@ export default defineConfig({
                     { label: "Client (External Servers)", link: "/dotnet/mcp/client/" },
                     { label: "AI Integration", link: "/dotnet/mcp/ai-integration/" },
                   ],
+                  collapsed: true,
                 },
                 {
                   label: "Architecture",
@@ -472,6 +476,7 @@ export default defineConfig({
                       link: "/dotnet/architecture/adr/",
                     },
                   ],
+                  collapsed: true,
                 },
               ],
             },
@@ -498,6 +503,7 @@ export default defineConfig({
                 {
                   label: "Core",
                   items: [{ autogenerate: { directory: "frontend/core" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Data",
@@ -512,6 +518,7 @@ export default defineConfig({
                 {
                   label: "API",
                   items: [{ autogenerate: { directory: "frontend/api" } }],
+                  collapsed: true,
                 },
                 {
                   label: "Infrastructure",
