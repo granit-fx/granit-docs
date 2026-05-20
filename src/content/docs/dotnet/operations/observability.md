@@ -266,3 +266,4 @@ service:
 - [Deployment](/dotnet/operations/deployment/) — sidecar / collector wiring on Kubernetes
 - [Production Checklist](/dotnet/operations/production-checklist/) — pre-go-live observability items
 - [End-to-end tracing guide](/dotnet/guides/end-to-end-tracing/) — verify traces survive through Wolverine handlers
+- [Blog: Observability in .NET 10: Serilog + OpenTelemetry + Grafana](/blog/observability-dotnet-10-serilog-opentelemetry-grafana/) — full stack walkthrough of the operational observability story

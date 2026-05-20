@@ -362,6 +362,10 @@ export default defineConfig({
                   label: "Reference",
                   items: [
                     {
+                      label: "Glossary",
+                      link: "/dotnet/glossary/",
+                    },
+                    {
                       label: "Configuration Keys",
                       link: "/dotnet/reference/configuration-keys/",
                     },
