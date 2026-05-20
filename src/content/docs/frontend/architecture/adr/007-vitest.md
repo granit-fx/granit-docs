@@ -4,6 +4,8 @@ description: "Use Vitest for TypeScript unit testing with native ESM support and
 sidebar:
   order: 7
   label: "007 - Vitest"
+topic: frontend
+
 ---
 
 > **Date:** 2026-02-27

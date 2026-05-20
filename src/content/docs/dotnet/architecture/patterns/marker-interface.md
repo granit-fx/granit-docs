@@ -4,6 +4,8 @@ description: "How Granit uses marker interfaces to apply cross-cutting behaviors
 sidebar:
   label: Marker Interface
   order: 50
+topic: backend
+
 ---
 
 ## Definition

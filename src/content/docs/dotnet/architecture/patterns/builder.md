@@ -4,6 +4,8 @@ description: "Compose complex module configuration step-by-step with fluent AddG
 sidebar:
   label: Builder
   order: 28
+topic: backend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Add an OrphanedRolePolicy (KeepAndLog / SoftDelete / HardDelete) t
 sidebar:
   order: 29
   label: "029 - Orphan cleanup policy"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

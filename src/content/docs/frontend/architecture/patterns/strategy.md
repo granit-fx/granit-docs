@@ -4,6 +4,8 @@ description: Swap implementations at runtime using the Strategy pattern in @gran
 sidebar:
   label: Strategy
   order: 5
+topic: frontend
+
 ---
 
 ## Definition

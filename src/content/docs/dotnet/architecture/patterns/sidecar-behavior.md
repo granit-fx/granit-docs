@@ -3,6 +3,8 @@ title: "Sidecar / Wolverine Behavior"
 description: "Cross-cutting context restoration (tenant, user, trace) across async message boundaries"
 sidebar:
   order: 21
+topic: backend
+
 ---
 
 ## Definition

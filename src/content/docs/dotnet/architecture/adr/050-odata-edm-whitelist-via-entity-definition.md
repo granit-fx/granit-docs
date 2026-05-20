@@ -4,6 +4,8 @@ description: "The Granit.Http.ODataExposure module derives its EDM property whit
 sidebar:
   label: ADR-050 OData EDM via EntityDefinition
   order: 50
+topic: backend
+
 ---
 
 **Status**: Accepted — 2026-05-01

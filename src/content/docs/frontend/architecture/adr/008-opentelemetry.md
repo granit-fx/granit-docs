@@ -4,6 +4,8 @@ description: "Implement OpenTelemetry browser tracing for end-to-end request cor
 sidebar:
   order: 8
   label: "008 - OpenTelemetry"
+topic: frontend
+
 ---
 
 > **Date:** 2026-03-04

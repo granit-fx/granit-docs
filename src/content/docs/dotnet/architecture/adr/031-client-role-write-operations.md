@@ -4,6 +4,8 @@ description: "Extend the read-only Phase 2 IIdentityClientRoleManager with Creat
 sidebar:
   order: 31
   label: "031 - Client-role writes"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

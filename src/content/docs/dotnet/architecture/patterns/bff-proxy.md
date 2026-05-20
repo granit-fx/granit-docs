@@ -4,6 +4,8 @@ description: "Move OIDC token handling from the browser to the server. SPAs neve
 sidebar:
   label: Backends For Frontends (BFF)
   order: 60
+topic: backend
+
 ---
 
 ## Backends For Frontends (BFF) Pattern

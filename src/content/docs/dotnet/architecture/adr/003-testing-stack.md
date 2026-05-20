@@ -4,6 +4,8 @@ description: "Why Granit chose xUnit v3, NSubstitute, and Bogus — parallel tes
 sidebar:
   order: 3
   label: "003 - Testing Stack"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-21

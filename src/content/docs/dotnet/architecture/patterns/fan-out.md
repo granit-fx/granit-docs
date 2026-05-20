@@ -4,6 +4,8 @@ description: "One trigger to N independent commands via Wolverine cascading mess
 sidebar:
   label: Fan-Out
   order: 10
+topic: backend
+
 ---
 
 ## Definition

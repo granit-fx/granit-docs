@@ -4,6 +4,8 @@ description: Implement transparent HTTP request/response pipeline processing in 
 sidebar:
   label: Interceptor
   order: 4
+topic: frontend
+
 ---
 
 ## Definition

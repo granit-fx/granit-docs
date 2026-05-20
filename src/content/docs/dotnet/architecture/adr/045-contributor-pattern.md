@@ -4,6 +4,8 @@ description: "Three Granit primitives — workspaces, entity relations (smart bu
 sidebar:
   order: 45
   label: "045 - IoC Contributor Pattern"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

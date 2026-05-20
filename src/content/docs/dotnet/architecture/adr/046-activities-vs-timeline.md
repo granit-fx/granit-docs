@@ -4,6 +4,8 @@ description: "Granit splits its collaborative layer into two peer modules with o
 sidebar:
   order: 46
   label: "046 - Activities vs Timeline"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

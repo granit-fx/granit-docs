@@ -4,6 +4,8 @@ description: "SmartFormat.NET handles CLDR-compliant pluralization across 18 cul
 sidebar:
   order: 8
   label: "008 - SmartFormat.NET"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-26

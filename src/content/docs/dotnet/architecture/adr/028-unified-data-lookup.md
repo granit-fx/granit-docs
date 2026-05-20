@@ -4,6 +4,8 @@ description: "Introduce Granit.DataLookup — a single declarative primitive tha
 sidebar:
   order: 28
   label: "028 - Unified Data Lookup"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-23

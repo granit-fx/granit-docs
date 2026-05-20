@@ -4,6 +4,8 @@ description: How the Adapter pattern isolates React applications from third-part
 sidebar:
   label: Adapter
   order: 3
+topic: frontend
+
 ---
 
 ## Definition

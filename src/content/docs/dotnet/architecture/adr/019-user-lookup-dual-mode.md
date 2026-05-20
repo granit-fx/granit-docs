@@ -1,6 +1,8 @@
 ---
 title: "ADR-019: User Lookup Dual Mode — Cache vs Local Store"
 description: "UserCacheEntry is a caching implementation detail for external providers, not a domain concept. IUserLookupService abstracts both modes."
+topic: backend
+
 ---
 
 ## Status

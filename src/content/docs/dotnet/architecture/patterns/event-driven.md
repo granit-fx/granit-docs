@@ -3,6 +3,8 @@ title: "Event-Driven Architecture"
 description: "Decoupled communication through domain events and integration events with transactional guarantees"
 sidebar:
   order: 3
+topic: backend
+
 ---
 
 ## Definition

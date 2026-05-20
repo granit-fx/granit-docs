@@ -465,13 +465,11 @@ export default defineConfig({
                     },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "dotnet/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/dotnet/architecture/adr/",
                     },
                   ],
                 },
@@ -536,13 +534,11 @@ export default defineConfig({
                     { label: "Overview", link: "/frontend/architecture/" },
                     {
                       label: "Patterns",
-                      items: [{ autogenerate: { directory: "frontend/architecture/patterns" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/patterns/",
                     },
                     {
                       label: "ADRs",
-                      items: [{ autogenerate: { directory: "frontend/architecture/adr" } }],
-                      collapsed: true,
+                      link: "/frontend/architecture/adr/",
                     },
                   ],
                 },

@@ -4,6 +4,8 @@ description: "How Granit intercepts deletions to preserve audit trails for ISO 2
 sidebar:
   label: Soft Delete
   order: 41
+topic: backend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Ports and adapters keep business logic independent of databases, q
 sidebar:
   label: Hexagonal Architecture
   order: 4
+topic: backend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Granit introduces a Layer 1 customization model that lets tenant a
 sidebar:
   order: 53
   label: "053 - Layer 1 Customization"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-02

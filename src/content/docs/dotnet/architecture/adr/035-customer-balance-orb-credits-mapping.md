@@ -4,6 +4,8 @@ description: "Document the conceptual mapping between the existing Granit.Custom
 sidebar:
   order: 35
   label: "035 - CustomerBalance ↔ ORB Credits"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-25

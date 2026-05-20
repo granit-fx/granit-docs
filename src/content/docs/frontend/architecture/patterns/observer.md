@@ -4,6 +4,8 @@ description: Decouple event producers from consumers in React apps using the Obs
 sidebar:
   label: Observer
   order: 6
+topic: frontend
+
 ---
 
 ## Definition

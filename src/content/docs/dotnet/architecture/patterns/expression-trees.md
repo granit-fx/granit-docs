@@ -4,6 +4,8 @@ description: "How Granit dynamically builds EF Core query filters using expressi
 sidebar:
   label: Expression Trees
   order: 49
+topic: backend
+
 ---
 
 ## Definition

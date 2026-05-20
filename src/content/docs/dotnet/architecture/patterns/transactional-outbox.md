@@ -4,6 +4,8 @@ description: "Guarantee event delivery without distributed transactions — pers
 sidebar:
   label: Transactional Outbox
   order: 9
+topic: backend
+
 ---
 
 ## Definition

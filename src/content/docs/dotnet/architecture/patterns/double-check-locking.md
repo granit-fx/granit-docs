@@ -4,6 +4,8 @@ description: "How Granit prevents concurrent access issues with double-check loc
 sidebar:
   label: Double-Check Locking
   order: 46
+topic: backend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Introduce a new Granit.Catalog module hosting the Product aggregat
 sidebar:
   order: 32
   label: "032 - Catalog Product"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-24

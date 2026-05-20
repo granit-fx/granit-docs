@@ -3,6 +3,8 @@ title: "Specification (Declarative Query DSL)"
 description: "How Granit implements a whitelist-first query DSL with expression trees for type-safe filtering"
 sidebar:
   order: 43
+topic: backend
+
 ---
 
 ## Definition

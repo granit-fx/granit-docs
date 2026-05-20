@@ -4,6 +4,8 @@ description: "Granit introduces a new Granit.Documents module for user-managed f
 sidebar:
   order: 52
   label: "052 - Documents module"
+topic: backend
+
 ---
 
 > **Date:** 2026-05-02

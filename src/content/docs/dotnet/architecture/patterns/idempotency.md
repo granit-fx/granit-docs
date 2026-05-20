@@ -4,6 +4,8 @@ description: "Stripe-style HTTP idempotency with state machine, SHA-256 payload 
 sidebar:
   label: Idempotency
   order: 12
+topic: backend
+
 ---
 
 ## Definition

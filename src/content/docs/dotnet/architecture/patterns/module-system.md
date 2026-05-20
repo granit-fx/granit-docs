@@ -4,6 +4,8 @@ description: "DependsOn-based module system with topological sorting for determi
 sidebar:
   label: Module System
   order: 1
+topic: backend
+
 ---
 
 ## Definition

@@ -4,6 +4,8 @@ description: "Granit's collection facet exposes a closed catalog of view kinds (
 sidebar:
   order: 42
   label: "042 - View Catalog"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

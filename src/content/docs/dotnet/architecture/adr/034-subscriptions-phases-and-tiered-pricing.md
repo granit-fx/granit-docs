@@ -4,6 +4,8 @@ description: "Add four child entities to Subscription/PlanPrice — PricingTier 
 sidebar:
   order: 34
   label: "034 - Subscriptions Phases & Tiered"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-25

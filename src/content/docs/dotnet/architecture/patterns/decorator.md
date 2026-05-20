@@ -4,6 +4,8 @@ description: "Layered services with encryption, caching, and cross-cutting conce
 sidebar:
   label: Decorator
   order: 33
+topic: backend
+
 ---
 
 ## Definition

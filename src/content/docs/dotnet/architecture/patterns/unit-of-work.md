@@ -4,6 +4,8 @@ description: "How Granit uses EF Core DbContext as an implicit Unit of Work with
 sidebar:
   label: Unit of Work
   order: 42
+topic: backend
+
 ---
 
 ## Definition

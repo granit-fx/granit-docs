@@ -4,6 +4,8 @@ description: Share state across @granit/* packages using the ES module cache —
 sidebar:
   label: Module Singleton
   order: 2
+topic: frontend
+
 ---
 
 ## Definition

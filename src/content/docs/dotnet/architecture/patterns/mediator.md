@@ -4,6 +4,8 @@ description: "Route commands, queries, and events through Wolverine as a central
 sidebar:
   label: Mediator
   order: 22
+topic: backend
+
 ---
 
 ## Definition

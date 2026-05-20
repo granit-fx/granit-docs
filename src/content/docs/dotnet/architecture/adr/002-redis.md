@@ -4,6 +4,8 @@ description: "StackExchange.Redis powers Granit's L2 distributed cache layer —
 sidebar:
   order: 2
   label: "002 - Redis Distributed Cache"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-21

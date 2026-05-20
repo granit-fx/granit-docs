@@ -4,6 +4,8 @@ description: "Scalar replaces Swagger UI as Granit's interactive OpenAPI documen
 sidebar:
   order: 9
   label: "009 - Scalar API Docs"
+topic: backend
+
 ---
 
 > **Date:** 2026-02-26

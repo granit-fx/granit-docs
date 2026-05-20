@@ -4,6 +4,8 @@ description: "Granit ships a closed catalog of standard component names that the
 sidebar:
   order: 41
   label: "041 - Component Catalog"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30 (component rename: 2026-05-01)

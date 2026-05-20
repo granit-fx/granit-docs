@@ -4,6 +4,8 @@ description: "How Granit encapsulates context changes in IDisposable scopes with
 sidebar:
   label: Scope / Context Manager
   order: 47
+topic: backend
+
 ---
 
 ## Definition

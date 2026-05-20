@@ -4,6 +4,8 @@ description: "Granit ships hierarchical workspaces (à la Frappe) with cross-wor
 sidebar:
   order: 44
   label: "044 - Workspace Navigation"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

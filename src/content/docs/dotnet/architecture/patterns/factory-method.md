@@ -4,6 +4,8 @@ description: "Defer object creation to runtime with named factory methods — re
 sidebar:
   label: Factory Method
   order: 29
+topic: backend
+
 ---
 
 ## Definition

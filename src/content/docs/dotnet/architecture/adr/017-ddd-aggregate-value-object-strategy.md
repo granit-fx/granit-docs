@@ -4,6 +4,8 @@ description: "Phased migration from anemic entities to proper aggregate roots an
 sidebar:
   order: 17
   label: "017 - DDD Aggregates & VOs"
+topic: backend
+
 ---
 
 > **Date:** 2026-03-19

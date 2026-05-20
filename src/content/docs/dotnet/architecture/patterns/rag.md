@@ -3,6 +3,8 @@ title: "Retrieval-Augmented Generation (RAG)"
 description: "Grounding LLM responses in factual, domain-specific context retrieved from a vector store at query time"
 sidebar:
   order: 56
+topic: backend
+
 ---
 
 ## Definition

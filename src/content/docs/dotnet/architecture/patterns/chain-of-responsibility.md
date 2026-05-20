@@ -4,6 +4,8 @@ description: "Pass a request through an ordered chain of handlers until one proc
 sidebar:
   label: Chain of Responsibility
   order: 20
+topic: backend
+
 ---
 
 ## Definition

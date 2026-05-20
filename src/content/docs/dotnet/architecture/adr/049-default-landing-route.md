@@ -4,6 +4,8 @@ description: "GET /api/me/landing-route resolves where the user lands at login v
 sidebar:
   order: 49
   label: "049 - Default Landing Route"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-30

@@ -4,6 +4,8 @@ description: "Generic merge framework (Granit.Mergeable) plus a per-module IRefe
 sidebar:
   order: 37
   label: "037 - Party Merge Framework"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-27

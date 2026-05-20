@@ -4,6 +4,8 @@ description: "Manage shared state safely in .NET — DI-registered singletons fo
 sidebar:
   label: Singleton
   order: 30
+topic: backend
+
 ---
 
 ## Definition

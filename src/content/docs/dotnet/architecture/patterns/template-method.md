@@ -4,6 +4,8 @@ description: "Define the skeleton of an algorithm in a base class and let subcla
 sidebar:
   label: Template Method
   order: 27
+topic: backend
+
 ---
 
 ## Definition

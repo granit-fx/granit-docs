@@ -4,6 +4,8 @@ description: "Concrete *QueryDefinition and *ExportDefinition classes live in th
 sidebar:
   order: 20
   label: "020 - Declarative Definitions Placement"
+topic: backend
+
 ---
 
 > **Date:** 2026-04-18
