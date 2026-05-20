@@ -181,6 +181,6 @@ deleted as part of this ADR.
 ## References
 
 - [`CLAUDE.md` — Declarative definitions section](../../../../../../../CLAUDE.md)
-- ADR-015 — [Sep CSV Parsing](./015-sep-csv-parsing.md)
-- ADR-016 — [Sylvan.Data.Excel Parsing](./016-sylvan-data-excel-parsing.md)
-- ADR-017 — [DDD Aggregate Root & Value Object Strategy](./017-ddd-aggregate-value-object-strategy.md)
+- ADR-015 — [Sep CSV Parsing](/dotnet/architecture/adr/015-sep-csv-parsing/)
+- ADR-016 — [Sylvan.Data.Excel Parsing](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/)
+- ADR-017 — [DDD Aggregate Root & Value Object Strategy](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/)

@@ -12,12 +12,12 @@ topic: backend
 > **Authors:** Jean-Francois Meyers
 > **Scope:** granit-dotnet (`Granit.Workspaces.Abstractions`, `Granit.Workspaces`, every `*.Endpoints` package shipping a `*WorkspaceContribution`); granit-business (`Granit.Workspaces.Framework`, `Granit.Workspaces.Business`); host applications (`Granit.Showcase.Web`, `Granit.Showcase.Admin`)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
-> **Supersedes (partial):** [ADR-044](./044-workspace-navigation) §3 (cross-workspace presets), [ADR-045](./045-contributor-pattern) §2 (workspace contributor only — entity relations and activity types are unchanged)
+> **Supersedes (partial):** [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) §3 (cross-workspace presets), [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) §2 (workspace contributor only — entity relations and activity types are unchanged)
 > **Status:** Accepted (backend implementation complete; phase 4 frontend + phase 5 final deprecation pending)
 
 ## Context
 
-[ADR-044](./044-workspace-navigation) introduced `WorkspaceDefinition` as the navigation primitive and [ADR-045](./045-contributor-pattern) generalised the **inversion-of-control contributor** pattern so that `Granit.BackgroundJobs.Endpoints`, `Granit.Webhooks.Endpoints`, etc., could graft items onto shells declared in `Granit.Workspaces.Framework`. The bet was: **loading a module gives you its admin UI for free**, with zero coupling between the shell owner and the contributors.
+[ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) introduced `WorkspaceDefinition` as the navigation primitive and [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) generalised the **inversion-of-control contributor** pattern so that `Granit.BackgroundJobs.Endpoints`, `Granit.Webhooks.Endpoints`, etc., could graft items onto shells declared in `Granit.Workspaces.Framework`. The bet was: **loading a module gives you its admin UI for free**, with zero coupling between the shell owner and the contributors.
 
 Six months of usage exposes three structural problems with that bet.
 

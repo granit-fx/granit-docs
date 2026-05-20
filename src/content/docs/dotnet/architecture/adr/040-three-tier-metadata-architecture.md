@@ -112,10 +112,10 @@ These are direct inversions of pain points documented in our research (see [`PR 
 
 ## Cross-references
 
-- [ADR-041](./041-component-catalog) — Component catalog and naming convention (the visual primitives Tier A declares; consumed by all three tiers' renderers).
-- [ADR-042](./042-view-catalog) — View catalog (List / Kanban / Calendar / Gallery / …) for collections, declared at Tier A; user views (Tier-A-style `EntityView` deltas) layer on top.
-- [ADR-047](./047-entity-view) — `EntityView` supersedes `Granit.QueryEngine.SavedViews`; Personal / Shared / Tenant promotion model is a clean Layer 1.5 (per-user runtime delta) that sits between Tier A and Tier B without compromising the Golden Rule.
-- [ADR-045](./045-contributor-pattern) — Inversion-of-control contributors; how cross-module modules graft onto a Tier A entity without coupling.
+- [ADR-041](/dotnet/architecture/adr/041-component-catalog/) — Component catalog and naming convention (the visual primitives Tier A declares; consumed by all three tiers' renderers).
+- [ADR-042](/dotnet/architecture/adr/042-view-catalog/) — View catalog (List / Kanban / Calendar / Gallery / …) for collections, declared at Tier A; user views (Tier-A-style `EntityView` deltas) layer on top.
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — `EntityView` supersedes `Granit.QueryEngine.SavedViews`; Personal / Shared / Tenant promotion model is a clean Layer 1.5 (per-user runtime delta) that sits between Tier A and Tier B without compromising the Golden Rule.
+- [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) — Inversion-of-control contributors; how cross-module modules graft onto a Tier A entity without coupling.
 
 ## References
 

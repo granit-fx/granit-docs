@@ -128,8 +128,8 @@ If the user has access to **zero workspaces**, the framework default is `/me/pro
 
 ## Cross-references
 
-- [ADR-044](./044-workspace-navigation) — Workspace navigation. The route format (`/w/{workspace}/...`, `/{entity}/{id}`) is owned by ADR-044; this ADR builds on it.
-- [ADR-047](./047-entity-view) — `EntityView`. A landing route can include `?view={viewId}` to land on a saved view directly.
+- [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) — Workspace navigation. The route format (`/w/{workspace}/...`, `/{entity}/{id}`) is owned by ADR-044; this ADR builds on it.
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — `EntityView`. A landing route can include `?view={viewId}` to land on a saved view directly.
 - `Granit.Settings`, `Granit.Authorization` — existing modules that store the per-role / per-tenant configuration.
 
 ## References
