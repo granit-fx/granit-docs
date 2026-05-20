@@ -3,7 +3,7 @@ title: "IoT MCP Bridge"
 description: "Granit.IoT.Mcp turns the IoT device fleet and telemetry history into conversational APIs for Claude, Copilot, and any MCP-aware AI assistant. Four read-only tools, two layers of tenant isolation, hard caps on context window, zero business logic — grounded in IDeviceReader and ITelemetryReader."
 sidebar:
   label: MCP Bridge
-  order: 9
+  order: 10
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -145,11 +145,12 @@ scanning on startup. No manual `WithTools<T>()` call is needed.
 > **User**: *"Summarise the state of my cold-chain sensors for the last
 > hour."*
 >
-> **Claude**: *(calls `iot_list_devices(statusFilter = "Active")`, then
-> `iot_get_latest_readings` on each)*
+> **Claude**: *(calls `iot_list_devices(statusFilter = "Active")` and reads
+> each `LastHeartbeatAt`, then `iot_get_latest_readings` for the still-fresh
+> ones)*
 > You have **28 active cold-chain sensors**. All but two are within their
 > configured temperature band. `CC-042` is at 6.1 °C (target: ≤ 4 °C) as of
-> 3 minutes ago, and `CC-119` stopped reporting 47 minutes ago — likely a
+> 3 minutes ago, and `CC-119` last heartbeat was 47 minutes ago — likely a
 > battery or network issue.
 
 **Example 2 — drilling into a window.**

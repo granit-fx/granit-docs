@@ -3,7 +3,7 @@ title: "IoT Operations"
 description: "Keep a multi-tenant IoT telemetry database healthy at scale with three recurring background jobs: bucketed retention enforcement (GDPR Art. 17), offline-device detection with anti-flapping, and ahead-of-time PostgreSQL partition creation. All built on Granit.BackgroundJobs with per-tenant settings via Granit.Settings."
 sidebar:
   label: Operations
-  order: 6
+  order: 7
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -84,7 +84,16 @@ delete never overlaps the next run.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `IoT:TelemetryRetentionDays` | `365` | Days of telemetry kept per tenant. Set `0` to disable purge for a tenant (not recommended in production) |
+| `IoT:TelemetryRetentionDays` | `365` | Days of telemetry kept per tenant. Set `0` to disable purge for a tenant |
+
+<Aside type="caution" title="Setting retention to 0 is a GDPR risk">
+  `IoT:TelemetryRetentionDays = 0` disables the per-tenant purge entirely —
+  telemetry accumulates without bound. That can violate **GDPR Art. 5(1)(e)
+  (storage limitation)** and **Art. 17 (right to erasure)** if the tenant
+  has no other deletion mechanism. Reserve this value for debugging or
+  legally-mandated long retention; in those cases pair it with a written
+  data-processing record.
+</Aside>
 
 <Aside type="note" title="Partition drops vs ExecuteDeleteAsync">
   At month boundaries, when every tenant's retention has rolled past the

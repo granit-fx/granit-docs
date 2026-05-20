@@ -1,9 +1,9 @@
 ---
 title: "Granit.IoT Bundle Reference"
-description: "Install the full Granit.IoT stack with a single NuGet reference and one builder.AddIoT() call. Two meta-packages: Granit.Bundle.IoT for the cloud-agnostic core (11 packages) and Granit.Bundle.IoT.Aws for the full AWS IoT Core bridge family (6 packages). What's inside, what's opt-in, and how to break them down if you need to."
+description: "Install the full Granit.IoT stack with a single NuGet reference and one builder.AddIoT() call. Two meta-packages: Granit.Bundle.IoT for the cloud-agnostic core (12 packages, MCP bridge included) and Granit.Bundle.IoT.Aws for the AWS IoT Core bridge family (6 packages). What's inside, what's opt-in, and how to break them down if you need to."
 sidebar:
   label: Bundle Reference
-  order: 11
+  order: 12
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -11,10 +11,11 @@ import { Aside } from "@astrojs/starlight/components";
 The two meta-bundles ship the full Granit.IoT stack as single NuGet
 references — one for the cloud-agnostic core, one for the AWS bridge
 family. Teams can onboard IoT device management, telemetry ingestion,
-threshold alerts, background jobs, the audit timeline, and (optionally)
-the full AWS IoT Core bridge without hand-picking 17 packages.
+threshold alerts, background jobs, the audit timeline, the MCP bridge for
+AI assistants, and (optionally) the full AWS IoT Core bridge without
+hand-picking 18 packages.
 
-## `Granit.Bundle.IoT` — cloud-agnostic stack (11 packages)
+## `Granit.Bundle.IoT` — cloud-agnostic stack (12 packages)
 
 ### When to use the bundle
 
@@ -47,13 +48,14 @@ Use individual packages when:
 | 9 | `Granit.IoT.Wolverine` | 2 | Wolverine handlers + threshold evaluation |
 | 10 | `Granit.IoT.Notifications` | 3 | Bridge to `Granit.Notifications` |
 | 11 | `Granit.IoT.Timeline` | 3 | Bridge to `Granit.Timeline` |
+| 12 | `Granit.IoT.Mcp` | 3 | Read-only `[McpServerTool]` wrappers for AI assistants |
 
 ```mermaid
 flowchart LR
   B["Granit.Bundle.IoT<br/>(meta-package)"]
   B --> R1["Ring 1<br/>5 packages"]
   B --> R2["Ring 2<br/>4 packages"]
-  B --> R3["Ring 3<br/>2 bridges"]
+  B --> R3["Ring 3<br/>3 bridges"]
 ```
 
 ### Not included — these are opt-in
@@ -63,10 +65,13 @@ flowchart LR
   [MQTT transport](/dotnet/iot/mqtt/).
 - `Granit.IoT.EntityFrameworkCore.Timescale` — opt-in TimescaleDB backend.
   See [Time-series storage](/dotnet/iot/time-series/).
-- `Granit.IoT.Mcp` — opt-in MCP bridge for AI assistants. See
-  [MCP bridge](/dotnet/iot/mcp-bridge/).
-- `Granit.IoT.Ingestion.Aws` and the entire `Granit.IoT.Aws` family — use
-  [`Granit.Bundle.IoT.Aws`](#granitbundleiotaws--aws-iot-core-bridge-6-packages)
+- `Granit.IoT.Ingestion.Aws` — AWS-native ingestion provider (SNS / Direct /
+  API Gateway). **Not bundled** in `Granit.Bundle.IoT.Aws` (which covers the
+  device-binding side); add it explicitly with
+  `dotnet add package Granit.IoT.Ingestion.Aws` when you want AWS-shaped
+  telemetry instead of (or alongside) the Scaleway webhook.
+- `Granit.IoT.Aws` family (6 packages — provisioning, shadow, jobs, JITP) —
+  use [`Granit.Bundle.IoT.Aws`](#granitbundleiotaws--aws-iot-core-bridge-6-packages)
   on top.
 
 ### Installation
@@ -75,7 +80,7 @@ flowchart LR
 dotnet add package Granit.Bundle.IoT
 ```
 
-This single reference transitively pulls in all 11 bundled packages. No
+This single reference transitively pulls in all 12 bundled packages. No
 dependency conflicts — every package in the bundle targets the same
 `Granit.*` framework version pinned in `Directory.Packages.props`.
 
@@ -92,10 +97,11 @@ app.MapGranitIoTEndpoints();          // /iot/devices + /iot/telemetry
 app.MapGranitIoTIngestionEndpoints(); // /iot/ingest/{source}
 ```
 
-`AddIoT()` enumerates the 11 modules in topological order. Actual DI
-registration is driven by each module's `[DependsOn(...)]` graph — the
-bundle's enumeration is just a complete list, so dependency order is
-never a concern.
+`AddIoT()` enumerates the 11 active modules in topological order
+(`Granit.IoT.EntityFrameworkCore.Postgres` ships as helpers only, so it has
+no module class to register). Actual DI registration is driven by each
+module's `[DependsOn(...)]` graph — the bundle's enumeration is just a
+complete list, so dependency order is never a concern.
 
 ### What you get out of the box
 
@@ -107,8 +113,14 @@ After `AddIoT()`:
 - Three recurring background jobs (purge, heartbeat, partition maintenance)
 - Two notification types (threshold alert + device offline) auto-registered
 - Device lifecycle → timeline audit chatter
+- Four read-only MCP tools (`iot_list_devices`, `iot_get_device`,
+  `iot_query_telemetry`, `iot_get_latest_readings`) — see
+  [MCP bridge](/dotnet/iot/mcp-bridge/)
 - OpenTelemetry metrics for every stage (see
   [Operations — Observability](/dotnet/iot/operations/#observability))
+
+→ Already wired? Walk through it end-to-end on
+[Getting started](/dotnet/iot/getting-started/).
 
 ### Breaking down the bundle if you need to
 
@@ -164,14 +176,10 @@ Full deep dive: [AWS IoT Core bridge](/dotnet/iot/aws/).
 
 The bundles track the Granit.IoT release cycle. Pre-release
 (pre-`v1.0.0`), breaking changes land in minor versions; post-`v1.0.0`,
-SemVer applies strictly.
-
-| Granit.IoT version | Granit framework version | .NET | EF Core |
-| --- | --- | --- | --- |
-| `0.x` (current) | `1.0.x` | 10.0 | 10 |
-
-Check the [releases page](https://github.com/granit-fx/granit-iot/releases)
-for the current compatibility matrix.
+SemVer applies strictly. The current compatibility matrix lives on the
+[releases page](https://github.com/granit-fx/granit-iot/releases) — that's
+the authoritative source for the `Granit.IoT ↔ Granit framework ↔ .NET ↔
+EF Core` matrix.
 
 ## See also
 

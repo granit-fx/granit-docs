@@ -3,7 +3,7 @@ title: "Time-Series Storage"
 description: "Scale IoT telemetry from thousands to billions of rows with two opinionated backends: PostgreSQL native (BRIN + GIN + monthly RANGE partitioning) by default, or opt-in TimescaleDB hypertables with hourly and daily continuous aggregates. Decision tree, indexes, partitioning helpers, and the dashboard query speed-up explained."
 sidebar:
   label: Time-Series Storage
-  order: 5
+  order: 6
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -39,8 +39,15 @@ flowchart TD
 | --- | --- |
 | Self-hosted PostgreSQL | ✅ Install via `apt` / Helm / Docker image |
 | Scaleway Managed Database | ❌ Not available — stay on vanilla |
-| AWS RDS PostgreSQL | ❌ Not available — use Timescale Cloud or RDS + self-managed |
+| AWS RDS PostgreSQL | ❌ Not available — use Timescale Cloud, Aurora + self-managed, or stay on RDS + `pg_partman` |
+| AWS Aurora PostgreSQL | ❌ Not available |
+| Azure Database for PostgreSQL (Flexible Server) | ✅ Available as a server-level extension |
 | Timescale Cloud | ✅ Default |
+
+Managed-service extension support shifts over time — always confirm
+against the provider's current extension list before committing
+([AWS RDS PostgreSQL extensions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.Extensions.html),
+[Azure flexible-server extensions](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-extensions)).
 
 ## Backend 1 — PostgreSQL native (default)
 
