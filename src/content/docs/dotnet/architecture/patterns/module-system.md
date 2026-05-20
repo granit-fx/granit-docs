@@ -84,3 +84,10 @@ WebApplication app = builder.Build();
 await app.UseGranitAsync();
 app.Run();
 ```
+
+## Used by
+
+- [Module system core](/dotnet/core/module-system/) — runtime implementation: `GranitModule`, `DependsOn`, topological sort
+- [Dependency injection](/dotnet/concepts/dependency-injection/) — how modules contribute service registrations
+- [Module structure guide](/contributing/module-structure/) — conventions for authoring new modules
+- [Marker Interface pattern](/dotnet/architecture/patterns/marker-interface/) — `GranitModule` discovery via marker

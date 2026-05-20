@@ -873,3 +873,11 @@ rendering) and the polymorphic `RenderedContent` types.
 All notification endpoints are per-user self-service operations (inbox, preferences,
 subscriptions). Each endpoint filters by `GetUserId(user)` and cannot access another
 user's data. `.RequireAuthorization()` without a RBAC policy is sufficient.
+
+## See also
+
+- [Architecture overview](/dotnet/architecture/) — design principles and decision records
+- [Pattern library](/dotnet/architecture/patterns/) — the idioms behind the graph
+- [Module system](/dotnet/core/module-system/) — `[DependsOn]` and topological sort
+- [Module structure guide](/contributing/module-structure/) — conventions for new packages
+- [Module System pattern](/dotnet/architecture/patterns/module-system/) — rationale for the dependency model

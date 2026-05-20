@@ -108,3 +108,12 @@ Publishing a draft auto-archives the previous published version and dispatches
 | `LegalAgreementAcceptedEto` | User accepts a document version | Audit trail, cross-service sync |
 | `LegalAgreementObsoleteEto` | New version published, old archived | `LegalDocumentObsoleteHandler` → re-consent notifications |
 | `LegalDocumentCacheInvalidatedEto` | Document published or archived | All pods refresh `ILegalDocumentRegistry` cache |
+
+## See also
+
+- [Privacy overview](/dotnet/compliance/privacy/) — module setup and data provider registry
+- [Processing Purposes](/dotnet/compliance/privacy/processing-purposes/) — legal basis declarations referenced by agreements
+- [Regulations](/dotnet/compliance/privacy/regulations/) — multi-regulation engine driving consent prompts
+- [Klaro CMP](/dotnet/compliance/cookies/klaro/) — surface legal documents in the cookie banner
+- [Templating module](/dotnet/building-blocks/templating/) — render legal document versions
+- [Notifications module](/dotnet/infrastructure/notifications/) — re-consent notifications on `LegalAgreementObsoleteEto`

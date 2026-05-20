@@ -71,3 +71,11 @@ handler — read the just-created party via `IPartyReader.GetByIdAsync`,
 mutate it through the aggregate's methods (`UpdateContact`, `AddAddress`, …),
 and persist with `IPartyWriter.UpdateAsync`. The seeder only ships the
 identity-level baseline so it stays composable.
+
+## See also
+
+- [Parties module](/dotnet/business/parties/) — `Party` aggregate and module reference
+- [Wire a new external provider through Party.ExternalMappings](/dotnet/guides/parties-external-mappings/) — uses the reserved `tenant` mapping seeded here
+- [Auto-maintain Party.Roles via integration events](/dotnet/guides/parties-role-handler/) — companion handler pattern
+- [Multi-tenancy module](/dotnet/infrastructure/multi-tenancy/) — `OnTenantCreated` lifecycle and provisioning
+- [Configure multi-tenancy guide](/dotnet/guides/configure-multi-tenancy/) — step-by-step tenant setup

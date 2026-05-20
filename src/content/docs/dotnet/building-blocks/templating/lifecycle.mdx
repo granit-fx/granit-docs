@@ -134,3 +134,12 @@ services.AddEmbeddedTemplates(typeof(AcmeTemplates).Assembly);
 If `IDocumentTemplateStoreReader`/`IDocumentTemplateStoreWriter` is not registered
 (no EF Core module loaded), all endpoints return `501 Not Implemented`.
 :::
+
+## See also
+
+- [Overview](./) — package structure and setup
+- [Rendering Pipeline](./rendering-pipeline/) — how the resolver chain integrates with lifecycle
+- [Layouts](./layouts/) — tenant overrides and the layout resolver
+- [Configuration & API Reference](./reference/) — admin endpoint payloads and configuration
+- [Workflow module](/dotnet/building-blocks/workflow/) — FSM engine powering the approval bridge
+- [Authorization module](/dotnet/security/authorization/) — permission gating for admin endpoints

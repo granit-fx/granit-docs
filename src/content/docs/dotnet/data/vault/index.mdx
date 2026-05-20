@@ -132,8 +132,16 @@ a zero-cost transitive dependency; when on, it reuses the tenant-aware
 `IFusionCache` already registered by `Granit.Caching`.
 </Aside>
 
+## Section contents
+
+- [Secrets](./secrets/) — `ISecretStore`, references like `vault:secret/data/foo#key`, caching
+- [Credentials](./credentials/) — dynamic database credentials, automatic rotation
+- [Encryption](./encryption/) — transit encryption keys, wrapping, key rotation
+- [Providers](./providers/) — HashiCorp Vault, Azure Key Vault, AWS Secrets Manager, GCP Secret Manager
+
 ## See also
 
 - [Field-level encryption](/dotnet/data/encryption/) — `[Encrypted]` attribute, EF Core convention, re-encryption job
 - [Caching module](/dotnet/data/caching/) — AES-256 encryption for cached sensitive data
 - [Persistence module](/dotnet/data/persistence/) — dynamic credentials integration, interceptors
+- [Encrypt sensitive data guide](/dotnet/guides/encrypt-sensitive-data/) — step-by-step recipe

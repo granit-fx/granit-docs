@@ -205,3 +205,12 @@ The middleware emits OpenTelemetry counters under the `Granit.MultiTenancy` mete
 
 The `resolver_type` tag identifies which resolver matched (`DomainTenantResolver`,
 `HeaderTenantResolver`, etc.).
+
+## See also
+
+- [Multi-tenancy overview](/dotnet/infrastructure/multi-tenancy/) — module setup and section contents
+- [Isolation strategies](/dotnet/infrastructure/multi-tenancy/isolation/) — what happens after resolution
+- [Host vs Tenant](/dotnet/infrastructure/multi-tenancy/host-tenant/) — `GranitDbDefaults` boundary
+- [Claims convention](/dotnet/infrastructure/multi-tenancy/claims-convention/) — JWT claim used by the JWT resolver
+- [Cache isolation](/dotnet/infrastructure/multi-tenancy/cache/) — tenant-scoped cache keys after resolution
+- [Multi-tenancy concept](/dotnet/concepts/multi-tenancy/) — problem, decision matrix, query filters

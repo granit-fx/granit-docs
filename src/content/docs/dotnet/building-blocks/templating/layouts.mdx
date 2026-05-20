@@ -95,3 +95,12 @@ embedded default (priority -100). Multi-tenant query filters ensure isolation.
 - **Graceful degradation** -- if the layout template cannot be resolved, a warning is
   logged and the content renders standalone
 - **Binary skip** -- `BinaryRenderedContent` (Excel) skips layout wrapping
+
+## See also
+
+- [Overview](./) — package structure and setup
+- [Rendering Pipeline](./rendering-pipeline/) — the five-stage pipeline that drives layout wrapping
+- [Scriban Engine](./scriban-engine/) — sandbox, global contexts, includes
+- [MJML Email Templates](./mjml-email-templates/) — the built-in `Layout.Email.html` layout
+- [Lifecycle](./lifecycle/) — Draft/Published states and tenant overrides
+- [Configuration & API Reference](./reference/) — public API summary and configuration options

@@ -204,3 +204,11 @@ Track these metrics to detect credential lifecycle issues:
 | Token renewal failures | > 0 over 5 min | Imminent loss of access |
 | Seal status | `sealed = true` | Vault sealed -- manual intervention required |
 | Storage backend latency | > 100ms | Raft storage degradation |
+
+## See also
+
+- [Vault module](/dotnet/data/vault/) — `ISecretStore`, `ITransitEncryptionService`, `IDatabaseCredentialProvider`
+- [Configuration Keys reference](/dotnet/reference/configuration-keys/) — every `Options` section in the framework
+- [Deployment](/dotnet/operations/deployment/) — Kubernetes wiring of Vault Agent / sidecars
+- [Observability](/dotnet/operations/observability/) — metrics and alerts on Vault health
+- [Production Checklist](/dotnet/operations/production-checklist/) — secret-management readiness items

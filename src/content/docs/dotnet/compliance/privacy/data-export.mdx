@@ -222,3 +222,12 @@ Both branches are routed by `ExportCompletedNotificationHandler` so that exactly
 one outcome notification is sent per request — never both. The `MissingProviders`
 list lets templates explain to the user which categories of data did not make it
 into the partial archive (so they can decide whether to retry or accept).
+
+## See also
+
+- [Privacy overview](/dotnet/compliance/privacy/) — module setup and data provider registry
+- [Data Deletion](/dotnet/compliance/privacy/data-deletion/) — sibling deletion saga
+- [Regulations](/dotnet/compliance/privacy/regulations/) — `PrivacyRegulationProfile` driving deadlines and copy
+- [Processing Purposes](/dotnet/compliance/privacy/processing-purposes/) — legal basis tied to exported data categories
+- [Blob storage](/dotnet/data/blob-storage/) — where the export archive lands
+- [Notifications module](/dotnet/infrastructure/notifications/) — channel that delivers the download link

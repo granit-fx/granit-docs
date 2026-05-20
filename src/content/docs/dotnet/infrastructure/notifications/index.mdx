@@ -199,3 +199,23 @@ event to the fan-out engine and providing the email templates. The
 canonical file layout, the Wolverine handler shape, the `<title>`-tag subject
 extraction, the JSON-array `*Display` companion gotcha, the manifest pinning
 test, and the embedded-vs-DB template override mechanics.
+
+## What's next
+
+- [Fan-Out Engine](./fan-out-engine/) — multi-channel dispatch, preference filtering, audit trail
+- [Channels Overview](./channels/) — capability matrix across InApp, Email, SMS, Push, Realtime
+- [Email Channel](./email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo providers
+- [SMS, Push & Real-Time](./sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push
+- [Wolverine Integration](./wolverine-integration/) — durable outbox dispatch with retry
+- [Data Model](./data-model/) — entities, CQRS stores, user preferences
+- [Endpoints](./endpoints/) — inbox, preferences, subscriptions, follower REST API
+- [Configuration](./configuration/) — options, health checks, provider selection
+- [Package Conventions](./conventions/) — file layout, Wolverine handler shape, manifest pinning
+- [Recipes](./recipes/) — workflow integration, authorization, encryption patterns
+
+## See also
+
+- [Templating module](/dotnet/building-blocks/templating/) — the engine that renders notification subjects and bodies
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — outbox pattern and tenant context propagation
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — tenant-scoped delivery and preferences
+- [Set up notifications guide](/dotnet/guides/set-up-notifications/) — step-by-step provider wiring

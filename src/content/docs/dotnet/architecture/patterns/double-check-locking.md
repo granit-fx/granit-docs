@@ -78,3 +78,9 @@ provides this natively via its built-in concurrency control.
 // -> 99 served from cached token (after the lock)
 string token = await tokenService.GetAdminTokenAsync(cancellationToken);
 ```
+
+## Used by
+
+- [Identity providers](/dotnet/security/identity/) — admin token caching for Keycloak/Entra/Cognito
+- [Vault](/dotnet/data/vault/) — `ISecretStore` cache decorator
+- [Caching](/dotnet/data/caching/) — singleton FusionCache initialization
