@@ -56,9 +56,20 @@ sequenceDiagram
 1. ### Configure the Granit NuGet feed
 
    Granit.IoT packages live on GitHub Packages. Authenticate once with a
-   personal access token (PAT) that has the `read:packages` scope:
+   personal access token (PAT) that has the `read:packages` scope. If the
+   feed isn't registered yet, add it first; otherwise update the
+   credentials on the existing entry:
 
    ```bash
+   # First-time setup
+   dotnet nuget add source https://nuget.pkg.github.com/granit-fx/index.json \
+     --name granit-registry \
+     --username YOUR_GITHUB_USERNAME \
+     --password YOUR_GITHUB_PAT \
+     --store-password-in-clear-text \
+     --configfile nuget.config
+
+   # Subsequent credential rotation
    dotnet nuget update source granit-registry \
      --username YOUR_GITHUB_USERNAME \
      --password YOUR_GITHUB_PAT \
@@ -79,15 +90,19 @@ sequenceDiagram
    dotnet add package Granit.Bundle.IoT
    ```
 
-   That's 11 packages — domain, EF Core persistence, PostgreSQL migrations,
-   device CRUD endpoints, ingestion pipeline, Scaleway provider, Wolverine
-   handlers, notifications bridge, background jobs, timeline bridge, and the
-   MCP bridge.
+   That's 12 packages — domain, EF Core persistence, PostgreSQL migrations,
+   device CRUD endpoints, ingestion pipeline, ingestion webhook,
+   Scaleway provider, Wolverine handlers, background jobs, notifications
+   bridge, timeline bridge, and the MCP bridge.
 
-   <Aside type="note" title="MQTT is opt-in">
-     `Granit.IoT.Mqtt` and `Granit.IoT.Mqtt.Mqttnet` are not included in
-     `Granit.Bundle.IoT`. Add them only if you consume from a non-Scaleway MQTT
-     broker — see [MQTT transport](/dotnet/iot/mqtt/).
+   <Aside type="note" title="MQTT, TimescaleDB and AWS-native ingestion are opt-in">
+     `Granit.IoT.Mqtt[.Mqttnet]`,
+     `Granit.IoT.EntityFrameworkCore.Timescale`, and
+     `Granit.IoT.Ingestion.Aws` are not included in `Granit.Bundle.IoT`.
+     Add them only when needed — see [MQTT transport](/dotnet/iot/mqtt/),
+     [Time-series storage](/dotnet/iot/time-series/), and the AWS provider
+     section of
+     [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/#provider--aws-iot-core-telemetry).
    </Aside>
 
 3. ### Register the modules
@@ -111,9 +126,11 @@ sequenceDiagram
    app.Run();
    ```
 
-   `AddIoT()` enumerates the 11 modules in topological order. Actual DI order
-   is driven by each module's `[DependsOn(...)]` graph — you can't accidentally
-   skip a dependency.
+   `AddIoT()` enumerates the 11 active modules in topological order
+   (`Granit.IoT.EntityFrameworkCore.Postgres` ships as migration helpers only,
+   so it has no module class to register). Actual DI order is driven by each
+   module's `[DependsOn(...)]` graph — you can't accidentally skip a
+   dependency.
 
 4. ### Configure PostgreSQL, Redis, and Scaleway
 
@@ -178,7 +195,9 @@ sequenceDiagram
    - Covering index `(device_id, recorded_at DESC)` for the most common query
 
    For high-volume deployments, enable monthly partitioning before your first
-   production insert — see [Operations](/dotnet/iot/operations/).
+   production insert — see [Operations](/dotnet/iot/operations/). For the full
+   schema (column types, secrets-at-rest, sizing per row count, AWS-companion
+   tables), see [Data model](/dotnet/iot/data-model/).
 
 6. ### Provision your first device
 
@@ -262,8 +281,10 @@ sequenceDiagram
 | I want to… | Read |
 | --- | --- |
 | Understand the domain model and state machine | [Device management](/dotnet/iot/device-management/) |
+| See the full PostgreSQL schema, JSONB conventions, and sizing | [Data model](/dotnet/iot/data-model/) |
 | Dive into the ingestion pipeline internals | [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/) |
 | Connect a non-Scaleway broker (Mosquitto, EMQX, HiveMQ, AWS IoT Core via MQTT) | [MQTT transport](/dotnet/iot/mqtt/) |
+| Pick a time-series backend (PostgreSQL native vs TimescaleDB) | [Time-series storage](/dotnet/iot/time-series/) |
 | Prepare for production scale (partitioning, purge, heartbeat) | [Operations](/dotnet/iot/operations/) |
 | Provision AWS IoT Things with X.509 certs and Secrets Manager | [AWS bridge](/dotnet/iot/aws/) |
 | Route threshold alerts into my notification pipeline | [Notifications bridge](/dotnet/iot/notifications-bridge/) |

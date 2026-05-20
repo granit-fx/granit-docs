@@ -86,6 +86,7 @@ public void Decommission();
 public void UpdateFirmware(FirmwareVersion firmware);
 public void UpdateLabel(string? label);
 public void UpdateCredential(DeviceCredential? credential);
+public void UpdateTags(IReadOnlyDictionary<string, string>? tags);
 public void RecordHeartbeat(DateTimeOffset timestamp);
 ```
 
@@ -301,6 +302,7 @@ Declared in `IoTPermissions` and auto-discovered by `Granit.Authorization`:
 ## See also
 
 - [Getting started](/dotnet/iot/getting-started/) — 5-minute quickstart
+- [Data model](/dotnet/iot/data-model/) — full PostgreSQL schema, JSONB conventions, sizing
 - [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/) — how telemetry actually lands in the table
 - [Time-series storage](/dotnet/iot/time-series/) — PostgreSQL-native vs TimescaleDB hypertables
 - [Operations](/dotnet/iot/operations/) — partitioning, purge, heartbeat detection

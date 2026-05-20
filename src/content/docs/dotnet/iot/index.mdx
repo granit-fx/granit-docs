@@ -56,13 +56,15 @@ violation.
 
 ```mermaid
 flowchart TB
+  subgraph META["Meta-bundles (transverse)"]
+    B["Granit.Bundle.IoT"]
+    BAWS["Granit.Bundle.IoT.Aws"]
+  end
   subgraph R3["Ring 3 — Cross-cutting bridges"]
     N["Granit.IoT.Notifications"]
     T["Granit.IoT.Timeline"]
     MCP["Granit.IoT.Mcp"]
     AWS["Granit.IoT.Aws<br/>(+ EFCore, Provisioning,<br/>Shadow, Jobs, FleetProvisioning)"]
-    B["Granit.Bundle.IoT"]
-    BAWS["Granit.Bundle.IoT.Aws"]
   end
   subgraph R2["Ring 2 — Ingestion &amp; transport"]
     I["Granit.IoT.Ingestion"]
@@ -84,6 +86,9 @@ flowchart TB
   R2 --> R1
   R3 --> R2
   R3 --> R1
+  META -. "bundles" .-> R1
+  META -. "bundles" .-> R2
+  META -. "bundles" .-> R3
 ```
 
 ### Ring 1 — Device management
@@ -140,8 +145,12 @@ opt-in — the core pipeline works without them.
 
 | Bundle | Includes | When to use |
 | --- | --- | --- |
-| `Granit.Bundle.IoT` | Full Ring 1 + 2 + 3 cloud-agnostic stack (11 packages) | New projects, full IoT functionality, MQTT is opt-in |
-| `Granit.Bundle.IoT.Aws` | Full AWS IoT Core bridge (6 packages) | Add on top of `Granit.Bundle.IoT` when targeting AWS |
+| `Granit.Bundle.IoT` | Full Ring 1 + 2 + 3 cloud-agnostic stack (12 packages, MCP included) | New projects, full IoT functionality |
+| `Granit.Bundle.IoT.Aws` | AWS IoT Core device-binding family (6 packages) | Add on top of `Granit.Bundle.IoT` when targeting AWS |
+
+MQTT (`Granit.IoT.Mqtt[.Mqttnet]`), TimescaleDB
+(`Granit.IoT.EntityFrameworkCore.Timescale`), and AWS-native ingestion
+(`Granit.IoT.Ingestion.Aws`) ship as opt-in extensions outside the bundles.
 
 → Read [Bundle reference](/dotnet/iot/bundle/).
 

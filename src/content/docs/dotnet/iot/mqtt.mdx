@@ -3,7 +3,7 @@ title: "MQTT Transport"
 description: "Wire a .NET 10 SaaS application to any MQTT broker — Mosquitto, EMQX, HiveMQ, VerneMQ, Scaleway IoT Hub in MQTT mode, AWS IoT Core, or self-hosted. Handles mTLS via Vault, automatic reconnection with exponential backoff, QoS 0–2, and feeds the same ingestion pipeline used by webhooks."
 sidebar:
   label: MQTT Transport
-  order: 4
+  order: 5
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -26,6 +26,15 @@ reconnection, QoS 0–2.
 The two paths share **exactly** the same downstream pipeline — see
 [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/). Switching transports
 never touches your domain code.
+
+<Aside type="tip" title="MQTT vs SNS/Direct/API-GW on AWS">
+  Targeting AWS IoT Core? You have a choice: subscribe via MQTT (this page)
+  or let AWS push to HTTP via SNS / Direct / API Gateway (the AWS provider
+  in [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/#provider--aws-iot-core-telemetry)).
+  Pair either ingestion mode with the
+  [AWS IoT Core bridge](/dotnet/iot/aws/) for the device-binding side
+  (provisioning, shadow, jobs, JITP).
+</Aside>
 
 ## Packages
 

@@ -3,7 +3,7 @@ title: "IoT Telemetry Ingestion"
 description: "High-throughput IoT telemetry ingestion for .NET 10: HMAC-SHA256 webhook validation, Redis-backed transport deduplication, Wolverine transactional outbox, and per-tenant threshold evaluation. Provider-agnostic — Scaleway IoT Hub, AWS IoT Core, and MQTT plug into the same pipeline."
 sidebar:
   label: Telemetry Ingestion
-  order: 3
+  order: 4
 ---
 
 import { Aside, FileTree } from "@astrojs/starlight/components";
@@ -188,8 +188,20 @@ All three terminate at the same `POST /iot/ingest/{source}` route and emit
 the same `ParsedTelemetryBatch`. SigV4 is verified against the AWS public
 `get-vanilla` test vector byte-for-byte.
 
-For the AWS **bridge** (provisioning, Device Shadow, IoT Jobs, JITP), see
-[AWS IoT Core bridge](/dotnet/iot/aws/).
+<Aside type="note" title="Add Granit.IoT.Ingestion.Aws explicitly">
+  Neither `Granit.Bundle.IoT` nor `Granit.Bundle.IoT.Aws` ship this
+  provider — Scaleway is the default inbound shape and AWS-native telemetry
+  is opt-in. Install it on its own:
+
+  ```bash
+  dotnet add package Granit.IoT.Ingestion.Aws
+  ```
+
+  Then register: `builder.Services.AddGranitIoTIngestionAws();`. The
+  device-binding side of AWS IoT Core (provisioning saga, shadow, jobs,
+  JITP) ships separately in `Granit.Bundle.IoT.Aws` — see
+  [AWS IoT Core bridge](/dotnet/iot/aws/).
+</Aside>
 
 ## Deduplication — transport-level, Redis-backed, fail-open
 
