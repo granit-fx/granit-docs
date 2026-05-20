@@ -204,11 +204,11 @@ var session = await checkoutFactory.CreateAsync(
 
 | Type | Name | Severity | Opt-out |
 |------|------|----------|---------|
-| `PaymentSucceededNotificationType` | `Payments.PaymentSucceeded` | Success | Yes |
-| `PaymentFailedNotificationType` | `Payments.PaymentFailed` | Warning | No |
-| `PaymentMethodExpiringNotificationType` | `Payments.PaymentMethodExpiring` | Warning | Yes |
-| `RefundProcessedNotificationType` | `Payments.RefundProcessed` | Success | Yes |
-| `DisputeOpenedNotificationType` | `Payments.DisputeOpened` | Error | No |
+| `PaymentSucceededNotificationType` | `payments.payment_succeeded` | Success | Yes |
+| `PaymentFailedNotificationType` | `payments.payment_failed` | Warning | No |
+| `PaymentMethodExpiringNotificationType` | `payments.payment_method_expiring` | Warning | Yes |
+| `RefundProcessedNotificationType` | `payments.refund_processed` | Success | Yes |
+| `DisputeOpenedNotificationType` | `payments.dispute_opened` | Error | No |
 
 ## Admin API
 
