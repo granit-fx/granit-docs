@@ -1,6 +1,6 @@
 ---
 title: "Null Object — Safe Default Implementations"
-description: "Eliminate null guard boilerplate with no-op default implementations — NullTenantContext, NullDataFilter, and NullClock make optional module dependencies safe without null checks."
+description: "Eliminate null guard boilerplate with no-op defaults — NullTenantContext, NullDataFilter, and NullClock make optional dependencies safe without checks."
 sidebar:
   label: Null Object
   order: 23

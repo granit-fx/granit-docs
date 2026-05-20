@@ -1,6 +1,6 @@
 ---
 title: "How-To Guides for .NET Developers"
-description: Step-by-step how-to guides for .NET developers — endpoints, modules, EF Core persistence, Redis caching, Wolverine background jobs, multi-tenancy, webhooks, tracing, and testing with Granit.
+description: How-to guides for .NET developers — endpoints, modules, EF Core persistence, Redis caching, Wolverine jobs, multi-tenancy, webhooks, and testing.
 sidebar:
   order: 0
   label: Guides

@@ -1,6 +1,6 @@
 ---
 title: "ADR-046: Activities vs Timeline split"
-description: "Granit splits its collaborative layer into two peer modules with orthogonal concerns. Granit.Timeline holds the past — audit log, comments, attachments, followers, reactions, @-mentions. The new Granit.Activities holds the future — to-dos with deadlines and assignees, polymorphic across entities. Past vs future. Passive narrative vs action required. Notification to followers vs notification to assignees. Same shape as Odoo's mail.thread vs mail.activity split — without the inheritance mess."
+description: "Split collaboration into two peer modules: Granit.Timeline holds the past (audit, comments, mentions); Granit.Activities holds future to-dos."
 sidebar:
   order: 46
   label: "046 - Activities vs Timeline"
@@ -93,7 +93,7 @@ The `AllowedTypes` filter lets an entity restrict the activity-type catalog (e.g
 
 ### 4. Activity types — extensible via `IActivityTypeProvider`
 
-The framework ships a small starter catalog (`ToDo`, `Call`, `Meeting`, `Email`); modules add domain-specific types via the IoC contributor pattern of [ADR-045](./045-contributor-pattern):
+The framework ships a small starter catalog (`ToDo`, `Call`, `Meeting`, `Email`); modules add domain-specific types via the IoC contributor pattern of [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/):
 
 ```csharp
 // In Granit.Sales
@@ -132,7 +132,7 @@ The Granit React shell renders both modules on an entity detail page, in **disti
 - **Side panel: Timeline** — chronological list of past events. Read-mostly. Compose box at top for new comments / internal notes / attachments.
 - **Side panel: Activities** — list of upcoming + overdue activities for this entity. Action-mostly. "Add activity" button at top; status toggles on each item.
 - **Detail header: Activities badge** — shows `(2 due today, 1 overdue)` with click-through to the side panel.
-- **Cross-entity surface (`Granit.Activities.Endpoints`)** — calendar view of all my activities across entities; the right-hand shortcut panel (Phase 2 / [ADR-044](./044-workspace-navigation) §7 follow-up) shows "My open activities" / "Due today" / "Overdue".
+- **Cross-entity surface (`Granit.Activities.Endpoints`)** — calendar view of all my activities across entities; the right-hand shortcut panel (Phase 2 / [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) §7 follow-up) shows "My open activities" / "Due today" / "Overdue".
 
 Timeline shows up below activities on the detail page (because users typically want to act on the future before reviewing the past).
 
@@ -182,8 +182,8 @@ No naming change to `Granit.Timeline`. The audit ([#1529](https://github.com/gra
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. Both modules' definitions are Tier A; tenant admins cannot author activity types.
-- [ADR-045](./045-contributor-pattern) — IoC contributor pattern. `IActivityTypeProvider` is one of the three primitives this pattern serves.
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. Both modules' definitions are Tier A; tenant admins cannot author activity types.
+- [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) — IoC contributor pattern. `IActivityTypeProvider` is one of the three primitives this pattern serves.
 - [#1529](https://github.com/granit-fx/granit-dotnet/issues/1529) — Phase 0 audit of `Granit.Timeline` (planned). Confirms the existing surface vs the Phase 2 gaps (`@`-mentions, reactions).
 
 ## References

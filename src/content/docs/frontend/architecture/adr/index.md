@@ -1,6 +1,6 @@
 ---
 title: "Frontend ADRs \u2014 Architecture Decision Records"
-description: Architecture Decision Records for the Granit TypeScript and React SDK — covering pnpm workspaces, React 19, headless packages, Keycloak, TanStack Query, Vitest, and OpenTelemetry.
+description: ADRs for the Granit TypeScript and React SDK — pnpm workspaces, React 19, headless packages, Keycloak, TanStack Query, Vitest, and OpenTelemetry.
 sidebar:
   label: Architecture Decision Records
   order: 0

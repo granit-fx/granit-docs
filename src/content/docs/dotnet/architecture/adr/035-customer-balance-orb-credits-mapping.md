@@ -1,6 +1,6 @@
 ---
 title: "ADR-035: CustomerBalance ↔ ORB Credits mapping"
-description: "Document the conceptual mapping between the existing Granit.CustomerBalance module and ORB's Credits feature, formalize the additions made to close the residual gap (admin debit endpoint, pre-expiration notification job), and call out the deliberate non-goals (drawdown ordering, period quotas, distributed sagas)."
+description: "Map Granit.CustomerBalance to ORB's Credits feature, adding an admin debit endpoint and pre-expiration notification job to close the residual gap."
 sidebar:
   order: 35
   label: "035 - CustomerBalance ↔ ORB Credits"

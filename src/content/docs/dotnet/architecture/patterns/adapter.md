@@ -1,6 +1,6 @@
 ---
 title: "Adapter Pattern — Provider Abstraction in .NET"
-description: "Bridge incompatible interfaces without modifying existing code — Granit adapters wrap S3, Azure Blob, SMTP, and cloud providers behind stable provider-agnostic contracts."
+description: "Bridge incompatible interfaces without modifying existing code — Granit adapters wrap S3, Azure Blob, SMTP, and cloud providers behind stable contracts."
 sidebar:
   label: Adapter
   order: 31

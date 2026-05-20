@@ -1,6 +1,6 @@
 ---
 title: "ADR-044: Workspace navigation"
-description: "Granit ships hierarchical workspaces (à la Frappe) with cross-workspace entity sharing via additive preset overlays (à la Odoo Apps). Detail routes are workspace-agnostic (à la Notion). Permissions intersect: a workspace item is visible iff the user has both Workspace.{Name}.Read AND the underlying entity's read permission. Depth is capped at 4 by an architecture test."
+description: "Granit ships hierarchical workspaces with additive preset overlays, workspace-agnostic detail routes, intersecting permissions, and depth capped at 4."
 sidebar:
   order: 44
   label: "044 - Workspace Navigation"
@@ -25,7 +25,7 @@ Odoo ships **Apps** as a flatter alternative: a single level of top-tabs, each t
 
 Notion uses **page hierarchy** for navigation; the side peek + canonical URL split between "this page in this context" and "this page anywhere" is one of its strongest UX patterns.
 
-Granit's planning conversation locked the synthesis: **Frappe-style hierarchy + Odoo-style cross-workspace sharing + Notion-style canonical detail routes**, all driven by the inversion-of-control contributor pattern (see [ADR-045](./045-contributor-pattern)) so that adding a module never requires patching a workspace declared elsewhere.
+Granit's planning conversation locked the synthesis: **Frappe-style hierarchy + Odoo-style cross-workspace sharing + Notion-style canonical detail routes**, all driven by the inversion-of-control contributor pattern (see [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/)) so that adding a module never requires patching a workspace declared elsewhere.
 
 ## Decision
 
@@ -132,17 +132,17 @@ A workspace may declare a landing dashboard:
 b.LandingDashboard<FinanceOverviewDashboard>();
 ```
 
-When present, navigating to `/w/{workspace}` lands directly on that dashboard. When absent, the route shows the section list (sub-workspaces + items grouped by section). The landing dashboard is itself workspace-scoped — its KPIs may reference dashboard-scoped filters (per [ADR-038](./038-analytics-dashboard-definition-vs-aggregate)) and inherit the workspace's preset overlay where applicable.
+When present, navigating to `/w/{workspace}` lands directly on that dashboard. When absent, the route shows the section list (sub-workspaces + items grouped by section). The landing dashboard is itself workspace-scoped — its KPIs may reference dashboard-scoped filters (per [ADR-038](/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/)) and inherit the workspace's preset overlay where applicable.
 
 ### 8. Default landing route — separate concern
 
-The 5-tier resolution of *which workspace the user lands on at login* (user-sticky > user-pinned > role-default > tenant-default > framework-default) is documented in [ADR-049](./049-default-landing-route). The role-default tier supports deep-link routes (e.g., `/w/accounting/invoicing/customers?view=overdue`), not just bare workspace names.
+The 5-tier resolution of *which workspace the user lands on at login* (user-sticky > user-pinned > role-default > tenant-default > framework-default) is documented in [ADR-049](/dotnet/architecture/adr/049-default-landing-route/). The role-default tier supports deep-link routes (e.g., `/w/accounting/invoicing/customers?view=overdue`), not just bare workspace names.
 
 ## Consequences
 
 ### Positive
 
-- A module's nav surface is added by **contribution**, not by patching a workspace declared elsewhere — see [ADR-045](./045-contributor-pattern). Adding `Granit.Privacy` adds items to the framework `Privacy` workspace shell automatically; removing it removes them. No coordination required.
+- A module's nav surface is added by **contribution**, not by patching a workspace declared elsewhere — see [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/). Adding `Granit.Privacy` adds items to the framework `Privacy` workspace shell automatically; removing it removes them. No coordination required.
 - Cross-workspace sharing eliminates the "should this entity live under Accounting or Contacts?" debate — it lives in both, with the right preset for each context.
 - The additive-only invariant means workspace customization can never be a security regression.
 - Detail-route stability (canonical `/{entity}/{id}`) makes Granit URLs first-class for sharing, bookmarking, indexing — three properties Frappe's deeply nested URLs lack.
@@ -156,10 +156,10 @@ The 5-tier resolution of *which workspace the user lands on at login* (user-stic
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. Workspaces are Tier A; tenant overrides are Tier B Layer 1.
-- [ADR-045](./045-contributor-pattern) — IoC contributor pattern. The mechanism modules use to add items to a workspace declared elsewhere.
-- [ADR-047](./047-entity-view) — `EntityView`. User-saved views compose with workspace presets in the resolution hierarchy.
-- [ADR-049](./049-default-landing-route) — Default landing route. The 5-tier resolver for "where does the user land at login".
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. Workspaces are Tier A; tenant overrides are Tier B Layer 1.
+- [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) — IoC contributor pattern. The mechanism modules use to add items to a workspace declared elsewhere.
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — `EntityView`. User-saved views compose with workspace presets in the resolution hierarchy.
+- [ADR-049](/dotnet/architecture/adr/049-default-landing-route/) — Default landing route. The 5-tier resolver for "where does the user land at login".
 
 ## References
 

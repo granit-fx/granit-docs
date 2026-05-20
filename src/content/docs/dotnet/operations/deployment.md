@@ -1,6 +1,6 @@
 ---
 title: "Deployment \u2014 Kubernetes, Helm & Docker"
-description: Deploy Granit applications on Kubernetes with Docker multi-stage builds, liveness/readiness/startup health probes, Helm values, resource sizing, graceful shutdown, and Alpine-based minimal images.
+description: Deploy Granit apps on Kubernetes with Docker multi-stage builds, liveness/readiness probes, Helm values, graceful shutdown, and Alpine images.
 sidebar:
   order: 1
   label: Deployment

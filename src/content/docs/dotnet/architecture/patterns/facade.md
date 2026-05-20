@@ -1,6 +1,6 @@
 ---
 title: "Facade Pattern — Simplified Module API"
-description: "Expose complex subsystems through a single, simplified API — Granit facades unify blob storage orchestration and exception mapping behind clean, discoverable interfaces."
+description: "Expose complex subsystems through a single simplified API — Granit facades unify blob storage orchestration and exception mapping behind clean interfaces."
 sidebar:
   label: Facade
   order: 34

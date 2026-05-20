@@ -1,6 +1,6 @@
 ---
 title: "ADR-047: EntityView supersedes Granit.QueryEngine.SavedViews"
-description: "EntityView replaces the legacy filter-only SavedView with a richer first-class primitive: a basedOn delta over a compiled collection, kind inherited and immutable, three visibility levels (Personal / Shared / Tenant), three promotion flags (isPinned / isDefault / isPersonalDefault), JSONB state validated by JSON Schema per kind. Notion-style 'Save for everyone' UX. Clean break from the legacy module per Granit's pre-1.0 stance — no [Obsolete] graduation."
+description: "EntityView replaces SavedView: basedOn delta over a compiled collection, immutable kind, Personal/Shared/Tenant visibility, JSONB state validated per kind."
 sidebar:
   order: 47
   label: "047 - EntityView"
@@ -17,7 +17,7 @@ topic: backend
 
 ## Context
 
-`Granit.QueryEngine` ships `SavedView` today: an end-user can persist a named filter + sort combo and reload it later. The shape is filter-only. With the multi-view collection model locked in [ADR-042](./042-view-catalog) (List + Kanban + Calendar + Gallery + …), and the workspace navigation locked in [ADR-044](./044-workspace-navigation) (per-workspace presets, multiple instances per kind), the legacy primitive is structurally inadequate:
+`Granit.QueryEngine` ships `SavedView` today: an end-user can persist a named filter + sort combo and reload it later. The shape is filter-only. With the multi-view collection model locked in [ADR-042](/dotnet/architecture/adr/042-view-catalog/) (List + Kanban + Calendar + Gallery + …), and the workspace navigation locked in [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) (per-workspace presets, multiple instances per kind), the legacy primitive is structurally inadequate:
 
 - It cannot capture which **view kind** the user is looking at (a kanban view's lane field, a calendar's date field).
 - It cannot capture which **columns** are visible, in which order, at which width — Notion-class power-user requirements.
@@ -103,7 +103,7 @@ The `defaultView` resolver in the manifest resolves to (in precedence order):
 2. `IsDefault` — the tenant-promoted view, if any.
 3. The compiled `defaultCollection` from the `EntityDefinition` — always present.
 
-Front gets the right view at mount with no extra round-trip — see [ADR-042](./042-view-catalog) §4.
+Front gets the right view at mount with no extra round-trip — see [ADR-042](/dotnet/architecture/adr/042-view-catalog/) §4.
 
 ### 5. Notion-style "Save for everyone" promotion UX
 
@@ -163,9 +163,9 @@ Validation runs on PUT/POST; persisted views are guaranteed to round-trip cleanl
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. `EntityView` is a per-user runtime delta on Tier A (compiled collection); sits between Tier A and Tier B Layer 1 in the resolution hierarchy.
-- [ADR-042](./042-view-catalog) — View catalog. `BasedOn` references one of these compiled collections; `Kind` is inherited; `State` is validated by the per-kind JSON Schema.
-- [ADR-044](./044-workspace-navigation) — Workspace navigation. Pinned views show up in the workspace's tab strip; tenant-default views are picked up by `defaultView` resolver alongside the compiled fallback.
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. `EntityView` is a per-user runtime delta on Tier A (compiled collection); sits between Tier A and Tier B Layer 1 in the resolution hierarchy.
+- [ADR-042](/dotnet/architecture/adr/042-view-catalog/) — View catalog. `BasedOn` references one of these compiled collections; `Kind` is inherited; `State` is validated by the per-kind JSON Schema.
+- [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) — Workspace navigation. Pinned views show up in the workspace's tab strip; tenant-default views are picked up by `defaultView` resolver alongside the compiled fallback.
 - Memory `feedback_no_obsolete_pre_release.md` — Granit is pre-1.0; clean breaking changes preferred over `[Obsolete]`.
 
 ## References

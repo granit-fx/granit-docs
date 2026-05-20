@@ -1,6 +1,6 @@
 ---
 title: "Chain of Responsibility — Middleware Pipeline"
-description: "Pass a request through an ordered chain of handlers until one processes it — used for tenant resolution, blob validation, and ASP.NET Core middleware composition."
+description: "Pass a request through an ordered chain of handlers until one handles it — drives tenant resolution, blob validation, and ASP.NET Core middleware."
 sidebar:
   label: Chain of Responsibility
   order: 20

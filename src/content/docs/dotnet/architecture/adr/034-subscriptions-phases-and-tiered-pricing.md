@@ -1,6 +1,6 @@
 ---
 title: "ADR-034: Subscriptions — tiers, phases, discounts"
-description: "Add four child entities to Subscription/PlanPrice — PricingTier (volume / graduated brackets), SubscriptionPhase (scheduled plan changes with optional override price + discount), SubscriptionDiscount (cumulative reductions), SubscriptionPriceOverride (per-customer negotiated amounts) — to support usage-based billing patterns without exposing them as HTTP endpoints in the MVP."
+description: "Add PricingTier, SubscriptionPhase, SubscriptionDiscount, and SubscriptionPriceOverride child entities to support usage-based billing patterns."
 sidebar:
   order: 34
   label: "034 - Subscriptions Phases & Tiered"

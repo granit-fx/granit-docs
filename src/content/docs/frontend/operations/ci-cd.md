@@ -1,6 +1,6 @@
 ---
 title: Frontend CI/CD
-description: GitHub Actions CI/CD pipeline for granit-front — quality gates, Vitest coverage, security audit, pnpm cache, semantic versioning, and automated npm registry publication.
+description: GitHub Actions CI/CD for granit-front — quality gates, Vitest coverage, security audit, pnpm cache, semver, and automated npm registry publishing.
 sidebar:
   order: 20
 ---

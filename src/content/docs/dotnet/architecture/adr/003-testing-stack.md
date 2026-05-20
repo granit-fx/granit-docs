@@ -67,7 +67,7 @@ Requirements:
 - Disadvantage: young project (v1.x), single maintainer, limited ecosystem
   (Testcontainers, Verify primarily target xUnit/NUnit)
 - Re-evaluation planned via a future ADR when the project reaches sufficient
-  maturity (cf. [ADR-014](./014-migration-shouldly/))
+  maturity (cf. [ADR-014](/dotnet/architecture/adr/014-migration-shouldly/))
 
 ### Mocking
 

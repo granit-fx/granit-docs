@@ -1,6 +1,6 @@
 ---
 title: "Command Pattern — CQRS & Wolverine Handlers"
-description: "Encapsulate mutations as Wolverine command messages with transactional outbox — decouple callers from handlers and guarantee at-least-once delivery across services."
+description: "Encapsulate mutations as Wolverine command messages with transactional outbox — decouple callers from handlers, guarantee at-least-once delivery."
 sidebar:
   label: Command
   order: 21

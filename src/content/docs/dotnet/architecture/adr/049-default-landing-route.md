@@ -1,6 +1,6 @@
 ---
 title: "ADR-049: Default landing route resolution"
-description: "GET /api/me/landing-route resolves where the user lands at login via a 5-tier precedence (user-sticky > user-pinned > role-default > tenant-default > framework-default). The result is a URL/route, not just a workspace name — supports deep-link with query string (Frappe-style). URL whitelist enforced at write time. Falls through gracefully if a tier resolves to a route the user can't access."
+description: "GET /api/me/landing-route resolves login destinations via 5-tier precedence (user-sticky, user-pinned, role, tenant, framework) with URL whitelist."
 sidebar:
   order: 49
   label: "049 - Default Landing Route"
@@ -128,8 +128,8 @@ If the user has access to **zero workspaces**, the framework default is `/me/pro
 
 ## Cross-references
 
-- [ADR-044](./044-workspace-navigation) — Workspace navigation. The route format (`/w/{workspace}/...`, `/{entity}/{id}`) is owned by ADR-044; this ADR builds on it.
-- [ADR-047](./047-entity-view) — `EntityView`. A landing route can include `?view={viewId}` to land on a saved view directly.
+- [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) — Workspace navigation. The route format (`/w/{workspace}/...`, `/{entity}/{id}`) is owned by ADR-044; this ADR builds on it.
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — `EntityView`. A landing route can include `?view={viewId}` to land on a saved view directly.
 - `Granit.Settings`, `Granit.Authorization` — existing modules that store the per-role / per-tenant configuration.
 
 ## References

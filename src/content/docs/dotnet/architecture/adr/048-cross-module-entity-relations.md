@@ -1,6 +1,6 @@
 ---
 title: "ADR-048: Cross-module entity relations"
-description: "An entity gets cross-module 'smart button' badges (and sidebars, tabs, inline-chip rows) grafted from other modules via the third application of the IoC contributor pattern (ADR-045). Four display modes cover 95% of UX needs. Aggregates batched into one round-trip endpoint to avoid N+1. Permission filtering at both manifest emission and aggregate computation — defense in depth. FusionCache 30s with entity-tagged invalidation hooks reserved for Phase 2."
+description: "Cross-module smart-button badges, sidebars, tabs, and chips grafted via the ADR-045 IoC contributor pattern, batched into one endpoint to avoid N+1."
 sidebar:
   order: 48
   label: "048 - Cross-Module Entity Relations"
@@ -27,7 +27,7 @@ Both have known liabilities — documented in PR #1599 conversation:
 - Frappe's auto-discovery is convention-driven and limited (no aggregations beyond count, no per-display-mode choice).
 - Both perform N+1 queries unless every count is a stored / computed field — at which point recompute cascades become a bottleneck.
 
-Granit needs the smart-button UX with **typed C# contributions** (per [ADR-045](./045-contributor-pattern)), **multiple display modes** (badge / sidebar / tab / inline-chips), **batched aggregates** (one round-trip per detail load), and **defense-in-depth permission filtering** (consistent with [ADR-040](./040-three-tier-metadata-architecture)).
+Granit needs the smart-button UX with **typed C# contributions** (per [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/)), **multiple display modes** (badge / sidebar / tab / inline-chips), **batched aggregates** (one round-trip per detail load), and **defense-in-depth permission filtering** (consistent with [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/)).
 
 ## Decision
 
@@ -47,7 +47,7 @@ public sealed class PartyEntityDefinition : EntityDefinition<Party>
 }
 ```
 
-**Cross-module** (another module grafts a relation onto an entity it doesn't own — e.g., `Granit.Invoicing` adds the Invoices smart button onto `Party`), via the third consumer of the IoC contributor pattern (per [ADR-045](./045-contributor-pattern)):
+**Cross-module** (another module grafts a relation onto an entity it doesn't own — e.g., `Granit.Invoicing` adds the Invoices smart button onto `Party`), via the third consumer of the IoC contributor pattern (per [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/)):
 
 ```csharp
 // In Granit.Invoicing.Endpoints
@@ -84,7 +84,7 @@ services.AddEntityRelationContribution<InvoicesOnPartyRelationContribution>();
 | `Tab` | Embedded grid as a tab inside the detail (intra-module collections) | Owned child collections that belong to the parent's editing context (InvoiceLines, Addresses) |
 | `InlineChips` | Chip row inline with the detail content | Many-to-many relations where the items are short labels (Tags, Categories) |
 
-This is the **v1 catalog** — same closed-set + `custom:` namespace pattern as [ADR-041](./041-component-catalog) §2 / [ADR-042](./042-view-catalog) §2. Adding a new display mode requires an ADR amendment + renderer in `@granit/entities-react`.
+This is the **v1 catalog** — same closed-set + `custom:` namespace pattern as [ADR-041](/dotnet/architecture/adr/041-component-catalog/) §2 / [ADR-042](/dotnet/architecture/adr/042-view-catalog/) §2. Adding a new display mode requires an ADR amendment + renderer in `@granit/entities-react`.
 
 ### 3. Aggregates — closed primitive set
 
@@ -99,7 +99,7 @@ Each relation declares zero or more aggregates the framework computes server-sid
 | Min | `.Min(i => i.IssuedAt)` | `min: any` |
 | Max | `.Max(i => i.IssuedAt)` | `max: any` |
 
-Aggregates compose via `MetricDefinition` machinery internally (per [ADR-038](./038-analytics-dashboard-definition-vs-aggregate)) — the same SQL projection rules, the same per-aggregate caching policy, the same `ValueKind` propagation for the frontend's currency / count / percent formatting.
+Aggregates compose via `MetricDefinition` machinery internally (per [ADR-038](/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/)) — the same SQL projection rules, the same per-aggregate caching policy, the same `ValueKind` propagation for the frontend's currency / count / percent formatting.
 
 ### 4. Batched aggregates endpoint — one round-trip per detail load
 
@@ -186,10 +186,10 @@ Plus the intra-module `Addresses` tab on `Party`. Five total relations on a sing
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. Relations are Tier A (compiled); tenant admins cannot add cross-module relations from the UI.
-- [ADR-038](./038-analytics-dashboard-definition-vs-aggregate) — Aggregate computation reuses `MetricDefinition` machinery internally; no parallel pipeline.
-- [ADR-041](./041-component-catalog) §2 — Same closed-set + `custom:` namespace pattern, applied to display modes.
-- [ADR-045](./045-contributor-pattern) — IoC contributor pattern. `IEntityRelationContributor` is the third primitive served (after `IWorkspaceContributor` and `IActivityTypeProvider`).
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. Relations are Tier A (compiled); tenant admins cannot add cross-module relations from the UI.
+- [ADR-038](/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/) — Aggregate computation reuses `MetricDefinition` machinery internally; no parallel pipeline.
+- [ADR-041](/dotnet/architecture/adr/041-component-catalog/) §2 — Same closed-set + `custom:` namespace pattern, applied to display modes.
+- [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) — IoC contributor pattern. `IEntityRelationContributor` is the third primitive served (after `IWorkspaceContributor` and `IActivityTypeProvider`).
 
 ## References
 

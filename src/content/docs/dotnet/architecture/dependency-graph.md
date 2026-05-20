@@ -1,6 +1,6 @@
 ---
 title: "Granit Dependency Graph"
-description: "Visual map of every Granit package, how it depends on the rest, and which of the two repositories (granit-dotnet framework or granit-business commercial) it ships from. Read this before adding a reference — it tells you which couplings are safe, which are accidental, and which are explicitly forbidden by architecture tests."
+description: "Visual map of every Granit package, its dependencies, and source repo — read before adding a reference to know which couplings architecture tests forbid."
 sidebar:
   label: Dependency Graph
   order: 32

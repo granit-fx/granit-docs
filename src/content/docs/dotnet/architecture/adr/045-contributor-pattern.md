@@ -1,6 +1,6 @@
 ---
 title: "ADR-045: Inversion-of-control contributor pattern"
-description: "Three Granit primitives — workspaces, entity relations (smart buttons), activity types — share a single Inversion-of-Control contribution pattern. A module declares a target by name; other modules graft items onto that target via a typed IContributor interface, registered in DI, resolved at boot. Zero hard dependency between extender and target. Missing target = silent drop. Conflict order = explicit Order property + alphabetical fallback. Same shape as IConfigureOptions<T>."
+description: "Workspaces, entity relations, and activity types share one IoC IContributor pattern — modules graft items onto named targets via DI, with no hard deps."
 sidebar:
   order: 45
   label: "045 - IoC Contributor Pattern"
@@ -19,7 +19,7 @@ topic: backend
 
 The Refonte UI Hybride initiative ([#1506](https://github.com/granit-fx/granit-dotnet/issues/1506)) introduces three primitives that all face the same extensibility problem:
 
-- **Workspaces** ([ADR-044](./044-workspace-navigation)): a workspace shell (e.g., `Granit.Framework.Automation`) is declared in one module; other modules (`Granit.BackgroundJobs.Endpoints`, `Granit.Webhooks.Endpoints`) need to graft items into its sections without the shell knowing about them.
+- **Workspaces** ([ADR-044](/dotnet/architecture/adr/044-workspace-navigation/)): a workspace shell (e.g., `Granit.Framework.Automation`) is declared in one module; other modules (`Granit.BackgroundJobs.Endpoints`, `Granit.Webhooks.Endpoints`) need to graft items into its sections without the shell knowing about them.
 - **Entity relations** (smart buttons, ADR-048): an entity (`Party` in `Granit.Parties`) gets cross-module smart buttons grafted from `Granit.Invoicing`, `Granit.Subscriptions`, `Granit.Payments`, `Granit.CustomerBalance` — none of those modules can be hard-coded into `Granit.Parties`.
 - **Activity types** (ADR-046): the framework declares the `Activity` polymorphic aggregate; modules add domain-specific types (`Quote` from `Granit.Sales`, `Onboarding` from `Granit.Identity`) without coupling.
 
@@ -167,15 +167,15 @@ Granit's IoC pattern accepts only **typed C# implementations** of the contributo
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. Contributors are Tier A (compiled); they cannot be authored by tenant admins.
-- [ADR-044](./044-workspace-navigation) — Workspace navigation. The first consumer of `IWorkspaceContributor`; documents the section/item shape that contributions populate.
-- [ADR-046](./046-activities-vs-timeline) — Activities vs Timeline. The `IActivityTypeProvider` consumer.
-- [ADR-048](./048-cross-module-entity-relations) — Cross-module entity relations. The `IEntityRelationContributor` consumer.
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. Contributors are Tier A (compiled); they cannot be authored by tenant admins.
+- [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) — Workspace navigation. The first consumer of `IWorkspaceContributor`; documents the section/item shape that contributions populate.
+- [ADR-046](/dotnet/architecture/adr/046-activities-vs-timeline/) — Activities vs Timeline. The `IActivityTypeProvider` consumer.
+- [ADR-048](/dotnet/architecture/adr/048-cross-module-entity-relations/) — Cross-module entity relations. The `IEntityRelationContributor` consumer.
 - [PR #1603](https://github.com/granit-fx/granit-dotnet/pull/1603) — `Granit.Workflow.Abstractions` split + `AbstractionsPurityTests` infrastructure. The architecture test that guarantees the soft-dependency property holds for every `*.Abstractions` package the IoC contract relies on.
 
 ## References
 
 - ASP.NET Core `IConfigureOptions<TOptions>` — the canonical IoC contribution pattern in the .NET ecosystem. Granit's contributors mirror its registration shape (`services.AddOptions<T>().Configure<...>()` ↔ `services.AddWorkspaceContribution<T>()`).
 - Frappe `hooks.py` and `doctype_js` — research compiled in PR #1599 conversation. Convention-based, untyped, fragile. Granit's deliberate inversion: typed interface, DI-registered, integrity-checked.
-- Odoo XML view inheritance with XPath — research compiled in PR #1599 conversation. Brittle anchors, install-order dependent. Granit replaces it with the typed contribution shape (per [ADR-044](./044-workspace-navigation) §1).
+- Odoo XML view inheritance with XPath — research compiled in PR #1599 conversation. Brittle anchors, install-order dependent. Granit replaces it with the typed contribution shape (per [ADR-044](/dotnet/architecture/adr/044-workspace-navigation/) §1).
 - Microsoft.Extensions.DependencyInjection — `IEnumerable<IService>` resolution as the foundation: every `services.AddSingleton<IWorkspaceContributor, T>()` adds to the same enumerable; the framework iterates at consume time. No magic.

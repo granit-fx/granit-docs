@@ -1,6 +1,6 @@
 ---
 title: "ADR-054: Granit.Taxonomy — cross-cutting tags and categories"
-description: "Granit introduces a new Granit.Taxonomy module providing tags and hierarchical categories as a cross-cutting taxonomy primitive for any aggregate root. Tags are scoped per domain (documents, parties, activities…) so each module gets a focused autocomplete, but live in a single shared table to enable cross-entity search and a unified admin UI. Hosts that prefer a single global pot collapse to scope=\"global\"."
+description: "New Granit.Taxonomy module: tags and hierarchical categories scoped per domain (documents, parties…) yet stored in one table for cross-entity search."
 sidebar:
   order: 54
   label: "054 - Taxonomy module"

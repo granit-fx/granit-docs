@@ -1,6 +1,6 @@
 ---
 title: "Deployment, Observability & Production Ops"
-description: Production operations for Granit applications on Kubernetes — deployment, OpenTelemetry observability with Grafana LGTM, HashiCorp Vault configuration, CI/CD with GitHub Actions, and go-live checklist.
+description: Production ops for Granit apps on Kubernetes — deployment, OpenTelemetry with Grafana LGTM, HashiCorp Vault, GitHub Actions CI/CD, and go-live checklist.
 sidebar:
   label: Operations
   order: 0

@@ -100,6 +100,30 @@ export default defineConfig({
     "/reference/frontend/settings/": "/frontend/infrastructure/settings/",
     "/reference/frontend/reference-data/": "/frontend/business/reference-data/",
     "/reference/frontend/templating/": "/frontend/business/templating/",
+    "/reference/frontend/tracing/": "/frontend/observability/tracing/",
+    "/reference/modules/analyzers/": "/dotnet/core/analyzers/",
+
+    // Page moved out of /dotnet/guides/ into the tooling section.
+    "/dotnet/guides/use-with-ai-assistants/": "/tools/ai-assistants/",
+
+    // Getting Started was hoisted under /dotnet/ during the multi-stack split.
+    "/getting-started/your-first-api/": "/dotnet/getting-started/your-first-api/",
+
+    // ExtraProperties was renamed framework-wide to Metadata.
+    "/dotnet/core/extra-properties/": "/dotnet/core/metadata/",
+
+    // Indexed by Google because earlier ADR pages used `./NNN-name` relative
+    // links (no trailing slash). Starlight serves the parent as a directory
+    // route, so the link resolved as a child of the wrong ADR. Source links
+    // are now root-relative; these redirects clean up the indexed URLs.
+    "/dotnet/architecture/adr/042-view-catalog/040-three-tier-metadata-architecture":
+      "/dotnet/architecture/adr/040-three-tier-metadata-architecture/",
+    "/dotnet/architecture/adr/048-cross-module-entity-relations/042-view-catalog":
+      "/dotnet/architecture/adr/042-view-catalog/",
+    "/dotnet/architecture/adr/045-contributor-pattern/048-cross-module-entity-relations":
+      "/dotnet/architecture/adr/048-cross-module-entity-relations/",
+    "/dotnet/architecture/adr/044-workspace-navigation/045-contributor-pattern":
+      "/dotnet/architecture/adr/045-contributor-pattern/",
   },
   integrations: [
     starlight({

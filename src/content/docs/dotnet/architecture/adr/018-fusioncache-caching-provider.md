@@ -1,6 +1,6 @@
 ---
 title: "ADR-018: FusionCache — Hybrid Caching Provider"
-description: "FusionCache replaces ICacheService<T> and Granit.Caching.Hybrid as the caching provider — selected for backplane, fail-safe, factory timeouts, and native OpenTelemetry."
+description: "FusionCache replaces ICacheService<T> and Granit.Caching.Hybrid — picked for backplane, fail-safe, factory timeouts, and native OpenTelemetry support."
 sidebar:
   order: 18
   label: "018 - FusionCache Caching Provider"

@@ -1,6 +1,6 @@
 ---
 title: "Granit Architecture — ADRs, patterns and design principles"
-description: "Why does Granit isolate every DbContext per module, ban shared Reader/Writer interfaces, mandate Microsoft.Extensions.AI, refuse silent OData defaults? Every load-bearing decision is captured as an Architecture Decision Record — context, alternatives, trade-offs, consequences. Plus 60 design patterns mapped to their concrete Granit implementation."
+description: "Architecture Decision Records covering Granit's per-module DbContext isolation, CQRS, Microsoft.Extensions.AI, and 60 design patterns mapped to source."
 sidebar:
   label: Architecture
   order: 0

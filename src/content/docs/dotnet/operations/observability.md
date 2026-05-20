@@ -1,6 +1,6 @@
 ---
 title: "Observability \u2014 Grafana LGTM & OpenTelemetry"
-description: Production observability with Serilog structured logging, OpenTelemetry OTLP export, and the Grafana LGTM stack — Loki for logs, Tempo for traces, Mimir for metrics, with pre-built alert rules.
+description: Production observability with Serilog, OpenTelemetry OTLP, and the Grafana LGTM stack — Loki for logs, Tempo for traces, Mimir for metrics, with alerts.
 sidebar:
   order: 3
   label: Observability

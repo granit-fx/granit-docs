@@ -8,7 +8,7 @@ tags:
   - api
   - architecture
   - code-quality
-description: "Scattering validation across controllers, services, and entities produces inconsistent errors and missed cases. Pin it to the API boundary with FluentValidation and endpoint filters."
+description: "Validation scattered across controllers, services and entities creates inconsistent errors. Pin it to the API edge with FluentValidation and endpoint filters."
 excerpt: >
   Scattering validation across controllers, services, and entities produces
   inconsistent errors and missed cases. Pin it to the API boundary with

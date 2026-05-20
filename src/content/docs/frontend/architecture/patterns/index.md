@@ -1,6 +1,6 @@
 ---
 title: Frontend Pattern Library
-description: Catalogue of 8 design patterns used in the @granit/* TypeScript and React packages — Factory, Module Singleton, Adapter, Interceptor, Strategy, Observer, Provider, and Hook Composition.
+description: Catalogue of 8 design patterns in @granit/* TypeScript and React — Factory, Module Singleton, Adapter, Interceptor, Strategy, Observer, Provider, Hooks.
 sidebar:
   order: 0
   badge:

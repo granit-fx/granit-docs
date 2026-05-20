@@ -1,6 +1,6 @@
 ---
 title: "ADR-042: View catalog and per-kind config schema"
-description: "Granit's collection facet exposes a closed catalog of view kinds (List, Kanban, Calendar, Gallery, plus Timeline/Map/Tree/Gantt on demand). Each kind has a typed configuration schema validated at startup. The same closed-set + namespaced-extension pattern as ADR-041 applies to view kinds. Saved views (EntityView) are bound to the kind of their base compiled collection — switching kind requires saving from a different collection."
+description: "Closed catalog of view kinds (List, Kanban, Calendar, Gallery, plus Timeline/Map/Tree/Gantt) with typed per-kind config schemas validated at startup."
 sidebar:
   order: 42
   label: "042 - View Catalog"
@@ -95,7 +95,7 @@ Each is addressable by `(kind, name)` from the front: `<EntityList name="task" v
 
 ### 5. Saved views are bound to a compiled collection's kind
 
-Per [ADR-047](./047-entity-view), a saved `EntityView` carries a `basedOn` reference to a compiled collection (e.g., `basedOn: "by-status"`). The view's `kind` is **inherited from the base collection and immutable**. To switch kind, the user creates a new view based on a different compiled collection.
+Per [ADR-047](/dotnet/architecture/adr/047-entity-view/), a saved `EntityView` carries a `basedOn` reference to a compiled collection (e.g., `basedOn: "by-status"`). The view's `kind` is **inherited from the base collection and immutable**. To switch kind, the user creates a new view based on a different compiled collection.
 
 This rule has two consequences:
 
@@ -128,12 +128,12 @@ This rule has two consequences:
 
 ## Cross-references
 
-- [ADR-040](./040-three-tier-metadata-architecture) — Three-tier metadata. The kind catalog is Tier A (compiled); user-saved views (`EntityView`) are an additive layer that cannot mutate the kind.
-- [ADR-041](./041-component-catalog) — Component catalog. Same closed-set + `custom:<prefix>-<name>` namespace pattern, applied to field renderers.
-- [ADR-047](./047-entity-view) — `EntityView` supersedes `Granit.QueryEngine.SavedViews`. Documents the immutable `basedOn` rule referenced in §5 above.
+- [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — Three-tier metadata. The kind catalog is Tier A (compiled); user-saved views (`EntityView`) are an additive layer that cannot mutate the kind.
+- [ADR-041](/dotnet/architecture/adr/041-component-catalog/) — Component catalog. Same closed-set + `custom:<prefix>-<name>` namespace pattern, applied to field renderers.
+- [ADR-047](/dotnet/architecture/adr/047-entity-view/) — `EntityView` supersedes `Granit.QueryEngine.SavedViews`. Documents the immutable `basedOn` rule referenced in §5 above.
 
 ## References
 
 - Frappe view types — research compiled in PR #1599 conversation. Convention-driven (Calendar reads `start`/`end` from a sibling JS file), no schema validation, errors surface at click time.
 - Notion view types — closed (~6 in v1: Table, Board, Calendar, Gallery, Timeline, List), each with a typed config UI. Same ergonomic dividend Granit targets.
-- Odoo view types — XML-based, open-ended, view inheritance via XPath. Granit deliberately rejects this approach (see [ADR-045](./045-contributor-pattern) for the typed-contribution alternative).
+- Odoo view types — XML-based, open-ended, view inheritance via XPath. Granit deliberately rejects this approach (see [ADR-045](/dotnet/architecture/adr/045-contributor-pattern/) for the typed-contribution alternative).
