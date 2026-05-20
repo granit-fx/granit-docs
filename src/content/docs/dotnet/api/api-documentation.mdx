@@ -74,6 +74,18 @@ In `Program.cs`:
 app.UseGranitApiDocumentation(); // Maps /openapi/v1.json, /openapi/v2.json, /scalar
 ```
 
+### CSP relaxation for Scalar
+
+`UseGranitApiDocumentation` automatically registers a `ScalarCspContributor`
+that relaxes the strict default CSP on the `/scalar` route only —
+`script-src`/`style-src 'self' 'unsafe-inline'`, `font-src 'self' data:
+https://fonts.scalar.com`, and the few other sources Scalar needs to render.
+The relaxation is scoped to the Scalar endpoint via an internal metadata
+marker, so no other route inherits it. See
+[Security Headers — CSP contributors](/dotnet/security/security-headers/#csp-contributors)
+for the underlying pattern and the configuration switch to disable the Scalar
+contributor when an internal policy is stricter than the framework default.
+
 ## Schema examples
 
 Provide realistic example values for request DTOs without coupling to OpenAPI:

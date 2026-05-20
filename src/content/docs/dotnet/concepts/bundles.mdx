@@ -61,8 +61,13 @@ The foundation. Every Granit project starts here.
 | `Granit.Http.Cors` | Standardized CORS with startup validation |
 | `Granit.Http.ExceptionHandling` | RFC 7807 Problem Details, 4xx/5xx message masking |
 | `Granit.Http.ResponseCompression` | gzip / brotli by default |
-| `Granit.Http.SecurityHeaders` | CSP, HSTS, X-Content-Type-Options |
+| `Granit.Http.SecurityHeaders` | Per-endpoint CSP composition, HSTS, X-Content-Type-Options |
+| `Granit.Http.SecurityHeaders.Abstractions` | Contracts for the `ICspContributor` pattern — referenced by packages that declare their own CSP relaxations (transitive via `Granit.Http.SecurityHeaders`) |
 | `Granit.Diagnostics` | Activity sources registry, health-check primitives |
+
+`Granit.Http.SecurityHeaders.Endpoints` ships separately (not bundled) and adds
+a `/security-headers/csp` audit endpoint gated by `Diagnostics.Monitoring.Read`
+for security auditors. Reference it explicitly when you need it.
 
 ### `Granit.Bundle.Api`
 
