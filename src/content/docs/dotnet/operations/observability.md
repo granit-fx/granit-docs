@@ -258,3 +258,11 @@ service:
       receivers: [otlp]
       exporters: [prometheusremotewrite]
 ```
+
+## See also
+
+- [Core observability](/dotnet/core/observability/) — `ILogger`, `IActivitySourceRegistry`, meters convention
+- [Event Catalog](/dotnet/infrastructure/event-catalog/) — domain and integration events that surface in traces
+- [Deployment](/dotnet/operations/deployment/) — sidecar / collector wiring on Kubernetes
+- [Production Checklist](/dotnet/operations/production-checklist/) — pre-go-live observability items
+- [End-to-end tracing guide](/dotnet/guides/end-to-end-tracing/) — verify traces survive through Wolverine handlers

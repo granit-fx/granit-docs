@@ -121,3 +121,11 @@ After the first production deployment, verify:
 - [ ] Metrics appear in Grafana/Mimir (request rate, error rate)
 - [ ] Vault lease renewal (or Azure Key Vault secret rotation) succeeds (check logs for confirmation)
 - [ ] At least one end-to-end request completes successfully (smoke test)
+
+## See also
+
+- [Deployment](/dotnet/operations/deployment/) — Kubernetes manifests and probe configuration
+- [Production Configuration](/dotnet/operations/configuration/) — Vault wiring and env-var layering
+- [Observability](/dotnet/operations/observability/) — LGTM dashboards and OTel pipeline
+- [CI/CD](/dotnet/operations/ci-cd/) — gates that must pass before this checklist is exercised
+- [Security overview](/dotnet/security/security-overview/) — threat model behind the security items

@@ -164,3 +164,11 @@ Before EF Core 10, `HasQueryFilter()` silently overwrote the previous filter,
 requiring a combined `AndAlso` expression as a workaround. Named filters handle
 `ISoftDeletable` + `IActive` + `IMultiTenant` + `IProcessingRestrictable` +
 `IPublishable` independently.
+
+## Used by
+
+- [Persistence](/dotnet/data/persistence/) — named query filters and GDPR-aware interceptors
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — tenant-aware variants of the classic patterns
+- [Privacy module](/dotnet/compliance/privacy/) — `IProcessingRestrictable` GDPR variant
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — Wolverine-specific adaptations
+- [Data filtering pattern](/dotnet/architecture/patterns/data-filtering/) — classic counterpart

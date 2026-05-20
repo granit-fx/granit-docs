@@ -256,3 +256,11 @@ Some modules require specific infrastructure services regardless of provider cho
 | Granit.BlobStorage.S3 | S3-compatible object storage |
 | Granit.BlobStorage.AzureBlob | Azure Blob Storage |
 | Granit.BlobStorage.GoogleCloud | Google Cloud Storage |
+
+## See also
+
+- [Cloud Providers](/dotnet/reference/cloud-providers/) — packages organized by cloud (AWS, Azure, GCP, sovereign)
+- [Configuration Keys](/dotnet/reference/configuration-keys/) — every `Options` section in the framework
+- [Persistence](/dotnet/data/persistence/) — EF Core providers and conventions
+- [Blob storage](/dotnet/data/blob-storage/) — storage abstraction shared across providers
+- [Vault providers](/dotnet/data/vault/providers/) — supported vault back-ends

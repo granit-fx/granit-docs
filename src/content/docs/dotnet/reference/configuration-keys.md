@@ -1087,3 +1087,11 @@ programmatically.
 | **Package** | -- | `Granit.Localization.Endpoints` | |
 | `RoutePrefix` | `string` | `"localization"` | Route prefix. |
 | `TagName` | `string` | `"Localization"` | OpenAPI tag. |
+
+## See also
+
+- [Production Configuration](/dotnet/operations/configuration/) — layering, secrets, environment overrides
+- [Provider Compatibility](/dotnet/reference/provider-compatibility/) — which providers each `Options` section supports
+- [Cloud Providers](/dotnet/reference/cloud-providers/) — packages grouped by cloud back-end
+- [Manage application settings guide](/dotnet/guides/manage-application-settings/) — how to consume `Options` at runtime
+- [Vault](/dotnet/data/vault/) — backing store for the sensitive subset of these keys

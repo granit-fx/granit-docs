@@ -81,3 +81,9 @@ using (dataFilter.Disable<ISoftDeletable>())
 }
 // Dispose() restores the original ImmutableDictionary
 ```
+
+## Used by
+
+- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — `ICurrentTenant` immutable claim snapshots
+- [Persistence](/dotnet/data/persistence/) — query-filter override snapshots
+- [Scope / Context Manager](/dotnet/architecture/patterns/scope-context-manager/) — companion pattern that wraps the snapshot in `IDisposable`

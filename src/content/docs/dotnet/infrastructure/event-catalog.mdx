@@ -170,3 +170,11 @@ See [Entity Lifecycle Events](/dotnet/data/entity-lifecycle-events/) for setup d
 | Data Pipeline | 11 | 0 | 11 |
 | Cache Invalidation | 0 | 24 (4 entities x 6) | 24 |
 | **Total** | **37** | **24** | **61** |
+
+## See also
+
+- [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — bus that dispatches domain and integration events
+- [Module system](/dotnet/core/module-system/) — `IDomainEvent`, `IIntegrationEvent`, dispatcher
+- [Webhooks](/dotnet/api/webhooks/) — outbound delivery of integration events
+- [Persistence](/dotnet/data/persistence/) — `DomainEventDispatcherInterceptor` and the outbox
+- [Notifications](/dotnet/infrastructure/notifications/) — bridge between events and user-facing channels
