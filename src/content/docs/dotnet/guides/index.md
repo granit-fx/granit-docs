@@ -45,6 +45,7 @@ from scratch, begin with [Getting Started](/dotnet/getting-started/).
 
 ## Security and observability
 
+- [Secure your Application](./secure-your-application/) -- end-to-end hardening guide (HTTPS, CSP, auth, BFF, encryption, audit)
 - [Encrypt Sensitive Data](./encrypt-sensitive-data/) -- Vault Transit and AES-256
 - [Implement Audit Timeline](./implement-audit-timeline/) -- entity change tracking
 - [End-to-End Tracing](./end-to-end-tracing/) -- OpenTelemetry distributed tracing

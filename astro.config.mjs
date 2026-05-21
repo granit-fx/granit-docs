@@ -247,6 +247,7 @@ export default defineConfig({
                       label: "Security & Observability",
                       collapsed: true,
                       items: [
+                        { label: "Secure your Application", link: "/dotnet/guides/secure-your-application/" },
                         { label: "Encrypt Sensitive Data", link: "/dotnet/guides/encrypt-sensitive-data/" },
                         { label: "End-to-End Tracing", link: "/dotnet/guides/end-to-end-tracing/" },
                       ],
@@ -586,7 +587,17 @@ export default defineConfig({
                   items: [{ autogenerate: { directory: "contributing" } }],
                 },
                 {
-                  label: "Migration",
+                  label: "Migrating from",
+                  collapsed: true,
+                  items: [
+                    { label: "Overview", link: "/migrating-from/" },
+                    { label: "From ABP Framework", link: "/migrating-from/abp/" },
+                    { label: "From FullStackHero", link: "/migrating-from/fullstackhero/" },
+                    { label: "From Clean Architecture", link: "/migrating-from/clean-architecture/" },
+                  ],
+                },
+                {
+                  label: "Version Upgrades",
                   items: [{ autogenerate: { directory: "migration" } }],
                   collapsed: true,
                 },
