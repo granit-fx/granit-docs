@@ -108,7 +108,7 @@ group.MapPost("/charge", ChargeAsync)
 
 ```json title="appsettings.json"
 {
-  "Idempotency": {
+  "Http:Idempotency": {
     "HeaderName": "Idempotency-Key",
     "CompletedTtl": "24:00:00",
     "InProgressTtl": "00:00:30",

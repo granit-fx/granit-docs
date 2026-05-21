@@ -77,7 +77,7 @@ services.AddOptions<VaultOptions>()
 | Vault | `VaultOptions` | `Vault` | `[Required]` Address |
 | Caching | `CachingOptions` | `Cache` | KeyPrefix, EncryptValues |
 | Observability | `ObservabilityOptions` | `Observability` | ServiceName, OtlpEndpoint |
-| Identity.Keycloak | `KeycloakAdminOptions` | `KeycloakAdmin` | `[Required]` + `[Range]` + URL helpers |
+| Identity.Keycloak | `KeycloakAdminOptions` | `Identity:Federated:Keycloak` | `[Required]` + `[Range]` + URL helpers |
 | Auth.JwtBearer | `JwtBearerAuthOptions` | `Authentication` | Authority, Audience |
 | BlobStorage.S3 | `S3BlobOptions` | inherits `BlobStorageOptions` | Custom `IValidateOptions<T>` |
 | Webhooks | `WebhooksOptions` | `Webhooks` | `[Range(5, 120)]` timeout, `[Range(1, 100)]` parallelism |

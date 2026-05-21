@@ -153,7 +153,7 @@ production environment.
 
 ```json title="appsettings.json"
 {
-  "ApiDocumentation": {
+  "Http:ApiDocumentation": {
     "Title": "Guava API",
     "Description": "Internal REST API for the Guava platform.",
     "PartyEmail": "api-support@example.com",
@@ -177,7 +177,7 @@ sub-section:
 
 ```json title="appsettings.json — OAuth2 section"
 {
-  "ApiDocumentation": {
+  "Http:ApiDocumentation": {
     "OAuth2": {
       "AuthorizationUrl": "https://auth.example.com/realms/my-realm/protocol/openid-connect/auth",
       "TokenUrl": "https://auth.example.com/realms/my-realm/protocol/openid-connect/token",

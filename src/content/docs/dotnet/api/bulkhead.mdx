@@ -28,7 +28,7 @@ public class AppModule : GranitModule { }
 
 ```json
 {
-  "Bulkhead": {
+  "Http:Bulkhead": {
     "Enabled": true,
     "BypassRoles": ["SystemAdmin"],
     "Policies": {
@@ -114,7 +114,7 @@ dynamically from a `Granit.Features` Numeric feature before each acquisition:
 
 ```json
 {
-  "Bulkhead": {
+  "Http:Bulkhead": {
     "UseFeatureBasedQuotas": true,
     "Policies": {
       "import": {

@@ -80,11 +80,11 @@ reconciliation or admin-triggered audit.
 
 ### Configuration — `KeycloakClientRoleSyncOptions`
 
-Dedicated options class bound to `KeycloakAdmin:ClientRoleSync`:
+Dedicated options class bound to `Identity:Federated:Keycloak:ClientRoleSync`:
 
 ```json
 {
-  "KeycloakAdmin": {
+  "Identity:Federated:Keycloak": {
     "ClientRoleSync": {
       "Enabled": true,
       "TrackedClientIds": ["showcase-admin", "showcase-patient"]
@@ -128,7 +128,7 @@ healthcheck-gated sync can follow in Phase 3.
 
 ## Required Keycloak service-account roles
 
-The admin client configured via `KeycloakAdmin:ClientId` / `ClientSecret` needs
+The admin client configured via `Identity:Federated:Keycloak:ClientId` / `ClientSecret` needs
 the following realm-management roles:
 
 - `view-clients` (list + resolve client UUIDs)

@@ -61,7 +61,7 @@ All headers are configurable via `appsettings.json`:
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "SuppressServerHeader": true,
     "EnableContentTypeOptions": true,
     "XFrameOptions": "DENY",
@@ -85,7 +85,7 @@ Set the header value to `null` or the enable flag to `false`:
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "XFrameOptions": null,
     "EnableContentTypeOptions": false
   }
@@ -119,7 +119,7 @@ the BFF login flow) ship a contributor scoped to their own route.
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "Csp": {
       "DefaultSrc": ["'self'"],
       "ScriptSrc": ["'self'", "'unsafe-inline'"],
@@ -204,7 +204,7 @@ contributor out without forking the owning package:
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "DisabledContributors": ["ScalarCspContributor"]
   }
 }
@@ -326,7 +326,7 @@ To submit your domain to the [HSTS Preload List](https://hstspreload.org/):
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "HstsPreload": true,
     "HstsIncludeSubDomains": true,
     "HstsMaxAgeSeconds": 31536000
@@ -347,7 +347,7 @@ images, scripts). Enable it only when all cross-origin resources include
 
 ```json
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "CrossOriginEmbedderPolicy": "require-corp"
   }
 }

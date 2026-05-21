@@ -66,7 +66,7 @@ public class AppModule : GranitModule { }
     "Authority": "https://keycloak.example.com/realms/my-realm",
     "Audience": "my-client"
   },
-  "Keycloak": {
+  "Authentication:Keycloak": {
     "ClientId": "my-client",
     "AdminRole": "admin",
     "RoleClaimsSource": "realm_access"
@@ -105,7 +105,7 @@ public class AppModule : GranitModule { }
     "Authority": "https://cognito-idp.{region}.amazonaws.com/{userPoolId}",
     "Audience": "{clientId}"
   },
-  "Cognito": {
+  "Authentication:Cognito": {
     "UserPoolId": "eu-west-1_XXXXXXXXX",
     "ClientId": "my-client-id",
     "Region": "eu-west-1"

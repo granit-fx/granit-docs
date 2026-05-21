@@ -72,7 +72,7 @@ That is the entire C# setup. The module declares `[DependsOn(GranitAuthenticatio
       "SessionRevocationTtl": "01:00:00"
     }
   },
-  "Keycloak": {
+  "Authentication:Keycloak": {
     "Authority": "https://keycloak.example.com/realms/clinic",
     "ClientId": "my-backend",
     "RoleClaimsSource": "realm_access"
@@ -202,7 +202,7 @@ Open `http://localhost:8080`, create a realm `clinic`, a client `my-backend`, a 
     "Audience": "my-backend",
     "RequireHttpsMetadata": false
   },
-  "Keycloak": {
+  "Authentication:Keycloak": {
     "Authority": "http://localhost:8080/realms/clinic",
     "ClientId": "my-backend"
   }

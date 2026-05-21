@@ -31,7 +31,7 @@ public class AppModule : GranitModule { }
 
 ```json
 {
-  "OutputCaching": {
+  "Http:OutputCaching": {
     "DefaultExpiration": "00:01:00"
   }
 }
@@ -47,7 +47,7 @@ public class AppModule : GranitModule { }
 
 ```json
 {
-  "OutputCaching": {
+  "Http:OutputCaching": {
     "DefaultExpiration": "00:01:00",
     "Redis": {
       "IsEnabled": true,
@@ -177,10 +177,10 @@ Tagged `readiness` and `startup` for Kubernetes probes.
 | `OutputCaching:VaryByQueryKeys` | `["page","pageSize","sort","filter","q","include","expand"]` | Query params included in cache key |
 | `OutputCaching:EnableTenantIsolation` | `true` | Vary by tenant ID when available |
 | `OutputCaching:ExcludeAuthenticatedResponses` | `true` | Skip caching for authenticated users |
-| `OutputCaching:Redis:IsEnabled` | `true` | Enable/disable Redis store |
-| `OutputCaching:Redis:Configuration` | `localhost:6379` | Redis connection string |
-| `OutputCaching:Redis:InstanceName` | `dd:oc:` | Redis key prefix |
-| `OutputCaching:Redis:RequireTls` | `true` | Enforce TLS for Redis |
+| `Http:OutputCaching:Redis:IsEnabled` | `true` | Enable/disable Redis store |
+| `Http:OutputCaching:Redis:Configuration` | `localhost:6379` | Redis connection string |
+| `Http:OutputCaching:Redis:InstanceName` | `dd:oc:` | Redis key prefix |
+| `Http:OutputCaching:Redis:RequireTls` | `true` | Enforce TLS for Redis |
 
 ## Public API summary
 

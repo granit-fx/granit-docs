@@ -441,7 +441,7 @@ When `Granit.Observability` is loaded, the activity source is auto-discovered vi
     "Mode": "Durable",
     "ConnectionString": "Host=db;Database=myapp;Username=app;Password=..."
   },
-  "BackgroundJobsEndpoints": {
+  "BackgroundJobs:Endpoints": {
     "RoutePrefix": "background-jobs",
     "RequiredRole": "granit-background-jobs-admin",
     "TagName": "Background Jobs"
@@ -453,9 +453,9 @@ When `Granit.Observability` is loaded, the activity source is auto-discovered vi
 |----------|---------|-------------|
 | `BackgroundJobs.Mode` | `InMemory` | `InMemory` (no DB) or `Durable` (EF Core) |
 | `BackgroundJobs.ConnectionString` | — | Required when `Mode = Durable` |
-| `BackgroundJobsEndpoints.RoutePrefix` | `"background-jobs"` | URL prefix for admin endpoints |
-| `BackgroundJobsEndpoints.RequiredRole` | `"granit-background-jobs-admin"` | Role required for endpoint access |
-| `BackgroundJobsEndpoints.TagName` | `"Background Jobs"` | OpenAPI tag name |
+| `BackgroundJobs:Endpoints.RoutePrefix` | `"background-jobs"` | URL prefix for admin endpoints |
+| `BackgroundJobs:Endpoints.RequiredRole` | `"granit-background-jobs-admin"` | Role required for endpoint access |
+| `BackgroundJobs:Endpoints.TagName` | `"Background Jobs"` | OpenAPI tag name |
 
 ## Public API summary
 

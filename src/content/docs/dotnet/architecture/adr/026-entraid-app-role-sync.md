@@ -40,7 +40,7 @@ ADR records the Entra-specific bindings only.
 Entra has two distinct GUIDs for the same app:
 
 - **`appId`** — the OIDC `client_id` (stable across tenants for multi-tenant
-  apps; the one configured in `KeycloakAdmin:ClientRoleSync:TrackedAppIds`).
+  apps; the one configured in `Identity:Federated:Keycloak:ClientRoleSync:TrackedAppIds`).
 - **Service Principal `id`** — the object id of the instantiation of the
   application in the tenant (used in every Graph URL that touches app roles
   or assignments).
@@ -75,12 +75,12 @@ role is not in the active role map.
 
 ### Configuration — `EntraIdClientRoleSyncOptions`
 
-Bound to `EntraIdAdmin:ClientRoleSync`. Same shape as Keycloak, but the
+Bound to `Identity:Federated:EntraId:ClientRoleSync`. Same shape as Keycloak, but the
 tracked list is `appId` GUIDs rather than human client ids:
 
 ```json
 {
-  "EntraIdAdmin": {
+  "Identity:Federated:EntraId": {
     "ClientRoleSync": {
       "Enabled": true,
       "TrackedAppIds": [
@@ -123,7 +123,7 @@ Sync never crashes host startup. Per-app failures:
 
 ## Required Microsoft Graph application permissions
 
-The admin client configured via `EntraIdAdmin:ClientId` / `ClientSecret`
+The admin client configured via `Identity:Federated:EntraId:ClientId` / `ClientSecret`
 needs the following **Application** permissions (not Delegated), granted with
 admin consent:
 
