@@ -1,0 +1,164 @@
+---
+title: "ADR-058: JSON Persistence Policy"
+description: "When to use HasJsonConversion, .ToJson() owned types, primitive collections, or a custom string converter"
+sidebar:
+  order: 58
+  label: "058 - JSON persistence policy"
+topic: backend
+---
+
+> **Date:** 2026-05-21
+> **Authors:** Jean-Francois Meyers
+> **Scope:** `granit-dotnet` — all modules persisting JSON-shaped data via EF Core
+
+## Context
+
+Granit persists JSON-shaped payloads in many places: notification metadata, export
+presets, import column mappings, scheduled job payloads, BFF tokens, mergeable
+idempotency caches, audit change records, etc.
+
+Historically each module reinvented the same shape: a `string ...Json` column on an
+entity plus a hand-rolled `JsonSerializer.Serialize` / `Deserialize` round-trip in a
+store or interceptor. A repo-wide audit surfaced **13 such sites across 8 modules**,
+none of them queryable, all of them duplicating the same plumbing.
+
+EF Core 8+ supports JSON natively in three flavours:
+
+- **`HasJsonConversion`** (Granit helper) — applies a `JsonSerializer`-backed
+  `ValueConverter` + a deep-equality `ValueComparer` to any property; the column
+  stays a string at the relational level (`text` on Npgsql, `nvarchar(max)` on SQL
+  Server) unless an explicit column type is set.
+- **Owned types via `.ToJson()`** — EF maps a child entity / collection of
+  entities to a single JSON document column. Npgsql stores this as `jsonb` by
+  default.
+- **Primitive collections** (`PrimitiveCollection(...)`, EF 8+) — `List<string>`,
+  `List<int>`, etc. are persisted as JSON arrays natively, no helper required.
+
+The provider matters too: PostgreSQL `jsonb` is queryable (`@>`, `jsonb_path_query`)
+and indexable (GIN), while `text` is opaque. SQL Server `nvarchar(max)` is opaque
+either way.
+
+## Decision
+
+The framework defines a **default-first policy** that modules should follow when
+adding a new JSON-shaped column.
+
+### Default — owned types or primitive collections
+
+When the JSON payload has a **known, stable shape**, model it as owned types or
+primitive collections:
+
+```csharp
+// Collection of records
+builder.OwnsMany(e => e.Mappings, m =>
+{
+    m.ToJson();
+    m.Property(p => p.SourceColumn);
+    m.Property(p => p.TargetProperty);
+    m.Property(p => p.Confidence);
+});
+
+// Collection of primitives
+builder.PrimitiveCollection(e => e.Fields).IsRequired();
+
+// Single owned record
+builder.OwnsOne(e => e.Report).ToJson();
+```
+
+This is the **default for any new entity** persisting JSON. It is queryable on
+PostgreSQL (`jsonb` by default with Npgsql), composable in LINQ, and avoids any
+custom serialization layer.
+
+### Fallback — `HasJsonConversion` for typed-but-string columns
+
+When the payload is JSON-serializable but cannot be modelled as owned types —
+for example a `JsonElement` of dynamic shape, or a small `Dictionary<string,
+string>` whose contents do not warrant a sub-table — use the framework helper:
+
+```csharp
+builder.Property(e => e.Data).HasJsonConversion();
+```
+
+The helper, defined in `Granit.Persistence.EntityFrameworkCore`, gives all sites
+the same `ValueConverter` + deep-equality `ValueComparer` policy. It stamps a
+`Granit:JsonSerialized=true` annotation on the property so PostgreSQL apps can
+opt in to `jsonb` storage in a single declarative call:
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.ApplyGranitConventions(...);
+    modelBuilder.UseGranitJsonbForJsonProperties(); // app opt-in, only when on Npgsql
+}
+```
+
+Modules **MUST NOT** ship their own `HasColumnType("jsonb")` — that would break
+SQL Server consumers. Provider-specific column types belong in the app, or in the
+provider-specific helper from `Granit.Persistence.EntityFrameworkCore.Postgres`
+(`HasJsonbConversion`).
+
+### Last resort — custom `ValueConverter`
+
+A hand-rolled `ValueConverter` is acceptable only when **none of the helpers fit**:
+
+- The payload is **encrypted then serialized** (or signed with an HMAC). Examples:
+  `BffSessionEntity.SerializedTokens`, `MergeIdempotencyEntry.ResultJson`. The
+  converter wraps the string-encryption pipeline.
+- The serialization layer is **transport, not storage**. Example: `CursorEncoder` —
+  the cursor is an opaque HMAC-signed token that traverses the client; it is not a
+  database column.
+
+These cases must include a comment explaining **why** the standard helpers do not
+apply.
+
+## Consequences
+
+### Positive
+
+- One migration point when EF 11 ships its native JSON-mapping improvements —
+  no scattered converter sites to chase.
+- Postgres apps can flip to `jsonb` storage in one line; the gain (queryability,
+  indexability) is automatic for every property already going through
+  `HasJsonConversion`.
+- New modules pick the right primitive by default; reviewers reject hand-rolled
+  `JsonSerializer.Serialize` in entity setters / store methods.
+- Domain methods can take typed inputs (`IReadOnlyList<ImportColumnMapping>`)
+  instead of `string`, removing a class of bugs around malformed payloads at
+  the domain boundary.
+
+### Negative
+
+- Owned-type `.ToJson()` mappings cannot be queried with arbitrary LINQ on every
+  provider — Postgres `jsonb` is rich, SQL Server JSON support is more limited.
+  Modules that need cross-provider portability should design queries against the
+  primitive fields, not against deeply nested JSON.
+- The deep-equality `ValueComparer` in `HasJsonConversion` re-serializes on every
+  change-tracking check. Hot-path entities with large JSON payloads may want a
+  hand-rolled comparer.
+
+### Neutral
+
+- The choice between `OwnsOne(...).ToJson()` and `HasJsonConversion<MyRecord>`
+  is up to the module: owned types win on queryability, the converter wins on
+  flexibility (works with `JsonElement`, dynamic shapes).
+
+## Compliance audit (2026-05)
+
+Initial audit triaged 13 historical sites:
+
+| Status | Sites |
+|--------|-------|
+| ✅ Migrated to helpers | `Notifications.UserNotification.Data`, `Privacy.ExportRequest.MissingProviders`, `DataExchange.SavedMappingEntity.Mappings`, `DataExchange.ExportPresetEntity.Fields` |
+| 📋 Tracked follow-up | `DataExchange.ImportJob.MappingsJson` + `ReportJson`, `DataExchange.ExportJob.RequestJson` — issue #2181 |
+| 🟢 Quick win pending | `Persistence.IHasMetadata.MetadataJson` — issue #2184 |
+| 🟡 Defer (encryption / dynamic) | `Bff.SerializedTokens`, `Mergeable.ResultJson`, `Auditing.ChangeTracking`, `Scheduling.PayloadJson` — issue #2184 |
+| 🔴 Non-migrable | `QueryEngine.CursorEncoder` — opaque transport token |
+
+## References
+
+- PR [#2175](https://github.com/granit-fx/granit-dotnet/pull/2175) — `HasJsonConversion` helper
+- PR [#2176](https://github.com/granit-fx/granit-dotnet/pull/2176) — `HasJsonbConversion` Postgres companion
+- PR [#2180](https://github.com/granit-fx/granit-dotnet/pull/2180) — `SavedMappingEntity` + `ExportPresetEntity` migration
+- PR [#2183](https://github.com/granit-fx/granit-dotnet/pull/2183) — `UseGranitJsonbForJsonProperties` convention
+- Issue [#2181](https://github.com/granit-fx/granit-dotnet/issues/2181) — `ImportJob` / `ExportJob` migration follow-up
+- Issue [#2184](https://github.com/granit-fx/granit-dotnet/issues/2184) — Audit triage of 6 remaining sites
