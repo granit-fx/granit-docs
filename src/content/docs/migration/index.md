@@ -2,7 +2,7 @@
 title: "Migration Guide \u2014 Upgrading Granit Versions"
 description: Step-by-step upgrade guides for Granit major versions — semantic versioning policy, breaking change log, and migration steps for all %%PACKAGE_COUNT%% packages.
 sidebar:
-  label: Migration
+  label: Overview
   order: 0
 ---
 
@@ -10,6 +10,13 @@ Granit follows [Semantic Versioning 2.0.0](https://semver.org/). All %%PACKAGE_C
 share a single version number and are released together from the monorepo. This
 section documents breaking changes and provides upgrade guides between major
 versions.
+
+:::tip[Coming from another framework?]
+If you are moving an existing application from ABP, Clean Architecture
+templates, or another modular .NET stack, see
+[Migrating to Granit from another framework](/migrating-from/) instead.
+This section only covers Granit → Granit version upgrades.
+:::
 
 ## Versioning strategy
 

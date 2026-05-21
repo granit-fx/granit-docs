@@ -378,6 +378,16 @@ setup but offers more infrastructure flexibility.
 - You value a **quick start** over deep customization
 - You are comfortable **forking** and owning the framework code in your repo
 
+:::tip[Already running on FullStackHero?]
+If you have already shipped on FullStackHero and the decision to move is
+made, the
+[FullStackHero → Granit migration guide](/migrating-from/fullstackhero/)
+walks through the strangler-fig cutover, the Mediator → Wolverine port,
+the Finbuckle → `Granit.MultiTenancy` switch, and the `AppDbContext` →
+isolated `DbContext` refactor. This article is the *decision*; that guide
+is the *execution*.
+:::
+
 ## When to choose Granit
 
 - You are building **enterprise SaaS** with multi-tenancy and regulatory obligations
@@ -428,6 +438,8 @@ Both are **open-source**, **actively maintained**, and targeting **.NET 10**. Bo
 
 ## Further reading
 
+- [Migrating from FullStackHero to Granit](/migrating-from/fullstackhero/) —
+  the step-by-step migration guide (cutover model, before/after code, FAQ)
 - [Why We Chose Modular Monolith Over Microservices](/blog/why-modular-monolith/)
 - [Isolated DbContext Per Module](/blog/isolated-dbcontext-per-module/)
 - [Crypto-shredding: GDPR Erasure Without Deleting Rows](/blog/crypto-shredding-gdpr-erasure-without-deleting-rows/)
