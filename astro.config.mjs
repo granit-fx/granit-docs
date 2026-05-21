@@ -247,6 +247,7 @@ export default defineConfig({
                       label: "Security & Observability",
                       collapsed: true,
                       items: [
+                        { label: "Secure your Application", link: "/dotnet/guides/secure-your-application/" },
                         { label: "Encrypt Sensitive Data", link: "/dotnet/guides/encrypt-sensitive-data/" },
                         { label: "End-to-End Tracing", link: "/dotnet/guides/end-to-end-tracing/" },
                       ],
