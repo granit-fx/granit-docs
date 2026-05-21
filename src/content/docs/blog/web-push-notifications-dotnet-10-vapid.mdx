@@ -231,7 +231,7 @@ Under the hood the hook calls `registerPushSubscription(client, basePath, subscr
 
 ### 3. The VAPID public key
 
-Ship it as build-time configuration. The Vite env variable above (`VITE_VAPID_PUBLIC_KEY`) is replaced at build time with the same value you put under `Notifications:Push:VapidPublicKey` in `appsettings.json`. Public key in both places; private key only in the secret manager.
+Ship it as build-time configuration. The Vite env variable above (`VITE_VAPID_PUBLIC_KEY`) is replaced at build time with the same value you put under `Notifications:WebPush:VapidPublicKey` in `appsettings.json`. Public key in both places; private key only in the secret manager.
 
 ## What you get for free
 

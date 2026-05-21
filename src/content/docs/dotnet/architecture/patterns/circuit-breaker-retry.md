@@ -67,7 +67,7 @@ standard resilience handler:
 | Firebase FCM (push) | `src/Granit.Notifications.MobilePush.GoogleFcm/Extensions/GoogleFcmMobilePushServiceCollectionExtensions.cs` |
 
 ```csharp
-services.AddHttpClient("KeycloakAdmin", client =>
+services.AddHttpClient("Identity:Federated:Keycloak", client =>
     {
         client.BaseAddress = new Uri(options.BaseUrl);
         client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);

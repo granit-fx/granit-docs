@@ -12,10 +12,36 @@ overriding configuration keys.
 
 ## Convention
 
-All Granit configuration sections live under a **flat key** that matches the
-module name. Most classes declare a `public const string SectionName` used in
-the binding call. Nested sections use the colon separator
-(e.g. `Cache:Redis`, `Notifications:Email`).
+Every Granit `Options` class declares a `public const string SectionName` that
+follows a single rule:
+
+> **Hierarchical, colon-separated, namespace-aligned.**
+> Strip the internal `Granit` prefix from the project namespace and replace
+> the remaining dots with colons:
+> `Granit.Foo.Bar.Baz` → `"Foo:Bar:Baz"`.
+
+Examples:
+
+| Project | `SectionName` |
+| --- | --- |
+| `Granit.BlobStorage` | `BlobStorage` |
+| `Granit.Wolverine.Postgresql` | `Wolverine:Postgresql` |
+| `Granit.Notifications.Email.Smtp` | `Notifications:Email:Smtp` |
+| `Granit.Identity.Federated.Keycloak` | `Identity:Federated:Keycloak` |
+| `Granit.Authentication.JwtBearer.Keycloak` | `Authentication:Keycloak` |
+| `Granit.Http.OutputCaching.StackExchangeRedis` | `Http:OutputCaching:Redis` |
+
+Forbidden patterns (enforced by `Granit.ArchitectureTests.SectionNameConventionTests`):
+
+- `"Granit:..."` as a root — `Granit` is the code namespace, not a config
+  root. Use the bare hierarchical path.
+- PascalCase-glued compound names (`"WolverinePostgresql"`,
+  `"BlobStorageEndpoints"`) — must be split with `:`.
+- Two `Options` classes pointing at the same section path (silent override).
+
+Single-segment SectionName values are allowed only for the small set of
+top-level root modules (`Notifications`, `Authentication`, `Vault`,
+`BlobStorage`, `Cache`, `Bff`, …). Any compound concept must be hierarchical.
 
 Typical binding in a module:
 
@@ -23,6 +49,26 @@ Typical binding in a module:
 services.Configure<ObservabilityOptions>(
     configuration.GetSection(ObservabilityOptions.SectionName));
 ```
+
+In `appsettings.json` you can write the section either nested (idiomatic) or
+flat with the colon literal — both bind to the same path:
+
+```json
+// Nested (idiomatic for hand-written files)
+{
+  "Wolverine": {
+    "Postgresql": { "TransportConnectionString": "..." }
+  }
+}
+
+// Flat (equivalent — matches the SectionName literally)
+{
+  "Wolverine:Postgresql": { "TransportConnectionString": "..." }
+}
+```
+
+Most examples on this page use the **flat form** so the table rows and the
+appsettings excerpts read against the exact `SectionName` constant.
 
 ## Configuration layering
 
@@ -97,7 +143,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Keycloak` | |
+| **Section** | -- | `Authentication:Keycloak` | |
 | **Package** | -- | `Granit.Authentication.JwtBearer.Keycloak` | |
 | `Authority` | `string` | `""` | OIDC authority URL. |
 | `ClientId` | `string` | `""` | Keycloak client ID. |
@@ -111,7 +157,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `EntraId` | |
+| **Section** | -- | `Authentication:EntraId` | |
 | **Package** | -- | `Granit.Authentication.JwtBearer.EntraId` | |
 | `Instance` | `string` | `"https://login.microsoftonline.com/"` | Azure AD instance URL. |
 | `TenantId` | `string` | `""` | Azure AD tenant ID. |
@@ -123,7 +169,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Cognito` | |
+| **Section** | -- | `Authentication:Cognito` | |
 | **Package** | -- | `Granit.Authentication.JwtBearer.Cognito` | |
 | `UserPoolId` | `string` | `""` | Cognito User Pool ID. |
 | `ClientId` | `string` | `""` | Cognito app client ID. |
@@ -142,7 +188,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `ApiKeysEndpoints` | |
+| **Section** | -- | `Authentication:ApiKeys:Endpoints` | |
 | **Package** | -- | `Granit.Authentication.ApiKeys.Endpoints` | |
 | `RoutePrefix` | `string` | `"api-keys"` | Route prefix. |
 | `TagName` | `string` | `"API Keys"` | OpenAPI tag. |
@@ -163,7 +209,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `AuthorizationEndpoints` | |
+| **Section** | -- | `Authorization:Endpoints` | |
 | **Package** | -- | `Granit.Authorization.Endpoints` | |
 | `RoutePrefix` | `string` | `"auth"` | Route prefix. |
 | `TagName` | `string` | `"Authorization"` | OpenAPI tag. |
@@ -225,7 +271,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `KeycloakAdmin` | |
+| **Section** | -- | `Identity:Federated:Keycloak` | |
 | **Package** | -- | `Granit.Identity.Federated.Keycloak` | |
 | `BaseUrl` | `string` | `""` | Keycloak server base URL. |
 | `Realm` | `string` | `""` | Realm name. |
@@ -239,7 +285,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `EntraIdAdmin` | |
+| **Section** | -- | `Identity:Federated:EntraId` | |
 | **Package** | -- | `Granit.Identity.Federated.EntraId` | |
 | `TenantId` | `string` | `""` | Azure AD tenant ID. |
 | `ClientId` | `string` | `""` | Service principal client ID. |
@@ -254,7 +300,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `CognitoAdmin` | |
+| **Section** | -- | `Identity:Federated:Cognito` | |
 | **Package** | -- | `Granit.Identity.Federated.Cognito` | |
 | `UserPoolId` | `string` | `""` | Cognito User Pool ID. |
 | `Region` | `string` | `""` | AWS region (e.g. `eu-west-1`). |
@@ -266,7 +312,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `IdentityUserCache` | |
+| **Section** | -- | `Identity:Federated:UserCache` | |
 | **Package** | -- | `Granit.Identity.Federated.EntityFrameworkCore` | |
 | `StalenessThreshold` | `TimeSpan` | `1.00:00:00` | Duration before a cached user is stale. |
 | `EnableLoginTimeSync` | `bool` | `true` | Auto-sync user from JWT on each request. |
@@ -276,7 +322,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `IdentityEndpoints` | |
+| **Section** | -- | `Identity:Endpoints` | |
 | **Package** | -- | `Granit.Identity.Endpoints` | |
 | `RoutePrefix` | `string` | `"identity/users"` | Route prefix. |
 | `TagName` | `string` | `"Identity User Cache"` | OpenAPI tag. |
@@ -286,7 +332,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `IdentityWebhook` | |
+| **Section** | -- | `Identity:Webhook` | |
 | **Package** | -- | `Granit.Identity.Endpoints` | |
 | `Secret` | `string` | `""` | **Required.** HMAC-SHA256 shared secret. Webhook rejects all requests when empty (fail-closed). |
 | `SignatureHeaderName` | `string` | `"X-Webhook-Signature"` | HTTP header carrying the signature. |
@@ -347,7 +393,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `TenantIsolation` | |
+| **Section** | -- | `MultiTenancy:TenantIsolation` | |
 | **Package** | -- | `Granit.Persistence` | |
 | `Strategy` | `TenantIsolationStrategy` | `SharedDatabase` | `SharedDatabase`, `TenantPerSchema`, or `TenantPerDatabase`. |
 
@@ -355,7 +401,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `TenantSchema` | |
+| **Section** | -- | `MultiTenancy:TenantSchema` | |
 | **Package** | -- | `Granit.Persistence` | |
 | `NamingConvention` | `TenantSchemaNamingConvention` | `TenantId` | `TenantId`, `TenantName`, or `Custom`. |
 | `Prefix` | `string` | `"tenant_"` | Schema name prefix. Must match `^[a-z][a-z0-9_]*$` (validated at startup). |
@@ -364,7 +410,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `GranitMigrations` | |
+| **Section** | -- | `Persistence:Migrations` | |
 | **Package** | -- | `Granit.Persistence.Migrations` | |
 | `DefaultBatchSize` | `int` | `500` | Rows per batch when resuming pending cycles. |
 | `BatchExecutionTimeout` | `TimeSpan` | `00:05:00` | Timeout per migration batch. |
@@ -381,7 +427,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Settings:Endpoints` | |
 | **Package** | -- | `Granit.Settings.Endpoints` | |
 | `UserRoutePrefix` | `string` | `"settings/user"` | User-scoped settings route. |
 | `GlobalRoutePrefix` | `string` | `"settings/global"` | Global settings route. |
@@ -447,7 +493,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `ApiVersioning` | |
+| **Section** | -- | `Http:ApiVersioning` | |
 | **Package** | -- | `Granit.Http.ApiVersioning` | |
 | `DefaultMajorVersion` | `int` | `1` | Default API version when client omits it. |
 | `ReportApiVersions` | `bool` | `true` | Include version headers in responses. |
@@ -456,7 +502,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `ApiDocumentation` | |
+| **Section** | -- | `Http:ApiDocumentation` | |
 | **Package** | -- | `Granit.Http.ApiDocumentation` | |
 | `MajorVersions` | `int[]` | `[1]` | API versions to generate OpenAPI docs for. |
 | `Title` | `string` | `"API"` | API title in Scalar UI. |
@@ -486,7 +532,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Cors` | |
+| **Section** | -- | `Http:Cors` | |
 | **Package** | -- | `Granit.Http.Cors` | |
 | `AllowedOrigins` | `string[]` | `[]` | Allowed CORS origins. Wildcard `*` forbidden outside Development (ISO 27001). |
 | `AllowCredentials` | `bool` | `false` | Include `Access-Control-Allow-Credentials`. |
@@ -495,7 +541,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Cookies` | |
+| **Section** | -- | `Http:Cookies` | |
 | **Package** | -- | `Granit.Http.Cookies` | |
 | `ThrowOnUnregistered` | `bool` | `true` | Fail-fast on unregistered cookies. |
 | `DefaultRetentionDays` | `int` | `365` | Default cookie retention period. |
@@ -513,7 +559,7 @@ Each entry in `ThirdPartyServices`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Klaro` | |
+| **Section** | -- | `Http:Cookies:Klaro` | |
 | **Package** | -- | `Granit.Http.Cookies.Klaro` | |
 | `CookieName` | `string` | `"klaro"` | Klaro consent cookie name. |
 
@@ -521,7 +567,7 @@ Each entry in `ThirdPartyServices`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Http:Cookies:Endpoints` | |
 | **Package** | -- | `Granit.Http.Cookies.Endpoints` | |
 | `RoutePrefix` | `string` | `"cookies"` | Route prefix. |
 | `TagName` | `string` | `"Cookies"` | OpenAPI tag. |
@@ -530,7 +576,7 @@ Each entry in `ThirdPartyServices`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Idempotency` | |
+| **Section** | -- | `Http:Idempotency` | |
 | **Package** | -- | `Granit.Http.Idempotency` | |
 | `HeaderName` | `string` | `"Idempotency-Key"` | HTTP header name. |
 | `KeyPrefix` | `string` | `"idp"` | Redis key prefix. |
@@ -570,7 +616,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Bulkhead` | |
+| **Section** | -- | `Http:Bulkhead` | |
 | **Package** | -- | `Granit.Http.Bulkhead` | |
 | `Enabled` | `bool` | `true` | Enable bulkhead isolation. |
 | `BypassRoles` | `string[]` | `[]` | Roles exempt from bulkhead checks. |
@@ -605,7 +651,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `WolverinePostgresql` | |
+| **Section** | -- | `Wolverine:Postgresql` | |
 | **Package** | -- | `Granit.Wolverine.Postgresql` | |
 | `TransportConnectionString` | `string` | `""` | PostgreSQL connection string for outbox tables. |
 | `TransactionMode` | `TransactionMiddlewareMode` | `Eager` | `Eager` (ISO 27001-recommended) or `Lightweight`. |
@@ -614,7 +660,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `WolverineSqlServer` | |
+| **Section** | -- | `Wolverine:SqlServer` | |
 | **Package** | -- | `Granit.Wolverine.SqlServer` | |
 | `TransportConnectionString` | `string` | `""` | SQL Server connection string for outbox tables. |
 | `TransactionMode` | `TransactionMiddlewareMode` | `Eager` | `Eager` (ISO 27001-recommended) or `Lightweight`. |
@@ -641,7 +687,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Notifications:Endpoints` | |
 | **Package** | -- | `Granit.Notifications.Endpoints` | |
 | `RoutePrefix` | `string` | `"notifications"` | Route prefix. |
 | `TagName` | `string` | `"Notifications"` | OpenAPI tag. |
@@ -660,7 +706,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Smtp` | |
+| **Section** | -- | `Notifications:Email:Smtp` | |
 | **Package** | -- | `Granit.Notifications.Email.Smtp` | |
 | `Host` | `string` | `"localhost"` | SMTP server hostname. |
 | `Port` | `int` | `587` | SMTP server port. |
@@ -742,7 +788,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Push` | |
+| **Section** | -- | `Notifications:WebPush` | |
 | **Package** | -- | `Granit.Notifications.WebPush` | |
 | `VapidSubject` | `string` | `""` | VAPID subject (`mailto:` or `https:` URL). |
 | `VapidPublicKey` | `string` | `""` | VAPID public key (base64 URL-safe). |
@@ -771,7 +817,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `AzureCommunicationServices:Email` | |
+| **Section** | -- | `Notifications:Email:AzureCommunicationServices` | |
 | **Package** | -- | `Granit.Notifications.Email.AzureCommunicationServices` | |
 | `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
 | `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
@@ -782,7 +828,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `AzureCommunicationServices:Sms` | |
+| **Section** | -- | `Notifications:Sms:AzureCommunicationServices` | |
 | **Package** | -- | `Granit.Notifications.Sms.AzureCommunicationServices` | |
 | `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
 | `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
@@ -793,7 +839,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:AzureNotificationHubs` | |
+| **Section** | -- | `Notifications:MobilePush:AzureNotificationHubs` | |
 | **Package** | -- | `Granit.Notifications.MobilePush.AzureNotificationHubs` | |
 | `ConnectionString` | `string` | `""` | Notification Hub connection string. |
 | `HubName` | `string` | `""` | Notification Hub name. |
@@ -843,7 +889,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Templating:Endpoints` | |
 | **Package** | -- | `Granit.Templating.Endpoints` | |
 | `RoutePrefix` | `string` | `"templates"` | Route prefix. |
 | `TagName` | `string` | `"Templates"` | OpenAPI tag. |
@@ -884,7 +930,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `DataExport` | |
+| **Section** | -- | `DataExchange:Export` | |
 | **Package** | -- | `Granit.DataExchange` | |
 | `BackgroundThreshold` | `int` | `1000` | Row count above which export runs as a background job. |
 
@@ -892,7 +938,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `DataExchangeEndpoints` | |
+| **Section** | -- | `DataExchange:Endpoints` | |
 | **Package** | -- | `Granit.DataExchange.Endpoints` | |
 | `RoutePrefix` | `string` | `"data-exchange"` | Route prefix. |
 | `RequiredRole` | `string` | `"granit-data-exchange-admin"` | Fallback authorization role. |
@@ -906,7 +952,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `WorkflowEndpoints` | |
+| **Section** | -- | `Workflow:Endpoints` | |
 | **Package** | -- | `Granit.Workflow.Endpoints` | |
 | `RoutePrefix` | `string` | `"workflow"` | Route prefix. |
 | `RequiredRole` | `string` | `"granit-workflow-admin"` | Fallback authorization role. |
@@ -945,7 +991,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `TimelineEndpoints` | |
+| **Section** | -- | `Timeline:Endpoints` | |
 | **Package** | -- | `Granit.Timeline.Endpoints` | |
 | `RoutePrefix` | `string` | `"timeline"` | Route prefix. |
 | `RequiredRole` | `string` | `"granit-timeline-user"` | Fallback authorization role. |
@@ -1048,7 +1094,7 @@ providers. Bound from the `BlobStorage:Proxy` section.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `BackgroundJobsEndpoints` | |
+| **Section** | -- | `BackgroundJobs:Endpoints` | |
 | **Package** | -- | `Granit.BackgroundJobs.Endpoints` | |
 | `RoutePrefix` | `string` | `"background-jobs"` | Route prefix. |
 | `RequiredRole` | `string` | `"granit-background-jobs-admin"` | Fallback authorization role. |
@@ -1083,7 +1129,7 @@ programmatically.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Localization:Endpoints` | |
 | **Package** | -- | `Granit.Localization.Endpoints` | |
 | `RoutePrefix` | `string` | `"localization"` | Route prefix. |
 | `TagName` | `string` | `"Localization"` | OpenAPI tag. |

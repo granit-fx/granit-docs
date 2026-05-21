@@ -488,7 +488,7 @@ The `Granit.Http.Idempotency` package provides Stripe-style idempotency via the
 
 ```json
 {
-  "Idempotency": {
+  "Http:Idempotency": {
     "HeaderName": "Idempotency-Key",
     "CompletedTtl": "1.00:00:00",
     "InProgressTtl": "00:00:30",
@@ -513,7 +513,7 @@ URL-segment versioning with query string fallback, powered by `Asp.Versioning`.
 
 ```json
 {
-  "ApiVersioning": {
+  "Http:ApiVersioning": {
     "DefaultMajorVersion": 1,
     "ReportApiVersions": true
   }
@@ -539,7 +539,7 @@ Configured via the `Cors` section in `appsettings.json`:
 
 ```json
 {
-  "Cors": {
+  "Http:Cors": {
     "AllowedOrigins": ["https://app.example.com", "https://admin.example.com"],
     "AllowCredentials": false
   }
