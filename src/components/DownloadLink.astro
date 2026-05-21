@@ -1,0 +1,47 @@
+---
+/**
+ * Download link — sits next to the Blog link in the header, points to the
+ * granit-dotnet repo on GitHub and opens in a new tab.
+ */
+---
+
+<div id="download-link-wrap">
+  <a
+    href="https://github.com/granit-fx/granit-dotnet"
+    target="_blank"
+    rel="noopener noreferrer"
+    >Download</a
+  >
+</div>
+
+<style>
+  #download-link-wrap {
+    border-inline-end: 1px solid var(--sl-color-gray-5);
+    display: none;
+    padding-inline-end: 1rem;
+  }
+
+  @media (min-width: 50rem) {
+    #download-link-wrap {
+      display: flex;
+    }
+  }
+
+  #download-link-wrap a {
+    color: var(--sl-color-text-accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var wrap = document.getElementById('download-link-wrap');
+    if (!wrap) return;
+    var blogLink = document.querySelector('.right-group a[href="/blog/"]');
+    var blogWrap = blogLink ? blogLink.parentElement : null;
+    if (blogWrap && blogWrap.parentNode) {
+      blogWrap.parentNode.insertBefore(wrap, blogWrap.nextSibling);
+    }
+  })();
+</script>
