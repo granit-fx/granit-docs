@@ -73,7 +73,7 @@ Override pipeline settings per named client in `appsettings.json` without redepl
 
 ```json
 {
-  "HttpResilience": {
+  "Http:Resilience": {
     "granit-webhooks": {
       "Retry": { "MaxRetryAttempts": 5 },
       "CircuitBreaker": {
@@ -81,7 +81,7 @@ Override pipeline settings per named client in `appsettings.json` without redepl
         "MinimumThroughput": 20
       }
     },
-    "KeycloakAdmin": {
+    "Identity:Federated:Keycloak": {
       "Retry": { "MaxRetryAttempts": 1 }
     }
   }
@@ -105,7 +105,7 @@ All Granit modules that register outbound `HttpClient` instances declare
 | `Granit.Notifications.Email.SendGrid` | `SendGrid` | Email |
 | `Granit.Notifications.Email.Scaleway` | `Scaleway` | Email |
 | `Granit.Notifications.MobilePush.GoogleFcm` | `GoogleFcmPush` | Mobile push |
-| `Granit.Identity.Keycloak` | `KeycloakAdmin` | Admin API |
+| `Granit.Identity.Keycloak` | `Identity:Federated:Keycloak` | Admin API |
 | `Granit.Identity.EntraId` | `MicrosoftGraph` | Graph API |
 | `Granit.AI.Ollama` | `GranitAIOllamaHealthCheck` | Health check |
 
@@ -114,8 +114,8 @@ For identity providers (Keycloak, Entra ID), lower the retry count to avoid ampl
 on an already-struggling auth server:
 
 ```json
-"HttpResilience": {
-  "KeycloakAdmin": { "Retry": { "MaxRetryAttempts": 1 } },
+"Http:Resilience": {
+  "Identity:Federated:Keycloak": { "Retry": { "MaxRetryAttempts": 1 } },
   "MicrosoftGraph": { "Retry": { "MaxRetryAttempts": 1 } }
 }
 ```

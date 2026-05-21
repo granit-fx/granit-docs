@@ -322,7 +322,7 @@ authenticates. This ensures the cache stays fresh without polling.
 
 ```json
 {
-  "IdentityUserCache": {
+  "Identity:Federated:UserCache": {
     "StalenessThreshold": "1.00:00:00",
     "EnableLoginTimeSync": true,
     "IncrementalSyncBatchSize": 50
@@ -345,7 +345,7 @@ Keycloak Admin REST API.
 
 ```json
 {
-  "KeycloakAdmin": {
+  "Identity:Federated:Keycloak": {
     "BaseUrl": "https://keycloak.example.com",
     "Realm": "my-realm",
     "ClientId": "admin-cli",
@@ -386,7 +386,7 @@ AWS Cognito User Pool API via `AWSSDK.CognitoIdentityProvider`.
 
 ```json
 {
-  "CognitoAdmin": {
+  "Identity:Federated:Cognito": {
     "UserPoolId": "eu-west-1_XXXXXXXXX",
     "Region": "eu-west-1",
     "AccessKeyId": "",
@@ -472,7 +472,7 @@ Firebase Auth tokens and transforms custom claims into standard `ClaimTypes.Role
 
 ```json
 {
-  "GoogleCloudAuth": {
+  "Authentication:GoogleCloud": {
     "ProjectId": "my-firebase-project",
     "RequireHttpsMetadata": true,
     "AdminRole": "admin",
@@ -523,7 +523,7 @@ deleted) and updates the local cache accordingly.
 
 :::caution[Secret required]
 The webhook endpoint is **fail-closed**: all requests are rejected with `401 Unauthorized`
-unless `IdentityWebhook:Secret` is configured. A warning is logged at startup when the
+unless `Identity:Webhook:Secret` is configured. A warning is logged at startup when the
 secret is missing. Payloads are limited to **64 KB**.
 :::
 

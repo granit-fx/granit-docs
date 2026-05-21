@@ -110,7 +110,7 @@ Define each downstream API as a named client in `appsettings.json`:
 
 ```json
 {
-  "TokenManagement": {
+  "Oidc:TokenManagement": {
     "DefaultCacheMargin": "00:00:30",
     "Clients": {
       "payment-api": {
@@ -277,7 +277,7 @@ Downstream APIs receive both the DPoP-bound token and a fresh proof.
 
 ```json
 {
-  "TokenManagement": {
+  "Oidc:TokenManagement": {
     "Clients": {
       "payment-api": {
         "Authority": "https://auth.example.com",
@@ -334,7 +334,7 @@ endpoint.
 
 ```json
 {
-  "TokenManagement": {
+  "Oidc:TokenManagement": {
     "Clients": {
       "payment-api": {
         "Authority": "https://auth.example.com",
@@ -421,7 +421,7 @@ would expire.
 
 ```json
 {
-  "TokenManagement": {
+  "Oidc:TokenManagement": {
     "DefaultCacheMargin": "00:00:30",
     "Clients": {
       "payment-api": {

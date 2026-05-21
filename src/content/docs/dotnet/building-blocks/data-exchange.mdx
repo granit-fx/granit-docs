@@ -145,7 +145,7 @@ No EF Core, no endpoints. Useful for CLI tools or custom orchestration.
 
 ```json
 {
-  "DataExport": {
+  "DataExchange:Export": {
     "BackgroundThreshold": 1000
   }
 }
@@ -181,7 +181,7 @@ public class AppModule : GranitModule { }
 
 ```json
 {
-  "Granit:DataExchange:BlobStorage": {
+  "DataExchange:BlobStorage": {
     "ContainerName": "data-exchange"
   }
 }

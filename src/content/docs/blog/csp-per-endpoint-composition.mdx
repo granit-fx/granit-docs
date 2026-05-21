@@ -35,7 +35,7 @@ relax the **Content Security Policy** in `appsettings.Development.json`:
 
 ```json title="The band-aid everyone reaches for"
 {
-  "SecurityHeaders": {
+  "Http:SecurityHeaders": {
     "ContentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.scalar.com; img-src 'self' data: https:; connect-src 'self'"
   }
 }
@@ -342,7 +342,7 @@ Three guarantees baked in:
 
   ```json title="appsettings.json — internal policy wins"
   {
-    "SecurityHeaders": {
+    "Http:SecurityHeaders": {
       "DisabledContributors": ["ScalarCspContributor"]
     }
   }

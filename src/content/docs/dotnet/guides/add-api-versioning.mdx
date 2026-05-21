@@ -43,11 +43,11 @@ Add the configuration to `appsettings.json`:
 
 ```json
 {
-  "ApiVersioning": {
+  "Http:ApiVersioning": {
     "DefaultMajorVersion": 1,
     "ReportApiVersions": true
   },
-  "ApiDocumentation": {
+  "Http:ApiDocumentation": {
     "Title": "My API",
     "MajorVersions": [1]
   }
@@ -139,7 +139,7 @@ Update the documentation to generate both OpenAPI documents:
 
 ```json
 {
-  "ApiDocumentation": {
+  "Http:ApiDocumentation": {
     "MajorVersions": [1, 2]
   }
 }

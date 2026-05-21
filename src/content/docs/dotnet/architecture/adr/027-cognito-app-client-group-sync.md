@@ -88,11 +88,11 @@ it is the single place where Granit's naming convention is encoded.
 
 ### Configuration — `CognitoClientRoleSyncOptions`
 
-Bound to `CognitoAdmin:ClientRoleSync`:
+Bound to `Identity:Federated:Cognito:ClientRoleSync`:
 
 ```json
 {
-  "CognitoAdmin": {
+  "Identity:Federated:Cognito": {
     "ClientRoleSync": {
       "Enabled": true,
       "Delimiter": ":",

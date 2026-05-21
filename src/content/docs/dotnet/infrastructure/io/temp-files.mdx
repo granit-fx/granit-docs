@@ -154,7 +154,7 @@ sizeLimit ≈ N × MaxSizeBytes × concurrent_renders + headroom
 - `N` — number of categories that can be open simultaneously per request
   (browsing typically 1–2: HAR + trace).
 - `MaxSizeBytes` — default `100 MiB` per file. Bump
-  `Granit:IO:TempFiles:MaxSizeBytes` when generating large PDFs.
+  `IO:TempFiles:MaxSizeBytes` when generating large PDFs.
 - `concurrent_renders` — `MaxBrowsers × MaxPagesPerBrowser` from
   `GranitBrowsingOptions`.
 - `headroom` — 50% margin for janitor latency.
