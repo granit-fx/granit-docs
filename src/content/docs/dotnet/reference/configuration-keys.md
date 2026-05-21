@@ -393,7 +393,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `TenantIsolation` | |
+| **Section** | -- | `MultiTenancy:TenantIsolation` | |
 | **Package** | -- | `Granit.Persistence` | |
 | `Strategy` | `TenantIsolationStrategy` | `SharedDatabase` | `SharedDatabase`, `TenantPerSchema`, or `TenantPerDatabase`. |
 
@@ -427,7 +427,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Settings:Endpoints` | |
 | **Package** | -- | `Granit.Settings.Endpoints` | |
 | `UserRoutePrefix` | `string` | `"settings/user"` | User-scoped settings route. |
 | `GlobalRoutePrefix` | `string` | `"settings/global"` | Global settings route. |
@@ -567,7 +567,7 @@ Each entry in `ThirdPartyServices`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Http:Cookies:Endpoints` | |
 | **Package** | -- | `Granit.Http.Cookies.Endpoints` | |
 | `RoutePrefix` | `string` | `"cookies"` | Route prefix. |
 | `TagName` | `string` | `"Cookies"` | OpenAPI tag. |
@@ -687,7 +687,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Notifications:Endpoints` | |
 | **Package** | -- | `Granit.Notifications.Endpoints` | |
 | `RoutePrefix` | `string` | `"notifications"` | Route prefix. |
 | `TagName` | `string` | `"Notifications"` | OpenAPI tag. |
@@ -889,7 +889,7 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Templating:Endpoints` | |
 | **Package** | -- | `Granit.Templating.Endpoints` | |
 | `RoutePrefix` | `string` | `"templates"` | Route prefix. |
 | `TagName` | `string` | `"Templates"` | OpenAPI tag. |
@@ -1129,7 +1129,7 @@ programmatically.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | *(configured in code)* | |
+| **Section** | -- | `Localization:Endpoints` | |
 | **Package** | -- | `Granit.Localization.Endpoints` | |
 | `RoutePrefix` | `string` | `"localization"` | Route prefix. |
 | `TagName` | `string` | `"Localization"` | OpenAPI tag. |
