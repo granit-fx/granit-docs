@@ -110,6 +110,34 @@ These are direct inversions of pain points documented in our research (see [`PR 
 5. **Closed enums for mutable properties.** Tier B's mutable surface is a closed `enum` of layout-shaped knobs — never `eval:` strings, never arbitrary code paths.
 6. **Field inspector overlay** (Phase 3, dev UI) — show which tier and which permission rule hid a field. This single tool would have eliminated half of Frappe's developer-experience complaints.
 
+#### Closed enums by reference to an upstream standard
+
+Guarantee #5 above ("Closed enums for mutable properties") is the most-cited rule of this ADR, and the wording invites a literal reading: *every* identifier on the wire must be a hand-curated `enum` declared in C#. Practice has surfaced a third doctrine that preserves the same guarantees without forcing the framework to maintain a catalog the standards community already maintains.
+
+Three doctrines coexist in Granit metadata catalogs:
+
+1. **Hand-curated small closed enums.** A finite, framework-owned list whose members are reviewed in Git and ship in a release (e.g. `ReactionToggleAction`, `EntityCustomizationKind`, the Tier B mutable-property enum). Use this when the set is genuinely framework-shaped and small enough that ownership belongs to Granit.
+2. **Closed enums delegated to a neutral standards body.** A potentially large set whose membership is *governed elsewhere* — by the Unicode Consortium, IETF, ISO — and validated on the wire by a compact deterministic rule rather than by carrying a full catalog snapshot in the framework.
+3. **Free strings.** Banned for any property that crosses the wire as an identifier. This is the Odoo `eval:`-string anti-pattern: a string typed by a tenant admin in a UI box becomes a code path, a permission key, or a database column name. Granit never accepts this shape.
+
+Doctrine (2) qualifies — and only qualifies — when **all** of these hold:
+
+- **Cosmetic categorisation only.** The value labels data; it never becomes executable code. No dispatch table beyond a deterministic render/aggregate function reads it as a discriminator selecting business logic.
+- **Governance at a neutral standards body.** Unicode, IETF, ISO. Not at Granit. Not at the consumer application. Granit gets to be a consumer of the standard, not a curator of it.
+- **Validable at insertion via a compact deterministic rule.** A regex, a range check, a state machine, or an ISO list — small enough to ship in a single source file and to update by editing a codepoint table, never by re-pulling a vendor catalog at every release.
+- **Audit-friendly.** The same identifier means the same thing across tenants, across versions of the framework, and across UI languages. A `"👍"` reaction, an `"FR"` country, a `"fr-BE"` locale, a `"EUR"` currency — the meaning is fixed by the standard, not by a translation table inside one tenant's database.
+
+Examples that qualify today:
+
+- **Unicode Extended_Pictographic** — Timeline reactions. First applied case; the validator lives at `src/Granit.Timeline/Domain/EmojiValidator.cs` in `granit-dotnet` and accepts any well-formed Unicode emoji sequence (including ZWJ, VS-16 emoji-presentation, and Fitzpatrick skin-tone modifiers) without embedding the CLDR RGI catalog.
+- **ISO 3166** country codes (`"FR"`, `"BE"`).
+- **BCP-47** language tags (`"fr-BE"`, `"en-US"`).
+- **ISO 4217** currency codes (`"EUR"`, `"USD"`).
+
+This is a refinement of guarantee #5, not a relaxation of it. The anti-Odoo "no `eval:` paths" rule is renewed verbatim: these are **data catalogs, not code catalogs**. The doctrine forbids strings that *become* code paths; it does not forbid strings that *label* data whose meaning is fixed by an external standard. A reaction emoji is rendered; it does not branch a workflow. A country code is filtered on; it does not select a validator.
+
+Stricter use cases — guaranteed cross-platform rendering (PDF exports, signed/archived content, legally-binding records that must survive a font migration) — MAY opt into RGI validation by adding a dedicated overload on top of the existing validator. They do not require re-amending this ADR; they are a stricter consumer of the same doctrine.
+
 ## Cross-references
 
 - [ADR-041](/dotnet/architecture/adr/041-component-catalog/) — Component catalog and naming convention (the visual primitives Tier A declares; consumed by all three tiers' renderers).
