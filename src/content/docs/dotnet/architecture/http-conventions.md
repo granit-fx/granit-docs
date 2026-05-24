@@ -280,7 +280,9 @@ Searches fields declared via `GlobalSearch()` in the `QueryDefinition`.
 ### JSON conventions
 
 - **Properties**: `camelCase` (default `System.Text.Json` behavior)
-- **Enums**: PascalCase strings via `JsonStringEnumConverter` (e.g., `"InProgress"`)
+- **Enums**: PascalCase strings via `JsonStringEnumConverter` (e.g., `"InProgress"`).
+  Storage matches the wire — see [Enum Persistence](/dotnet/data/enum-persistence/)
+  for the database-side convention.
 - **Dates**: ISO 8601 with timezone (`2025-03-15T10:30:00Z`)
 - **Identifiers**: UUID v7 with dashes (`"0193a5b2-7c3d-7def-8a12-bc3456789abc"`)
 
