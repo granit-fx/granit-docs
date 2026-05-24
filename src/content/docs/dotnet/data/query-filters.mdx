@@ -126,8 +126,9 @@ registers standard filters with names from `GranitFilterNames`.
 
 :::caution[EF InMemory does not apply value converters]
 `UseInMemoryDatabase()` ignores `HasConversion<>()` — this affects `[Encrypted]` fields,
-enum-to-string conversions, and JSON columns. Always use SQLite or Testcontainers
-(PostgreSQL) for tests that depend on converters or query filters.
+the [enum→varchar conversion injected by the convention](/dotnet/data/enum-persistence/),
+and JSON columns. Always use SQLite or Testcontainers (PostgreSQL) for tests that
+depend on converters or query filters.
 :::
 
 ## Host admin bypass — `EfStoreBase.Query(db)`

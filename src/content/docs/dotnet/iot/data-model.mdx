@@ -132,7 +132,7 @@ logical device, per tenant.
 | `SerialNumber` | `text` | NOT NULL, max 64 | Uppercase alphanumeric + dash, enforced by `DeviceSerialNumber` VO |
 | `Model` | `text` | NOT NULL, max 128 | Hardware model identifier (`HardwareModel` VO) |
 | `Firmware` | `text` | NOT NULL, max 64 | Semver-like (`FirmwareVersion` VO) |
-| `Status` | `text` | NOT NULL, max 32 | Enum stored as string for forward-compat |
+| `Status` | `text` | NOT NULL, max 32 | Enum stored as string per the [framework convention](/dotnet/data/enum-persistence/) — forward-compatible across enum reorderings |
 | `Label` | `text` | nullable, max 256 | Operator-friendly name |
 | `LastHeartbeatAt` | `timestamptz` | nullable | Updated by `IDeviceWriter.UpdateHeartbeatAsync` (bulk SQL) |
 | `SuspensionReason` | `text` | nullable, max 1024 | Set on `Suspend(reason)` |

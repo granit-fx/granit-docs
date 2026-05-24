@@ -15,7 +15,7 @@ follow/notify pattern.
 ## Package structure
 
 <FileTree>
-- Granit.Timeline/ Core stream engine, in-memory default, closed-catalog reactions on `TimelineEntry`
+- Granit.Timeline/ Core stream engine, in-memory default, Unicode-emoji reactions on `TimelineEntry`
   - Granit.Timeline.EntityFrameworkCore Durable persistence (PostgreSQL)
   - Granit.Timeline.Endpoints Minimal API routes, permissions
   - Granit.Timeline.Notifications Follow/notify via Granit.Notifications
@@ -26,7 +26,7 @@ follow/notify pattern.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, `ITimelineSource`, stream DTOs, closed-catalog reactions (👍 ❤️ 🎉 …) on entries | `Granit.Timing` |
+| `Granit.Timeline` | `ITimelined`, `ITimelineReader/Writer`, `ITimelineSource`, stream DTOs, Unicode-emoji reactions (👍 ❤️ 🎉 …) on entries — any well-formed Unicode emoji sequence, validated server-side (see [ADR-040 §5 — closed enums by reference to an upstream standard](/dotnet/architecture/adr/040-three-tier-metadata-architecture/#closed-enums-by-reference-to-an-upstream-standard)) | `Granit.Timing` |
 | `Granit.Timeline.EntityFrameworkCore` | Durable persistence for entries + attachments + reactions | `Granit.Timeline`, `Granit.Persistence` |
 | `Granit.Timeline.Endpoints` | REST API, permission policies | `Granit.Timeline`, `Granit.Authorization` |
 | `Granit.Timeline.Notifications` | Notification-backed follower/notifier bridge | `Granit.Timeline` |

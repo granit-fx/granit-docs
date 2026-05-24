@@ -1,9 +1,11 @@
 ---
 import DefaultHeader from "@astrojs/starlight/components/Header.astro";
 import PrintButton from "./PrintButton.astro";
+import DownloadLink from "./DownloadLink.astro";
 ---
 
 <DefaultHeader {...Astro.props}><slot /></DefaultHeader>
+<DownloadLink />
 <PrintButton />
 <style is:global>
   /* Insert print button in the header action bar (next to search/theme) */
