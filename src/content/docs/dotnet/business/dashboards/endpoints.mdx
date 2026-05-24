@@ -264,7 +264,7 @@ Status codes:
 
 Per-widget fields disambiguate two concerns the early draft conflated: `widgetType` is the declarative kind discriminator (mirror of `WidgetDefinition`'s `[JsonDerivedType]` `"type"` tag), `status` is the runtime outcome (`Snapshot` / `Unavailable` / `Error`).
 
-Enum values travel as PascalCase strings on the wire (ADR-039 §6.1) — `RefreshHint`, `WidgetSnapshotStatus`, `MetricValueKind`, etc. all serialise that way. Frontend TypeScript types match exactly: `type RefreshHint = "Static" | "Dynamic" | "Realtime"`.
+Enum values travel as PascalCase strings on the wire (ADR-039 §6.1) — `RefreshHint`, `WidgetSnapshotStatus`, `MetricValueKind`, etc. all serialise that way. Frontend TypeScript types match exactly: `type RefreshHint = "Static" | "Dynamic" | "Realtime"`. The database side mirrors the wire — see [Enum Persistence](/dotnet/data/enum-persistence/) for the storage convention.
 
 ### Per-widget snapshot shapes
 

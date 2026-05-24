@@ -1,0 +1,295 @@
+---
+title: "Enum Persistence — String by Default, Int on Opt-Out"
+description: Granit persists domain enums as varchar by default via ApplyGranitConventions. Opt out with [PersistAsInt]. Migration guide, USING CASE pitfall, frontend impact.
+sidebar:
+  label: Enum Persistence
+  order: 4
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Domain enums are persisted as `varchar` columns by default. The convention is
+applied automatically by `ApplyGranitConventions` — no per-property
+`HasConversion<string>()` calls. When you need raw integer storage (bitmasks,
+hot tables, pre-existing schemas), opt out with `[PersistAsInt]`.
+
+<Aside type="tip" title="Quick rule">
+Every enum property on an entity is stored as `varchar(N)`. Mark a property
+with `[PersistAsInt]` to keep it as `integer`. `[Flags]` enums fall back to
+`integer` automatically.
+</Aside>
+
+## Why string by default
+
+Default-int persistence makes operational data unreadable and refactors
+silently dangerous. A `status = 3` row leaves the on-call engineer guessing
+which version of the enum was deployed when the row was written. Reordering
+enum members — a routine refactor in C# — corrupts every existing row.
+
+| Aspect | `varchar` (default) | `integer` (opt-out) | Postgres native `enum` |
+|--------|---------------------|---------------------|------------------------|
+| Ops readability | `'Queued'` in `psql` | `0` requires reverse mapping | `'Queued'` |
+| Refactor safety | Reordering members is a no-op | Reordering corrupts data silently | Reordering requires `ALTER TYPE` |
+| Storage cost | +20–40 % vs. int | Smallest | Smallest |
+| Sort order | Alphabetical (rarely meaningful) | Declaration order | Declaration order |
+| Wire symmetry | Matches `JsonStringEnumConverter` 1:1 | Wire is string, DB is int — two mental models | Matches the wire |
+| Migration ergonomics | One `ALTER COLUMN` with `USING CASE` | N/A (default) | `ALTER TYPE ... ADD VALUE` is non-transactional |
+| Provider portability | Same SQL on Postgres and SQL Server | Same | **Postgres-only** — lock-in |
+
+Granit picks string as the default because the readability + refactor-safety
+gains dominate the storage overhead at typical enum cardinalities (4–20
+members, 6–16-byte names).
+
+## How the convention applies
+
+`ApplyGranitConventions` scans every entity type and, for each enum property:
+
+1. Skips the property if a `ValueConverter` is already configured (your
+   explicit override wins).
+2. Skips if the property carries `[PersistAsInt]`.
+3. Skips if the enum type is decorated with `[Flags]`.
+4. Otherwise injects `EnumToStringConverter<TEnum>` and sets
+   `MaxLength = max(20, longestMemberName + 4)` — leaving headroom for future
+   members.
+
+`Nullable<TEnum>` properties are detected via `Nullable.GetUnderlyingType`
+and persisted as nullable `varchar(N)`.
+
+```csharp
+public class OrderConfiguration : IEntityTypeConfiguration<Order>
+{
+    public void Configure(EntityTypeBuilder<Order> builder)
+    {
+        builder.HasKey(o => o.Id);
+
+        // No HasConversion / HasMaxLength needed — the convention covers it.
+        builder.Property(o => o.Status); // → varchar(20)
+        builder.Property(o => o.Priority); // → varchar(20), nullable
+
+        builder.Property(o => o.AuditFlags); // [Flags] enum → integer
+    }
+}
+```
+
+<Aside type="caution" title="EF InMemory ignores value converters">
+The InMemory provider skips `HasConversion<>()`, including the converter
+injected by the convention. Tests that depend on enum persistence must run
+against SQLite or Testcontainers Postgres — see
+[Query Filters § Common pitfalls](/dotnet/data/query-filters/#common-pitfalls).
+</Aside>
+
+## The opt-out path — `[PersistAsInt]`
+
+`PersistAsIntAttribute` lives in `Granit.Persistence`. Apply it to the entity
+property when string storage is the wrong choice. Document the reason in an
+XML comment — opt-outs should be auditable.
+
+```csharp
+public class UserPresence : Entity<Guid>
+{
+    /// <summary>
+    /// Manual status persisted as int — this is a write-heavy presence table
+    /// updated on every heartbeat, and the storage delta matters at fleet scale.
+    /// </summary>
+    [PersistAsInt]
+    public ManualStatus? ManualStatus { get; set; }
+}
+```
+
+Three legitimate reasons to opt out:
+
+1. **`[Flags]` bitmask semantics** — composition requires integer arithmetic.
+   The convention already auto-skips `[Flags]`; `[PersistAsInt]` makes the
+   choice explicit when you also want to disable the convention's other
+   safety checks.
+2. **Hot tables where 4 bytes matter** — write-heavy ledgers, telemetry,
+   presence. Measure first; this is a real but narrow win.
+3. **Pre-existing DB contracts** — a customer-owned database column that
+   cannot be migrated. Document the integration in the XML comment so the
+   constraint travels with the code.
+
+## PostgreSQL native enums — why not?
+
+Postgres has a first-class `CREATE TYPE ... AS ENUM (...)` construct. Granit
+deliberately does not use it:
+
+- **Provider lock-in.** Granit ships SQL Server and Postgres providers from
+  the same `*Configuration.cs`. Native enums require Postgres-specific
+  mapping and break the symmetry.
+- **Migration rigidity.** Adding a value is `ALTER TYPE ... ADD VALUE`, which
+  **cannot run inside a transaction** on most versions. Renaming or removing
+  a value requires creating a new type and rewriting every dependent column.
+- **Multi-`DataSource` wiring.** Npgsql requires every enum to be registered
+  on the `NpgsqlDataSource` builder before connection — a global registration
+  that is awkward in a multi-module framework where modules ship their own
+  enums independently.
+
+The varchar approach loses 20–40 % on storage and gains a single mental model
+across providers, transactional migrations, and zero global wiring.
+
+## Migration guide — int → varchar
+
+Apps consuming Granit that were running before the convention shipped already
+have `integer` columns. The migration to `varchar` is one-shot per consuming
+app.
+
+### Generate the migration
+
+<Tabs>
+  <TabItem label="Host context">
+```bash
+dotnet ef migrations add EnumPersistenceAsString \
+  --context HostDbContext \
+  --project src/MyApp.Infrastructure \
+  --startup-project src/MyApp.Host
+```
+  </TabItem>
+  <TabItem label="Tenant context">
+```bash
+dotnet ef migrations add EnumPersistenceAsString \
+  --context TenantDbContext \
+  --project src/MyApp.Infrastructure \
+  --startup-project src/MyApp.Host
+```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="The USING CASE pitfall is unavoidable on Postgres">
+EF Core 10 + Npgsql generate `ALTER COLUMN status TYPE varchar(20)` **without**
+a `USING` clause. Two failure modes:
+
+1. **Without `USING`** — Postgres rejects the migration with
+   `column "status" cannot be cast automatically to type character varying`.
+2. **With `USING status::varchar` added naïvely** — the migration *succeeds*
+   and silently writes `'0'`, `'1'`, `'2'` into the column. The next read
+   throws because `EnumToStringConverter` expects `'Queued'`, not `'0'`.
+
+You **must** generate a `CASE` expression mapping each integer back to its
+member name. Use the helper below; never write the cast by hand.
+</Aside>
+
+### Use `AlterEnumColumnIntToString<TEnum>`
+
+`Granit.Persistence.EntityFrameworkCore` ships a helper that emits the
+correct `CASE` expression from the enum members at compile time:
+
+```csharp
+using Granit.Persistence.EntityFrameworkCore.Migrations;
+
+public partial class EnumPersistenceAsString : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.AlterEnumColumnIntToString<ExportJobStatus>(
+            table: "data_exchange_export_jobs",
+            column: "status",
+            maxLength: 20);
+
+        migrationBuilder.AlterEnumColumnIntToString<ScheduledActionStatus>(
+            table: "scheduling_scheduled_actions",
+            column: "status",
+            maxLength: 24);
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.AlterEnumColumnStringToInt<ExportJobStatus>(
+            table: "data_exchange_export_jobs",
+            column: "status");
+
+        migrationBuilder.AlterEnumColumnStringToInt<ScheduledActionStatus>(
+            table: "scheduling_scheduled_actions",
+            column: "status");
+    }
+}
+```
+
+Under the hood, `AlterEnumColumnIntToString<TEnum>` emits:
+
+```sql
+ALTER TABLE data_exchange_export_jobs
+ALTER COLUMN status TYPE varchar(20)
+USING CASE status
+    WHEN 0 THEN 'Queued'
+    WHEN 1 THEN 'Exporting'
+    WHEN 2 THEN 'Completed'
+    WHEN 3 THEN 'Failed'
+END;
+```
+
+The `Down` helper emits the symmetric mapping from string back to int.
+
+<Aside type="caution" title="Test on a clone before prod">
+Always rehearse the migration on a clone of production data. The
+`ALTER COLUMN ... TYPE` rewrite takes an `ACCESS EXCLUSIVE` lock for the
+duration of the rewrite — on a wide table at scale, this can be measured in
+seconds to minutes. For very large tables consider the zero-downtime
+alternative: add a new `status_v2 varchar(N)` column, backfill in batches,
+swap, then drop the integer column.
+</Aside>
+
+### Bonus — partial indexes after the migration
+
+Once the column is `varchar`, predicate-style filtering becomes readable and
+indexable in one step:
+
+```sql
+CREATE INDEX ix_export_jobs_active
+  ON data_exchange_export_jobs (tenant_id, created_at)
+  WHERE status IN ('Queued', 'Exporting');
+```
+
+A partial index on the "active" subset typically shrinks the index by 10–100x
+versus a full index on a status that is mostly historical.
+
+## Frontend impact — wire format unchanged
+
+The wire format is decided by `JsonStringEnumConverter`, registered globally
+in `GranitHostBuilderExtensions`. Enums travel as PascalCase strings on the
+wire whether the DB stores them as `varchar` or `integer` — string DB storage
+just makes wire and storage agree.
+
+The recommended TypeScript shape is a union of string literals, not a numeric
+enum:
+
+```typescript
+// Good — matches the wire exactly
+export type ExportJobStatus = "Queued" | "Exporting" | "Completed" | "Failed";
+
+// Optional companion constant for autocomplete
+export const ExportJobStatus = {
+  Queued: "Queued",
+  Exporting: "Exporting",
+  Completed: "Completed",
+  Failed: "Failed",
+} as const satisfies Record<string, ExportJobStatus>;
+```
+
+See [HTTP Conventions §JSON conventions](/dotnet/architecture/http-conventions/#json-conventions)
+for the wire-format rules and
+[Dashboards § enum strings](/dotnet/business/dashboards/endpoints/) for a
+worked example.
+
+## Architecture test
+
+`Granit.ArchitectureTests` ships `EnumPersistenceConventionTests` as a
+defence-in-depth check. The test reflects over every loaded
+`IEntityTypeConfiguration<>`, collects enum properties, and asserts that one
+of the following holds:
+
+- The resolved `ValueConverter` is `EnumToStringConverter<TEnum>` (convention
+  applied), **or**
+- The property carries `[PersistAsInt]` (documented opt-out), **or**
+- The enum type carries `[Flags]` (auto-skipped by the convention).
+
+Anything else fails the build with a message naming the offending property.
+The convention does the work; the archi-test catches the rare cases where a
+module explicitly bypasses the convention and forgets to document why.
+
+## Related
+
+- [Persistence](/dotnet/data/persistence/) — `ApplyGranitConventions` overview
+- [Migrations](/dotnet/data/migrations/) — generating and running EF migrations
+- [Query Filters](/dotnet/data/query-filters/) — EF InMemory limitations on converters
+- [HTTP Conventions](/dotnet/architecture/http-conventions/#json-conventions) — wire-format rules for enums
+- [ADR-059](/dotnet/architecture/adr/059-enum-persistence-strategy/) — decision record
