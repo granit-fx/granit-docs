@@ -384,9 +384,34 @@ python3 scripts/generate-shard-filters.py
 The pre-push hook does this automatically when `.csproj` or `test-shards.json`
 files change. Without registration, CI silently skips the project.
 
+## Delivery gates
+
+A `*.Notifications` package describes *what* should be sent; **delivery
+gates** decide whether to actually send it. Any service registered as
+`INotificationDeliveryGate` is consulted by the fan-out engine per `(userId,
+notificationType, channel)` tuple — a `false` return drops that single
+delivery attempt without aborting the publish.
+
+The canonical gate is `Granit.Presence.Notifications`, which suppresses push
+channels (`SignalR`, `Sse`, `Push`, `MobilePush`) when the recipient's
+effective presence is `DoNotDisturb` or `Offline`. Store-and-forward
+channels (`InApp`, `Email`, `Sms`, `WhatsApp`, `Zulip`) are not gated — the
+user reads them when they return. See the
+[Presence module overview](/dotnet/infrastructure/presence/) for the full
+contract, including the cross-pod backplane requirement.
+
+<Aside type="tip" title="AllowDoNotDisturbBypass on the definition">
+Notification types whose `NotificationDefinition` opts into
+`AllowDoNotDisturbBypass = true` are routed past the gate entirely — the
+fan-out engine never asks. Reserve this for messages that must reach the
+user regardless of presence (security alerts, account lockouts, regulatory
+notices).
+</Aside>
+
 ## See also
 
 - [Notifications overview](./) — fan-out engine, channels, dependency graph
+- [Presence module](/dotnet/infrastructure/presence/) — `PresenceNotificationDeliveryGate` and the DnD push-suppression contract
 - [Email channel](./email-channel/) — provider configuration (SMTP, SES, SendGrid…)
 - [Wolverine integration](./wolverine-integration/) — durable outbox dispatch
 - [`Granit.Templating`](/dotnet/building-blocks/templating/) — embedded vs DB resolver, layouts, global contexts

@@ -142,6 +142,7 @@ const layers: Layer[] = [
     modules: [
       { name: "Wolverine",       pkg: "Granit.Wolverine",       href: "/dotnet/infrastructure/wolverine-messaging/",      tip: "Message bus, saga, outbox, retry (Wolverine)" },
       { name: "Notifications",   pkg: "Granit.Notifications",   href: "/dotnet/infrastructure/notifications/",  tip: "6-channel notifications: email, SMS, push, in-app, SignalR, SSE" },
+      { name: "Presence",        pkg: "Granit.Presence",        href: "/dotnet/infrastructure/presence/",       tip: "Online/Away/DnD presence: heartbeat tracker + manual override, gates push channels when user is DnD/Offline" },
       { name: "BackgroundJobs",  pkg: "Granit.BackgroundJobs",  href: "/dotnet/infrastructure/background-jobs/",tip: "Recurring & delayed jobs (Wolverine + Cronos)" },
       { name: "Scheduling",      pkg: "Granit.Scheduling",      href: "/dotnet/infrastructure/scheduling/",     tip: "User-facing job schedules — cron, calendar, retry policies, audit log" },
       { name: "Localization",    pkg: "Granit.Localization",    href: "/dotnet/infrastructure/localization/",   tip: "i18n for 18 cultures, source-generated keys, runtime overrides" },
