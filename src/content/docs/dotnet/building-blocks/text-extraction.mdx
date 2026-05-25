@@ -147,7 +147,7 @@ sees a byte.
 
 ## Security gates
 
-### Body-size cap — `LimitedStream` (VULN-001)
+### Body-size cap — `LimitedStream`
 
 Every extractor that ships with the framework wraps its input in
 `LimitedStream` before any allocation by a third-party parser. The cap is
@@ -158,7 +158,7 @@ truncating — operator errors should be loud.
 The presence of `LimitedStream` in every extractor package is pinned by the
 `Every_extractor_package_must_reference_LimitedStream` architecture test.
 
-### Zip-bomb gate — `OpenXmlGate` (VULN-001)
+### Zip-bomb gate — `OpenXmlGate`
 
 OpenXml files are ZIP archives. `OpenXmlGate.Inspect` walks the central
 directory **before** handing the stream to `DocumentFormat.OpenXml`:
@@ -173,14 +173,14 @@ never thrown. Per-part char cap (`OpenSettings.MaxCharactersInPart`) is also
 set so the OpenXml parser refuses individual XML parts bigger than the output
 cap.
 
-### Pixel-bomb gate — Tesseract OCR (VULN-001)
+### Pixel-bomb gate — Tesseract OCR
 
 `TesseractOcrExtractor` reads the image header via `Image.Identify` (no decode)
 and checks `width × height` against `TesseractOcrOptions.MaxImagePixels`
 (default 100 MP — covers an A1 page at 600 DPI). Oversized images soft-skip
 rather than tanking the OCR worker with a multi-gigabyte raster decode.
 
-### SSRF gate — HTML extractor (VULN-300)
+### SSRF gate — HTML extractor
 
 `HtmlTextExtractor` constructs its AngleSharp converter from
 `AngleSharpConfiguration.BuildForUntrustedContent()` by default. That profile
@@ -193,7 +193,7 @@ Hosts that index trusted templates (e.g. internal CMS) can opt into
 `ResolveHtmlExternalResources = true`, which switches the converter to
 `BuildForTrustedTemplates()`. The default stays SSRF-safe.
 
-### Tika sidecar — hostname allowlist + mTLS (VULN-102)
+### Tika sidecar — hostname allowlist + mTLS
 
 `TikaSidecarOptions` has no implicit "*" allowlist. `AllowedHosts` must be
 non-empty and must contain the host segment of `Uri`, otherwise the module
@@ -203,7 +203,7 @@ primary message handler configured (the host wires the client certificate via
 `ConfigurePrimaryHttpMessageHandler`). Response stream reads cap at
 `maxCharLength` so a malicious Tika instance cannot return unbounded text.
 
-### Vision OCR — AIQuota cost ceiling + GDPR Article 28 (VULN-102)
+### Vision OCR — AIQuota cost ceiling + GDPR Article 28
 
 `AiVisionOcrExtractor` sends document bytes to a third-party LLM provider
 (Azure OpenAI, Anthropic, customer-hosted vLLM, Ollama, ...). Two gates apply:
