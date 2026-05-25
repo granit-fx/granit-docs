@@ -344,6 +344,7 @@ export default defineConfig({
                     { label: "Workflow", link: "/dotnet/building-blocks/workflow/" },
                     { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
                     { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
+                    { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
                     { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
                     {
                       label: "Templating",

@@ -265,6 +265,21 @@ integration event for SIEM forwarding. See
 [Documents — Public Links](/dotnet/business/documents-public-links/) for the
 token model, the failure-mode envelope, and the security posture.
 
+## Document body extraction
+
+Search indexers, RAG pipelines, and GDPR redaction all need the document body
+as a plain string. The framework's
+[TextExtraction](/dotnet/building-blocks/text-extraction/) pipeline converts
+the uploaded bytes (PDF, DOCX, HTML, .eml, RTF, scans, ...) into a single
+`TextExtractionResult` — with a uniform truncation contract, body-size cap,
+zip-bomb / pixel-bomb / SSRF defences, and per-format soft-fail so a single
+malformed document never tanks an indexing batch.
+
+`Granit.Documents` does not hold an opinion on which extractors are wired —
+the host module references the per-format `Granit.TextExtraction.*` packages
+it cares about and resolves `ITextExtractionPipeline` to run the body through
+on upload or on demand.
+
 ## Related ADRs
 
 - [ADR-052 — Granit.Documents module](/dotnet/architecture/adr/052-documents-module/)
