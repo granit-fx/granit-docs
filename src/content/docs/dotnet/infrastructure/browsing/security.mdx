@@ -253,8 +253,8 @@ The analyzer (in `Granit.Analyzers` — *not* a separate Browsing.Analyzers
 package) flags string interpolation passed to `IBrowserPage.EvaluateAsync`,
 `AddScriptTagAsync`, and `AddStyleTagAsync`. Background:
 
-- VULN-203 audit finding: interpolated user input inside `EvaluateAsync` is
-  template injection identical to `eval(user_input)`.
+- Interpolated user input inside `EvaluateAsync` is template injection
+  identical to `eval(user_input)`.
 - The analyzer fires at compile time, not runtime — no perf cost.
 - Severity: `Warning` by default; promote to `Error` in `.editorconfig` for
   framework consumers.
