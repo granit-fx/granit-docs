@@ -88,6 +88,15 @@ Providers return `ReadOnlyMemory<byte>.Empty` when the user has no data — the
 framework records the provider in `manifest.EmptyProviders` without uploading
 an empty blob.
 
+<Aside type="note" title="Presence is not exported by design">
+`Granit.Presence` ships **no** DSAR contributor. The module stores only the
+current manual override (`ManualStatus`, `OverrideUntilUtc`) and a 90 s
+auto-expiring cache heartbeat — no history, no behavioural log. The data is
+trivial, user-declared, and carries no inference risk, so Art. 15 disclosure
+adds no value. The right-to-erasure obligation is met by the Identity
+integration which purges the row and cache entry on `UserDeletedEto`.
+</Aside>
+
 ## Writing a custom provider
 
 For data not covered by a built-in, implement `IPrivacyDataProvider` and ship
