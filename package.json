@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "markdownlint-cli2": "^0.22.1",
-    "starlight-image-zoom": "^0.14.1",
+    "starlight-image-zoom": "^0.14.2",
     "starlight-links-validator": "^0.24.0"
   },
   "pnpm": {
