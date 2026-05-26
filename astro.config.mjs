@@ -345,6 +345,7 @@ export default defineConfig({
                     { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
                     { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
                     { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
+                    { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
                     { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
                     {
                       label: "Templating",
