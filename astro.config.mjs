@@ -346,6 +346,15 @@ export default defineConfig({
                     { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
                     { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
                     { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
+                    {
+                      label: "Indexing",
+                      collapsed: true,
+                      items: [
+                        { label: "Overview", link: "/dotnet/building-blocks/indexing/" },
+                        { label: "Embeddings (RRF)", link: "/dotnet/building-blocks/indexing-embeddings/" },
+                        { label: "Background reindex", link: "/dotnet/building-blocks/indexing-background-jobs/" },
+                      ],
+                    },
                     { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
                     {
                       label: "Templating",

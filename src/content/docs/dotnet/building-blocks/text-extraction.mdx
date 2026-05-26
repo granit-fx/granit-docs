@@ -439,3 +439,6 @@ in-house extractors.
   block for tabular import/export (CSV / Excel).
 - [Query Engine](/dotnet/building-blocks/query-engine/) — sibling building
   block for declarative filters / sort / paging on top of EF Core.
+- [Indexing](/dotnet/building-blocks/indexing/) — primary downstream consumer:
+  `TextExtractionResult.Content` + `DetectedLanguage` feed straight into
+  `IndexedEntry<TKey>` for full-text + hybrid semantic search.
