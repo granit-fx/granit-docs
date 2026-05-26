@@ -280,6 +280,25 @@ the host module references the per-format `Granit.TextExtraction.*` packages
 it cares about and resolves `ITextExtractionPipeline` to run the body through
 on upload or on demand.
 
+## Search indexing
+
+Once the body is extracted, hosts hand the result to
+[Granit.Indexing](/dotnet/building-blocks/indexing/) — the horizontal
+full-text + semantic search framework. `Granit.Documents` does not own the
+indexer wiring (the host picks Postgres `tsvector` by default or Elasticsearch
+opt-in), but the integration shape is canonical:
+
+- `IIndexedEntrySource<Guid>.BuildEntryAsync` reads the latest document
+  version, runs it through `ITextExtractionPipeline`, populates
+  `IndexedEntry.Language` from `ILanguageDetector`, and sets
+  `DataSubjectId = doc.OwnerPartyId` for the GDPR Art. 17 cascade.
+- `ISearchResultAuthorizer<Guid>` plugs the document share ACL (see
+  [Share ACL model](#share-acl-model)) into the over-fetch loop so search
+  results never bypass document-level permissions.
+- The `Granit.Indexing.Privacy` bridge fans
+  `PersonalDataDeletionRequestedEto` to every registered backend, atomically
+  erasing every indexed copy when a data subject revokes consent.
+
 ## Related ADRs
 
 - [ADR-052 — Granit.Documents module](/dotnet/architecture/adr/052-documents-module/)
