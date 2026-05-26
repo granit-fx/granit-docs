@@ -409,78 +409,15 @@ flowchart LR
 
 ### Hybrid retrieval — Reciprocal Rank Fusion
 
-`Granit.Indexing.Embeddings` decorates both ports:
+`Granit.Indexing.Embeddings` decorates both ports — write-time embedding of
+`Content` on the **same row** as the body (atomic GDPR erasure), read-time
+fusion of the lexical and dense channels via Reciprocal Rank Fusion
+(Cormack et al. 2009, `k = 60`, dense ranking on score ties). The full
+registration order, `RrfFetchPoolSize` / pagination-after-fusion contract,
+graceful lexical-only degradation, and the HNSW ghost-vector operations
+concern live on the dedicated page:
 
-1. **Write decorator** — embeds `entry.Content` via `IEmbeddingGenerator` once and
-   forwards the resulting `Embedding` to the storage backend on the **same row**
-   as `Content`. (Architecture-pinned: no sidecar entity type allowed.)
-2. **Read decorator** — embeds `request.Query` once per call, fetches a deep pool
-   from both channels in parallel
-   (`poolSize = max(RrfFetchPoolSize, (offset + limit) * 2)`), then fuses with
-   Reciprocal Rank Fusion (Cormack et al. 2009):
-
-   `score(d) = Σ 1 / (k + denseRank_i(d))` (default `k = 60`)
-
-   *Dense ranking* means tied raw scores share a rank — the second equal-score
-   doc is not unfairly penalised over the first.
-
-3. Slices `Skip(offset).Take(limit)` **after** the fusion. Backend-level
-   pagination kills RRF math, so the fuser must see the deep union before the
-   page boundary.
-
-```csharp
-// 1. Host registers an IEmbeddingGenerator from any AI SDK (M.E.AI.Abstractions).
-builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(...);
-
-// 2. Storage backend's regular Add… extension (EF or ES).
-builder.Services.AddGranitIndexing();
-builder.Services.AddGranitIndexingEntityFrameworkCore(opts => opts.UseNpgsql(cs), typeof(Guid));
-
-// 3. Storage backend's vector extension (pgvector / dense_vector).
-builder.Services.AddGranitIndexingEmbeddingsBackend<Guid, MyResult>(
-    row => new MyResult(row.Key, row.Content));
-
-// 4. This package — decorates indexer + search backend.
-builder.Services.AddGranitIndexingEmbeddings();
-builder.Services.AddGranitIndexingEmbeddingsWriter<Guid>();
-builder.Services.AddGranitIndexingHybridSearch<Guid, MyResult>();
-```
-
-```json
-{
-  "Indexing": {
-    "Embeddings": {
-      "Dimensions": 1536,
-      "EmbeddingModelId": "text-embedding-3-small",
-      "RrfK": 60,
-      "RrfFetchPoolSize": 200,
-      "RecommendHnswReindexCadenceDays": 7
-    }
-  }
-}
-```
-
-`AddGranitIndexingEmbeddingsWriter` and `AddGranitIndexingHybridSearch` MUST be
-the **last** decorators applied to their target services so the embedding write
-reaches the storage backend. Both fast-fail at composition time when their
-dependencies are missing — no silent degraded mode. If the embedding call fails
-at search time (transport, timeout), the backend degrades to lexical-only with
-the original `(offset, limit)` — the user still gets results.
-
-<Aside type="caution" title="HNSW ghost vectors — operations concern">
-On Postgres + pgvector, an HNSW index keeps a pointer to deleted vectors in its
-graph until a `REINDEX INDEX CONCURRENTLY` runs. Elasticsearch retains deleted
-vectors until `forcemerge`. The framework cannot schedule this — it's an ops
-concern. `RecommendHnswReindexCadenceDays = 7` is informational only; wire a
-cron job:
-
-```sql
--- Postgres example (pg_cron weekly)
-SELECT cron.schedule('hnsw-purge', '0 3 * * 0',
-    $$REINDEX INDEX CONCURRENTLY ix_indexed_entry_embedding$$);
-```
-
-</Aside>
+→ **[Indexing — Embeddings (RRF)](/dotnet/building-blocks/indexing-embeddings/)**
 
 ## GDPR Art. 17 — atomic erasure path
 
@@ -529,101 +466,19 @@ No sidecar table, no orphan vectors.
 ## Background reindex with checkpoint resume
 
 `Granit.Indexing.BackgroundJobs` ships `RebuildIndexJob<TKey>` — an on-demand
-job that iterates every key emitted by an `IIndexedEntrySource<TKey>` and calls
-`IIndexer<TKey>.IndexAsync` per entry. Use it after a new tokenizer / analyzer
-deployment, after onboarding a new tenant who needs a backfill, or after a
-data-quality incident.
+job that iterates every key emitted by `IIndexedEntrySource<TKey>` and calls
+`IIndexer<TKey>.IndexAsync` per entry. Use it after a tokenizer / analyzer
+change, after a new tenant backfill, after wiring a new embedding model, or
+after a data-quality incident.
 
-```csharp
-builder.Services.AddGranitIndexing();
-builder.Services.AddGranitBackgroundJobs();
-builder.Services.AddGranitIndexingBackgroundJobs();
+The job is on-demand only — the framework ships no `[RecurringJob]`. The
+permission check MUST live at the dispatch site (the Wolverine handler has no
+HTTP context), and a `MaxEntriesPerRun` / `MaxRunDuration` budget should be
+set in production to bound the blast radius of a runaway or hostile dispatch.
+Resource budget, lifecycle events, checkpoint store options, and the full
+dispatch-controller example live on the dedicated page:
 
-builder.Services.AddGranitIndexingRebuildSource<Guid, MyDocumentSource>();
-
-// Persistent checkpoints (recommended in prod — survives worker restarts):
-builder.Services.AddGranitIndexingEntityFrameworkCoreCheckpointStore<Guid>();
-```
-
-Without `AddGranitIndexingEntityFrameworkCoreCheckpointStore<TKey>()` the
-framework falls back to `InMemoryRebuildCheckpointStore<TKey>` — fine for dev /
-single-process, but state is lost on restart.
-
-### Authorization — host-enforced at dispatch
-
-`RebuildIndexJob` is on-demand and carries no `[RecurringJob]` attribute. Hosts
-that want a recurring rebuild wire their own cron-driven trigger that emits the
-job.
-
-<Aside type="caution" title="Permission check at dispatch, not in the handler">
-By the time the Wolverine handler runs, the originating HTTP context is gone
-and the only principal information is what the dispatcher captured in the
-envelope. **The permission check MUST live at the dispatch site** — otherwise
-any in-process code path that obtains `IBackgroundJobDispatcher` can rebuild
-any tenant.
-
-Two canonical permission names ship in `IndexingRebuildPermissions`:
-
-- `Indexing.Rebuild.Execute` — tenant-scoped rebuild (pass the caller's own tenant id).
-- `Indexing.Rebuild.ExecuteGlobal` — cross-tenant rebuild (`TenantId: null`).
-  Restrict to host-side operators; this scans the entire dataset and is the
-  most expensive operation the module exposes.
-
-</Aside>
-
-```csharp
-public sealed class RebuildController(
-    IBackgroundJobDispatcher dispatcher,
-    IPermissionChecker permissionChecker,
-    ICurrentTenant currentTenant)
-{
-    public async Task TriggerAsync(CancellationToken ct)
-    {
-        if (!await permissionChecker.IsGrantedAsync(IndexingRebuildPermissions.Rebuild.Execute))
-            throw new ForbiddenException();
-
-        await dispatcher.PublishAsync(
-            new RebuildIndexJob<Guid>(currentTenant.Id), cancellationToken: ct);
-    }
-}
-```
-
-### Resource budget
-
-| Option | Default | Purpose |
-|--------|---------|---------|
-| `MaxEntriesPerRun` | `null` (unbounded) | Hard cap on entries processed in a single run. **Set this in production.** |
-| `MaxRunDuration` | `null` (unbounded) | Wall-clock budget. The service checkpoints + throws `RebuildBudgetExceededException`; Wolverine retries from the checkpoint. |
-| `MaxConsecutiveFailures` | `50` | Circuit-breaker on per-key faults. |
-| `CheckpointBatchSize` | `100` | Persist a checkpoint every N entries. |
-
-```json
-{
-  "Indexing": {
-    "BackgroundJobs": {
-      "CheckpointBatchSize": 100,
-      "MaxConsecutiveFailures": 50,
-      "MaxEntriesPerRun": 1000000,
-      "MaxRunDurationSeconds": 3600
-    }
-  }
-}
-```
-
-### Operational events
-
-Every rebuild raises in-process domain events on `ILocalEventBus` so audit / SIEM
-subscribers correlate dispatch-time identity with the run lifecycle:
-
-| Event | Raised at |
-|-------|-----------|
-| `IndexRebuildStartedEvent` | Very start, before reading the first key |
-| `IndexRebuildCompletedEvent` | Successful end-of-stream |
-| `IndexRebuildAbortedEvent` | `MaxConsecutiveFailures` / `MaxEntriesPerRun` / `MaxRunDuration` cut the run short, or cancellation. Carries the abort reason. |
-
-Each event carries `TenantId`, `SourceName`, `TKey` discriminator, processed
-count, and (when available) the dispatching `UserId` — wire it into
-`Granit.Auditing` for a GDPR-grade processing log.
+→ **[Indexing — Background reindex](/dotnet/building-blocks/indexing-background-jobs/)**
 
 ## Configuration cookbook
 
@@ -663,39 +518,6 @@ public sealed class SearchModule : GranitModule
   }
 }
 ```
-
-</TabItem>
-<TabItem label="Add hybrid (RRF) retrieval">
-
-```csharp
-builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(sp =>
-    sp.GetRequiredService<IGranitAIWorkspaceStore>()
-      .Resolve("default")
-      .GetEmbeddingGenerator());
-
-builder.Services.AddGranitIndexingEmbeddingsBackend<Guid, MyHitResponse>(
-    row => new MyHitResponse(row.Key, row.Summary ?? string.Empty, row.Tags));
-builder.Services.AddGranitIndexingEmbeddings();
-builder.Services.AddGranitIndexingEmbeddingsWriter<Guid>();
-builder.Services.AddGranitIndexingHybridSearch<Guid, MyHitResponse>();
-```
-
-```json
-{
-  "Indexing": {
-    "Embeddings": {
-      "Dimensions": 1536,
-      "EmbeddingModelId": "text-embedding-3-small",
-      "RrfK": 60,
-      "RrfFetchPoolSize": 200,
-      "RecommendHnswReindexCadenceDays": 7
-    }
-  }
-}
-```
-
-Wire a weekly `REINDEX INDEX CONCURRENTLY` on the HNSW index — see
-[HNSW ghost vectors](#hybrid-retrieval--reciprocal-rank-fusion).
 
 </TabItem>
 <TabItem label="Switch to Elasticsearch">
@@ -788,6 +610,13 @@ and run on every CI build:
 | `IIndexer_implementations_must_not_call_Console_or_Trace` | All telemetry flows through `IndexingMetrics` + `IndexingActivitySource` — never stdout. |
 
 ## See also
+
+### Sub-pages
+
+- [Indexing — Embeddings (RRF)](/dotnet/building-blocks/indexing-embeddings/) — opt-in hybrid retrieval: `IEmbeddingGenerator` writer + RRF fusion of BM25 / `tsvector` with cosine kNN; HNSW reindex cadence.
+- [Indexing — Background reindex](/dotnet/building-blocks/indexing-background-jobs/) — `RebuildIndexJob<TKey>` with checkpoint resume, dispatch-site permission, resource budgets, lifecycle events.
+
+### Related
 
 - [TextExtraction](/dotnet/building-blocks/text-extraction/) — upstream producer of `IndexedEntry.Content` (and `DetectedLanguage`) for unstructured uploads.
 - [LanguageDetection](/dotnet/building-blocks/language-detection/) — `ILanguageDetector` populates `IndexedEntry.Language`; backends pick the analyser from it.

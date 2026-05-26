@@ -1,0 +1,142 @@
+---
+title: "Indexing — Background reindex with checkpoint resume"
+description: "Granit.Indexing.BackgroundJobs: on-demand RebuildIndexJob<TKey> with checkpoint store (in-memory default or EF persistent), host-enforced permission at dispatch site, resource budgets, and lifecycle events for audit/SIEM correlation."
+sidebar:
+  label: Background reindex
+  order: 2
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+`Granit.Indexing.BackgroundJobs` ships `RebuildIndexJob<TKey>` — an on-demand
+job that iterates every key emitted by an
+`IIndexedEntrySource<TKey>.EnumerateKeysAsync` and calls
+`IIndexer<TKey>.IndexAsync` once per entry. The default indexing pipeline
+keeps the index in sync via lifecycle events; reach for the rebuild job when:
+
+- A new tokenizer / analyzer is deployed and the corpus needs re-indexing.
+- A new tenant is onboarded and existing rows must be back-filled.
+- A new embedding model is wired and every vector needs regenerating.
+- An operator manually triggers a full rebuild after a data-quality incident.
+
+## Registration
+
+```csharp
+builder.Services.AddGranitIndexing();
+builder.Services.AddGranitBackgroundJobs();
+builder.Services.AddGranitIndexingBackgroundJobs();
+
+// One per TKey you want to rebuild:
+builder.Services.AddGranitIndexingRebuildSource<Guid, MyDocumentSource>();
+
+// Persistent checkpoints (recommended in prod — survives worker restarts):
+builder.Services.AddGranitIndexingEntityFrameworkCoreCheckpointStore<Guid>();
+```
+
+Without `AddGranitIndexingEntityFrameworkCoreCheckpointStore<TKey>()` the
+framework falls back to `InMemoryRebuildCheckpointStore<TKey>` — fine for dev
+/ single-process, but state is lost on restart.
+
+## Triggering a rebuild — permission at the dispatch site
+
+`RebuildIndexJob` is on-demand and carries no `[RecurringJob]` attribute.
+Hosts that want a recurring rebuild wire their own cron-driven trigger that
+emits the job.
+
+<Aside type="caution" title="Authorization is host-enforced — never inside the handler">
+By the time the Wolverine handler runs, the originating HTTP context is gone
+and the only principal information is what the dispatcher captured in the
+envelope. **The permission check MUST live at the dispatch site** —
+otherwise any in-process code path that obtains
+`IBackgroundJobDispatcher` can rebuild any tenant.
+
+Two canonical permission names ship in `IndexingRebuildPermissions`:
+
+- `Indexing.Rebuild.Execute` — tenant-scoped rebuild (pass the caller's own tenant id).
+- `Indexing.Rebuild.ExecuteGlobal` — cross-tenant rebuild (`TenantId: null`).
+  Restrict to host-side operators; this scans the entire dataset and is the
+  most expensive operation the module exposes.
+
+</Aside>
+
+```csharp
+public sealed class RebuildController(
+    IBackgroundJobDispatcher dispatcher,
+    IPermissionChecker permissionChecker,
+    ICurrentTenant currentTenant)
+{
+    public async Task TriggerAsync(CancellationToken ct)
+    {
+        if (!await permissionChecker.IsGrantedAsync(IndexingRebuildPermissions.Rebuild.Execute))
+            throw new ForbiddenException();
+
+        await dispatcher.PublishAsync(
+            new RebuildIndexJob<Guid>(currentTenant.Id), cancellationToken: ct);
+    }
+}
+```
+
+## Resource budget
+
+The rebuild iterates every key emitted by the source and calls
+`IIndexer<TKey>.IndexAsync` once per entry — which in hosts wiring
+[Granit.Indexing.Embeddings](/dotnet/building-blocks/indexing-embeddings/)
+triggers one embedding call per entry. To bound the blast radius of a runaway
+or hostile dispatch:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `MaxEntriesPerRun` | `null` (unbounded) | Hard cap on entries processed in a single run. **Set this in production.** |
+| `MaxRunDuration` | `null` (unbounded) | Wall-clock budget. The service checkpoints + throws `RebuildBudgetExceededException`; Wolverine retries from the checkpoint. |
+| `MaxConsecutiveFailures` | `50` | Circuit-breaker on per-key faults. |
+| `CheckpointBatchSize` | `100` | Persist a checkpoint every N entries. |
+
+```json
+{
+  "Indexing": {
+    "BackgroundJobs": {
+      "CheckpointBatchSize": 100,
+      "MaxConsecutiveFailures": 50,
+      "MaxEntriesPerRun": 1000000,
+      "MaxRunDurationSeconds": 3600
+    }
+  }
+}
+```
+
+When either budget is hit the checkpoint is preserved and a typed exception
+(`RebuildBudgetExceededException`) is raised. Hosts wire this to a Wolverine
+retry policy that re-dispatches the job after a cool-down.
+
+## Crash recovery
+
+The rebuild service persists a checkpoint after every `CheckpointBatchSize`
+entries (default 100). On crash, the next dispatch reads the checkpoint and
+resumes past it — no duplicate indexing, no missing rows, provided your
+`IIndexedEntrySource.EnumerateKeysAsync` honours the `resumeAfter` contract:
+return keys strictly past the checkpoint, same order across calls.
+
+A run that exceeds `MaxConsecutiveFailures` aborts and the checkpoint is
+preserved so a follow-up trigger resumes from where the corruption started —
+rather than re-scanning the whole corpus and re-hitting the same bad row.
+
+## Operational events
+
+Every rebuild raises in-process domain events on `ILocalEventBus` so audit /
+SIEM subscribers can correlate dispatch-time identity with the run lifecycle:
+
+| Event | Raised at |
+|-------|-----------|
+| `IndexRebuildStartedEvent` | Very start, before reading the first key |
+| `IndexRebuildCompletedEvent` | Successful end-of-stream |
+| `IndexRebuildAbortedEvent` | `MaxConsecutiveFailures` / `MaxEntriesPerRun` / `MaxRunDuration` cut the run short, or cancellation. Carries the abort reason. |
+
+Each event carries `TenantId`, `SourceName`, `TKey` discriminator, processed
+count, and (when available) the dispatching `UserId` — wire it into
+`Granit.Auditing` for a GDPR-grade processing log.
+
+## See also
+
+- [Indexing](/dotnet/building-blocks/indexing/) — parent page: contracts, authorization boundary, backends, GDPR cascade, configuration.
+- [Indexing — Embeddings (RRF)](/dotnet/building-blocks/indexing-embeddings/) — re-embedding the corpus after a model change is the canonical use case for the rebuild job.
+- [Background jobs](/dotnet/infrastructure/background-jobs/) — host runtime for `IBackgroundJobDispatcher` and the Wolverine retry policy that re-dispatches on `RebuildBudgetExceededException`.
