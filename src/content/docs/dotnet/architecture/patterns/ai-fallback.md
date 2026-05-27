@@ -46,7 +46,7 @@ tiers are used depending on user-facing latency sensitivity:
 | `Granit.DataExchange.AI` | 5 s | Heuristic `IMappingSuggestionService` |
 | `Granit.Validation.AI` | 1 s | Skip AI check, return valid |
 | `Granit.Notifications.AI` | 3 s | Use static template |
-| `Granit.Privacy.AI` | 5 s | Conservative: mark field as potentially containing PII |
+| `Granit.Privacy.AI` | 15 s | Conservative (fail-closed): mark field as potentially containing PII |
 
 ### QueryEngine.AI — NLQ fallback
 

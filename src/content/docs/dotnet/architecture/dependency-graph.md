@@ -589,8 +589,10 @@ flowchart LR
 |---------|------------|
 | `Granit.Privacy` | `Core` |
 | `Granit.Privacy.BackgroundJobs` | `Privacy`, `BackgroundJobs` |
+| `Granit.Privacy.BackgroundJobs.Wolverine` | `Privacy.BackgroundJobs`, `Wolverine` |
 | `Granit.Privacy.Endpoints` | `Privacy`, `Authorization`, `Validation` |
 | `Granit.Privacy.Notifications` | `Privacy`, `Notifications` |
+| `Granit.Privacy.Auditing` | `Privacy`, `Auditing` |
 | `Granit.Encryption.EntityFrameworkCore` | `Core`, `Encryption`, `Persistence` |
 | `Granit.Encryption.BackgroundJobs` | `Encryption.EntityFrameworkCore` |
 

@@ -21,14 +21,20 @@ Each tenant can operate under a different regulation. The resolver checks:
     "Regulations": {
       "DefaultRegulation": "EU_GDPR",
       "TenantRegulations": {
-        "tenant-brazil": "BR_LGPD",
-        "tenant-california": "US_CCPA",
-        "tenant-china": "CN_PIPL"
+        "8f3c1d2a-0b44-4e7a-9c61-2f0a5b7d1e90": "BR_LGPD",
+        "b1e9a7c4-5d22-4f08-8a13-6c4e9f2b0d77": "US_CCPA",
+        "d4a2f018-3c91-4b6e-aa57-1e8b0c3d5f22": "CN_PIPL"
       }
     }
   }
 }
 ```
+
+<Aside type="caution">
+`TenantRegulations` keys are **tenant GUIDs** (`ICurrentTenant.Id` is a `Guid?`),
+not friendly slugs. The resolver looks up `tenantId.ToString()`, so a non-GUID key
+never matches and the tenant silently falls back to `DefaultRegulation`.
+</Aside>
 
 ## Built-in profiles
 

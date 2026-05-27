@@ -14,6 +14,16 @@ topic: backend
 > `Granit.Privacy.EntityFrameworkCore`, `Granit.Identity.Local.Privacy`,
 > `Granit.Auditing.Privacy`, `Granit.Notifications.Privacy`)
 
+**Update (2026-05, P6):** The assembly stage described below was re-architected.
+The single terminal streaming-ZIP assembler (`ExportArchiveAssemblyHandler`) was
+replaced by a background-job, sharded assembler (`PrivacyExportAssemblyService` +
+`PrivacyExportAssemblyJob`) that produces multiple ZIP64 shards plus a signed
+manifest sidecar, and the `IPrivacyDataProvider` contract is now a streamed
+`IAsyncEnumerable<ExportFragment>`. The sections on the terminal ZIP assembler and
+the rejected "bundle the assembler in BackgroundJobs" alternative are therefore
+superseded. See [Data Export](/dotnet/compliance/privacy/data-export/) for the
+current pipeline.
+
 ## Context
 
 Feature #553 / Story #554 landed the scatter-gather export saga

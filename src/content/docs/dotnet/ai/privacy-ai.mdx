@@ -116,40 +116,42 @@ if (result.ContainsPii)
 The `Description` field explains **where** and **what kind** of PII was found, but
 **never contains the actual value** — so it is safe to log.
 
-## Integration with Granit.Privacy
+## Composing PII detection into your pipeline
 
-`Granit.Privacy.AI` is designed to integrate with the `IDataProviderRegistry` — the
-registry that tracks which modules participate in GDPR right-to-erasure and data discovery.
-
-### Scanning unstructured fields
+`IAIPiiDetector` is a standalone building block — you call `ScanAsync` from your own
+validators, message handlers, or batch jobs and act on the result. The framework
+ships **only** the detector; the action you take on a finding (queue for review,
+pseudonymise, notify the DPO) is application code.
 
 ```csharp
-// Register a data provider that scans comment fields
-public class CommentPiiDataProvider(
-    ICommentRepository comments,
-    IAIPiiDetector piiDetector) : IDataProvider
+// Wolverine handler — your app subscribes after a record is created.
+// IPiiReviewQueue is application-defined; the framework provides IAIPiiDetector only.
+public static async Task Handle(
+    CommentCreatedEvent evt,
+    IAIPiiDetector detector,
+    IPiiReviewQueue reviewQueue,
+    CancellationToken ct)
 {
-    public async IAsyncEnumerable<PersonalDataEntry> DiscoverAsync(
-        Guid subjectId,
-        [EnumeratorCancellation] CancellationToken ct)
-    {
-        await foreach (Comment comment in comments.GetByAuthorAsync(subjectId, ct))
-        {
-            PiiDetectionResult scan = await piiDetector
-                .ScanAsync(comment.Body, ct)
-                .ConfigureAwait(false);
+    PiiDetectionResult result = await detector.ScanAsync(evt.Body, ct).ConfigureAwait(false);
 
-            if (scan.ContainsPii)
-            {
-                yield return new PersonalDataEntry(
-                    Field: "Comment.Body",
-                    EntityId: comment.Id,
-                    PiiTypes: scan.Items.Select(i => i.Type.ToString()).ToArray());
-            }
-        }
+    if (result.ContainsPii)
+    {
+        // item.Description carries the location/kind, never the raw value — safe to persist.
+        await reviewQueue.EnqueueAsync(
+            evt.CommentId,
+            result.Items.Select(i => (i.Type, i.Description)),
+            ct).ConfigureAwait(false);
     }
 }
 ```
+
+:::note
+Do not confuse PII detection with the **export** provider registry. Which modules
+export a data subject's data is governed by `IPrivacyDataProvider` /
+`IDataProviderRegistry` (see [Data Export](/dotnet/compliance/privacy/data-export/)).
+The detector is for *finding* PII in free text so you can act on it — it is not an
+export scope.
+:::
 
 ## Dedicated workspace (recommended)
 
@@ -180,51 +182,38 @@ not creative interpretation.
 
 ## Performance considerations
 
-PII detection calls the LLM synchronously. For high-throughput pipelines, consider
-running detection asynchronously via Wolverine:
-
-```csharp
-// Wolverine handler — triggered after record creation
-public static async Task Handle(
-    CommentCreatedEvent evt,
-    IAIPiiDetector detector,
-    IPrivacyFlagWriter flags,
-    CancellationToken ct)
-{
-    PiiDetectionResult result = await detector.ScanAsync(evt.Body, ct).ConfigureAwait(false);
-
-    if (result.ContainsPii)
-    {
-        await flags.FlagAsync(evt.CommentId, result.Items, ct).ConfigureAwait(false);
-        // Optional: notify DPO, trigger pseudonymization workflow, etc.
-    }
-}
-```
+PII detection calls the LLM synchronously. For high-throughput pipelines, run
+detection asynchronously via a Wolverine handler (see the example above) so the
+write path does not wait on the model.
 
 | Scenario | Recommended execution | Rationale |
 |----------|----------------------|-----------|
-| Form validation (user-facing) | Synchronous, 2s timeout, fail-open | Blocking is acceptable for submission |
+| Form validation (user-facing) | Synchronous, short timeout | Blocking is acceptable for submission; keep `TimeoutSeconds` low |
 | Batch scan of existing data | Async Wolverine handler | Potentially millions of records |
 | Import pipeline | Async, after persistence | Scan after save — upload should not wait |
 
-## Fail-open design
+## Fail-closed by default
 
-When the LLM is unavailable or times out, `LlmPiiDetector` returns:
+When the LLM is unavailable or times out, the detector returns a fallback result
+governed by `FailMode`:
 
-```csharp
-new PiiDetectionResult { ContainsPii = false, Items = [] }
-```
+- **`Closed` (default)** — assumes PII **is** present (`ContainsPii = true`). A
+  scanner outage therefore *blocks* a validation that gates on a clean result,
+  rather than silently waving the text through. This is the conservative,
+  GDPR-safe posture.
+- **`Open`** — assumes no PII (`ContainsPii = false`). Permissive, for
+  development and testing only.
 
-The call is logged as a warning. The calling code receives a "clean" result and
-continues. This is intentional: **a PII scanner should never block the application**
-— it should flag for review, not gate operations.
+Every fallback is logged as a warning. `FailMode = Open` is **rejected at startup**
+outside the Development environment — a permissive PII scanner in production is
+treated as a misconfiguration, not a choice.
 
-If you need hard blocking (reject on scanner failure), wrap the call:
-
-```csharp
-bool safe = await piiDetector.ScanAsync(text, ct)
-    .ContinueWith(t => t.IsCompletedSuccessfully && !t.Result.ContainsPii);
-```
+:::caution
+If you gate user-facing submissions on `ScanAsync` with the default `Closed`
+mode, a model outage will reject submissions. Either keep `TimeoutSeconds` low
+and surface a retry, or move detection to an async handler so the scanner flags
+for review instead of standing in the request path.
+:::
 
 ## Configuration reference
 
@@ -232,6 +221,7 @@ bool safe = await piiDetector.ScanAsync(text, ct)
 |----------|------|---------|-------------|
 | `WorkspaceName` | `string` | `"default"` | AI workspace for PII detection. Use an Ollama workspace in production |
 | `TimeoutSeconds` | `int` | `15` | LLM call timeout. PII detection is allowed more time than moderation |
+| `FailMode` | `PiiDetectionFailMode` | `Closed` | Behaviour on scanner failure. `Closed` assumes PII is present (safe default); `Open` assumes none (Development only — rejected at startup elsewhere) |
 
 ## See also
 
