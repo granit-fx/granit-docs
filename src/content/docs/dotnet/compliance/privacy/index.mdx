@@ -30,11 +30,13 @@ Each tenant can operate under a different regulation, resolved at runtime.
 <FileTree>
 - Granit.Privacy Data export saga, deletion with cooling-off, legal agreements
   - Granit.Privacy.EntityFrameworkCore EF Core persistence for legal document version management
-  - Granit.Privacy.BlobStorage Scatter-gather export pipeline — `PrivacyFragmentUploader` + `ExportArchiveAssemblyHandler` (ZIP + manifest)
+  - Granit.Privacy.BlobStorage Streaming export pipeline — `PrivacyFragmentUploader` + `PrivacyExportAssemblyService` (sharded ZIP64 + signed manifest)
   - Granit.Privacy.Regulations Regulation registry, 14 built-in profiles, per-tenant resolver
   - Granit.Privacy.Regulations.Cookies Bridge — regulation-aware cookie consent model
   - Granit.Privacy.Endpoints Minimal API endpoints for export, deletion, consent, regulation
-  - Granit.Privacy.BackgroundJobs Deletion deadline enforcer job
+  - Granit.Privacy.BackgroundJobs Deletion deadline enforcer + export-assembly job
+  - Granit.Privacy.BackgroundJobs.Wolverine Export-assembly retry policy (1m/5m/15m → DLQ) + crash-resume
+  - Granit.Privacy.Auditing Bridge — records the export lifecycle to `Granit.Auditing` for Art. 30 ROPA
   - Granit.Privacy.Notifications Deletion reminder, confirmation, and re-consent emails (8 types, 13 base languages, pt-BR LGPD-specific variants, regulation-aware deadlines)
   - Granit.Privacy.AI AI-powered PII detection in free-text fields
 </FileTree>
@@ -43,11 +45,13 @@ Each tenant can operate under a different regulation, resolved at runtime.
 | ------- | ---- | ---------- |
 | `Granit.Privacy` | Data export/deletion orchestration, legal agreements, opt-out | `Granit`, `Granit.Workflow` |
 | `Granit.Privacy.EntityFrameworkCore` | EF Core persistence for `LegalDocument` version management | `Granit.Privacy`, `Granit.Persistence.EntityFrameworkCore` |
-| `Granit.Privacy.BlobStorage` | Scatter-gather export pipeline: `PrivacyFragmentUploader` (provider-side presigned upload) + `ExportArchiveAssemblyHandler` (ZIP + `manifest.json`, `CountingStream`-guarded against `ExportMaxSizeMb`) | `Granit.Privacy`, `Granit.BlobStorage` |
+| `Granit.Privacy.BlobStorage` | Streaming export pipeline: `PrivacyFragmentUploader` (staging + HMAC) + `PrivacyExportAssemblyService` (sharded ZIP64 + signed manifest sidecar) | `Granit.Privacy`, `Granit.BlobStorage` |
 | `Granit.Privacy.Regulations` | Regulation registry, 14 built-in profiles, per-tenant resolver | `Granit` |
 | `Granit.Privacy.Regulations.Cookies` | Bridge: regulation-aware cookie consent model | `Granit.Http.Cookies`, `Granit.Privacy.Regulations` |
 | `Granit.Privacy.Endpoints` | HTTP endpoints for data subject rights + regulation profile | `Granit.Privacy`, `Granit.Privacy.Regulations`, `Granit.Http.Cookies`, `Granit.Authorization`, `Granit.Validation` |
-| `Granit.Privacy.BackgroundJobs` | Deletion deadline enforcer | `Granit.Privacy`, `Granit.BackgroundJobs` |
+| `Granit.Privacy.BackgroundJobs` | Deletion deadline enforcer + export-assembly job | `Granit.Privacy`, `Granit.BackgroundJobs` |
+| `Granit.Privacy.BackgroundJobs.Wolverine` | Export-assembly retry-with-cooldown (1m/5m/15m → DLQ) + per-shard crash-resume | `Granit.Privacy.BackgroundJobs`, `Granit.Wolverine` |
+| `Granit.Privacy.Auditing` | Records the export lifecycle to the audit trail for Art. 30 ROPA | `Granit.Privacy`, `Granit.Auditing` |
 | `Granit.Privacy.Notifications` | Deletion reminder and confirmation notification bridge + `{{ privacy }}` template global context (controller / DPO contact) | `Granit.Privacy`, `Granit.Notifications`, `Granit.Templating` |
 | `Granit.Privacy.AI` | LLM-powered PII detection (`IAIPiiDetector`) | `Granit.Privacy`, `Granit.AI` |
 
@@ -94,8 +98,9 @@ providers and waits for each to complete.
 
 | Permission | Scope |
 | ---------- | ----- |
-| `Privacy.Export.Execute` | Request personal data export |
-| `Privacy.Deletion.Execute` | Request and cancel personal data deletion |
+| `Privacy.Exports.Execute` | Request a personal data export for one's own data (self-service) |
+| `Privacy.Exports.ExecuteOnBehalfOf` | Request an export on behalf of another data subject (admin DSR) |
+| `Privacy.Deletions.Execute` | Request and cancel personal data deletion |
 | `Privacy.Purposes.Read` | Read registered processing purposes |
 | `Privacy.Agreements.Read` | View legal documents and consent status |
 | `Privacy.Agreements.Create` | Accept a legal agreement |

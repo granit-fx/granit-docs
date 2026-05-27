@@ -1,6 +1,6 @@
 ---
 title: "Personal Data Export"
-description: Turnkey scatter-gather pipeline for GDPR Art. 15/20 export — EF Core tracker, built-in module providers, streaming ZIP archive, presigned download.
+description: Turnkey scatter-gather pipeline for GDPR Art. 15/20 export — streaming provider contract, background-job sharded assembly, signed manifest, step-up download, on-behalf-of admin DSR.
 sidebar:
   order: 3
   label: Data Export
@@ -8,13 +8,19 @@ sidebar:
 
 import { Aside, Badge } from "@astrojs/starlight/components";
 
-The framework ships an end-to-end export pipeline. Wire the tracker, opt into
+The framework ships an end-to-end export pipeline. Wire the trackers, opt into
 the built-in providers you need, add providers for app-specific data, and
-`POST /privacy/exports` → `GET /privacy/exports/{id}/download` works out of the
-box. See [ADR-021](/dotnet/architecture/adr/021-privacy-data-export-defaults/) for
-the design rationale.
+`POST /privacy/exports` → `GET /privacy/exports/{id}/download/{shard}` works out
+of the box. See [ADR-021](/dotnet/architecture/adr/021-privacy-data-export-defaults/)
+for the original design rationale (note: the assembly stage was re-architected in
+the P6 streaming/sharding epic — this page reflects the current shape).
 
 ## Pipeline at a glance
+
+A request fans out to every in-scope provider, each of which **streams** one or
+more signed fragments to a staging area. The scatter-gather saga collects the
+fragment references, then hands assembly to a **background job** that streams the
+fragments into one or more ZIP64 shards and uploads a signed manifest sidecar.
 
 ```mermaid
 sequenceDiagram
@@ -22,25 +28,27 @@ sequenceDiagram
     participant API as Privacy Endpoints
     participant Saga as PersonalDataExportSaga
     participant Providers as IPrivacyDataProvider(s)
-    participant Assembler as ExportArchiveAssemblyHandler
+    participant Job as PrivacyExportAssemblyJob
+    participant Asm as PrivacyExportAssemblyService
     participant Blob as IBlobStorage
-    participant Tracker as IExportRequestTrackerWriter
 
-    User->>API: POST /privacy/exports
-    API->>Tracker: RecordRequestAsync
+    User->>API: POST /privacy/exports (Scopes?, Idempotency-Key?)
     API->>Saga: publish PersonalDataRequestedEto
-    par for each registered provider
+    par for each in-scope provider
         Saga->>Providers: PersonalDataRequestedEto
-        Providers->>Blob: InitiateUpload + PUT + ConfirmUpload
-        Providers->>Saga: PersonalDataPreparedEto(BlobId)
+        Providers->>Blob: stage fragment bytes (HMAC-signed)
+        Providers->>Saga: PersonalDataPreparedEto (one per fragment)
     end
-    Saga->>Assembler: ExportCompletedEto(fragments)
-    Assembler->>Blob: download each fragment
-    Assembler->>Blob: upload ZIP (streaming)
-    Assembler->>Tracker: MarkCompletedAsync(Completed, blobId)
-    User->>API: GET /privacy/exports/{id}/download
-    API->>Blob: CreateDownloadUrlAsync
-    API-->>User: 302 → presigned URL
+    Saga->>Job: ExportCompletedEto → dispatch PrivacyExportAssemblyJob
+    Job->>Asm: AssembleAsync
+    Asm->>Blob: verify HMAC, stream fragments into ZIP64 shards
+    Asm->>Blob: upload signed manifest sidecar
+    Asm->>Job: emit ExportArchiveAssembledEto (ShardCount)
+    Note over User,Blob: privacy.export_ready email — one download link per shard
+    User->>API: GET /privacy/exports/{id}/download/manifest (step-up)
+    User->>API: GET /privacy/exports/{id}/download/{shard} (step-up)
+    API->>Blob: stream shard
+    API-->>User: 200 application/zip
 ```
 
 ## Wiring
@@ -52,9 +60,15 @@ services.AddGranitPrivacy(privacy => privacy
     .AddGranitAuditingPrivacyProvider()           // auditing.json
     .AddGranitNotificationsPrivacyProvider());    // notifications.json
 
-app.MapGranitPrivacy();                           // core endpoints
-app.MapGranitPrivacyExportDownload();             // GET /privacy/exports/{id}/download
+app.MapGranitPrivacy();                           // request + status + download routes
 ```
+
+<Aside type="caution" title="Do not also call MapGranitPrivacyExportDownload()">
+`MapGranitPrivacy()` now maps the download routes internally. The legacy
+`MapGranitPrivacyExportDownload()` extension still exists but registers a
+conflicting `GET /exports/{id}/download` — calling both is a duplicate-route
+error. Use `MapGranitPrivacy()` alone.
+</Aside>
 
 Load modules:
 
@@ -62,6 +76,8 @@ Load modules:
 [DependsOn(
     typeof(GranitPrivacyEntityFrameworkCoreModule),
     typeof(GranitPrivacyBlobStorageModule),
+    typeof(GranitPrivacyBackgroundJobsModule),          // PrivacyExportAssemblyJob
+    typeof(GranitPrivacyBackgroundJobsWolverineModule), // assembly retry policy (Wolverine host)
     typeof(GranitIdentityLocalPrivacyModule),
     typeof(GranitAuditingPrivacyModule),
     typeof(GranitNotificationsPrivacyModule))]
@@ -69,10 +85,13 @@ public class MyAppModule : GranitModule { }
 ```
 
 <Aside type="tip">
-`UseEntityFrameworkCoreTrackers()` adds `privacy_export_requests` and
-`privacy_deletion_requests` to `PrivacyDbContext`. Run
+`UseEntityFrameworkCoreTrackers()` adds `privacy_export_requests`,
+`privacy_deletion_requests`, and the `export_assembly_checkpoints` table
+(crash-resume) to `PrivacyDbContext`. Run
 `dotnet ef migrations add AddPrivacyTrackers` against the registered
-`PrivacyDbContext` to generate the schema.
+`PrivacyDbContext` to generate the schema. Apps that keep privacy entities on
+their own DbContext use `UseEntityFrameworkCoreTrackers<TContext>()` after
+`modelBuilder.ConfigurePrivacyModule()`.
 </Aside>
 
 ## Built-in providers
@@ -84,12 +103,11 @@ public class MyAppModule : GranitModule { }
 | `Auditing` | `auditing` | `Granit.Auditing.Privacy` | User-authored audit trail | 10 000 entries |
 | `Notifications` | `notifications` | `Granit.Notifications.Privacy` | Inbox + preferences + subscriptions | 5 000 inbox items |
 
-Providers return `ReadOnlyMemory<byte>.Empty` when the user has no data — the
-framework records the provider in `manifest.EmptyProviders` without uploading
-an empty blob.
+Providers yield an empty enumerable when the subject has no data — the framework
+records the provider in `manifest.emptyProviders` without writing a fragment.
 
 <Aside type="note" title="Presence is not exported by design">
-`Granit.Presence` ships **no** DSAR contributor. The module stores only the
+`Granit.Presence` ships **no** export provider. The module stores only the
 current manual override (`ManualStatus`, `OverrideUntilUtc`) and a 90 s
 auto-expiring cache heartbeat — no history, no behavioural log. The data is
 trivial, user-declared, and carries no inference risk, so Art. 15 disclosure
@@ -97,28 +115,75 @@ adds no value. The right-to-erasure obligation is met by the Identity
 integration which purges the row and cache entry on `UserDeletedEto`.
 </Aside>
 
+## The provider contract
+
+A provider declares its identity statically and **streams** fragments. Two
+fragment kinds exist:
+
+- `StagedExportFragment` — transient content (JSON from Identity, Auditing,
+  Notifications) uploaded to a staging container.
+- `PassThroughExportFragment` — bytes that already live in another container
+  (e.g. `Documents` binaries); the assembler streams them straight into the ZIP
+  with no staging round-trip.
+
+```csharp
+public interface IPrivacyDataProvider
+{
+    static abstract string ProviderName { get; }   // saga + scope addressing
+    static abstract string DisplayKey { get; }      // localised scope-selector label
+    static abstract string? FeatureName { get; }    // null = always visible
+
+    // Cheap presence probe for the scope selector (count-style, < 50 ms).
+    ValueTask<bool> HasDataAsync(PrivacyExportContext context, CancellationToken ct);
+
+    // Streamed fragments — each signed by the framework before assembly.
+    IAsyncEnumerable<ExportFragment> ExportAsync(PrivacyExportContext context, CancellationToken ct);
+}
+```
+
+`PrivacyExportContext` carries `RequestId`, `SubjectUserId`, `CallerUserId`
+(equal to the subject for self-service; different for admin DSR), `TenantId`
+(`Guid?`), and `Regulation`.
+
+<Aside type="caution" title="Migration from the pre-P6 contract">
+The previous shape `Task<ReadOnlyMemory<byte>> ExportAsync(Guid userId, CancellationToken)`
+with static `ContentType` / `FileName(Guid)` members has been removed. Providers
+now stream `ExportFragment` values and declare `DisplayKey` / `FeatureName`
+instead. The single in-memory buffer it imposed could not support blob-backed
+modules (Documents, attachments) — those now yield `PassThroughExportFragment`.
+</Aside>
+
 ## Writing a custom provider
 
-For data not covered by a built-in, implement `IPrivacyDataProvider` and ship
-a one-line Wolverine handler next to it. The static-abstract members let the
-uploader and scatter-gather registry reason about the provider without
-instantiating it.
+Lightweight providers use `IStagedFragmentBuilder.BuildJsonAsync` — it serialises
+the DTO, uploads it to the staging container, and signs the integrity tag, so the
+provider never touches HMAC or upload plumbing. Ship a one-line Wolverine handler
+next to the provider so the uploader iterates its fragments.
 
 ```csharp
 public sealed class MedicalRecordPrivacyDataProvider(
-    IMedicalRecordReader reader) : IPrivacyDataProvider
+    IMedicalRecordReader reader,
+    IStagedFragmentBuilder fragmentBuilder) : IPrivacyDataProvider
 {
     public static string ProviderName => "playground-medical";
-    public static string ContentType => "application/json";
-    public static string FileName(Guid requestId) => "medical-records.json";
+    public static string DisplayKey => "Privacy.Scopes.Medical";
+    public static string? FeatureName => null;   // always visible in the scope selector
 
-    public async Task<ReadOnlyMemory<byte>> ExportAsync(Guid userId, CancellationToken ct)
+    public async ValueTask<bool> HasDataAsync(PrivacyExportContext context, CancellationToken ct) =>
+        await reader.HasRecordsAsync(context.SubjectUserId, ct).ConfigureAwait(false);
+
+    public async IAsyncEnumerable<ExportFragment> ExportAsync(
+        PrivacyExportContext context,
+        [EnumeratorCancellation] CancellationToken ct)
     {
         IReadOnlyList<MedicalRecord> records = await reader
-            .GetByPatientAsync(userId, ct).ConfigureAwait(false);
-        if (records.Count == 0) return ReadOnlyMemory<byte>.Empty;
+            .GetByPatientAsync(context.SubjectUserId, ct).ConfigureAwait(false);
+        if (records.Count == 0)
+            yield break;   // recorded as an empty provider in the manifest
 
-        return JsonSerializer.SerializeToUtf8Bytes(records, JsonOptions);
+        yield return await fragmentBuilder
+            .BuildJsonAsync(context, ProviderName, "medical-records.json", records, ct)
+            .ConfigureAwait(false);
     }
 }
 
@@ -141,45 +206,103 @@ services.AddGranitPrivacy(privacy => privacy
 ```
 
 <Aside type="caution">
-The framework's architecture test (`PrivacyDataProviderConventionTests`)
-enforces that every non-abstract `IPrivacyDataProvider` has a matching
-`*PersonalDataExportHandler` in the same assembly. Without the pairing, the
-saga registers the provider but never receives a fragment — the export times
-out silently at `ExportTimeoutMinutes`.
+The framework's architecture test enforces that every non-abstract
+`IPrivacyDataProvider` has a matching `*PersonalDataExportHandler` in the same
+assembly, and that `DisplayKey` resolves in all 18 framework cultures. Without
+the handler pairing the saga registers the provider but never receives a
+fragment — the export times out silently at `ExportTimeoutMinutes`.
 </Aside>
 
 ## Endpoints
 
 | Method | Route | Operation | Permission |
 | ------ | ----- | --------- | ---------- |
-| <Badge text="POST" variant="success" /> | `/privacy/exports` | RequestPrivacyExport | `Privacy.Export.Execute` |
-| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}` | GetPrivacyExportStatus | *(owner only)* |
-| <Badge text="GET" variant="note" /> | `/privacy/exports` | ListPrivacyExports | *(owner only)* |
-| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}/download` | DownloadPrivacyExportArchive | *(owner only)* |
+| <Badge text="GET" variant="note" /> | `/privacy/exports/scopes` | ListPrivacyExportScopes | `Privacy.Exports.Execute` |
+| <Badge text="POST" variant="success" /> | `/privacy/exports` | RequestPrivacyExport | `Privacy.Exports.Execute` |
+| <Badge text="POST" variant="success" /> | `/privacy/exports/on-behalf-of` | RequestPrivacyExportOnBehalfOf | `Privacy.Exports.ExecuteOnBehalfOf` |
+| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}` | GetPrivacyExportStatus | *(subject; or the operator who filed it)* |
+| <Badge text="GET" variant="note" /> | `/privacy/exports` | ListPrivacyExports | *(subject only)* |
+| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}/download/manifest` | DownloadPrivacyExportManifest | `Privacy.Exports.Execute` + step-up |
+| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}/download/{shardIndex}` | DownloadPrivacyExportShard | `Privacy.Exports.Execute` + step-up |
+| <Badge text="GET" variant="note" /> | `/privacy/exports/{id}/download` | DownloadPrivacyExport | `Privacy.Exports.Execute` + step-up |
 
-The download endpoint returns `302 Found` with a short-lived presigned URL when
-the request is `Completed` or `PartiallyCompleted`. Pending, timed-out, or
-`SizeLimitExceeded` requests return `409 Conflict`; requests that do not exist
-or belong to another user return `404 Not Found`.
+- **`POST /privacy/exports`** returns `202 Accepted`. An optional `Scopes[]` body
+  narrows the export to specific provider scopes (discover them via
+  `GET /privacy/exports/scopes`); omitting it exports everything visible to the
+  subject. The endpoint is rate-limited (policy `privacy-export-create`) and
+  honours an optional `Idempotency-Key` header so a double-submit returns the
+  original request instead of starting a second export.
+- **`POST /privacy/exports/on-behalf-of`** is the admin DSR path — a DPO or
+  support operator filing an export for another data subject. It carries its own
+  permission (`Privacy.Exports.ExecuteOnBehalfOf`) and rate-limit policy
+  (`privacy-export-create-on-behalf-of`) so it never shares the self-service
+  quota. An unknown subject returns `404`.
+- **Download** is a streamed response (not a `302` redirect). The compat
+  `/download` route streams the single shard when there is one, or the manifest
+  when sharded; for deterministic multi-shard downloads, read the manifest then
+  fetch each `/download/{shardIndex}`. Step-up authentication is required by
+  default (see below) — a long-lived session cookie alone must not release a
+  full personal-data archive.
+
+### Step-up authentication on download
+
+The download endpoints require a recent re-authentication. When the OIDC
+`auth_time` claim is older than `Privacy:Endpoints:DownloadStepUpMaxAge` (default
+5 min), the endpoint returns `401` with `WWW-Authenticate: Bearer error="step_up"`
+so an OIDC-aware BFF can refresh the session transparently and retry. Hosts
+behind a hardware-token wall can disable it via
+`Privacy:Endpoints:DownloadStepUpRequired = false`.
 
 ## Archive layout
 
+The assembler produces **one or more ZIP64 shards** plus a **separate signed
+manifest sidecar** (the manifest is its own blob, not an entry inside the ZIP):
+
 ```text
-personal-data-export-{requestId}.zip
-├── manifest.json
-├── identity-local.json        (from Granit.Identity.Local.Privacy)
-├── auditing.json              (from Granit.Auditing.Privacy)
-├── notifications.json         (from Granit.Notifications.Privacy)
-└── {custom-provider}.json     (from each app-specific IPrivacyDataProvider)
+personal-data-export/{requestId}-000.zip      ← shard 0
+personal-data-export/{requestId}-001.zip      ← shard 1 (rollover at ExportShardMaxSizeMb)
+personal-data-export-{requestId}-manifest.json ← signed manifest sidecar
 ```
 
-`manifest.json` records:
+Each shard rolls over at `ExportShardMaxSizeMb` (default 2 GB). A single entry
+larger than the cap lands alone in its own shard (ZIP64 covers it) rather than
+being split. Entry paths inside a shard are the sanitized relative paths the
+providers chose (e.g. `Documents/2024/foo.pdf`), and compression mode is chosen
+by content type (already-compressed types are stored, not re-deflated).
 
-- `requestId`, `userId`, `regulation`, `requestedAt`, `completedAt`
-- `isPartial` — `true` when the saga timed out before every provider responded
-- `missingProviders` — names of providers that never emitted a fragment
-- `emptyProviders` — names of providers that returned `ReadOnlyMemory<byte>.Empty`
-- `fragments[]` — one entry per fragment file in the ZIP (provider name, file name, content type, blob reference)
+## Signed manifest
+
+The manifest sidecar is a two-property envelope — `payload` (the canonical
+manifest) and `integrityTag` (HMAC-SHA256 over the payload bytes):
+
+```json
+{
+  "payload": {
+    "schemaVersion": 1,
+    "requestId": "…", "userId": "…", "regulation": "EU_GDPR",
+    "requestedAt": "…", "completedAt": "…",
+    "isPartial": false,
+    "missingProviders": [],
+    "emptyProviders": ["notifications"],
+    "shards": [
+      { "index": 0, "objectKey": "personal-data-export/…-000.zip",
+        "compressedSizeBytes": 12345, "sha256": "<hex>" }
+    ],
+    "fragments": [
+      { "providerName": "identity-local", "fileName": "identity-local.json",
+        "contentType": "application/json", "blobReferenceId": "…" }
+    ]
+  },
+  "integrityTag": "v1:<base64url-hmac>"
+}
+```
+
+Every fragment is HMAC-signed when produced; the assembler verifies the tag
+before opening the source blob and routes unsigned or tampered fragments to the
+dead-letter queue rather than into the archive — a fragment that references a
+blob the subject does not own cannot be assembled without a valid signature.
+`sha256` is empty for shards that were resumed after a crash (recomputing the
+digest would require re-streaming the committed shard).
 
 ## Configuration
 
@@ -188,49 +311,95 @@ personal-data-export-{requestId}.zip
   "Privacy": {
     "ExportTimeoutMinutes": 5,
     "ExportMaxSizeMb": 100,
+    "ExportShardMaxSizeMb": 2048,
     "ArchiveAssemblyDownloadUrlExpiryMinutes": 15,
     "RegulationOverrides": {
       "BR_LGPD": { "ExportTimeoutMinutes": 3 }
     }
+  },
+  "Privacy:Endpoints": {
+    "DownloadStepUpRequired": true,
+    "DownloadStepUpMaxAge": "00:05:00"
   }
 }
 ```
 
 | Option | Default | Purpose |
 | ------ | ------- | ------- |
-| `ExportTimeoutMinutes` | 5 | Saga timeout — providers must emit a fragment within this window or the export is marked `PartiallyCompleted`. |
-| `ExportMaxSizeMb` | 100 | Hard cap on the archive size, enforced by a streaming `CountingStream` decorator. Exceeding it transitions the request to `SizeLimitExceeded` and no archive is uploaded. |
-| `ArchiveAssemblyDownloadUrlExpiryMinutes` | 15 | TTL for the presigned URLs the assembler uses to fetch each fragment. Covers the saga timeout plus Wolverine retry budget. |
+| `Privacy:ExportTimeoutMinutes` | 5 | Saga timeout — providers must emit their fragments within this window or the export is marked `PartiallyCompleted` / `TimedOut`. |
+| `Privacy:ExportShardMaxSizeMb` | 2048 | Compressed bytes per shard before the assembler rolls over to a new ZIP. |
+| `Privacy:ExportMaxSizeMb` | 100 | **Legacy** single-archive cap, honoured only by the staging-fragment flow; the sharded assembler is bounded per-shard instead. |
+| `Privacy:ArchiveAssemblyDownloadUrlExpiryMinutes` | 15 | TTL of the presigned URLs the assembler uses to fetch each fragment. |
+| `Privacy:Endpoints:DownloadStepUpRequired` | `true` | Require a recent `auth_time` on the download endpoints. |
+| `Privacy:Endpoints:DownloadStepUpMaxAge` | `00:05:00` | Maximum age of the OIDC `auth_time` claim accepted by the download endpoints. |
 
-## Saga lifecycle
+Rate-limit policy **names** are framework-owned; wire their bodies under
+`RateLimiting:Policies:{name}`: `privacy-export-create` (recommended: 1 export
+per subject per 24 h) and `privacy-export-create-on-behalf-of` (sized for
+support-desk throughput, partitioned by operator).
+
+## Request lifecycle
 
 ```mermaid
 stateDiagram-v2
     [*] --> Pending: POST /privacy/exports
-    Pending --> Completed: all fragments received
-    Pending --> PartiallyCompleted: saga timed out
-    Pending --> SizeLimitExceeded: archive exceeds ExportMaxSizeMb
+    Pending --> Completed: every in-scope fragment assembled
+    Pending --> PartiallyCompleted: saga timed out, some fragments
+    Pending --> TimedOut: saga timed out, no fragments
+    Pending --> SizeLimitExceeded: legacy single-archive cap exceeded
     Completed --> [*]
     PartiallyCompleted --> [*]
+    TimedOut --> [*]
     SizeLimitExceeded --> [*]
 ```
 
+`SizeLimitExceeded` belongs to the legacy single-archive path; the sharded
+assembler rolls over shards instead of aborting, so it resolves to `Completed`
+or `PartiallyCompleted`.
+
+## Crash-resume and retries
+
+Assembly runs as a Wolverine background job. `Granit.Privacy.BackgroundJobs.Wolverine`
+wires a retry-with-cooldown policy: a transient `PrivacyExportAssemblyException`
+retries at **1 min / 5 min / 15 min** before the message moves to the
+dead-letter queue. Non-transient failures (a forged HMAC, a malformed event) are
+not wrapped and go straight to the DLQ without burning retry budget. The EF
+`export_assembly_checkpoints` table records the last committed shard so a retry
+resumes past it rather than re-streaming every fragment from zero.
+
 ## Notifications
 
-`Granit.Privacy.Notifications` ships two transactional notification types tied
-to the export saga. Application templates resolve `ArchiveBlobReferenceId` to a
-pre-signed download URL via the BlobStorage download endpoint, and can lean on
-the `{{ privacy }}` template global context for the controller and DPO contact.
+`Granit.Privacy.Notifications` ships two outcome notifications. They subscribe to
+**different events** so the success email never fires before the shards exist in
+storage.
 
 | Notification name | Trigger | Channels | Severity | Carried payload |
 | ----------------- | ------- | -------- | -------- | --------------- |
-| `privacy.export_ready` | `ExportCompletedEto` with `IsPartial = false` | Email | `Success` | `RequestId`, `ArchiveBlobReferenceId`, `RequestedAt`, `Regulation` |
-| `privacy.export_failed` | `ExportCompletedEto` with `IsPartial = true` (saga timeout) | Email + InApp | `Warning` | `RequestId`, `ArchiveBlobReferenceId`, `MissingProviders`, `RequestedAt`, `Regulation` |
+| `privacy.export_ready` | `ExportArchiveAssembledEto` (all shards + manifest persisted) | Email | `Success` | `RequestId`, `ShardCount`, `RequestedAt`, `Regulation` |
+| `privacy.export_failed` | `ExportCompletedEto` with `IsPartial = true` | Email + InApp | `Warning` | `RequestId`, `ArchiveBlobReferenceId`, `MissingProviders`, `RequestedAt`, `Regulation` |
 
-Both branches are routed by `ExportCompletedNotificationHandler` so that exactly
-one outcome notification is sent per request — never both. The `MissingProviders`
-list lets templates explain to the user which categories of data did not make it
-into the partial archive (so they can decide whether to retry or accept).
+The "ready" template iterates `0..(ShardCount - 1)` to render **one download link
+per shard** (`…/privacy/exports/{requestId}/download/{index}`); there is no single
+presigned URL. The "failed" payload exposes `MissingProvidersDisplay` so templates
+can tell the user which categories of data did not make the partial archive. Both
+branches lean on the `{{ privacy }}` template global for the controller and DPO
+contact.
+
+## Export audit trail (ROPA)
+
+`Granit.Privacy.Auditing` is an optional bridge that records the export lifecycle
+to `Granit.Auditing` for GDPR Art. 30 (Records of Processing Activities) and
+ISO 27001 A.5.34 evidence. Loading `GranitPrivacyAuditingModule` replaces the
+default no-op `NullPrivacyExportAuditWriter` with a writer that persists each
+lifecycle phase — requested, fragment-prepared, assembly-started, shard-completed,
+completed, shard-downloaded, failed — as a `DataAccess` audit row. Payloads are
+deliberately narrow (no entry paths, no blob references, IP pseudonymised) so the
+audit trail proves *who exported what, when* without re-storing the personal data.
+
+```csharp
+[DependsOn(typeof(GranitPrivacyAuditingModule))]   // wires the export → audit writer
+public class MyAppModule : GranitModule { }
+```
 
 ## See also
 
@@ -238,5 +407,6 @@ into the partial archive (so they can decide whether to retry or accept).
 - [Data Deletion](/dotnet/compliance/privacy/data-deletion/) — sibling deletion saga
 - [Regulations](/dotnet/compliance/privacy/regulations/) — `PrivacyRegulationProfile` driving deadlines and copy
 - [Processing Purposes](/dotnet/compliance/privacy/processing-purposes/) — legal basis tied to exported data categories
-- [Blob storage](/dotnet/data/blob-storage/) — where the export archive lands
-- [Notifications module](/dotnet/infrastructure/notifications/) — channel that delivers the download link
+- [Blob storage](/dotnet/data/blob-storage/) — where the export shards land
+- [Audit log](/dotnet/compliance/audit-log/) — the ROPA sink behind `Granit.Privacy.Auditing`
+- [Notifications module](/dotnet/infrastructure/notifications/) — channel that delivers the download links

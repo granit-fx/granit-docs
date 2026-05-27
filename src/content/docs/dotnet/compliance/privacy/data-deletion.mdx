@@ -15,7 +15,7 @@ cooling-off period:
 
 ```mermaid
 flowchart TD
-    A["POST /privacy/deletion"] --> B{defer?}
+    A["POST /privacy/deletions"] --> B{defer?}
     B -->|false| C[PersonalDataDeletionRequestedEto]
     C --> D[Providers delete immediately]
     D --> E[DeletionExecutedEto]
@@ -35,7 +35,7 @@ flowchart TD
 
 When the user sets `defer: true`, the deletion is postponed for a configurable
 grace period (default from the regulation profile). During this period the user
-can cancel via `POST /privacy/deletion/{requestId}/cancel`. A reminder email is
+can cancel via `POST /privacy/deletions/{requestId}/cancel`. A reminder email is
 sent a few days before the deadline. A daily safety-net job
 (`DeletionDeadlineEnforcerJob`) catches any requests that the saga might have
 missed.
@@ -44,10 +44,14 @@ missed.
 
 | Method | Route | Operation | Permission |
 | ------ | ----- | --------- | ---------- |
-| <Badge text="POST" variant="success" /> | `/deletion` | RequestPrivacyDeletion | `Privacy.Deletion.Execute` |
-| <Badge text="POST" variant="success" /> | `/deletion/{requestId}/cancel` | CancelPrivacyDeletion | `Privacy.Deletion.Execute` |
-| <Badge text="GET" variant="note" /> | `/deletion/{requestId}` | GetPrivacyDeletionStatus | *(owner only)* |
-| <Badge text="GET" variant="note" /> | `/deletion` | ListPrivacyDeletions | *(owner only)* |
+| <Badge text="POST" variant="success" /> | `/privacy/deletions` | RequestPrivacyDeletion | `Privacy.Deletions.Execute` |
+| <Badge text="POST" variant="success" /> | `/privacy/deletions/{requestId}/cancel` | CancelPrivacyDeletion | `Privacy.Deletions.Execute` |
+| <Badge text="GET" variant="note" /> | `/privacy/deletions/{requestId}` | GetPrivacyDeletionStatus | *(owner only)* |
+| <Badge text="GET" variant="note" /> | `/privacy/deletions` | ListPrivacyDeletions | *(owner only)* |
+
+`POST /privacy/deletions` returns `202 Accepted`. Filing a second deletion while a
+deferred request is already pending returns `409 Conflict` — cancel the existing
+one first.
 
 ## Configuration
 
@@ -67,11 +71,16 @@ Grace periods default from the regulation profile. Override globally or per-regu
 }
 ```
 
-Applications must provide a tracker implementation for deferred deletion state:
+Deferred deletion state needs a request tracker. The EF Core default registers
+both the export **and** deletion trackers against `PrivacyDbContext` in one call:
 
 ```csharp
-privacy.UseDeletionRequestTracker<EfCoreDeletionRequestTracker>();
+services.AddGranitPrivacy(privacy => privacy
+    .UseEntityFrameworkCoreTrackers());      // export + deletion trackers
 ```
+
+Apps that persist deletion state elsewhere supply their own implementation via the
+generic hook `privacy.UseDeletionRequestTracker<TStore>()`.
 
 ## Notifications
 
@@ -208,16 +217,25 @@ the boundary, not at the consumer.
 
 ### Wiring
 
-Register the handler's module so Wolverine discovers it:
+Load the handler's module so Wolverine discovers it via the assembly scan:
 
 ```csharp
-builder.Services.AddGranitDocumentsPrivacy();
+[DependsOn(typeof(GranitDocumentsPrivacyModule))]
+public class MyAppModule : GranitModule { }
 ```
 
-That call is idempotent — multiple modules registering their own privacy
-handlers compose naturally; the privacy saga aggregates the
-`PersonalDataDeletedEto` acks from all of them and publishes
-`DeletionExecutedEto` when every registered provider has replied.
+Multiple modules registering their own privacy handlers compose naturally — each
+subscribes to `PersonalDataDeletionRequestedEto` independently.
+
+<Aside type="note" title="DeletionExecutedEto is not an ack barrier">
+The deletion saga publishes `PersonalDataDeletionRequestedEto` and
+`DeletionExecutedEto` **together** — `DeletionExecutedEto` marks "the erasure was
+*requested* of every provider", not "every provider has *finished*". The
+`PersonalDataDeletedEto` fragments each provider emits are an audit ledger (per-provider
+action + count), not a completion gate; nothing blocks `DeletionExecutedEto` on them.
+Providers that need durable, retried erasure should rely on Wolverine's delivery
+guarantees on `PersonalDataDeletionRequestedEto`, not on saga aggregation.
+</Aside>
 
 ## See also
 
