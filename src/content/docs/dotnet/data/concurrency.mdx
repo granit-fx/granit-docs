@@ -83,6 +83,14 @@ That's it. No Fluent API, no attributes, no manual interceptor wiring.
 `ApplyGranitConventions()` auto-discovers all `IConcurrencyAware` entities and
 configures `ConcurrencyStamp` as `VARCHAR(36)` with `.IsConcurrencyToken()`.
 
+:::caution[Don't hand-roll a version column]
+Do not add a manual `RowVersion`/`Version` column with `.IsConcurrencyToken()`
+and hand-incremented values. It is forgettable (a missed bump silently drops the
+guard), non-portable (`uint` has no native PostgreSQL/SQL Server type), and leaks
+write-count. A human-facing "version N" is a *different* concern — use
+`IVersioned`. See [ADR-061](/dotnet/architecture/adr/061-optimistic-concurrency-strategy/).
+:::
+
 ## Interceptor pipeline
 
 `ConcurrencyStampInterceptor` runs in the standard pipeline:
@@ -285,6 +293,18 @@ independently. If entity A conflicts but entity B doesn't, the entire
 entity per save, or handle partial failures.
 :::
 
+## Escape hatch: provider-native tokens
+
+The opaque stamp is the default because it is portable (PostgreSQL, SQL Server,
+**and** SQLite) and auto-managed through one code path. The interceptor cannot
+guard against writers that **bypass EF Core** (raw SQL, replication, another
+service writing the same table). For that — and only that — an entity may opt
+into a provider-native token (PostgreSQL `xmin`, SQL Server `rowversion`)
+configured explicitly and dispatched via `GranitDbProviders`, with a documented
+SQLite/InMemory fallback. This mirrors the advisory-lock pattern in
+`MergeableConcurrencyLock`. Do not use generated triggers — the framework ships
+no schema DDL.
+
 ## Public API summary
 
 | Category | Type | Package |
@@ -300,3 +320,4 @@ entity per save, or handle partial failures.
 - [Persistence](/dotnet/data/persistence/) — full interceptor pipeline, query filters, isolated DbContext
 - [Exception Handling](/dotnet/api/exception-handling/) — RFC 7807 ProblemDetails, global error mapping
 - [Idempotency](/dotnet/api/idempotency/) — complementary pattern for preventing duplicate requests
+- [ADR-061: Optimistic concurrency strategy](/dotnet/architecture/adr/061-optimistic-concurrency-strategy/) — the decision record behind this primitive
