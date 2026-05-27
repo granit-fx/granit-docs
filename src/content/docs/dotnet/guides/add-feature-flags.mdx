@@ -16,14 +16,25 @@ quotas, and selection lists.
 ## Prerequisites
 
 - A .NET 10 project referencing `Granit`
-- `Granit.Features` for feature definitions and resolution
+- `Granit.Features` for feature definitions and resolution (framework-pure core)
+- `Granit.Http.Features` / `Granit.Features.Wolverine` for endpoint / handler gating (optional)
 - `Granit.Features.EntityFrameworkCore` for database-backed overrides (optional)
 
 ## Step 1 -- Install packages
 
+The core is framework-pure; gating ships as transport bindings, mirroring
+[Granit.RateLimiting](/dotnet/api/rate-limiting/) (see
+[ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/)).
+
 ```bash
-# Core: definitions, resolution, ASP.NET Core integration, Wolverine middleware
+# Core: definitions, resolution, IFeatureChecker, IFeatureLimitGuard
 dotnet add package Granit.Features
+
+# Minimal-API endpoint gating: .RequiresFeature()
+dotnet add package Granit.Http.Features
+
+# Wolverine handler gating: [RequiresFeature] on the message type
+dotnet add package Granit.Features.Wolverine
 
 # EF Core persistence for tenant overrides (production)
 dotnet add package Granit.Features.EntityFrameworkCore
@@ -151,32 +162,36 @@ public sealed class PatientService(
 }
 ```
 
-### Protect endpoints with [RequiresFeature]
+### Protect endpoints with .RequiresFeature()
 
-The `[RequiresFeature]` attribute returns HTTP 403 with a `ProblemDetails` response
-(`type: upgrade_required`) when the feature is disabled:
+The endpoint filter from `Granit.Http.Features` returns HTTP 403 with a
+`ProblemDetails` response (`errorCode: "Features:NotEnabled"`) when the feature is
+disabled:
 
 ```csharp
-[RequiresFeature("App.VideoConsultation")]
-app.MapPost("/video-sessions", CreateVideoSession);
+using Granit.Http.Features.AspNetCore;
+
+app.MapPost("/video-sessions", CreateVideoSession)
+   .RequiresFeature("App.VideoConsultation");
 ```
 
 ### Protect Wolverine handlers
 
-The same attribute works on Wolverine message handlers. Messages are rejected
-before handler execution:
+`Granit.Features.Wolverine` enforces the gate via a pipeline middleware. Decorate
+the **message type** — the middleware rejects it before the handler runs:
 
 ```csharp
-public sealed class CreateVideoSessionHandler
-{
-    [RequiresFeature("App.VideoConsultation")]
-    public async Task Handle(
-        CreateVideoSessionCommand cmd,
-        CancellationToken cancellationToken)
-    {
-        // Only runs if the feature is enabled for the current tenant
-    }
-}
+using Granit.Features.Wolverine.Attributes;
+
+[RequiresFeature("App.VideoConsultation")]
+public sealed record CreateVideoSessionCommand(Guid Id);
+```
+
+Register the middleware once in your Wolverine setup:
+
+```csharp
+opts.Policies.AddMiddleware<RequiresFeatureMiddleware>(
+    chain => chain.MessageType.HasAttribute<RequiresFeatureAttribute>());
 ```
 
 ## Step 5 -- Understand the resolution cascade
