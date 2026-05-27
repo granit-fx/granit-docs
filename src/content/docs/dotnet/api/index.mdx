@@ -57,10 +57,15 @@ graph TD
     ID[Granit.Http.Idempotency] --> CA[Granit.Caching]
     ID --> SEC
     RL[Granit.RateLimiting] --> CO
-    RL --> EH
     RL --> FT[Granit.Features]
-    RL --> SEC
+    HRL[Granit.Http.RateLimiting] --> RL
+    HRL --> EH
 ```
+
+The rate-limiting core is **framework-pure** — `Granit.Http.RateLimiting` is the
+ASP.NET Core binding (endpoint filter + 429 mapping), and `Granit.RateLimiting.Wolverine`
+the message binding. See [Rate Limiting](/dotnet/api/rate-limiting/) and
+[ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/).
 
 ## See also
 
