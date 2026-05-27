@@ -41,7 +41,7 @@ Unicode-script pre-filtering, an embedded dataset, and no native dependency.
 
 - Granit.LanguageDetection/ Contracts: `ILanguageDetector`, `ILanguageDetectorProvider`, `CompositeLanguageDetector`
   - Granit.LanguageDetection.Trigram/ Default provider — character-trigram detector + embedded Franc dataset
-  - Granit.LanguageDetection.AI.\* (future) LLM-backed provider for ambiguous or short-text corpora
+  - Granit.LanguageDetection.AI/ LLM-backed provider for ambiguous or short-text corpora — opt-in, GDPR-gated
 
 </FileTree>
 
@@ -49,6 +49,7 @@ Unicode-script pre-filtering, an embedded dataset, and no native dependency.
 |---------|------|------------|
 | `Granit.LanguageDetection` | `ILanguageDetector`, `ILanguageDetectorProvider`, `CompositeLanguageDetector`, `AddGranitLanguageDetection()`. No `[DependsOn]` — the contract root every provider attaches to. | `Granit` |
 | `Granit.LanguageDetection.Trigram` | `TrigramLanguageDetector` at priority `100`. Embedded Franc dataset, Unicode-script pre-filter, pure-managed scoring. | `Granit.LanguageDetection` |
+| `Granit.LanguageDetection.AI` | `AILanguageDetector` at priority `200`. One-shot LLM call with PII redaction, per-tenant rate limit, and structured-output + ISO 639-1 prompt-injection defence. Falls through to `null` on any failure. | `Granit.LanguageDetection`, `Granit.AI.Extraction` |
 
 <Aside type="note" title="Pure utility, no host plumbing">
 The base package and the trigram provider ship with **zero** ASP.NET Core or
@@ -93,7 +94,7 @@ descending `Priority` order, stopping at the first non-null result.
 flowchart LR
     consumer["Consumer<br/>(indexer, notifier, …)"] -->|"ILanguageDetector"| composite["CompositeLanguageDetector<br/>priority = int.MaxValue"]
     composite -->|"1: priority 1000"| hint["MetadataHintDetector<br/>(host-defined)"]
-    composite -->|"2: priority 500"| ai["AIBackedDetector<br/>(future)"]
+    composite -->|"2: priority 200"| ai["AILanguageDetector<br/>(Granit.LanguageDetection.AI)"]
     composite -->|"3: priority 100"| trigram["TrigramLanguageDetector<br/>(default)"]
     hint -->|"null → fall through"| ai
     ai -->|"null → fall through"| trigram
@@ -103,7 +104,7 @@ flowchart LR
 | Provider | Default priority | Origin |
 |----------|------------------|--------|
 | Metadata hints (host-defined: `Accept-Language`, `X-Content-Language`, tenant locale) | `1000` (recommended) | Host code |
-| AI-backed detectors (LLM disambiguation for short or mixed corpora) | `500` (recommended) | `Granit.LanguageDetection.AI.*` (future) |
+| AI-backed detector (LLM disambiguation for short or mixed corpora) | `200` | `Granit.LanguageDetection.AI` |
 | Trigram default | `100` | `Granit.LanguageDetection.Trigram` |
 
 Ties on identical priority resolve by DI registration order. Providers may
@@ -247,38 +248,87 @@ whenever it can — tenant locale only kicks in for inputs too short for the
 trigram detector to commit (10 characters minimum).
 
 </TabItem>
-<TabItem label="AI disambiguation (future)">
+<TabItem label="AI disambiguation (package)">
 
 For corpora the trigram detector cannot reliably classify — very short text
-(SMS, tweet-length notifications), code-mixed input, or rare languages —
-register an LLM-backed provider above the trigram default:
+(SMS, tweet-length notifications), code-mixed input, or rare languages — don't
+hand-roll an LLM provider: add `Granit.LanguageDetection.AI`. It registers
+`AILanguageDetector` at priority `200` (above the trigram default), wraps the
+call in PII redaction, a per-tenant rate limit, and prompt-injection defence,
+and falls through to `null` on any failure.
 
 ```csharp
-public sealed class AILanguageDetector(IChatClient chat) : ILanguageDetectorProvider
-{
-    public int Priority => 500;
-
-    public async Task<string?> DetectAsync(string content, CancellationToken cancellationToken)
-    {
-        if (content.Length > 200)
-        {
-            // Trigram is already accurate at this length — skip the LLM round-trip.
-            return null;
-        }
-
-        ChatResponse response = await chat.GetResponseAsync(
-            $"Reply with the ISO 639-1 code for: {content}", cancellationToken)
-            .ConfigureAwait(false);
-        return response.Text.Trim().ToLowerInvariant();
-    }
-}
+[DependsOn(
+    typeof(GranitLanguageDetectionTrigramModule),
+    typeof(GranitLanguageDetectionAIModule))]
+public sealed class IndexingModule : GranitModule { }
 ```
 
-Returning `null` for long inputs delegates to the trigram default — cheaper,
-deterministic, and fixture-safe.
+The host also wires an AI provider package (`Granit.AI.OpenAI`,
+`Granit.AI.Anthropic`, …) so `IAIChatClientFactory` can resolve a client. The
+trigram default stays registered as the deterministic fallback. See
+[AI-backed provider](#ai-backed-provider) for the options and the GDPR gate.
 
 </TabItem>
 </Tabs>
+
+## AI-backed provider
+
+`Granit.LanguageDetection.AI` ships `AILanguageDetector` — a one-shot LLM call
+registered at priority `200`, so it wins over the trigram default (`100`) but
+still yields to host metadata hints. It targets the inputs trigram statistics
+can't commit on: short notifications, code-mixed text, rare languages. Every
+failure mode — rate-limit denial, timeout, transport error, schema reject,
+ISO 639-1 mismatch — returns `null`, so the composite falls through to the
+trigram default and the indexing path never blocks on a stalled LLM.
+
+```csharp
+// GranitLanguageDetectionAIModule depends on GranitAIExtractionModule
+// (rate limiter + redactor seam) and GranitLanguageDetectionModule (composite).
+services.AddGranitLanguageDetectionAI();
+```
+
+`GranitLanguageDetectionAIModule` calls this for you; declare it via
+`[DependsOn(...)]` as shown in the [AI disambiguation tab](#adding-a-higher-priority-provider).
+
+### Options — `LanguageDetection:AI`
+
+| Option | Default | Role |
+|--------|---------|------|
+| `WorkspaceName` | `"default"` | `Granit.AI` workspace resolved via `IAIChatClientFactory`; MUST point at a chat model |
+| `RedactPIIBeforeLLMCall` | `true` | Route content through `IAIContentRedactor.Redact` before the LLM call |
+| `MaxAICallsPerHourPerTenant` | `1000` | Per-tenant hourly cap; the next call returns `null` (no throw) |
+| `MaxContentLength` | `2048` | Characters sampled from the head before the call (trigram retains full coverage) |
+| `TimeoutSeconds` | `10` | Per-call timeout; on expiry the detector returns `null` and the chain falls through |
+
+Invalid configuration aborts host boot (`ValidateDataAnnotations().ValidateOnStart()`)
+rather than silently degrading every call to `null`.
+
+### Security gates
+
+- **PII redaction.** With `RedactPIIBeforeLLMCall = true` (the default) the
+  sampled text passes through `IAIContentRedactor` before leaving the process.
+  The shipped `NoOpAIContentRedactor` is **identity** — a startup probe logs a
+  warning when the flag is on but no real redactor is registered, so masking
+  isn't silently inert. Register an NER/regex/composite redactor before
+  `AddGranitLanguageDetectionAI()` to activate it.
+- **Prompt injection (OWASP LLM01).** Three layers: instruction-isolation
+  wrapping via `IAILanguageDetectionPromptBuilder`, JSON-schema pinning
+  (`ChatResponseFormat.ForJsonSchema`), and an ISO 639-1 regex validator on the
+  response. Out-of-schema or out-of-pattern responses are dropped and bump the
+  `granit.language_detection.ai.injections.detected` counter (tenant-tagged,
+  **never** content-tagged).
+- **Log hygiene.** Provider exceptions are logged by type only — never the
+  message — because some LLM providers echo the prompt payload in 4xx error
+  messages, which would leak content past the redactor into structured logs.
+
+<Aside type="caution" title="GDPR Article 28 — sub-processor disclosure">
+Enabling this provider ships sampled text to the LLM provider configured on the
+workspace. The host is responsible for executing a Data Processing Agreement
+with that provider and disclosing it on the Article 30 register before
+processing personal data. For on-prem-only deployments, point the workspace at a
+local provider (Ollama, vLLM, LM Studio).
+</Aside>
 
 ## Why two interfaces
 
@@ -318,8 +368,10 @@ For composite-level tests (verifying that a metadata-hint provider wins over the
 default), register both providers in a test `ServiceCollection` and resolve
 `ILanguageDetector` — no fakes required.
 
-LLM-backed providers (when added) are NOT deterministic; mock them in
-fixtures or pin the temperature on the configured `IChatClient`.
+The AI-backed provider (`Granit.LanguageDetection.AI`) is NOT deterministic;
+mock the `IChatClient` in fixtures or pin its temperature. In tests that should
+stay deterministic, register only the trigram provider and leave the AI module
+out — the composite still resolves cleanly.
 
 ## Profile data attribution
 
