@@ -80,7 +80,7 @@ Specifically:
    one case the interceptor genuinely cannot guard. Such an entity configures the
    native token explicitly, dispatched by provider via `GranitDbProviders`, with a
    documented SQLite/InMemory fallback — exactly the precedent already set by
-   `MergeableConcurrencyLock` / `MeteringConcurrencyLock` for advisory locks.
+   `EntityMergeConcurrencyLock` / `MeteringConcurrencyLock` for advisory locks.
    Generated triggers are **not** used: the framework ships no schema DDL.
 3. **Reject manual integer counters** (the `granit-business` `uint RowVersion`
    pattern). Manual `++` is silently forgettable — a missed bump removes the
@@ -137,7 +137,7 @@ Specifically:
 | Change stamp to an interceptor-incremented `int`/`long` | Rejected | Auto-management is **not** the objection — an interceptor increments as easily as it regenerates. Rejected because it breaks the existing contract + the 2 entities for **zero benefit**: a client-exposable monotonic version is a non-goal for a concurrency token, and a genuine human-facing version is already served by `IVersioned`. |
 | Change stamp to `byte[]` (SQL Server `rowversion`) | Rejected | Store-generated → loses **both** SQLite portability **and** interceptor auto-management. Same family as the provider-native option below. |
 | Adopt `uint RowVersion` framework-wide | Rejected | Manual/forgettable, non-portable `uint`, write-count disclosure. |
-| Provider-native `rowversion`/`xmin` as the convention | Rejected as default; allowed as opt-in | Store-generated → not testable on SQLite without per-provider config + trigger emulation; for EF-only writers the interceptor already does the job portably. Permitted per-entity (via `GranitDbProviders`, à la `MergeableConcurrencyLock`) only when non-EF writers exist. |
+| Provider-native `rowversion`/`xmin` as the convention | Rejected as default; allowed as opt-in | Store-generated → not testable on SQLite without per-provider config + trigger emulation; for EF-only writers the interceptor already does the job portably. Permitted per-entity (via `GranitDbProviders`, à la `EntityMergeConcurrencyLock`) only when non-EF writers exist. |
 | SQLite triggers to emulate a native counter | Rejected | The interceptor is already the portable equivalent; triggers would be framework-generated schema DDL (against the "apps own migrations" principle) and reintroduce per-table boilerplate. |
 | Drop SQLite as the test provider | Rejected | 29 test files would migrate to Testcontainers/PostgreSQL (slower CI, external dependency) and it still would not remove provider branching (`xmin` vs `rowversion`). High cost, partial benefit. |
 | Remove `IConcurrencyStampRequest` (0 impl) | Deferred | Keep as the input contract for the ETag/If-Match flow; revisit if HTTP optimistic concurrency never materialises. |

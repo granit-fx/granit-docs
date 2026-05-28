@@ -13,7 +13,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 `IOwnable` is the framework's marker interface for aggregates owned by a
 specific user. It sits next to [`IMultiTenant`](/dotnet/concepts/multi-tenancy/),
-`ISoftDeletable`, and [`IHasMergeTombstone`](/dotnet/data/mergeable/) — a
+`ISoftDeletable`, and [`IHasMergeTombstone`](/dotnet/data/entity-merge/) — a
 declarative tag that EF Core conventions, authorization handlers, and GDPR
 cascades all key off of.
 
@@ -298,7 +298,7 @@ plumbing through `ApplyGranitConventions`:
 | [`IMultiTenant`](/dotnet/concepts/multi-tenancy/) | Tenant isolation | Interceptor injection + `MultiTenant` query filter |
 | `ISoftDeletable` | Lifecycle | Interceptor sets `IsDeleted` on delete + `SoftDelete` query filter |
 | `IOwnable` | Ownership | `(TenantId, OwnerId)` or `(OwnerId)` index — **no** filter, **no** injection |
-| [`IHasMergeTombstone`](/dotnet/data/mergeable/#ihasmergetombstone--state-only) | Merge lineage | `MergedIntoId` / `MergedAt` columns + `MergeTombstone` query filter |
+| [`IHasMergeTombstone`](/dotnet/data/entity-merge/#ihasmergetombstone--state-only) | Merge lineage | `MergedIntoId` / `MergedAt` columns + `MergeTombstone` query filter |
 
 The conventional column type for ownership identifiers is `Guid` — see
 [ADR-060](/dotnet/architecture/adr/060-identity-sub-as-guid/) for the IDP
@@ -317,7 +317,7 @@ fan-out: a module that owns user-keyed aggregates subscribes to
 
 - [ADR-060 — OIDC sub as Guid](/dotnet/architecture/adr/060-identity-sub-as-guid/) — `UserGuid` contract and IDP matrix
 - [Multi-tenancy](/dotnet/concepts/multi-tenancy/) — `IMultiTenant`, the ambient-injection counterpart
-- [Mergeable](/dotnet/data/mergeable/) — `IHasMergeTombstone`, sibling marker
+- [EntityMerge](/dotnet/data/entity-merge/) — `IHasMergeTombstone`, sibling marker
 - [Query filters](/dotnet/data/query-filters/) — why ownership is **not** a filter
 - [Authorization](/dotnet/security/authorization/) — permissions, policies, requirement stacking
 - [Personal Data Deletion](/dotnet/compliance/privacy/data-deletion/) — GDPR Art. 17 cascade for `IOwnable` modules

@@ -37,7 +37,7 @@ abstraction in one aggregate so:
 - Granit.Parties/ Aggregate root, domain events, query / export definitions
   - Granit.Parties.EntityFrameworkCore EF Core persistence — PartiesDbContext, EfPartyStore
   - Granit.Parties.Endpoints Admin REST API — CRUD, lifecycle, addresses / emails / phones, tax status, merge
-  - Granit.Parties.Mergeable Merge adapter + Party-children rewriter (registers with Granit.Mergeable)
+  - Granit.Parties.Mergeable Merge adapter + Party-children rewriter (registers with Granit.EntityMerge)
   - Granit.Parties.MultiTenancy Wolverine handler that seeds a host-scoped Party per tenant
   - Granit.Parties.Privacy GDPR Article 15/17 export + erasure (pseudonymisation)
 </FileTree>
@@ -48,7 +48,7 @@ abstraction in one aggregate so:
 | `Granit.Parties` | `Party` aggregate, `IPartyReader`/`IPartyWriter`, query + export definitions | `Granit.Parties.Abstractions`, `Granit.QueryEngine.Abstractions`, `Granit.DataExchange.Abstractions` |
 | `Granit.Parties.EntityFrameworkCore` | Isolated DbContext + child-graph reconciliation writer | `Granit.Parties`, `Granit.Persistence.EntityFrameworkCore` |
 | `Granit.Parties.Endpoints` | Admin API (host + tenant scope) | `Granit.Parties`, `Granit.Authorization`, `Granit.Validation` |
-| `Granit.Parties.Mergeable` | Merge adapter + Party-children / Party-parent reference rewriters | `Granit.Parties.EntityFrameworkCore`, `Granit.Mergeable.EntityFrameworkCore` |
+| `Granit.Parties.Mergeable` | Merge adapter + Party-children / Party-parent reference rewriters | `Granit.Parties.EntityFrameworkCore`, `Granit.EntityMerge.EntityFrameworkCore` |
 | `Granit.Parties.MultiTenancy` | Tenant-creation seeder (creates host-scoped Party per tenant) | `Granit.Parties`, `Granit.MultiTenancy` |
 | `Granit.Parties.Privacy` | Privacy export provider + Article 17 pseudonymisation handler | `Granit.Parties`, `Granit.Privacy.BlobStorage` |
 
@@ -136,7 +136,7 @@ reverse-charge customers yield a 0% rate regardless of country defaults.
 ### Merging duplicates
 
 `Party` implements `IMergeable<Party>` and participates in the generic
-`Granit.Mergeable` framework. A merge folds a **loser** Party into a **survivor**:
+`Granit.EntityMerge` framework. A merge folds a **loser** Party into a **survivor**:
 loser is soft-archived with a tombstone (`MergedIntoId = survivor.Id`,
 `MergedAt = now`), survivor absorbs the chosen scalar fields, and every aggregate
 that persists a typed `PartyId` (Invoicing, Subscriptions, CustomerBalance, plus
