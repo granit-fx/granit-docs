@@ -187,7 +187,7 @@ imposed on the app. A marketplace can freely mix `PaymentScope.Host` with
 **Host invariant** (no `IMultiTenant`)
 
 - `Granit.MultiTenancy`, `Granit.BackgroundJobs`, `Granit.Bff`,
-  `Granit.Mergeable`, `Granit.Presence`, `Granit.Settings`
+  `Granit.EntityMerge`, `Granit.Presence`, `Granit.Settings`
 
 **Tenant invariant**
 

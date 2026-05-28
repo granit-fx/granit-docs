@@ -102,7 +102,7 @@ flowchart TD
         MCP["MCP (3)"]:::business
         BROWSING["Browsing (3)"]:::business
         ODATA["Http.ODataExposure"]:::business
-        MERGE["Mergeable (2)"]:::business
+        MERGE["EntityMerge (2)"]:::business
         IO_PKG["IO + Http.Security (2)"]:::core
     end
 
@@ -187,7 +187,7 @@ flowchart TD
 | BFF | Bff, Bff.BackgroundJobs, Bff.Endpoints, Bff.EntityFrameworkCore, Bff.Yarp |
 | Configuration | Settings (3), Features (3), ReferenceData (3) |
 | Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies (3 incl. Klaro + Endpoints), Http.Idempotency, Http.OutputCaching (2), Http.Resilience, Http.ResponseCompression, Http.Security (URL safety / SSRF), Http.SecurityHeaders, Http.ODataExposure (BI feed for Power BI / Excel / Tableau), Webhooks (5 incl. BackgroundJobs + Notifications), RateLimiting (AspNetCore + Wolverine adapters) |
-| Cross-cutting primitives | IO (temp files), Mergeable (entity merge framework), Scheduling, Browsing (headless web scraping) |
+| Cross-cutting primitives | IO (temp files), EntityMerge (entity merge framework), Scheduling, Browsing (headless web scraping) |
 | Storage | BlobStorage (11 incl. AI, BackgroundJobs, Database, Endpoints), Imaging (3) — Documents runtime moved to `granit-business` |
 | Persistence | Persistence, Persistence.Hosting, Persistence.Migrations (2), Persistence.Postgres, Persistence.SqlServer |
 | Caching | Caching, Caching.StackExchangeRedis |

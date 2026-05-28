@@ -1,6 +1,6 @@
 ---
 title: "ADR-037: Party merge framework"
-description: "Granit.Mergeable plus per-module IReferenceRewriter<T> registries fold a duplicate Party into a survivor under a single Postgres TransactionScope."
+description: "Granit.EntityMerge plus per-module IReferenceRewriter<T> registries fold a duplicate Party into a survivor under a single Postgres TransactionScope."
 sidebar:
   order: 37
   label: "037 - Party Merge Framework"
@@ -11,8 +11,8 @@ topic: backend
 > **Date:** 2026-04-27
 > **Authors:** Jean-Francois Meyers
 > **Scope:** `Granit` (`IHasMergeTombstone`), `Granit.Persistence.EntityFrameworkCore`
-> (filter + column convention), `Granit.Mergeable`,
-> `Granit.Mergeable.EntityFrameworkCore`, `Granit.Parties` (`Party : IMergeable<Party>`),
+> (filter + column convention), `Granit.EntityMerge`,
+> `Granit.EntityMerge.EntityFrameworkCore`, `Granit.Parties` (`Party : IMergeable<Party>`),
 > `Granit.Parties.Mergeable` (adapter + Party-children rewriter),
 > `Granit.Parties.Endpoints` (admin endpoints + audit writer),
 > `Granit.Invoicing.EntityFrameworkCore`,
@@ -177,7 +177,7 @@ own assembly.
 
 ### 5. Single-Postgres `TransactionScope` orchestration (no DTC)
 
-The orchestrator (`EfMergeService<TAggregate>` in `Granit.Mergeable.EntityFrameworkCore`)
+The orchestrator (`EfMergeService<TAggregate>` in `Granit.EntityMerge.EntityFrameworkCore`)
 runs the merge inside one `TransactionScope` at `IsolationLevel.Serializable`:
 
 1. **Idempotency precheck** — if the request carries an `Idempotency-Key`, look up
@@ -236,7 +236,7 @@ rewriter rolls back the entire merge.
 
 The assumption is documented at the framework level. A deployment that splits
 modules across multiple Postgres clusters would require the saga form; that form is
-out of scope for v1 and would be delivered as `Granit.Mergeable.Wolverine` if a
+out of scope for v1 and would be delivered as `Granit.EntityMerge.Wolverine` if a
 real customer requested it.
 
 ### 6. Tombstone follow-through for in-flight references
@@ -333,7 +333,7 @@ merge because the audit DB is unreachable is worse than missing one entry.
 
 ### Positive
 
-- **Generic merge primitive.** The same `Granit.Mergeable` framework will absorb
+- **Generic merge primitive.** The same `Granit.EntityMerge` framework will absorb
   `Catalog.Product`, future `Lead` / `Opportunity`, etc. with a per-module rewriter
   that is ~50 lines of SQL.
 - **Auto-applied tombstone column convention.** Adding `IHasMergeTombstone` to a new
@@ -357,7 +357,7 @@ merge because the audit DB is unreachable is worse than missing one entry.
 
 - **Single-Postgres assumption is load-bearing.** A deployment splitting modules
   across multiple Postgres clusters would need a saga-based variant
-  (`Granit.Mergeable.Wolverine`) that does not exist yet. Documented; deferred to v2.
+  (`Granit.EntityMerge.Wolverine`) that does not exist yet. Documented; deferred to v2.
 - **Audit timing is endpoint-level rather than event-driven** until
   `Party.RaiseMergedEvents` is wired into the orchestrator. Functionally equivalent
   but mechanically duplicated (the endpoint composes the audit entry inline).
@@ -388,6 +388,12 @@ merge because the audit DB is unreachable is worse than missing one entry.
   tracked as tech-debt
   [#1402](https://github.com/granit-fx/granit-dotnet/issues/1402) and will land via
   a generic `IMergeConsolidator<T>` once a second use case appears.
+
+> **Rename note (2026-05-28):** `Granit.Mergeable` and its sub-packages were renamed to
+> `Granit.EntityMerge` / `Granit.EntityMerge.EntityFrameworkCore` / `Granit.EntityMerge.BackgroundJobs`
+> in [granit-dotnet#2422](https://github.com/granit-fx/granit-dotnet/pull/2422).
+> `Granit.Parties.Mergeable` and all shared interfaces (`IMergeable<TSelf>`,
+> `IMergeableAggregateAdapter<T>`, etc.) are unaffected.
 
 ## References
 

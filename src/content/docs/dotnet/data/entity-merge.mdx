@@ -1,8 +1,8 @@
 ---
-title: Mergeable — Generic Aggregate Merge Framework
+title: EntityMerge — Generic Aggregate Merge Framework
 description: Fold a duplicate aggregate into a survivor across modules — per-field overrides, bulk FK rewrites, idempotency, tombstones, TransactionScope orchestration.
 sidebar:
-  label: Mergeable
+  label: EntityMerge
   order: 5
   badge:
     text: New
@@ -17,7 +17,7 @@ both as an individual and as their employer. Without a merge primitive those
 duplicates corrupt every aggregate that references them — invoices issued against
 the wrong party, ledger fragmented across two balances, mappings in conflict.
 
-`Granit.Mergeable` is a **generic** merge framework: define an `IMergeable<TSelf>`
+`Granit.EntityMerge` is a **generic** merge framework: define an `IMergeable<TSelf>`
 aggregate, register one `IReferenceRewriter<TSelf>` per module that holds an FK to
 it, and the orchestrator handles the rest — preview, validation, advisory locking,
 bulk-SQL fan-out, tombstone, audit, integration event. The first consumer is
@@ -27,7 +27,7 @@ deduplication and any future Lead / Opportunity / Asset aggregate.
 ## How it works
 
 The orchestrator (`EfMergeService<TAggregate>` in
-`Granit.Mergeable.EntityFrameworkCore`) runs every merge inside a single
+`Granit.EntityMerge.EntityFrameworkCore`) runs every merge inside a single
 `TransactionScope` at `IsolationLevel.Serializable` — under the framework's
 single-PostgreSQL deployment assumption, every participating `DbContext` enrols
 into the same physical transaction (no DTC). Rewriter failure rolls back
@@ -103,7 +103,7 @@ flowchart LR
 
 Marker for the **tombstone state**, decoupled from the merge service so EF Core,
 listings, query filters, and a future un-merge endpoint can target it without
-referencing `Granit.Mergeable`:
+referencing `Granit.EntityMerge`:
 
 ```csharp
 public interface IHasMergeTombstone
@@ -348,7 +348,7 @@ can fold the table into its own model:
 
 ```csharp
 // In the host application's DbContext.OnModelCreating:
-modelBuilder.ConfigureMergeableModule();
+modelBuilder.ConfigureEntityMergeModule();
 ```
 
 ## Tombstone follow-through
@@ -399,14 +399,14 @@ sees method signatures, not method bodies) and is tracked as
 
 ```csharp
 [DependsOn(
-    typeof(GranitMergeableModule),
-    typeof(GranitMergeableEntityFrameworkCoreModule))]
+    typeof(GranitEntityMergeModule),
+    typeof(GranitEntityMergeEntityFrameworkCoreModule))]
 public class AppModule : GranitModule { }
 ```
 
 ```csharp
-// Idempotency-cache DbContext (or ConfigureMergeableModule() on a shared DbContext)
-builder.AddGranitMergeableEntityFrameworkCore(o =>
+// Idempotency-cache DbContext (or ConfigureEntityMergeModule() on a shared DbContext)
+builder.AddGranitEntityMergeEntityFrameworkCore(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 ```
 
@@ -425,7 +425,7 @@ public class AppModule : GranitModule { }
 builder.AddGranitPartiesEntityFrameworkCore(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-builder.AddGranitMergeableEntityFrameworkCore(o =>
+builder.AddGranitEntityMergeEntityFrameworkCore(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 // Adapter + Party-children + Party-parent rewriters.
@@ -441,7 +441,7 @@ app.MapGranitParties();   // exposes POST /parties/{id}/merge + preview
 </TabItem>
 </Tabs>
 
-## API surface (`Granit.Mergeable`)
+## API surface (`Granit.EntityMerge`)
 
 | Type | Role |
 | ---- | ---- |

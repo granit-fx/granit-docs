@@ -302,7 +302,7 @@ service writing the same table). For that — and only that — an entity may op
 into a provider-native token (PostgreSQL `xmin`, SQL Server `rowversion`)
 configured explicitly and dispatched via `GranitDbProviders`, with a documented
 SQLite/InMemory fallback. This mirrors the advisory-lock pattern in
-`MergeableConcurrencyLock`. Do not use generated triggers — the framework ships
+`EntityMergeConcurrencyLock`. Do not use generated triggers — the framework ships
 no schema DDL.
 
 ## Public API summary
