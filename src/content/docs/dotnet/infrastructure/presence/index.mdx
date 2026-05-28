@@ -6,21 +6,58 @@ sidebar:
   order: 0
 ---
 
-import { Aside, FileTree, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Card, CardGrid, FileTree, LinkCard, Tabs, TabItem } from "@astrojs/starlight/components";
 
-`Granit.Presence` answers a single question across every Granit module that
-cares: **is this user reachable right now, and through which channels?** It
-blends a volatile client heartbeat with a persisted manual override
-(`Available`, `Busy`, `DoNotDisturb`, `AppearOffline`) into an effective
-`PresenceStatus`, and exposes that snapshot through HTTP endpoints, an
-integration event, and an optional notification delivery gate that suppresses
-push channels when the user does not want to be paged.
+`Granit.Presence` answers two orthogonal questions about who is around. The
+first — the original dimension — is **user-global**: *is this user reachable
+right now, and through which channels?* It blends a volatile client heartbeat
+with a persisted manual override (`Available`, `Busy`, `DoNotDisturb`,
+`AppearOffline`) into an effective `PresenceStatus`, and exposes that snapshot
+through HTTP endpoints, an integration event, and an optional notification
+delivery gate that suppresses push channels when the user does not want to be
+paged.
+
+The second dimension — **resource-scoped rooms** — answers *who else is looking
+at this resource right now?* It is the Google Docs / Notion face-pile primitive:
+informational, non-blocking awareness for collaborative surfaces. The rest of
+this page documents the user-global dimension; the room model lives on its own
+[Resource rooms](/dotnet/infrastructure/presence/resource-rooms/) page.
 
 The module is split across four NuGet packages so apps only pay for the moving
 parts they need: the core (`Granit.Presence`) is in-memory and single-pod by
 default, persistence is opt-in (`Granit.Presence.EntityFrameworkCore`), HTTP
 endpoints are opt-in (`Granit.Presence.Endpoints`), and the bridge to the
 notification fan-out engine is opt-in (`Granit.Presence.Notifications`).
+
+## Two dimensions of presence
+
+These dimensions are independent — a surface can use either or both. They share
+the same FusionCache backplane, options, and diagnostics meter, so there is
+nothing extra to install for rooms.
+
+<CardGrid>
+  <Card title="User-global presence" icon="user">
+    *Is this person reachable?* One status per human, composed from a heartbeat
+    and a manual override, driving notification suppression. **This page.**
+  </Card>
+  <Card title="Resource-scoped rooms" icon="document">
+    *Who is in this room?* A live participant list per `(Kind, Id)` resource —
+    the co-editing face-pile. Action-driven and non-blocking.
+  </Card>
+</CardGrid>
+
+<LinkCard
+  title="Resource rooms →"
+  description="The room model, lifecycle, REST API, DnD interplay, and the migration recipe from an in-house implementation."
+  href="/dotnet/infrastructure/presence/resource-rooms/"
+/>
+
+<Aside type="tip" title="Rooms vs EditLocking">
+Rooms surface *awareness* but never block writes. When you need to actually
+prevent concurrent edits, that is the complementary `Granit.EditLocking`
+primitive — see the
+[decision table](/dotnet/infrastructure/presence/resource-rooms/#when-to-use-rooms-vs-editlocking).
+</Aside>
 
 ## Why presence?
 
@@ -453,6 +490,9 @@ See the showcase apps in `granit-showcase-react` and
 
 ## See also
 
+- [Resource rooms](/dotnet/infrastructure/presence/resource-rooms/) — the resource-scoped awareness dimension
+- [Resource kind naming](/dotnet/infrastructure/presence/resource-kind-naming/) — the `<module>.<entity>` convention for rooms
+- [Metadata contract](/dotnet/infrastructure/presence/metadata-contract/) — the participant metadata blob: shape, size cap, PII rules
 - [Notifications conventions — delivery gates](/dotnet/infrastructure/notifications/conventions/#delivery-gates)
 - [Notifications overview](/dotnet/infrastructure/notifications/)
 - [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — visibility policies and `ICurrentTenant`
