@@ -304,6 +304,13 @@ blob the subject does not own cannot be assembled without a valid signature.
 `sha256` is empty for shards that were resumed after a crash (recomputing the
 digest would require re-streaming the committed shard).
 
+<Aside type="caution" title="Production needs a vault-backed signer">
+The default signer generates a per-process key and is **development-only** —
+Staging and Production refuse to boot with it. Install `Granit.Privacy.Vault` to
+sign fragments and manifests with a key that lives in your vault and survives
+restarts and scale-out. See [Export Signing](/dotnet/compliance/privacy/export-signing/).
+</Aside>
+
 ## Configuration
 
 ```json
@@ -404,6 +411,7 @@ public class MyAppModule : GranitModule { }
 ## See also
 
 - [Privacy overview](/dotnet/compliance/privacy/) — module setup and data provider registry
+- [Export Signing](/dotnet/compliance/privacy/export-signing/) — vault-backed HMAC signer for fragments and the manifest
 - [Data Deletion](/dotnet/compliance/privacy/data-deletion/) — sibling deletion saga
 - [Regulations](/dotnet/compliance/privacy/regulations/) — `PrivacyRegulationProfile` driving deadlines and copy
 - [Processing Purposes](/dotnet/compliance/privacy/processing-purposes/) — legal basis tied to exported data categories
