@@ -1,0 +1,154 @@
+---
+title: "Room Metadata Contract — Shape, Limits, and PII Rules"
+description: "The contract for the per-participant metadata blob in resource presence rooms: a small opaque JSON dictionary, capped at 512 bytes, validated twice, and contractually free of PII. Includes recommended keys per scenario."
+sidebar:
+  label: Metadata Contract
+  order: 3
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Each participant in a [resource room](/dotnet/infrastructure/presence/resource-rooms/)
+carries an optional **metadata** string — the slot that lets a face-pile show
+not just *who* is here but *where they are* inside the resource: which tab, which
+section, how far they have scrolled. This page is the contract for what goes in
+that slot.
+
+```csharp
+public sealed record ResourcePresenceEntry(
+    Guid UserId,
+    DateTimeOffset LastSeenUtc,
+    string? Metadata = null); // ← this page
+```
+
+## Shape
+
+Metadata is a **JSON object of string keys to string values** — the same shape
+the framework uses everywhere for ad-hoc extensibility: the `IHasMetadata`
+convention, a JSON dictionary stored in a single string.
+
+<Aside type="note" title="Same shape, not the same interface">
+`IHasMetadata` is an **entity** interface — it backs a `jsonb`/`nvarchar(max)`
+column on EF aggregates. Room metadata is a transient DTO that never touches the
+database; it lives only in the FusionCache room entry for the duration of the
+heartbeat. Room metadata **reuses the JSON-dictionary shape** of `IHasMetadata`
+so the same typed helpers read and write it — but it does **not** implement the
+interface. Do not model it as an entity.
+</Aside>
+
+The framework treats the string as **opaque**: it never parses it, never
+indexes it, never reasons about its keys. It is stored verbatim and returned
+verbatim. All meaning is a contract between your server-side producer and your
+client-side renderer.
+
+### Typed access
+
+Because the shape matches the `IHasMetadata` convention, the same extension
+helpers from `MetadataExtensions` give you typed read/write without hand-rolling
+JSON:
+
+```csharp
+// Writing (producer side) — build the bag, serialize once, pass to JoinAsync.
+// The helpers operate on any IHasMetadata carrier; here a lightweight DTO.
+entry.SetMetadataValue("tab", "content");
+entry.SetMetadataValue("scrollPos", "0.42");
+await rooms.JoinAsync(resource, userId, entry.MetadataJson, ct);
+
+// Reading (consumer side) — typed getters parse on the way out.
+string? tab        = participant.GetMetadataValue("tab");
+double  scrollPos  = participant.GetMetadataValue<double>("scrollPos");
+```
+
+## Size cap — 512 bytes
+
+The metadata string may not exceed **512 bytes when UTF-8 encoded**. This is a
+hard limit, enforced **twice** (defense in depth):
+
+1. **At the HTTP edge** — `HeartbeatRoomRequestValidator` rejects an oversize
+   body with `400 Bad Request` and the error code
+   `Granit:Validation:PresenceRoomMetadataTooLarge`.
+2. **At the tracker** — `JoinAsync` re-checks and throws `ArgumentException`
+   before anything is cached, so the limit holds even for in-process callers
+   that bypass the HTTP layer.
+
+512 bytes is deliberately small. Room metadata is a *cursor hint*, not a payload
+— it should comfortably fit a handful of short keys. If you find yourself
+fighting the cap, you are putting the wrong thing in the blob (see below).
+
+## No PII — a hard rule
+
+Room metadata is broadcast to **every other participant** who can read the room,
+and it transits an ephemeral cache that is never audited or access-logged the
+way an EF aggregate is. It is therefore **contractually off-limits to personal
+data.**
+
+<Aside type="danger" title="Never put PII in room metadata">
+Do **not** store:
+
+- **Email addresses** or usernames.
+- **Display names** or any human-readable identity (`"editedBy":"Jane Doe"`).
+- **Raw URLs with query strings** — they routinely smuggle tokens, search
+  terms, and identifiers.
+- **Any field that directly identifies a person** — phone numbers, national IDs,
+  customer references.
+
+The participant's `UserId` (a GUID) is already in the entry. Resolve names,
+avatars, and colours **client-side** from that id against your existing identity
+directory — never denormalize them into the blob.
+</Aside>
+
+The framework cannot enforce this — the blob is opaque to it by design. The cap
+bounds *size*, not *sensitivity*. Keeping PII out is the **consumer's
+responsibility**, backed by documentation (this page) and the architecture test
+recommended below.
+
+### Recommended: an architecture test
+
+Because nothing at runtime inspects the blob, guard it at build time. Add an
+architecture test in the consuming codebase that scans the call-sites that
+populate room metadata (your `SetMetadataValue(...)` keys, or the literal keys
+you serialize) and **fails the build** if a forbidden key name appears.
+
+```csharp
+// Consumer-side architecture test (illustrative).
+[Fact]
+public void Room_metadata_keys_contain_no_PII()
+{
+    string[] forbidden = ["email", "name", "displayName", "phone", "url", "href"];
+    IReadOnlyList<string> usedKeys = ScanRoomMetadataSetPropertyCallSites();
+
+    usedKeys.ShouldNotContain(
+        k => forbidden.Contains(k, StringComparer.OrdinalIgnoreCase),
+        "Room metadata must not carry PII — resolve identity client-side from UserId.");
+}
+```
+
+This mirrors the framework's own convention test for the rooms surface — a
+static guard is the only reliable defense against an opaque field.
+
+## Recommended keys
+
+Metadata is opaque, so you are free to choose keys — but a shared vocabulary
+keeps clients interoperable and reviews easy. Prefer these:
+
+| Key | Type | Meaning | Typical scenario |
+|-----|------|---------|------------------|
+| `tab` | string | Which tab/pane the user is on | Multi-tab editors (CMS, settings) |
+| `section` | string | Sub-region within the surface | Long forms, structured documents |
+| `scrollPos` | number (0–1) | Fractional scroll position | Long pages, articles |
+| `viewMode` | string | `edit` / `view` / `comment` … | Surfaces with explicit modes |
+| `page` | number | Current page number | PDF / document readers |
+| `step` | string \| number | Current step in a flow | Wizards, workflows, approvals |
+
+<Aside type="tip" title="Keep it minimal">
+Send only the keys a *peer's* UI needs to render awareness — not your own local
+state. A reader watching a colleague's avatar cares which `page` they are on;
+they do not care about that colleague's undo stack or draft text. When in doubt,
+leave it out: smaller blobs are cheaper, safer, and less likely to leak.
+</Aside>
+
+## See also
+
+- [Resource rooms](/dotnet/infrastructure/presence/resource-rooms/) — where the metadata lives
+- [Resource kind naming](/dotnet/infrastructure/presence/resource-kind-naming/) — naming the room itself
+- [Presence overview](/dotnet/infrastructure/presence/) — the two presence dimensions
