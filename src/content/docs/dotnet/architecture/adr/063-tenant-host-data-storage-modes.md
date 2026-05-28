@@ -1,6 +1,6 @@
 ---
 title: "ADR-063: Tenant/Host data storage modes"
-description: "Formalise the per-module Host/Tenant storage taxonomy: invariant vs archetype-sensitive semantic scope, DualScopeMode { Shared, Segregated } for the storage variant, and the physical-placement axis. Establish the boundary between framework-decided invariants and app-decided options, and the criteria for the interface-only exemption."
+description: "Formalise the per-module Host/Tenant storage taxonomy: invariant vs archetype-sensitive semantic scope, DualScopeStorageMode { Shared, Segregated } for the storage variant, and the physical-placement axis. Establish the boundary between framework-decided invariants and app-decided options, and the criteria for the interface-only exemption."
 sidebar:
   order: 63
   label: "063 - Tenant/Host data storage modes"
@@ -77,13 +77,22 @@ Every module publishes its classification in the README of its base package and
 in the xmldoc of its `*Options` type. New `Granit.*` modules MUST be classified
 explicitly in their introductory ADR.
 
+The framework already exposes `Granit.MultiTenancy.MultiTenancySides { Host, Tenant, Both }`
+as the vocabulary for declaring the applicability of a capability (used today by
+permission providers in `Settings`, `Authentication.ApiKeys`, `Mcp.Server`, etc.).
+The same enum is the natural shorthand for this axis: an *invariant* module is
+pinned to one value of `MultiTenancySides`; an *archetype-sensitive* module
+declares its own `*Scope` enum because the framework cannot anticipate every
+archetype-specific value set. Axis 2 below applies only to entities whose
+applicability resolves to `MultiTenancySides.Both`.
+
 ### Axis 2 — Dual-scope storage variant
 
 When an entity ends up dual-scope (whether by invariant or by archetype choice),
 the app additionally chooses *how* the dual scope is physically realised:
 
 ```csharp
-public enum DualScopeMode
+public enum DualScopeStorageMode
 {
     /// <summary>
     /// Single physical table in <c>host.*</c>; <c>TenantId</c> nullable;
@@ -111,7 +120,7 @@ Default: `Shared` (preserves current behaviour, zero migration burden).
 ### Axis 3 — Tenant data physical placement
 
 Unchanged from PR #2021. When tenant data exists (either scope=Tenant or
-DualScopeMode=Segregated), the app picks one of:
+DualScopeStorageMode=Segregated), the app picks one of:
 
 - `SharedDatabase` (tenant rows tagged or prefixed in a shared DB)
 - `SchemaPerTenant` (one Postgres schema per tenant)
@@ -141,7 +150,7 @@ services.AddGranitBlobStorageEntityFrameworkCore(
 ```csharp
 services.AddGranitNotificationsEntityFrameworkCore(opts =>
 {
-    // opts.Mode = DualScopeMode.Shared; — implicit default
+    // opts.StorageMode = DualScopeStorageMode.Shared; — implicit default
     opts.Configure = b => b.UseNpgsql(hostConn);
 });
 ```
@@ -151,7 +160,7 @@ services.AddGranitNotificationsEntityFrameworkCore(opts =>
 ```csharp
 services.AddGranitWebhooksEntityFrameworkCore(opts =>
 {
-    opts.Mode = DualScopeMode.Segregated;
+    opts.StorageMode = DualScopeStorageMode.Segregated;
     opts.ConfigureHost          = b => b.UseNpgsql(hostConn);
     opts.ConfigureSchemaPerTenant = (b, schema) => b.UseNpgsql(...);
 });
@@ -237,12 +246,12 @@ New modules MUST NOT adopt interface-only without an ADR amendment.
 
 ### Framework
 
-- New: `DualScopeMode` enum and `Granit.Persistence` primitives for dual-context
+- New: `DualScopeStorageMode` enum and `Granit.Persistence` primitives for dual-context
   dispatch (likely an abstract `DualScopeStore<T>` or `IDualScopeContextFactory
-  <THost, TTenant>`) reused by every `DualScopeMode.Segregated` module.
+  <THost, TTenant>`) reused by every `DualScopeStorageMode.Segregated` module.
 
 - Updated: every dual-scope module's `*EntityFrameworkCore` package gains an
-  `*Options` carrying `Mode = DualScopeMode.Shared` as default. PR #2377 ships
+  `*Options` carrying `StorageMode = DualScopeStorageMode.Shared` as default. PR #2377 ships
   the prototype for Webhooks.
 
 - New ArchitectureTest: coherence between declared `Mode`, registration call,
@@ -251,7 +260,7 @@ New modules MUST NOT adopt interface-only without an ADR amendment.
 
 ### Consuming applications
 
-- **Zero breaking change by default.** `DualScopeMode.Shared` reproduces
+- **Zero breaking change by default.** `DualScopeStorageMode.Shared` reproduces
   today's behaviour. Apps opt in module-by-module as framework support rolls
   out.
 
@@ -287,7 +296,7 @@ This ADR is framework-pure but has fan-out across the Granit family:
 - **`granit-business`** — Catalog (currently tenant-only) is the first
   candidate for reclassification to archetype-sensitive (marketplace
   archetype needs `DualScope`). CustomerBalance, future Subscriptions and
-  Invoicing follow. Granit-business consumes the framework `DualScopeMode`
+  Invoicing follow. Granit-business consumes the framework `DualScopeStorageMode`
   enum through Granit NuGet packages; no code change required until a
   consumed dual-scope module ships V2/V3.
 
@@ -321,7 +330,7 @@ this framework ADR.
 | Module dédoublé (e.g. `Granit.Payment.Saas` vs `.Ecommerce`) | Rejected | Doubles surface (entities, migrations, tests, docs); not extensible to hybrid archetypes (marketplace). |
 | Always `Segregated` (deprecate `Shared`) | Rejected | Over-isolation for low-stakes deployments (single-tenant, internal tools, dev/test); UNION-read cost across schemas does not justify itself uniformly. |
 | Always `Shared` (deprecate `Segregated`) | Rejected | Prevents physical defense-in-depth; blocks RGPD-by-schema-drop; blocks regulated industries (ISO 27001, healthcare, finance, defence). |
-| Make `DualScopeMode` a single global choice for the whole app | Rejected | Different modules have different risk profiles; an app may legitimately want `Auditing = Shared` (cross-tenant SOC2 queries) but `Notifications = Segregated` (personal data). |
+| Make `DualScopeStorageMode` a single global choice for the whole app | Rejected | Different modules have different risk profiles; an app may legitimately want `Auditing = Shared` (cross-tenant SOC2 queries) but `Notifications = Segregated` (personal data). |
 | Entity-level scope (e.g. `[Host]` / `[Tenant]` attributes) | Rejected | Too granular; multiplies decisions and complicates store dispatch without benefit over module-level choice. |
 | Generalise interface-only as the fourth mode | Rejected | Kills modularity (single monolithic `AppDbContext`, all migrations interleaved, no microservice subset deployment); see CLAUDE.md isolated-DbContext-per-module rule. Only justified for atomic-transaction couplings. |
 
