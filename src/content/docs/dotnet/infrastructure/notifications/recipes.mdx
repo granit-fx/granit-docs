@@ -74,6 +74,30 @@ public class EncryptedNotificationEnricher(IStringEncryptionService encryption)
 }
 ```
 
+## Identity + Notifications: zero-boilerplate recipient resolution
+
+Apps on `Granit.Identity` get a deliverable pipeline without writing an
+`IRecipientResolver`. The opt-in `Granit.Identity.Notifications` bridge is the default
+path: it resolves recipient contact details straight from the identity layer -- local
+(OpenIddict) and every federated provider (Keycloak, Entra ID, Cognito, Google)
+through a single adapter.
+
+```csharp
+[DependsOn(typeof(GranitIdentityNotificationsModule))]
+public class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddGranitIdentityRecipientResolver();
+    }
+}
+```
+
+It registers with `TryAddScoped`, so a custom `IRecipientResolver` still wins if you
+later need one. See
+[Channels → ready-made resolver](/dotnet/infrastructure/notifications/channels/#ready-made-resolver-granitidentitynotifications)
+for the field mapping and the `Identity:RecipientResolver` options.
+
 ## Public API summary
 
 | Category | Key types | Package |
@@ -85,6 +109,7 @@ public class EncryptedNotificationEnricher(IStringEncryptionService encryption)
 | Entities | `UserNotification`, `NotificationDeliveryAttempt`, `NotificationPreference`, `NotificationSubscription`, `UserNotificationState` | `Granit.Notifications` |
 | CQRS | `IUserNotificationReader`, `IUserNotificationWriter`, `INotificationPreferenceReader`, `INotificationPreferenceWriter`, `INotificationSubscriptionReader`, `INotificationSubscriptionWriter`, `INotificationDeliveryWriter` | `Granit.Notifications` |
 | Recipient | `IRecipientResolver`, `RecipientInfo` | `Granit.Notifications` |
+| Recipient resolver (Identity bridge — default path) | `GranitIdentityNotificationsModule`, `IdentityRecipientResolverOptions`, `AddGranitIdentityRecipientResolver()` | `Granit.Identity.Notifications` |
 | Entity tracking | `ITrackedEntity`, `TrackedPropertyConfig`, `EntityStateChangedData`, `EntityReference` | `Granit.Notifications` |
 | Messages | `NotificationTrigger`, `DeliverNotificationCommand` | `Granit.Notifications` |
 | Handlers | `NotificationFanoutHandler`, `NotificationDeliveryHandler` | `Granit.Notifications` |
