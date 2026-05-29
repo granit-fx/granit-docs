@@ -228,6 +228,24 @@ when atomic shared-connection transactions across modules are required:
 - `Granit.Authorization` — role + grant + user-role mapping must commit
   atomically with `Granit.Identity.Local` user writes (see ADR-024). **Exempt.**
 
+  Interface-only here is *not* a barrier to Segregated storage — it is the
+  mechanism. The host application chooses placement by deciding *which* of
+  its DbContexts implements `IPermissionGrantDbContext`:
+
+  - Implemented on a host-pinned `AppDbContext` → grants live in the host DB
+    (current default). ADR-024's atomic shared-connection path applies.
+  - Implemented on a tenant-isolated `AppDbContext` → grants live in the
+    tenant DB (Segregated *de facto*). The orchestrator's
+    `DbConnectionStringBuilder.EquivalentTo` pre-condition fails, and ADR-024
+    *automatically* falls back to compensating-write. No saga, no
+    framework change.
+
+  The trade-off is therefore expressed at the host level, not the framework:
+  the host either keeps atomic dual writes (host placement) or accepts the
+  compensating-write window (tenant placement). The framework ships no
+  `DualScopeStorageMode` for Authorization — the existing interface already
+  carries the full decision space. Outcome of spike #2385.
+
 - `Granit.Workflow` — `WorkflowTransitionInterceptor` must write the audit
   row in the *same* transaction as the transitioning aggregate; an
   independent DbContext would split the transaction. **Exempt.**
