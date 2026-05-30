@@ -83,9 +83,10 @@ services.AddSingleton<INotificationChannel, TeamsNotificationChannel>();
 
 ## IRecipientResolver
 
-The application must implement this interface to resolve contact information
-from user identifiers. It is **not** provided by Granit -- each application
-knows its own user model.
+This interface resolves contact information from user identifiers. By default the
+application implements it -- each application knows its own user model. Apps built on
+`Granit.Identity` can instead opt into the ready-made resolver from
+[`Granit.Identity.Notifications`](#ready-made-resolver-granitidentitynotifications).
 
 ```csharp
 public interface IRecipientResolver
@@ -105,6 +106,82 @@ public sealed record RecipientInfo
     public string? DisplayName { get; init; }
 }
 ```
+
+## Ready-made resolver: Granit.Identity.Notifications
+
+Apps on `Granit.Identity` no longer have to hand-roll a resolver. The opt-in
+`Granit.Identity.Notifications` package ships `IdentityRecipientResolver`, a single
+adapter over `IIdentityUserReader` -- the unified identity read abstraction -- that
+covers **local (OpenIddict)** and **every federated provider** (Keycloak, Entra ID,
+Cognito, Google) with no per-provider code. In federated mode the reader already
+resolves through the [user cache](/dotnet/security/identity/#user-cache-cache-aside),
+so there is no extra round-trip to the external IdP per notification.
+
+Reference the module and register the resolver:
+
+```csharp
+[DependsOn(typeof(GranitIdentityNotificationsModule))]
+public class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddGranitIdentityRecipientResolver();
+    }
+}
+```
+
+The resolver registers with `TryAddScoped`, so an application-supplied
+`IRecipientResolver` always takes precedence -- adopting the bridge never blocks a
+later custom override.
+
+### Field mapping
+
+| `RecipientInfo` field | Source |
+|-----------------------|--------|
+| `Email` | The identity user's `Email` |
+| `DisplayName` | Canonical `User.DisplayName`; otherwise `FirstName` + `LastName`, falling back to `Username` |
+| `PhoneNumber` | Canonical `User.PhoneNumber` when present; otherwise the first non-empty provider metadata key |
+| `PreferredCulture` | Canonical `User.PreferredLocale` when present; otherwise the first non-empty metadata key, then `DefaultCulture` |
+
+When the identity backend returns the canonical
+[`User` aggregate](/dotnet/security/identity/#canonical-user-aggregate) ([ADR-051](/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/)),
+its first-class `PhoneNumber` / `PreferredLocale` win. Otherwise the resolver probes a
+configurable, ordered list of provider metadata keys and takes the first non-empty
+value.
+
+### Configuration
+
+Bound to the `Identity:RecipientResolver` section via `IdentityRecipientResolverOptions`:
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `PhoneNumberMetadataKeys` | `["phoneNumber", "phone_number"]` | Metadata keys probed in order for the phone number (Keycloak / Cognito) |
+| `PreferredCultureMetadataKeys` | `["locale", "preferredLanguage"]` | Metadata keys probed in order for the BCP-47 culture (Keycloak / Cognito / Graph) |
+| `DefaultCulture` | `null` | Culture applied when none is resolved; `null` leaves it to the pipeline |
+
+```json
+{
+  "Identity": {
+    "RecipientResolver": {
+      "PhoneNumberMetadataKeys": ["phoneNumber", "phone_number"],
+      "PreferredCultureMetadataKeys": ["locale", "preferredLanguage"],
+      "DefaultCulture": null
+    }
+  }
+}
+```
+
+:::caution[Current limitations]
+Tracked as follow-ups on
+[granit-fx/granit-dotnet#2443](https://github.com/granit-fx/granit-dotnet/issues/2443):
+
+- The identity user interface does not yet surface `PhoneNumber` / `PreferredLocale`
+  directly -- the resolver reads them from the canonical `User` aggregate or the
+  metadata fallback.
+- The federated sync does not yet hydrate `User.PhoneNumber` / `User.PreferredLocale`
+  from the IdP, so federated recipients currently rely on the metadata-key path.
+
+:::
 
 ## See also
 

@@ -1,0 +1,129 @@
+---
+title: "Resource Kind Naming — The cms.page Convention"
+description: "The naming convention for resource-room kinds: lowercase dotted <module>.<entity> identifiers, the framework validation regex, and the registry of reserved per-module prefixes that keeps rooms from colliding."
+sidebar:
+  label: Resource Kind Naming
+  order: 2
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Every [resource room](/dotnet/infrastructure/presence/resource-rooms/) is keyed
+by a `(Kind, Id)` pair. The **`Kind`** is a stable, lowercase, dotted
+discriminator that names *what type of thing* the room is about — `cms.page`,
+`documents.file`, `releases.changeset`. This page is the convention for choosing
+one.
+
+The `Id` is opaque to the framework (a stringified GUID, a slug, a composite
+key — whatever the owning module uses) and is not covered here beyond its 256-
+character cap. The `Kind`, by contrast, is a shared namespace: it shows up in
+URLs, in metric tags, and in cache keys across every module that opens rooms.
+A loose convention there means collisions and cardinality blow-ups.
+
+## Format
+
+```text
+<module>.<entity>
+```
+
+- **Lowercase only.** No capitals — kinds appear verbatim in URLs and metric
+  tags, where case sensitivity is a foot-gun.
+- **Dotted segments.** A leading module namespace, then the entity. Deeper
+  nesting is allowed (`documents.assetmetadata.pdf`) but keep it shallow.
+- **Stable.** The kind is part of the URL contract and the cache key. Renaming
+  it orphans every in-flight room. Treat it like a public API.
+
+### Examples
+
+| Kind | Room is about |
+|------|---------------|
+| `cms.page` | A CMS page being co-edited |
+| `documents.file` | A document open in a preview / annotation pane |
+| `dashboards.dashboard` | A dashboard several analysts are watching live |
+| `activities.activity` | An activity / task detail view |
+| `releases.changeset` | A changeset under review |
+
+## Validation regex
+
+The framework validates `Kind` eagerly in `ResourceRef.Validate()` — called by
+`JoinAsync`/`GetAsync`/`LeaveAsync` and by every REST endpoint. The pattern is:
+
+```text
+^[a-z][a-z0-9_.-]{0,63}$
+```
+
+In words:
+
+- Must **start with a lowercase letter** (`a`–`z`).
+- May then contain lowercase letters, digits, `_`, `.`, `-`.
+- **Maximum 64 characters** total.
+
+```csharp
+// Granit.Presence.Abstractions.ResourceRef
+[GeneratedRegex("^[a-z][a-z0-9_.-]{0,63}$")]
+private static partial Regex KindPattern();
+```
+
+A kind that fails the pattern throws `ArgumentException` from the tracker, and
+surfaces as a `400 Bad Request` (RFC 7807 `ValidationProblem`) from the REST
+endpoints — never a `500`.
+
+<Aside type="caution" title="The regex is necessary but not sufficient">
+The regex bounds the *character set and length* — it does **not** enforce the
+`<module>.<entity>` convention. `xK9` and `mypage` both pass the regex but
+ignore the namespace convention and risk colliding with another module. The
+regex is the floor; the reserved-prefix registry below is the actual contract.
+</Aside>
+
+## Why a namespace at all
+
+Resource rooms are a **shared, app-wide keyspace**. Every module that opens a
+room writes into the same `(Kind, Id)` table. Without a module prefix, two
+modules that both pick `page` — a CMS page and a wiki page — would silently
+share a room: open the wiki page with id `42` and you would see the avatars of
+people editing the *CMS* page `42`. The `<module>.` prefix is what makes
+`cms.page` and `wiki.page` distinct.
+
+The prefix also bounds **metric tag cardinality**. `resource_kind` is a tag on
+every room counter and histogram. A disciplined, finite set of kinds keeps the
+metrics backend healthy; ad-hoc kinds derived from user data would explode it.
+
+## Reserved prefixes
+
+Each module owns a `<module>.` prefix. The table below is the **living
+registry** — when you add rooms to a module, claim its prefix here and list the
+entity kinds you use so other teams can see the keyspace at a glance.
+
+| Prefix | Owning module | Known kinds |
+|--------|---------------|-------------|
+| `cms.*` | granit-website CMS | `cms.page` |
+| `documents.*` | `Granit.Documents` | `documents.file` |
+| `dashboards.*` | `Granit.Dashboards` | `dashboards.dashboard` |
+| `activities.*` | `Granit.Activities` | `activities.activity` |
+| `catalog.*` | `Granit.Catalog` | — |
+| `entities.*` | `Granit.Entities` | `entities.record` |
+| `releases.*` | release-management (example) | `releases.changeset` |
+
+<Aside type="note" title="Claiming a prefix">
+Adding rooms to a new module? Pick `<module>.` matching the module's package
+name (drop the `Granit.` prefix and lowercase it: `Granit.Catalog` →
+`catalog.`), add a row here, and cross-link from the module's own docs page.
+Keep entity names singular and concrete (`documents.file`, not
+`documents.files` or `documents.stuff`).
+</Aside>
+
+## Choosing an entity name
+
+- **Singular, concrete noun.** `cms.page`, not `cms.pages` or `cms.content`.
+- **Match the aggregate.** If the module's EF aggregate is `CmsPage`, the kind
+  is `cms.page`. The mapping should be obvious to anyone who knows the domain.
+- **One kind per co-editable surface.** If a document has both a metadata
+  editor and a renditions panel that should *not* share a face-pile, model them
+  as two kinds (`documents.file`, `documents.renditions`) — not one kind with
+  metadata disambiguation.
+
+## See also
+
+- [Resource rooms](/dotnet/infrastructure/presence/resource-rooms/) — the room model and lifecycle
+- [Metadata contract](/dotnet/infrastructure/presence/metadata-contract/) — what goes in the participant `Metadata` blob
+- [Presence overview](/dotnet/infrastructure/presence/) — the two presence dimensions

@@ -1,0 +1,197 @@
+---
+title: "ADR-060: OIDC sub-as-Guid policy for domain ownership"
+description: "ICurrentUserService.UserGuid as a best-effort default — Guid.TryParse on the sub claim, null on non-Guid IDPs. Domain modules consuming it MUST handle null at the boundary."
+sidebar:
+  order: 60
+  label: "060 - OIDC sub as Guid"
+topic: backend
+---
+
+> **Date:** 2026-05-26
+> **Authors:** Jean-Francois Meyers
+> **Scope:** `granit-dotnet` — `Granit.Users.ICurrentUserService`, every domain
+> module that types ownership as `Guid` (starting with `Granit.Documents`).
+
+## Context
+
+`ICurrentUserService.UserId` is `string?` by design — it carries the raw OIDC
+`sub` claim and makes no assumption about its shape. That choice is correct
+for the audit plane: `CreatedBy` / `ModifiedBy` columns are `string` precisely
+so they survive any provider's identifier format.
+
+Domain modules tell a different story. When a module needs to express
+"this entity is owned by user X" as a first-class concept ([ADR-052 —
+Documents module](/dotnet/architecture/adr/052-documents-module/) is the
+first; more will follow), `OwnerId` is a typed `Guid` column. Two
+arguments push that direction:
+
+- **Storage symmetry.** Every other user-shaped FK in the framework
+  (`UserCacheEntry.Id`, `GranitUser.Id`, `Party.UserId`) is already a `Guid`.
+  Keeping `OwnerId` as `string` would force a parse at every join.
+- **Index discipline.** [IOwnable](/dotnet/data/ownable/) declares
+  `Guid OwnerId { get; }` precisely so `ApplyGranitConventions` can emit a
+  `(TenantId, OwnerId)` composite index. A nullable-string ownership key would
+  defeat the index.
+
+The friction is the `sub` claim itself. Across the four providers Granit
+supports, `sub` is **not always** a Guid.
+
+## Decision
+
+Add a **best-effort default-impl** `UserGuid` to `ICurrentUserService`:
+
+```csharp
+Guid? UserGuid => Guid.TryParse(UserId, out Guid id) ? id : null;
+```
+
+Three properties of this shape:
+
+1. **Default-impl, not abstract.** Existing `ICurrentUserService` implementations
+   (5 in the framework, more in consuming apps) keep compiling unchanged.
+   The member surfaces on the interface, but no impl needs to override it
+   unless it has a faster path.
+2. **`Guid.TryParse`, not `Guid.Parse`.** A non-Guid `sub` returns `null` —
+   it never throws inside `ICurrentUserService`. The decision of *what to do*
+   with a null typed identity is pushed up to the caller, where it has context
+   (which command? which aggregate? which fallback?).
+3. **No silent `Guid.Empty`.** Returning `Guid.Empty` on parse failure would
+   propagate a bogus FK into persistence and corrupt the (`TenantId`, `OwnerId`)
+   index. The contract is **nullable**, and callers that require an owner
+   identity throw at the boundary.
+
+## IDP compatibility matrix
+
+| Provider | `sub` shape | `UserGuid` value | Notes |
+|---|---|---|---|
+| **Keycloak** | UUID v4 (`a1b2c3d4-...-...`) | Guid | Native — every Keycloak user has a UUID `sub`. |
+| **Entra ID** | UUID v4 (object id) | Guid | Native — `oid` and `sub` are both Guids for the application user. |
+| **AWS Cognito (user pool only)** | UUID v4 | Guid | Native — pool-issued sub is a Guid. |
+| **AWS Cognito (federated identities)** | `<region>:<guid>` (e.g. `eu-west-1:a1b2...`) | `null` | Pool prefix breaks `Guid.TryParse`. Apps that need ownership in this mode must override `UserGuid` and strip the prefix, or use Cognito user pool mode. |
+| **Google Cloud Identity** | numeric string (`109876543210...`) | `null` | Google issues numeric `sub`. Ownership-typed domain modules are not supported on Google IDP without a custom `UserGuid` resolver mapping numeric `sub` → local user aggregate. |
+
+The matrix is checked in `Granit.Authentication.JwtBearer.*` integration tests.
+When a new provider integration ships, it must declare whether `sub` is
+natively Guid-parseable; if not, it must publish a documented `UserGuid`
+override (or accept that ownership-typed modules are not usable on that IDP).
+
+## Caller contract
+
+Modules consuming `UserGuid` MUST handle `null` explicitly at the
+**boundary** — typically a command handler or aggregate factory — and
+SHOULD throw rather than fall back to `Guid.Empty`:
+
+```csharp
+public async Task<Document> CreateAsync(string name, CancellationToken ct)
+{
+    Guid ownerId = currentUser.UserGuid
+        ?? throw new InvalidOperationException(
+            "Document ownership requires a Guid-parseable user identity. "
+          + $"Current sub '{currentUser.UserId}' is not a Guid. "
+          + "Check IDP configuration or override ICurrentUserService.UserGuid.");
+
+    Document doc = Document.Create(name, ownerId);
+    // ...
+}
+```
+
+This places the failure where it is actionable (a 500 with a clear message on
+the create endpoint) rather than where it manifests downstream (a foreign-key
+violation on the next save, or a silently empty owner column).
+
+Two consumers are wired this way in the framework today:
+
+- **`Granit.Documents`** — `Document.Create` / `Folder.Create` require a
+  non-empty `Guid ownerId` parameter; the endpoint layer resolves it via
+  `UserGuid ?? throw`.
+- **`Granit.Authorization` — [OwnedByCurrentUserHandler](/dotnet/data/ownable/#authorization)** —
+  the resource-based auth handler is **fail-silent**: when
+  `UserGuid is null`, the requirement remains unsatisfied (the handler does
+  not call `context.Fail()`), so a stacked permission-based or role-based
+  policy can still grant access. This is the inverse of the command-side
+  decision: at the auth layer, missing-Guid is a non-grant, not an error.
+
+## Alternatives considered
+
+### A. Make `UserGuid` an abstract member of `ICurrentUserService`
+
+Rejected.
+
+- **Breaking change for every consumer.** 5 framework impls plus an unknown
+  count in business apps would all need to implement it. The benefit (provider
+  picks the optimal path) does not outweigh the migration cost.
+- **The default impl is the right answer for 3 of 4 providers.** Only Cognito
+  federated identities and Google need a custom path; the rest get the
+  correct value for free.
+
+### B. Throw inside `UserGuid` on non-Guid `sub`
+
+Rejected.
+
+- **Wrong layer.** `ICurrentUserService` is a contextual accessor — it must
+  not throw for a state the IDP legitimately produces. Authentication
+  succeeded; the actor is just not a Guid. Throwing here turns every
+  audited write into a 500 on Google IDP, even for code paths that don't
+  need typed ownership.
+- **Loses information.** A throw collapses two failure modes ("no user at
+  all" vs "user but non-Guid `sub`") into one. The nullable return preserves
+  both.
+
+### C. Silently coerce to `Guid.Empty`
+
+Rejected. This is the failure mode the ADR is designed to prevent — see the
+"Caller contract" section.
+
+### D. Store ownership as `string` and skip the typed `Guid` plane
+
+Rejected.
+
+- **Defeats the index convention.** [IOwnable](/dotnet/data/ownable/)'s value
+  is the automatic `(TenantId, OwnerId)` index. A string FK would still
+  index, but joins against `UserCacheEntry.Id` / `GranitUser.Id` (both Guid)
+  would require a per-row parse — measurably worse on tenants with millions of
+  rows.
+- **Mismatch with DDD aggregate identity.** Every user-shaped aggregate in
+  Granit uses `Guid` as its identifier. A string ownership column is an
+  outlier in the domain model.
+
+## Consequences
+
+### Positive
+
+- **Existing code unchanged.** Default-impl means no breaking change. The 5
+  framework `ICurrentUserService` implementations and every consumer in
+  business apps keep compiling.
+- **Typed ownership is now expressible.** [IOwnable](/dotnet/data/ownable/)
+  has a clean primitive to consume — `Guid?` with a documented null contract,
+  not an opportunistic `Guid.Parse` scattered across modules.
+- **Cognito-federated and Google failures surface early.** On those IDPs,
+  `UserGuid` is `null` from the first authenticated request. The first
+  attempt to create an ownership-typed entity throws with a clear message,
+  not a silent corruption.
+
+### Negative
+
+- **Ownership-typed modules are IDP-conditional.** Apps deployed against
+  Google IDP or Cognito federated identities cannot use `Granit.Documents`
+  (or any future `IOwnable` module) without supplying a custom
+  `UserGuid` resolver. This is documented in the matrix above and surfaced
+  by the throw at create time.
+
+### Neutral
+
+- **Audit columns stay `string`.** `CreatedBy` / `ModifiedBy` still consume
+  `UserId` (the raw `sub`), unaffected by this ADR. The two planes —
+  audit identity (string) and domain ownership (Guid) — are deliberately
+  distinct.
+
+## References
+
+- [IOwnable](/dotnet/data/ownable/) — the first consumer of `UserGuid`
+- [Security Overview](/dotnet/security/security-overview/) — `ICurrentUserService` surface
+- [Authentication](/dotnet/security/authentication/) — IDP integrations and provider-specific claims
+- [ADR-052](/dotnet/architecture/adr/052-documents-module/) — Documents module, the
+  first domain module to adopt the typed-ownership pattern
+- PR [#2298](https://github.com/granit-fx/granit-dotnet/pull/2298) —
+  `UserGuid` default-impl
+- PR [#2300](https://github.com/granit-fx/granit-dotnet/pull/2300) —
+  `IOwnable` + `OwnedRequirement` + `OwnedByCurrentUserHandler`

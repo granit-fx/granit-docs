@@ -99,7 +99,7 @@ Three tiers, each with a clear naming rule:
 | Tier | Naming rule | Examples |
 | ---- | ----------- | -------- |
 | **Core domain** | `Granit.{Module}` — no suffix | `Granit.Payments`, `Granit.Invoicing`, `Granit.Subscriptions`, `Granit.CustomerBalance` |
-| **Integration adapter** | `Granit.{Module}.{Integration}` — suffix describes *what*, not *with what* | `Granit.Auditing.Privacy`, `Granit.Notifications.Privacy`, `Granit.MultiTenancy.Provisioning` |
+| **Integration adapter** | `Granit.{Module}.{Integration}` — suffix describes *what*, not *with what* | `Granit.Auditing.Privacy`, `Granit.Notifications.Privacy`, `Granit.Indexing.Privacy`, `Granit.MultiTenancy.Provisioning` |
 | **Infrastructure adapter** | `Granit.{Module}.Wolverine` — suffix legitimately ties the module to a single bus implementation | `Granit.Scheduling.Wolverine`, `Granit.Webhooks.Wolverine`, `Granit.Notifications.Wolverine` |
 
 Handlers move out of the `.Wolverine` adapter into the base domain module

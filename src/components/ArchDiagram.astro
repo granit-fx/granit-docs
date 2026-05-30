@@ -114,6 +114,9 @@ const layers: Layer[] = [
       { name: "Timeline",            pkg: "Granit.Timeline",            href: "/dotnet/building-blocks/timeline/",           tip: "Entity activity stream, follow & notify (ISO 27001)" },
       { name: "QueryEngine",         pkg: "Granit.QueryEngine",         href: "/dotnet/building-blocks/query-engine/",       tip: "Column definitions, filters, sorting, pagination" },
       { name: "DataLookup",          pkg: "Granit.DataLookup",          href: "/dotnet/building-blocks/data-lookup/",        tip: "Unified server-side lookup APIs for cascading dropdowns" },
+      { name: "TextExtraction",      pkg: "Granit.TextExtraction",      href: "/dotnet/building-blocks/text-extraction/",    tip: "Pluggable bytes→text pipeline: PDF, Office, HTML, .eml, RTF, OCR — body-size cap, soft-fail, SSRF/zip-bomb gates" },
+      { name: "LanguageDetection",   pkg: "Granit.LanguageDetection",   href: "/dotnet/building-blocks/language-detection/", tip: "ISO 639-1 language detection — priority-chain composite + pure-managed trigram default" },
+      { name: "Indexing",            pkg: "Granit.Indexing",            href: "/dotnet/building-blocks/indexing/",           tip: "Full-text + semantic search — Postgres tsvector default or Elasticsearch, hybrid RRF embeddings, GDPR Art. 17 atomic erasure" },
     ],
   },
   {
@@ -142,6 +145,7 @@ const layers: Layer[] = [
     modules: [
       { name: "Wolverine",       pkg: "Granit.Wolverine",       href: "/dotnet/infrastructure/wolverine-messaging/",      tip: "Message bus, saga, outbox, retry (Wolverine)" },
       { name: "Notifications",   pkg: "Granit.Notifications",   href: "/dotnet/infrastructure/notifications/",  tip: "6-channel notifications: email, SMS, push, in-app, SignalR, SSE" },
+      { name: "Presence",        pkg: "Granit.Presence",        href: "/dotnet/infrastructure/presence/",       tip: "Online/Away/DnD presence: heartbeat tracker + manual override, gates push channels when user is DnD/Offline" },
       { name: "BackgroundJobs",  pkg: "Granit.BackgroundJobs",  href: "/dotnet/infrastructure/background-jobs/",tip: "Recurring & delayed jobs (Wolverine + Cronos)" },
       { name: "Scheduling",      pkg: "Granit.Scheduling",      href: "/dotnet/infrastructure/scheduling/",     tip: "User-facing job schedules — cron, calendar, retry policies, audit log" },
       { name: "Localization",    pkg: "Granit.Localization",    href: "/dotnet/infrastructure/localization/",   tip: "i18n for 18 cultures, source-generated keys, runtime overrides" },
@@ -195,7 +199,7 @@ const layers: Layer[] = [
       { name: "Imaging",         pkg: "Granit.Imaging",         href: "/dotnet/data/imaging/",         tip: "Image processing pipeline: resize, crop, convert, watermark" },
       { name: "Encryption",      pkg: "Granit.Encryption",      href: "/dotnet/data/encryption/",      tip: "Field-level AES-256-GCM encryption" },
       { name: "Vault",           pkg: "Granit.Vault",           href: "/dotnet/data/vault/",tip: "HashiCorp Vault integration, secret rotation" },
-      { name: "Mergeable",       pkg: "Granit.Mergeable",       href: "/dotnet/data/mergeable/", tip: "Aggregate merge framework: collision detection, conflict resolution, lineage" },
+      { name: "EntityMerge",     pkg: "Granit.EntityMerge",     href: "/dotnet/data/entity-merge/", tip: "Aggregate merge framework: collision detection, conflict resolution, lineage" },
     ],
   },
   {

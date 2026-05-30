@@ -58,7 +58,8 @@ export default defineConfig({
     "/dotnet/provider-compatibility/": "/dotnet/reference/provider-compatibility/",
     "/dotnet/concepts/multi-tenancy/persistence/": "/dotnet/concepts/multi-tenancy/",
     "/dotnet/security/security/": "/dotnet/security/security-overview/",
-    "/dotnet/data/mergeable/persistence/": "/dotnet/data/mergeable/",
+    "/dotnet/data/mergeable/persistence/": "/dotnet/data/entity-merge/",
+    "/dotnet/data/mergeable/": "/dotnet/data/entity-merge/",
     "/dotnet/data/reference-data/": "/dotnet/business/reference-data/",
     "/dotnet/security/privacy/": "/dotnet/compliance/privacy/",
     "/dotnet/compliance/": "/dotnet/concepts/compliance/",
@@ -124,6 +125,74 @@ export default defineConfig({
       "/dotnet/architecture/adr/048-cross-module-entity-relations/",
     "/dotnet/architecture/adr/044-workspace-navigation/045-contributor-pattern":
       "/dotnet/architecture/adr/045-contributor-pattern/",
+    "/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/017-ddd-aggregate-value-object-strategy.md":
+      "/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/",
+    "/dotnet/architecture/adr/046-activities-vs-timeline/045-contributor-pattern":
+      "/dotnet/architecture/adr/045-contributor-pattern/",
+    "/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/040-three-tier-metadata-architecture":
+      "/dotnet/architecture/adr/040-three-tier-metadata-architecture/",
+    "/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/019-user-lookup-dual-mode-cache-vs-local-store":
+      "/dotnet/architecture/adr/019-user-lookup-dual-mode/",
+
+    // Frontend pages moved to nested sections (/security/, /infrastructure/, etc.).
+    "/frontend/authentication/": "/frontend/security/authentication/",
+    "/frontend/authorization/": "/frontend/security/authorization/",
+    "/frontend/multi-tenancy/": "/frontend/infrastructure/multi-tenancy/",
+    "/frontend/settings/": "/frontend/infrastructure/settings/",
+    "/frontend/timeline/": "/frontend/business/timeline/",
+    "/frontend/api-client/": "/frontend/api/http-client/",
+    "/frontend/query-engine/": "/frontend/data/query-engine/",
+    "/frontend/reference-data/": "/frontend/business/reference-data/",
+    "/frontend/observability/": "/frontend/observability/error-boundary/",
+
+    // Frontend broken nested paths (wrong sub-path appended to a section URL).
+    "/frontend/security/authentication/multi-tenancy/": "/frontend/infrastructure/multi-tenancy/",
+    "/frontend/business/data-exchange/query-engine/": "/frontend/data/query-engine/",
+    "/frontend/infrastructure/multi-tenancy/authentication/": "/frontend/security/authentication/",
+    "/frontend/security/identity/authorization/": "/frontend/security/authorization/",
+    "/frontend/observability/error-boundary/logger/": "/frontend/observability/logger/",
+    "/frontend/observability/error-boundary/tracing/": "/frontend/observability/tracing/",
+    "/frontend/observability/tracing/logger/": "/frontend/observability/logger/",
+
+    // Top-level paths without the /dotnet/ prefix.
+    "/getting-started/next-steps/": "/dotnet/getting-started/next-steps/",
+    "/business/workflow/": "/dotnet/building-blocks/workflow/",
+
+    // .NET AI pages renamed.
+    "/dotnet/ai/extraction/": "/dotnet/ai/document-extraction/",
+    "/dotnet/ai/vector-data/": "/dotnet/ai/semantic-search/",
+    "/dotnet/ai/blob-classification/": "/dotnet/ai/blob-storage-ai/",
+
+    // .NET wrong section prefixes.
+    "/dotnet/concepts/data/vault/": "/dotnet/data/vault/",
+    "/dotnet/infrastructure/core/module-system/": "/dotnet/core/module-system/",
+    "/dotnet/concepts/messaging/wolverine-optionality/": "/dotnet/concepts/wolverine-optionality/",
+    "/dotnet/concepts/wolverine-optionality/messaging/": "/dotnet/concepts/wolverine-optionality/",
+    "/dotnet/guides/business/parties/": "/dotnet/business/parties/",
+    "/dotnet/data/mergeable/query-filters/": "/dotnet/data/query-filters/",
+
+    // Building-blocks sub-pages still indexed under the old /dotnet/business/templating/ prefix.
+    "/dotnet/business/templating/reference/": "/dotnet/building-blocks/templating/reference/",
+    "/dotnet/business/templating/rendering-pipeline/": "/dotnet/building-blocks/templating/rendering-pipeline/",
+
+    // .NET broken nested paths (wrong sub-path appended to a section URL).
+    "/dotnet/infrastructure/wolverine-messaging/persistence/": "/dotnet/infrastructure/wolverine-messaging/",
+    "/dotnet/business/workflow/persistence/": "/dotnet/building-blocks/workflow/",
+    "/dotnet/business/workflow/wolverine/": "/dotnet/building-blocks/workflow/",
+    "/dotnet/business/workflow/notifications/": "/dotnet/infrastructure/notifications/",
+    "/dotnet/core/module-system/authentication/": "/dotnet/security/authentication/",
+    "/dotnet/architecture/patterns/structured-output/ai-workspace/": "/dotnet/architecture/patterns/ai-workspace/",
+    "/dotnet/architecture/patterns/structured-output/ai-fallback/": "/dotnet/architecture/patterns/ai-fallback/",
+    "/dotnet/architecture/patterns/ai-workspace/factory-method/": "/dotnet/architecture/patterns/factory-method/",
+    "/dotnet/infrastructure/notifications/conventions/wolverine-integration/":
+      "/dotnet/infrastructure/notifications/wolverine-integration/",
+    "/dotnet/business/data-exchange/background-jobs/": "/dotnet/infrastructure/background-jobs/",
+    "/dotnet/api/webhooks/persistence/": "/dotnet/api/webhooks/",
+
+    // Legacy auto-generated API reference pages — redirect to the matching doc section.
+    "/api/Granit.Identity.html": "/dotnet/security/identity/",
+    "/api/Granit.Workflow.html": "/dotnet/building-blocks/workflow/",
+    "/api/Granit.BackgroundJobs.html": "/dotnet/infrastructure/background-jobs/",
   },
   integrations: [
     starlight({
@@ -344,6 +413,17 @@ export default defineConfig({
                     { label: "Workflow", link: "/dotnet/building-blocks/workflow/" },
                     { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
                     { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
+                    { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
+                    { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
+                    {
+                      label: "Indexing",
+                      collapsed: true,
+                      items: [
+                        { label: "Overview", link: "/dotnet/building-blocks/indexing/" },
+                        { label: "Embeddings (RRF)", link: "/dotnet/building-blocks/indexing-embeddings/" },
+                        { label: "Background reindex", link: "/dotnet/building-blocks/indexing-background-jobs/" },
+                      ],
+                    },
                     { label: "Timeline", link: "/dotnet/building-blocks/timeline/" },
                     {
                       label: "Templating",
@@ -413,6 +493,7 @@ export default defineConfig({
                   items: [
                     { label: "Overview", link: "/dotnet/ai/" },
                     { label: "Setup & Configuration", link: "/dotnet/ai/setup/" },
+                    { label: "Structured Completion", link: "/dotnet/ai/structured-completion/" },
                     { label: "API Endpoints", link: "/dotnet/ai/endpoints/" },
                     {
                       label: "User Experience",

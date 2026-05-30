@@ -2,7 +2,7 @@
 title: "Opt-Out (CCPA)"
 description: CCPA "Do Not Sell or Share" opt-out with anonymous visitor support, cart merge pattern, and _optout_id cookie.
 sidebar:
-  order: 6
+  order: 7
   label: Opt-Out (CCPA)
 ---
 
@@ -48,21 +48,44 @@ the merge call is application-level logic, not auto-triggered.
 
 | Method | Route | Operation | Auth |
 | ------ | ----- | --------- | ---- |
-| <Badge text="POST" variant="success" /> | `/opt-out` | RequestOptOut | Anonymous |
-| <Badge text="GET" variant="note" /> | `/opt-out/status` | GetOptOutStatus | Anonymous |
+| <Badge text="POST" variant="success" /> | `/privacy/opt-out` | RequestOptOut | Anonymous |
+| <Badge text="GET" variant="note" /> | `/privacy/opt-out/status` | GetOptOutStatus | Anonymous |
 
-<Aside type="tip">
-Applications must provide an opt-out store implementation via
-`privacy.UseOptOutRecordStore<T>()`. Without it, the opt-out endpoints return 501.
+Because `POST /privacy/opt-out` is anonymous, it is rate-limited via the
+framework-owned policy `privacy-optout-create` (wire the body under
+`RateLimiting:Policies:privacy-optout-create`; recommended: 5 requests/minute,
+partitioned by client IP for guests and by user id when authenticated). Exceeding
+it returns `429`.
+
+<Aside type="caution">
+The framework ships **no** opt-out store — `Granit.Privacy.EntityFrameworkCore`
+does not provide one. You must implement `IOptOutRecordReader` +
+`IOptOutRecordWriter` and register it via `privacy.UseOptOutRecordStore<T>()`.
+Without a store, `POST /privacy/opt-out` returns `501 Not Implemented` (and
+`GET /privacy/opt-out/status` reports `false`).
 </Aside>
 
 ## Setup
 
+Provide a store backed by your own persistence and register it:
+
 ```csharp
-context.Services.AddGranitPrivacy(privacy =>
+public sealed class OptOutRecordStore(AppDbContext db)
+    : IOptOutRecordReader, IOptOutRecordWriter
 {
-    privacy.UseOptOutRecordStore<EfCoreOptOutRecordStore>();
-});
+    // IOptOutRecordReader
+    public Task<OptOutRecord?> GetByUserAsync(Guid userId, CancellationToken ct = default) => /* … */;
+    public Task<OptOutRecord?> GetByAnonymousTrackAsync(string trackId, CancellationToken ct = default) => /* … */;
+    public Task<bool> IsOptedOutAsync(Guid? userId, string? anonymousTrackId, CancellationToken ct = default) => /* … */;
+
+    // IOptOutRecordWriter
+    public Task RecordOptOutAsync(OptOutRecord record, CancellationToken ct = default) => /* … */;
+    public Task RevokeOptOutAsync(Guid recordId, DateTimeOffset revokedAt, CancellationToken ct = default) => /* … */;
+    public Task MergeAnonymousAsync(string anonymousTrackId, Guid userId, CancellationToken ct = default) => /* … */;
+}
+
+services.AddGranitPrivacy(privacy =>
+    privacy.UseOptOutRecordStore<OptOutRecordStore>());
 ```
 
 ## See also

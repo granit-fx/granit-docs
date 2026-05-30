@@ -220,10 +220,9 @@ In the Keycloak admin console for the calling client (`payments-service`):
 
 ## Anti-pattern: naive bearer propagation
 
-Before the VULN-100 fix, `Granit.Http.Resilience` shipped
-`AddAuthTokenPropagation()` — a `DelegatingHandler` that copied the inbound
-`Authorization` header verbatim onto every outbound request. **This extension
-has been removed.**
+`Granit.Http.Resilience` used to ship `AddAuthTokenPropagation()` — a
+`DelegatingHandler` that copied the inbound `Authorization` header verbatim
+onto every outbound request. **This extension has been removed.**
 
 ### Why it was unsafe
 

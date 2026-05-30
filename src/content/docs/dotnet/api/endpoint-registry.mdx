@@ -753,18 +753,23 @@ interface OidcAuthorizationResponse {
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="POST" variant="success" /> | `/exports` | RequestPrivacyExport | `Privacy.Export.Execute` |
-| <Badge text="GET" variant="note" /> | `/exports/{requestId:guid}` | GetPrivacyExportStatus | `Privacy.Export.Execute` |
-| <Badge text="GET" variant="note" /> | `/exports` | ListPrivacyExports | `Privacy.Export.Execute` |
+| <Badge text="GET" variant="note" /> | `/exports/scopes` | ListPrivacyExportScopes | `Privacy.Exports.Execute` |
+| <Badge text="POST" variant="success" /> | `/exports` | RequestPrivacyExport | `Privacy.Exports.Execute` |
+| <Badge text="POST" variant="success" /> | `/exports/on-behalf-of` | RequestPrivacyExportOnBehalfOf | `Privacy.Exports.ExecuteOnBehalfOf` |
+| <Badge text="GET" variant="note" /> | `/exports/{requestId:guid}` | GetPrivacyExportStatus | *(subject / filing operator)* |
+| <Badge text="GET" variant="note" /> | `/exports` | ListPrivacyExports | *(subject only)* |
+| <Badge text="GET" variant="note" /> | `/exports/{requestId:guid}/download/manifest` | DownloadPrivacyExportManifest | `Privacy.Exports.Execute` + step-up |
+| <Badge text="GET" variant="note" /> | `/exports/{requestId:guid}/download/{shardIndex:int}` | DownloadPrivacyExportShard | `Privacy.Exports.Execute` + step-up |
+| <Badge text="GET" variant="note" /> | `/exports/{requestId:guid}/download` | DownloadPrivacyExport | `Privacy.Exports.Execute` + step-up |
 
 ### Data Deletion (Art. 17)
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="POST" variant="success" /> | `/deletions` | RequestPrivacyDeletion | `Privacy.Deletion.Execute` |
-| <Badge text="POST" variant="success" /> | `/deletions/{requestId:guid}/cancel` | CancelPrivacyDeletion | `Privacy.Deletion.Execute` |
-| <Badge text="GET" variant="note" /> | `/deletions/{requestId:guid}` | GetPrivacyDeletionStatus | `Privacy.Deletion.Execute` |
-| <Badge text="GET" variant="note" /> | `/deletions` | ListPrivacyDeletions | `Privacy.Deletion.Execute` |
+| <Badge text="POST" variant="success" /> | `/deletions` | RequestPrivacyDeletion | `Privacy.Deletions.Execute` |
+| <Badge text="POST" variant="success" /> | `/deletions/{requestId:guid}/cancel` | CancelPrivacyDeletion | `Privacy.Deletions.Execute` |
+| <Badge text="GET" variant="note" /> | `/deletions/{requestId:guid}` | GetPrivacyDeletionStatus | *(subject only)* |
+| <Badge text="GET" variant="note" /> | `/deletions` | ListPrivacyDeletions | *(subject only)* |
 
 <Aside type="caution" title="Idempotency">
 `CancelPrivacyDeletion` returns **409 Conflict** if the deletion is already

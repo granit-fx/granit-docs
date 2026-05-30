@@ -57,11 +57,16 @@ sequenceDiagram
 
 ## Implementation in Granit
 
-### Package
+### Packages
+
+The core is framework-pure; each transport gets its own binding (see
+[ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/)).
 
 | Package | Role |
 | --- | --- |
-| `Granit.RateLimiting` | Complete module: counters, middleware, options, metrics |
+| `Granit.RateLimiting` | Framework-pure core: counters, algorithms (Lua), quota providers, `TenantPartitionedRateLimiter`, options, metrics |
+| `Granit.Http.RateLimiting` | ASP.NET Core binding: endpoint filter `.RequireGranitRateLimiting()`, `429` + `Retry-After`, RFC 7807 mapping |
+| `Granit.RateLimiting.Wolverine` | Wolverine binding: `[RateLimited]` attribute + pipeline middleware (no `WolverineFx` reference) |
 
 ### Three algorithms via Lua scripts
 
@@ -115,11 +120,15 @@ quotas:
 ### Dual integration: HTTP + Messaging
 
 ```csharp
-// --- ASP.NET Core: endpoint filter ---
+// --- ASP.NET Core: endpoint filter (Granit.Http.RateLimiting) ---
+using Granit.Http.RateLimiting.AspNetCore;
+
 app.MapGet("/api/v1/patients", GetPatientsAsync)
    .RequireGranitRateLimiting("api");
 
-// --- Wolverine: attribute on the message ---
+// --- Wolverine: attribute on the message (Granit.RateLimiting.Wolverine) ---
+using Granit.RateLimiting.Wolverine.Attributes;
+
 [RateLimited("export")]
 public sealed record GeneratePatientExportCommand(Guid PatientId);
 ```
@@ -145,8 +154,8 @@ When Redis is unavailable, the behavior is configurable:
 | `src/Granit.RateLimiting/TenantPartitionedRateLimiter.cs` | Core logic (partition, bypass, quota, metrics) |
 | `src/Granit.RateLimiting/Internal/RedisRateLimitCounterStore.cs` | Redis execution with fallback |
 | `src/Granit.RateLimiting/Internal/FeatureBasedRateLimitQuotaProvider.cs` | Quota resolution via Granit.Features |
-| `src/Granit.RateLimiting/AspNetCore/RateLimitEndpointExtensions.cs` | Endpoint filter 429 + Retry-After |
-| `src/Granit.RateLimiting/Wolverine/RateLimitMiddleware.cs` | Wolverine BeforeAsync middleware |
+| `src/Granit.Http.RateLimiting/AspNetCore/RateLimitEndpointExtensions.cs` | Endpoint filter 429 + Retry-After |
+| `src/Granit.RateLimiting.Wolverine/RateLimitMiddleware.cs` | Wolverine BeforeAsync middleware |
 
 ## Rationale
 

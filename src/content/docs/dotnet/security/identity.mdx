@@ -31,6 +31,7 @@ with GDPR erasure and pseudonymization built in.
     - Granit.Identity.Local.Notifications 9 security notifications (welcome, password reset, 2FA, email change, impersonation)
     - Granit.Identity.Local.Privacy Personal-data export provider for the local identity store
   - Granit.Identity.Endpoints Minimal API endpoints (provider CRUD, user cache sync, GDPR, webhook)
+  - Granit.Identity.Notifications Opt-in IRecipientResolver bridge for the notification pipeline
 </FileTree>
 
 | Package | Role | Depends on |
@@ -50,6 +51,7 @@ with GDPR erasure and pseudonymization built in.
 | `Granit.Identity.Local.Notifications` | 9 security email/in-app notifications (17 cultures) | `Granit.Identity.Local`, `Granit.Notifications.Abstractions`, `Granit.Templating` |
 | `Granit.Identity.Local.Privacy` | Personal-data export provider for the local identity store | `Granit.Identity.Local`, `Granit.Privacy.BlobStorage` |
 | `Granit.Identity.Endpoints` | REST endpoints for user cache + provider CRUD + GDPR | `Granit.Identity`, `Granit.Authorization` |
+| `Granit.Identity.Notifications` | Opt-in `IRecipientResolver` feeding recipient contact info to the notification pipeline | `Granit.Identity`, `Granit.Notifications.Abstractions` |
 
 ## Dependency graph
 
@@ -78,6 +80,8 @@ graph TD
     ILP --> PR
     IE[Granit.Identity.Endpoints] --> I
     IE --> AZ
+    IN[Granit.Identity.Notifications] --> I
+    IN --> N
 ```
 
 ## Setup
@@ -222,6 +226,32 @@ public class SessionService(
     }
 }
 ```
+
+## Feeding the notification pipeline
+
+Building on `IIdentityUserReader`, the opt-in `Granit.Identity.Notifications` bridge is
+the recommended way to make the
+[notification pipeline](/dotnet/infrastructure/notifications/channels/#ready-made-resolver-granitidentitynotifications)
+deliverable without hand-rolling an `IRecipientResolver`. A single
+`IdentityRecipientResolver` adapter feeds recipient `Email`, `DisplayName`,
+`PhoneNumber`, and `PreferredCulture` from the identity layer -- local (OpenIddict) and
+every federated provider alike, reading through the user cache so there is no extra IdP
+round-trip per notification.
+
+```csharp
+[DependsOn(typeof(GranitIdentityNotificationsModule))]
+public class AppModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddGranitIdentityRecipientResolver();
+    }
+}
+```
+
+It registers with `TryAddScoped`, so an application-supplied `IRecipientResolver` always
+wins. See [Notification channels](/dotnet/infrastructure/notifications/channels/#ready-made-resolver-granitidentitynotifications)
+for the field mapping and the `Identity:RecipientResolver` options.
 
 ## Canonical `User` aggregate
 
@@ -648,6 +678,7 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Endpoints | `IdentityEndpointsOptions`, `IdentityWebhookOptions` | `Granit.Identity.Endpoints` |
 | Notifications | `WelcomeNotificationType`, `PasswordResetNotificationType`, `EmailConfirmationNotificationType`, `PasswordChangedNotificationType`, `AccountLockedNotificationType`, `TwoFactorChangedNotificationType`, `EmailChangeAlertNotificationType`, `EmailChangeConfirmationNotificationType`, `ImpersonationAlertNotificationType` | `Granit.Identity.Local.Notifications` |
 | Notifications options | `IdentityNotificationOptions` | `Granit.Identity.Local.Notifications` |
+| Recipient resolver | `GranitIdentityNotificationsModule`, `IdentityRecipientResolverOptions`, `AddGranitIdentityRecipientResolver()` | `Granit.Identity.Notifications` |
 | Events | `PasswordChangedEto`, `AccountLockedEto` (includes `LockoutEndUtc` + `ResetToken`), `TwoFactorChangedEto`, `EmailConfirmationRequestedEto`, `EmailChangeRequestedEto` | `Granit.Identity.Local` |
 | Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapGranitIdentityUserCache()` | — |
 

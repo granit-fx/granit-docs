@@ -181,6 +181,9 @@ prompt structure, sanitization, and per-tenant cost ceiling.
 
 - [Persistence](/dotnet/data/persistence/) — EF Core interceptors, query filters, `IQueryableSource<T>`
 - [API Documentation](/dotnet/api/api-documentation/) — `$ref` schema emission, OpenAPI transformers
+- [Data Exchange](/dotnet/building-blocks/data-exchange/) — peer building block: CSV / Excel import / export
+- [TextExtraction](/dotnet/building-blocks/text-extraction/) — peer building block: bytes → plain text for indexing / RAG
+- [Indexing](/dotnet/building-blocks/indexing/) — peer building block: full-text + hybrid semantic search (Postgres `tsvector` / Elasticsearch). QueryEngine drives structured admin grids; Indexing drives unstructured search.
 - [OData feed (BI)](/dotnet/api/odata-exposure/) — `QueryDefinition<T>` → Power BI / Excel / Tableau
 - [AI: Natural Language Query](/dotnet/ai/natural-language-query/) — phrase → `QueryRequest`
 - [ADR-047](/dotnet/architecture/adr/047-entity-view/) — why SavedView was removed in favour of `EntityView`

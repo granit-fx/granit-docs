@@ -41,7 +41,7 @@ A commercial feature flag system for SaaS needs four things:
 
 1. **Cascading resolution** — Default → Plan → Tenant. The Premium plan enables `VideoConference`; Acme Corp gets it overridden to `true` regardless of plan.
 2. **Strong typing** — Toggle, Numeric, Selection. `MaxUsersCount = 50`, not `"50"`. Compile-time errors when a flag changes shape.
-3. **Declarative gates** — `[RequiresFeature("VideoConference")]` on a controller or message handler. 403 with a clear error code if disabled.
+3. **Declarative gates** — `.RequiresFeature("VideoConference")` on an endpoint, `[RequiresFeature]` on a message. 403 with a clear error code if disabled.
 4. **Limit guards** — for numeric features, a check before creation. Block the 51st user creation on a 50-seat plan with `FeatureLimitExceededException`.
 
 Everything else (UI, audit log, A/B testing, percentage rollouts) is a layer on top of these four.
@@ -107,17 +107,11 @@ services.AddScoped<IPlanFeatureStore, MyPlanFeatureStore>();
 
 ## Gating ASP.NET Core endpoints
 
-The `[RequiresFeature]` attribute resolves the checker on every request and returns `403 Forbidden` with a structured `errorCode` when the feature is off:
-
-```csharp title="ConsultationsController.cs"
-[HttpPost("start")]
-[RequiresFeature("Acme.VideoConference")]
-public async Task<IActionResult> StartConsultation(...) { ... }
-```
-
-For minimal APIs:
+Granit is Minimal-API-first. The `.RequiresFeature()` endpoint filter — shipped in the framework-pure-friendly binding `Granit.Http.Features` — resolves the checker on every request and returns `403 Forbidden` with a structured `errorCode` when the feature is off:
 
 ```csharp title="Program.cs"
+using Granit.Http.Features.AspNetCore;
+
 app.MapPost("/consultations", StartConsultation)
    .RequiresFeature("Acme.VideoConference");
 ```
@@ -126,14 +120,16 @@ The 403 response uses RFC 7807 Problem Details. Your frontend reads `errorCode: 
 
 ## Gating Wolverine message handlers
 
-A user-facing 403 protects HTTP endpoints. But a feature might also gate an **asynchronous** action — a webhook delivery, a scheduled export. Decorate the message:
+A user-facing 403 protects HTTP endpoints. But a feature might also gate an **asynchronous** action — a webhook delivery, a scheduled export. Reference `Granit.Features.Wolverine` and decorate the message:
 
 ```csharp title="GenerateExportCommand.cs"
+using Granit.Features.Wolverine.Attributes;
+
 [RequiresFeature("Acme.ExportPdf")]
 public sealed record GenerateExportCommand(Guid TenantId);
 ```
 
-The Wolverine middleware short-circuits the handler if the feature is off — no charge to the renderer pool, no half-completed export.
+The Wolverine middleware short-circuits the handler if the feature is off — no charge to the renderer pool, no half-completed export. Same `Granit.Features` core, a different transport binding.
 
 ## Enforcing numeric limits
 

@@ -14,9 +14,16 @@ support gating via attributes, middleware, and imperative checks.
 
 ## Package structure
 
+The core is **framework-pure** — no ASP.NET Core dependency. Enforcement ships as
+separate transport bindings, the same layout as
+[Granit.RateLimiting](/dotnet/api/rate-limiting/) (see
+[ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/)).
+
 <FileTree>
 
-- Granit.Features/ SaaS feature management (Toggle/Numeric/Selection)
+- Granit.Features/ Framework-pure SaaS feature management (Toggle/Numeric/Selection)
+  - Granit.Http.Features Minimal-API endpoint filter `.RequiresFeature()`
+  - Granit.Features.Wolverine `[RequiresFeature]` + message middleware
   - Granit.Features.Endpoints Feature definitions, values, and override HTTP endpoints
   - Granit.Features.EntityFrameworkCore Isolated FeaturesDbContext
 
@@ -25,8 +32,22 @@ support gating via attributes, middleware, and imperative checks.
 | Package | Role | Depends on |
 |---------|------|------------|
 | `Granit.Features` | `IFeatureChecker`, `IFeatureLimitGuard`, plan-based cascade | `Granit.Caching`, `Granit.Localization` |
+| `Granit.Http.Features` | Minimal-API endpoint filter `.RequiresFeature()` → HTTP 403 | `Granit.Features` |
+| `Granit.Features.Wolverine` | `[RequiresFeature]` attribute + pipeline middleware (no `WolverineFx` reference) | `Granit.Features` |
 | `Granit.Features.Endpoints` | Definitions, values, and override HTTP endpoints | `Granit.Features`, `Granit.Authorization`, `Granit.Validation` |
 | `Granit.Features.EntityFrameworkCore` | `FeaturesDbContext` (isolated) | `Granit.Features`, `Granit.Persistence` |
+
+## Choosing the right package
+
+Reference the core plus the binding that matches where you enforce the gate:
+
+| Need | Package |
+| ---- | ------- |
+| Resolve values, guard numeric limits in code (`IFeatureChecker`, `IFeatureLimitGuard`) | `Granit.Features` |
+| Gate a Minimal-API endpoint (`.RequiresFeature("name")`, 403 when disabled) | `Granit.Http.Features` |
+| Gate a Wolverine message handler (`[RequiresFeature]` on the message) | `Granit.Features.Wolverine` |
+| Browse/override definitions over REST | `Granit.Features.Endpoints` |
+| Persist tenant overrides | `Granit.Features.EntityFrameworkCore` |
 
 ## Dependency graph
 
@@ -34,6 +55,8 @@ support gating via attributes, middleware, and imperative checks.
 graph TD
     F[Granit.Features] --> CA[Granit.Caching]
     F --> L[Granit.Localization]
+    HF[Granit.Http.Features] --> F
+    FW[Granit.Features.Wolverine] --> F
     FEP[Granit.Features.Endpoints] --> F
     FEP --> A[Granit.Authorization]
     FEP --> V[Granit.Validation]
@@ -189,32 +212,40 @@ public sealed class CreatePatientHandler(
 
 ## Feature gating
 
+Granit is Minimal-API-first: the endpoint filter ships in `Granit.Http.Features`
+and the Wolverine attribute in `Granit.Features.Wolverine`. MVC controller
+support has been removed (see [Migrating from the single package](#migrating-from-the-single-package)).
+
 <Tabs>
 <TabItem label="Minimal API">
 
 ```csharp
+using Granit.Http.Features.AspNetCore; // Granit.Http.Features
+
 app.MapPost("/consultations", handler)
     .RequiresFeature("Acme.VideoConsultation");
-```
 
-</TabItem>
-<TabItem label="Controllers">
-
-```csharp
-[RequiresFeature("Acme.VideoConsultation")]
-public IActionResult StartConsultation() => Ok();
+// Or on a group:
+app.MapGroup("/export")
+   .RequiresFeature("Acme.ExportPdf");
 ```
 
 </TabItem>
 <TabItem label="Wolverine">
 
 ```csharp
-// Decorate the message class
+using Granit.Features.Wolverine.Attributes; // Granit.Features.Wolverine
+
+// Decorate the message type
 [RequiresFeature("Acme.ExportPdf")]
-public sealed class GenerateExportCommand { }
+public sealed record GenerateExportCommand(Guid Id);
 ```
 
-Register `RequiresFeatureMiddleware` in your Wolverine setup.
+```csharp
+// In Wolverine configuration
+opts.Policies.AddMiddleware<RequiresFeatureMiddleware>(
+    chain => chain.MessageType.HasAttribute<RequiresFeatureAttribute>());
+```
 
 </TabItem>
 </Tabs>
@@ -269,11 +300,24 @@ Invalid values return HTTP 422 with a descriptive `ProblemDetails` response.
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Modules | `GranitFeaturesModule`, `GranitFeaturesEntityFrameworkCoreModule`, `GranitFeaturesEndpointsModule` | -- |
+| Modules | `GranitFeaturesModule`, `GranitHttpFeaturesModule`, `GranitFeaturesWolverineModule`, `GranitFeaturesEntityFrameworkCoreModule`, `GranitFeaturesEndpointsModule` | -- |
 | Abstractions | `IFeatureChecker`, `IFeatureLimitGuard`, `IFeatureStoreReader`, `IFeatureStoreWriter` | `Granit.Features` |
 | Definitions | `FeatureDefinition`, `IFeatureDefinitionProvider`, `FeatureValueType`, `NumericConstraint`, `SelectionValues` | `Granit.Features` |
-| Gating | `[RequiresFeature]`, `.RequiresFeature()`, `RequiresFeatureMiddleware` | `Granit.Features` |
+| HTTP gating | `.RequiresFeature()` (`Granit.Http.Features.AspNetCore`) | `Granit.Http.Features` |
+| Wolverine gating | `[RequiresFeature]`, `RequiresFeatureMiddleware` (`Granit.Features.Wolverine.Attributes`) | `Granit.Features.Wolverine` |
 | Endpoints | `MapGranitFeatures()`, `FeaturesPermissions`, `FeaturesEndpointsOptions` | `Granit.Features.Endpoints` |
+
+## Migrating from the single package
+
+Before the [layer split](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/),
+`Granit.Features` carried the ASP.NET Core integration. These are breaking moves (pre-1.0):
+
+| Was | Now |
+| --- | --- |
+| `[RequiresFeature]` on an **MVC controller action** (`IFilterFactory`) | **Removed.** Granit is Minimal-API-first — use `.RequiresFeature()` on the endpoint, or move the check into the handler with `IFeatureChecker.RequireEnabledAsync()` |
+| `[RequiresFeature]` attribute in `Granit.Features` | `Granit.Features.Wolverine.Attributes` (on the **message type**) + reference `Granit.Features.Wolverine` |
+| `.RequiresFeature()` filter in `Granit.Features` | `using Granit.Http.Features.AspNetCore;` + reference `Granit.Http.Features` |
+| One `GranitFeaturesModule` | Core module + `GranitHttpFeaturesModule` / `GranitFeaturesWolverineModule` |
 
 ## Diagnostics
 
@@ -301,6 +345,8 @@ Development environment.
 
 ## See also
 
+- [Rate Limiting](/dotnet/api/rate-limiting/) -- same core + transport-binding split; consumes feature-based dynamic quotas
+- [ADR-062: framework-pure core + transport bindings](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/) -- the layering convention
 - [Settings](/dotnet/infrastructure/application-settings/) -- cascading key-value settings
 - [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) -- tenant context for feature resolution
 - [Caching](/dotnet/data/caching/) -- used for feature value caching

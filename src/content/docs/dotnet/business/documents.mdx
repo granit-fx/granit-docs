@@ -6,6 +6,8 @@ sidebar:
   order: 18
 ---
 
+import { Aside } from "@astrojs/starlight/components";
+
 `Granit.Documents` is the framework's document-management module: hierarchical
 folders, versioned documents, and a share-based ACL that inherits down the
 folder tree via the materialised path. It sits on top of `Granit.BlobStorage`
@@ -135,10 +137,63 @@ permission **and** a matching share to access a document:
 | --- | --- |
 | Documents.Documents.Read | Read a document the caller has a share on |
 | Documents.Documents.Manage | Create / replace / delete documents |
+| Documents.Documents.TransferOwnership | Transfer a document's owner via `PUT /documents/{id}/owner` |
 | Documents.Folders.Read | List folder contents |
 | Documents.Folders.Manage | Create / move / rename / delete folders |
+| Documents.Folders.TransferOwnership | Transfer a folder's owner via `PUT /folders/{id}/owner` (tenant root excluded) |
 | Documents.Shares.Read | List share rows on a folder or document |
 | Documents.Shares.Manage | Grant / revoke shares |
+
+## Ownership
+
+Both `Document` and `Folder` implement [`IOwnable`](/dotnet/data/ownable/) —
+every aggregate carries a `Guid OwnerId` separate from `CreatedBy` (which
+remains the immutable audit identity). Ownership is mutable through one
+behavioural method per aggregate:
+
+```http
+PUT /documents/{id}/owner
+PUT /folders/{id}/owner
+```
+
+Body for both:
+
+```json
+{ "newOwnerId": "1f6a2b9d-...-...-..." }
+```
+
+Each transfer emits a domain event consumed by the audit pipeline and any
+per-module reactor (notifications, dashboards, downstream indexers):
+
+| Aggregate | Event |
+| --- | --- |
+| Document | `DocumentOwnerChangedEvent(DocumentId, TenantId, OldOwnerId, NewOwnerId)` |
+| Folder | `FolderOwnerChangedEvent(FolderId, TenantId, OldOwnerId, NewOwnerId)` |
+
+Two invariants the domain enforces:
+
+- **Tenant root excluded.** `Folder.TransferOwnership` throws when called on
+  the tenant root — the root must survive any individual user's lifecycle
+  (account deletion, GDPR erasure) so the tenant remains navigable. The
+  guard lives on the aggregate, not on the endpoint, so the GDPR cascade
+  ([Cascade cleanup](/dotnet/compliance/privacy/data-deletion/#cascade-cleanup-for-owned-entities))
+  inherits the same protection.
+- **Trashed aggregates rejected.** Transferring the owner of a trashed
+  document or folder is rejected — restore first, then transfer.
+
+The endpoints are gated by dedicated permissions
+(`Documents.Documents.TransferOwnership` /
+`Documents.Folders.TransferOwnership`) separate from the regular
+`Manage` permissions. A user with `Documents.Manage` can update metadata
+but cannot give away ownership unless `TransferOwnership` is also granted.
+
+<Aside type="caution" title="Breaking change — column rename">
+Prior to PR `granit-business!67`, the column was `OwnerUserId`. The new
+schema uses `OwnerId` (matching the `IOwnable.OwnerId` interface). Apps
+upgrading from before this PR need the generated EF migration that renames
+the column and rebuilds the `(TenantId, OwnerId)` composite index — the
+column rename is automatic, no data backfill required.
+</Aside>
 
 ## Storage quotas (F7)
 
@@ -265,7 +320,43 @@ integration event for SIEM forwarding. See
 [Documents — Public Links](/dotnet/business/documents-public-links/) for the
 token model, the failure-mode envelope, and the security posture.
 
+## Document body extraction
+
+Search indexers, RAG pipelines, and GDPR redaction all need the document body
+as a plain string. The framework's
+[TextExtraction](/dotnet/building-blocks/text-extraction/) pipeline converts
+the uploaded bytes (PDF, DOCX, HTML, .eml, RTF, scans, ...) into a single
+`TextExtractionResult` — with a uniform truncation contract, body-size cap,
+zip-bomb / pixel-bomb / SSRF defences, and per-format soft-fail so a single
+malformed document never tanks an indexing batch.
+
+`Granit.Documents` does not hold an opinion on which extractors are wired —
+the host module references the per-format `Granit.TextExtraction.*` packages
+it cares about and resolves `ITextExtractionPipeline` to run the body through
+on upload or on demand.
+
+## Search indexing
+
+Once the body is extracted, hosts hand the result to
+[Granit.Indexing](/dotnet/building-blocks/indexing/) — the horizontal
+full-text + semantic search framework. `Granit.Documents` does not own the
+indexer wiring (the host picks Postgres `tsvector` by default or Elasticsearch
+opt-in), but the integration shape is canonical:
+
+- `IIndexedEntrySource<Guid>.BuildEntryAsync` reads the latest document
+  version, runs it through `ITextExtractionPipeline`, populates
+  `IndexedEntry.Language` from `ILanguageDetector`, and sets
+  `DataSubjectId = doc.OwnerPartyId` for the GDPR Art. 17 cascade.
+- `ISearchResultAuthorizer<Guid>` plugs the document share ACL (see
+  [Share ACL model](#share-acl-model)) into the over-fetch loop so search
+  results never bypass document-level permissions.
+- The `Granit.Indexing.Privacy` bridge fans
+  `PersonalDataDeletionRequestedEto` to every registered backend, atomically
+  erasing every indexed copy when a data subject revokes consent.
+
 ## Related ADRs
 
 - [ADR-052 — Granit.Documents module](/dotnet/architecture/adr/052-documents-module/)
 - [ADR-020 — Declarative Query / Export / Metric placement](/dotnet/architecture/adr/020-declarative-definitions-placement/)
+- [ADR-060 — OIDC sub as Guid](/dotnet/architecture/adr/060-identity-sub-as-guid/) — IDP matrix for the typed `OwnerId` column
+- [IOwnable](/dotnet/data/ownable/) — marker driving the `(TenantId, OwnerId)` index and the resource-based auth handler

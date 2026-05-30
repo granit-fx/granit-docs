@@ -117,12 +117,34 @@ public sealed class Granit{Module}NotificationsModule : GranitModule
         // Optional — a `{{ module }}` global context (controller/DPO contact, branding…).
         // context.Services.AddTemplateGlobalContext<{Module}ContactGlobalContext>();
 
-        // Optional — expose definitions to the admin UI (preferences, channels, etc.).
-        // context.Services.AddSingleton<INotificationDefinitionProvider,
-        //     {Module}NotificationDefinitionProvider>();
+        // REQUIRED — register the definition provider (see §3.5 for the runtime impact).
+        context.Services.AddSingleton<INotificationDefinitionProvider,
+            {Module}NotificationDefinitionProvider>();
     }
 }
 ```
+
+<Aside type="caution" title="The provider is load-bearing, not optional UI metadata">
+Without a registered `INotificationDefinitionProvider`, the fan-out engine
+collapses every notification to `InApp` only and treats every type as
+opt-out-able — regardless of what `NotificationType<T>.DefaultChannels` and
+the security posture declare on the class. The store also drives the
+admin preferences UI. **Always ship a provider with each `*.Notifications` package.**
+
+Three runtime decisions read from the store on every dispatch:
+
+| Decision | Falls back to (no provider) | What the provider controls |
+| --- | --- | --- |
+| Channels | `[InApp]` only | `DefaultChannels` |
+| Opt-out enforcement | `true` (user can opt out) | `AllowUserOptOut` |
+| Do-Not-Disturb bypass | `false` | `AllowDoNotDisturbBypass` |
+
+Canonical reference: [`IdentityNotificationDefinitionProvider`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Identity.Local.Notifications/Internal/IdentityNotificationDefinitionProvider.cs)
+in `Granit.Identity.Local.Notifications`. An architecture test
+(`NotificationDefinitionProviderCoverageTests`) fails the build when a
+`*.Notifications` assembly ships a `NotificationType<>` subclass without a
+matching registered provider.
+</Aside>
 
 ## 3. Notification types
 
@@ -151,6 +173,76 @@ public sealed record CreditExpiringNotificationData(
 | `DefaultChannels` | Use `NotificationChannels.*` constants. Each channel listed here MUST have a corresponding renderer (e.g. Email → template). |
 | `DefaultSeverity` | `Info` (default), `Warning`, `Error`. Drives styling in the in-app inbox. |
 | Data record | Same file as the notification type. `sealed record` of primitives + `Guid`. |
+
+## 3.5. The definition provider (REQUIRED)
+
+Lives in `Internal/{Module}NotificationDefinitionProvider.cs`. One
+`NotificationDefinition` per `NotificationType<T>` declared in the package.
+
+```csharp
+internal sealed class CustomerBalanceNotificationDefinitionProvider
+    : INotificationDefinitionProvider
+{
+    private const string GroupName = "Customer Balance";
+
+    public void Define(INotificationDefinitionContext context)
+    {
+        context.Add(new NotificationDefinition(CreditExpiringNotificationType.Instance.Name)
+        {
+            GroupName = GroupName,
+            DisplayName = "Credit Expiring Soon",
+            Description = "Notifies the user before their balance credit expires.",
+            DefaultSeverity = NotificationSeverity.Warning,
+            DefaultChannels = [NotificationChannels.Email, NotificationChannels.InApp],
+            AllowUserOptOut = true,                              // user convenience
+            // RequiredPermission = "CustomerBalance.Credit.Read",  // see below
+            // RequiredFeature = "CustomerBalance.Enabled",         // see below
+        });
+    }
+}
+```
+
+Conventions:
+
+| Field | Convention |
+| --- | --- |
+| `Name` | Mirror the `NotificationType<T>.Instance.Name` — drift between the two is a runtime bug. |
+| `GroupName` | Title Case English label. Drives the section header in the preferences UI. |
+| `DisplayName` / `Description` | English copy. Localization layer to be added separately. |
+| `DefaultChannels` | **Mirror what's declared on `NotificationType<T>.DefaultChannels`.** The fan-out engine reads it from the definition, not the type. |
+| `AllowUserOptOut` | `false` for security / GDPR / operational alerts. `true` for user-facing convenience (mentions, comments, workflow approvals). |
+| `AllowDoNotDisturbBypass` | `true` only for security-critical alerts that must reach the user even in DnD (suspicious login, MFA disabled, breach notice). |
+| `RequiredPermission` | Optional. UI-only filter — see below. |
+| `RequiredFeature` | Optional. UI-only filter — see below. |
+
+### Hiding notifications the user shouldn't see (`RequiredPermission` / `RequiredFeature`)
+
+These two optional fields filter the `GET /api/v1/notifications/types`
+endpoint so end-users don't see preferences for notifications that don't
+apply to them.
+
+```csharp
+context.Add(new NotificationDefinition(AuditingAnomalyDetectedNotificationType.Instance.Name)
+{
+    GroupName = "Security",
+    DefaultSeverity = NotificationSeverity.Warning,
+    DefaultChannels = [NotificationChannels.Email, NotificationChannels.InApp],
+    AllowUserOptOut = false,
+    RequiredPermission = "Auditing.AuditEntries.Read",  // SOC analysts only
+    RequiredFeature = "Auditing.Enabled",               // tenant-level feature flag
+});
+```
+
+- `RequiredPermission` is checked via `IPermissionChecker.GetGrantedAsync`
+  (already wired in `Granit.Notifications.Endpoints`). When the host hasn't
+  mounted the `*.Endpoints` module that declares the permission, the check
+  is treated as "not granted" — the notification stays hidden.
+- `RequiredFeature` is checked via `INotificationFeatureGate`, an optional
+  adapter hosts wire over `Granit.Features.IFeatureChecker`. When no adapter
+  is registered, the feature filter is a no-op.
+- **Both are UI filters only.** Fan-out is unaffected — a notification
+  dispatched to a recipient is still delivered even if the recipient lacks
+  the listed permission. Use `AllowUserOptOut = false` to enforce delivery.
 
 ## 4. Wolverine handlers — local vs distributed
 
@@ -384,9 +476,34 @@ python3 scripts/generate-shard-filters.py
 The pre-push hook does this automatically when `.csproj` or `test-shards.json`
 files change. Without registration, CI silently skips the project.
 
+## Delivery gates
+
+A `*.Notifications` package describes *what* should be sent; **delivery
+gates** decide whether to actually send it. Any service registered as
+`INotificationDeliveryGate` is consulted by the fan-out engine per `(userId,
+notificationType, channel)` tuple — a `false` return drops that single
+delivery attempt without aborting the publish.
+
+The canonical gate is `Granit.Presence.Notifications`, which suppresses push
+channels (`SignalR`, `Sse`, `Push`, `MobilePush`) when the recipient's
+effective presence is `DoNotDisturb` or `Offline`. Store-and-forward
+channels (`InApp`, `Email`, `Sms`, `WhatsApp`, `Zulip`) are not gated — the
+user reads them when they return. See the
+[Presence module overview](/dotnet/infrastructure/presence/) for the full
+contract, including the cross-pod backplane requirement.
+
+<Aside type="tip" title="AllowDoNotDisturbBypass on the definition">
+Notification types whose `NotificationDefinition` opts into
+`AllowDoNotDisturbBypass = true` are routed past the gate entirely — the
+fan-out engine never asks. Reserve this for messages that must reach the
+user regardless of presence (security alerts, account lockouts, regulatory
+notices).
+</Aside>
+
 ## See also
 
 - [Notifications overview](./) — fan-out engine, channels, dependency graph
+- [Presence module](/dotnet/infrastructure/presence/) — `PresenceNotificationDeliveryGate` and the DnD push-suppression contract
 - [Email channel](./email-channel/) — provider configuration (SMTP, SES, SendGrid…)
 - [Wolverine integration](./wolverine-integration/) — durable outbox dispatch
 - [`Granit.Templating`](/dotnet/building-blocks/templating/) — embedded vs DB resolver, layouts, global contexts

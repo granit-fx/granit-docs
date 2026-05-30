@@ -87,14 +87,18 @@ sequenceDiagram
 | `IFeatureLimitGuard` | `src/Granit.Features/Limits/IFeatureLimitGuard.cs` | `CheckAsync(feature, currentCount)` -- throws `FeatureLimitExceededException` |
 | `FeatureLimitGuard` | `src/Granit.Features/Limits/FeatureLimitGuard.cs` | Implementation |
 
-### ASP.NET Core + Wolverine integration
+### Transport bindings (HTTP + Wolverine)
+
+The core is framework-pure; gating ships in separate binding packages (see
+[ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/)).
+MVC controller support was removed — Granit is Minimal-API-first.
 
 | Component | File | Role |
 |-----------|------|------|
-| `[RequiresFeature]` | `src/Granit.Features/AspNetCore/RequiresFeatureAttribute.cs` | Attribute on actions/endpoints |
-| `RequiresFeatureFilter` | `src/Granit.Features/AspNetCore/RequiresFeatureFilter.cs` | `IAsyncActionFilter` for MVC |
-| `RequiresFeatureEndpointFilter` | `src/Granit.Features/AspNetCore/RequiresFeatureEndpointFilter.cs` | Minimal API filter |
-| `RequiresFeatureMiddleware` | `src/Granit.Features/Wolverine/RequiresFeatureMiddleware.cs` | Wolverine handler middleware |
+| `.RequiresFeature()` | `src/Granit.Http.Features/AspNetCore/FeatureEndpointConventionBuilderExtensions.cs` | Minimal-API endpoint filter (`Granit.Http.Features`) |
+| `RequiresFeatureEndpointFilter` | `src/Granit.Http.Features/AspNetCore/RequiresFeatureEndpointFilter.cs` | Returns 403 when the feature is disabled |
+| `[RequiresFeature]` | `src/Granit.Features.Wolverine/Attributes/RequiresFeatureAttribute.cs` | Attribute on the message type (`Granit.Features.Wolverine`) |
+| `RequiresFeatureMiddleware` | `src/Granit.Features.Wolverine/RequiresFeatureMiddleware.cs` | Wolverine pipeline middleware |
 
 ## Rationale
 
@@ -104,7 +108,7 @@ sequenceDiagram
 | Per-tenant override without redeployment | `TenantFeatureValueProvider` reads overrides from DB |
 | Performance: resolution must not query the DB on every request | FusionCache L1 (in-memory) + L2 (Redis) with event-driven invalidation |
 | Multi-instance consistency: a feature change must be visible everywhere | `FeatureValueChangedEvent` expires cache entries via `ExpireAsync` + backplane |
-| API protection: block access if the feature is disabled | `[RequiresFeature]` on MVC, Minimal API, and Wolverine handlers |
+| API protection: block access if the feature is disabled | `.RequiresFeature()` on Minimal-API endpoints (`Granit.Http.Features`) + `[RequiresFeature]` on Wolverine message types (`Granit.Features.Wolverine`) |
 
 ## Usage example
 

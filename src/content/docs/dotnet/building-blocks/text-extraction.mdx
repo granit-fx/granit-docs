@@ -1,0 +1,551 @@
+---
+title: "Text Extraction — Bytes to plain text, one pipeline"
+description: "Pluggable byte-to-text pipeline for PDF, Office, HTML, Markdown, .eml, RTF, OCR. Uniform truncation contract, per-format soft-fail, body-size cap on every extractor."
+sidebar:
+  label: TextExtraction
+  order: 18
+---
+
+import { FileTree, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Documents arrive in every shape an enterprise can throw at you: PDFs from legal,
+DOCX from sales, HTML from web scrapes, mailboxes from archiving, scanned TIFFs
+from on-site staff. Downstream features — search indexing, RAG, GDPR redaction,
+legal discovery, AI summarisation — all want the same boring input: a single
+plain-text string, plus a flag that says whether the string is complete.
+
+The naive shape is one library per format wired ad-hoc into each consuming
+module. Every team picks PdfPig differently, every team forgets one of the
+defences (zip-bomb, decompression-bomb, pixel-bomb, SSRF via embedded URLs),
+and a single malformed file tanks a whole indexing batch because one extractor
+chose to throw instead of soft-skip.
+
+**`Granit.TextExtraction`** is the pluggable pipeline that converts bytes to
+text. One `ITextExtractor` contract, one truncation contract
+(`TextExtractionResult.IsTruncated`), one body cap (`LimitedStream`) enforced
+in every extractor — architecture-test pinned. Per-format extractors ship as
+opt-in packages so a CLI tool that only needs HTML never pulls in OpenXml or
+PdfPig.
+
+| Pain | This package's answer |
+|------|----------------------|
+| Per-format integration code copy-pasted across modules | One `ITextExtractionPipeline.ExtractAsync(stream, contentType)` call — same shape everywhere |
+| One malformed PDF crashes the whole indexing batch | Per-format soft-fail: `IsTruncated = true` + empty content, never throw |
+| Pixel-bomb / zip-bomb via attacker-controlled uploads | `LimitedStream` body cap + `OpenXmlGate` zip-entry/decompression cap + `Image.Identify` header check before decode |
+| HTML extractor follows `<img src>` and probes intranet (SSRF) | `BuildForUntrustedContent()` AngleSharp profile — no default loader, architecture-test pinned |
+| Cloud OCR silently ships PII to a third-party LLM | `Granit.TextExtraction.Ocr.AI` is opt-in, never auto-registers, requires Article 28 DPA disclosure |
+| Tika sidecar reachable from any host on the network | Hostname allowlist + mandatory mTLS check at startup |
+| Vision OCR cost runaway from a malicious upload loop | Cost ceiling inherited from `Granit.AI` `AIQuotaOptions.MaxRequestsPerTenantPerHour` |
+
+## Package structure
+
+<FileTree>
+
+- Granit.TextExtraction/ Contracts: `ITextExtractor`, `ITextExtractionPipeline`, `TextExtractionResult`, `LimitedStream`, `PlainTextExtractor`, options/metrics
+  - Granit.TextExtraction.Text/ HTML + Markdown extractors (AngleSharp + Markdig)
+  - Granit.TextExtraction.Pdf/ PDF extractor backed by PdfPig (pure managed)
+  - Granit.TextExtraction.Pdf.Ocr/ Scanned-PDF pipeline — native text per page, OCR fallback on empty pages (PDFium rasteriser)
+  - Granit.TextExtraction.Office/ Word / Excel / PowerPoint via `DocumentFormat.OpenXml`
+  - Granit.TextExtraction.Email/ RFC822 `.eml` via MimeKit
+  - Granit.TextExtraction.Tika/ Apache Tika sidecar over HTTP — RTF, ODF, mailboxes, EPUB
+  - Granit.TextExtraction.Ocr.Tesseract/ Native libtesseract OCR — on-prem, opt-in
+  - Granit.TextExtraction.Ocr.AI/ Vision LLM OCR — cloud, opt-in, GDPR-gated
+
+</FileTree>
+
+| Package | Role | Depends on |
+|---------|------|------------|
+| `Granit.TextExtraction` | `ITextExtractor`, `ITextExtractionPipeline`, `TextExtractionResult`, `LimitedStream`, `PlainTextExtractor`, options + metrics. No `[DependsOn]` — the contract root every provider attaches to. | `Granit` |
+| `Granit.TextExtraction.Text` | `HtmlTextExtractor` (AngleSharp), `MarkdownTextExtractor` (Markdig advanced extensions) | `Granit.TextExtraction`, `Granit.Html.AngleSharp`, `Markdig` |
+| `Granit.TextExtraction.Pdf` | `PdfTextExtractor` (PdfPig `ContentOrderTextExtractor` + `GetWords()` fallback) | `Granit.TextExtraction`, `PdfPig` |
+| `Granit.TextExtraction.Pdf.Ocr` | `PdfOcrTextExtractor` — page-by-page native text, rasterise + OCR fallback on empty pages via `IPdfRasterizer` (PDFium). Replaces the base PDF extractor when opted in | `Granit.TextExtraction`, `Granit.TextExtraction.Pdf`, `PDFtoImage` |
+| `Granit.TextExtraction.Office` | `WordTextExtractor`, `ExcelTextExtractor`, `PowerPointTextExtractor` (all OpenXml) | `Granit.TextExtraction`, `DocumentFormat.OpenXml` |
+| `Granit.TextExtraction.Email` | `EmailTextExtractor` — RFC822 envelope summary + `text/plain` or HTML-stripped body | `Granit.TextExtraction`, `Granit.Html.AngleSharp`, `MimeKit` |
+| `Granit.TextExtraction.Tika` | `TikaSidecarTextExtractor` — POST to a hostname-allowlisted Tika sidecar, mTLS-mandatory in production | `Granit.TextExtraction`, `Microsoft.Extensions.Http` |
+| `Granit.TextExtraction.Ocr.Tesseract` | `TesseractOcrExtractor` — local libtesseract, pixel-bomb header check, soft-skip on engine failure | `Granit.TextExtraction`, `Tesseract` |
+| `Granit.TextExtraction.Ocr.AI` | `AIVisionOcrExtractor` — `Granit.AI` workspace, vision/multimodal model, AIQuota-rate-limited | `Granit.TextExtraction`, `Granit.AI` |
+
+<Aside type="note" title="Pure utility, no host plumbing">
+TextExtraction is byte-stream → plain text. The base package and every native
+provider (Text, Pdf, Office, Email) ship with **zero** ASP.NET Core or EF Core
+references — pinned by the architecture tests in
+[`TextExtractionArchitectureTests`](https://github.com/granit-fx/granit-dotnet/blob/develop/tests/Granit.ArchitectureTests/TextExtractionArchitectureTests.cs).
+CLI tools, background workers, and indexing pipelines pull in the extractors
+they need without dragging in the web stack.
+</Aside>
+
+## Pipeline contract
+
+```csharp
+public interface ITextExtractor
+{
+    string Name { get; }
+    bool CanHandle(string contentType);
+    Task<TextExtractionResult> ExtractAsync(
+        Stream source, string contentType, int maxCharLength, CancellationToken ct);
+}
+
+public interface ITextExtractionPipeline
+{
+    Task<TextExtractionResult> ExtractAsync(
+        Stream source, string contentType, CancellationToken ct);
+}
+
+public sealed record TextExtractionResult(
+    string Content,
+    string? DetectedLanguage,
+    bool IsTruncated,
+    int CharCount,
+    string ExtractorName,
+    ExtractionConfidence Confidence);
+```
+
+The pipeline picks the first registered extractor whose `CanHandle` claims the
+content type. When none does, the `PlainTextExtractor` fallback runs — it
+accepts anything that starts with `text/` and is also wired as the universal
+fallback for unknown content types (better partial text than a hard failure).
+
+## Confidence contract
+
+Not all extracted text is ground truth. A `text/plain` read and a vision-LLM
+OCR of a scanned invoice both return a `string`, but only one of them is safe to
+re-feed into another LLM prompt. `TextExtractionResult.Confidence` carries that
+provenance so downstream consumers apply trust rules that match the extractor's
+failure mode:
+
+```csharp
+public enum ExtractionConfidence
+{
+    Deterministic,   // byte-to-text parser: plain text, HTML DOM, OpenXml, PdfPig, Markdig
+    Heuristic,       // deterministic parser on degraded input (PdfPig raw-word fallback, OCR)
+    ModelGenerated,  // LLM / VLM output — vision OCR, future structured-extraction prompts
+}
+```
+
+| Value | Producer | Trust |
+|-------|----------|-------|
+| `Deterministic` | A byte-to-text parser. Same input always yields the same output; the document contents cannot hijack the extraction loop. | Safe to index and to feed downstream verbatim. |
+| `Heuristic` | A deterministic parser on a recovery path (e.g. PdfPig's raw-word fallback after layout-analysis failure, or a `Pdf.Ocr` page that fell through to OCR). Produced by code, not a model, but ordering or punctuation may be wrong. | Index it; flag layout-sensitive consumers. |
+| `ModelGenerated` | An LLM or VLM (`Ocr.AI` vision OCR). | **Untrusted.** Treat as attacker-controlled. |
+
+<Aside type="danger" title="ModelGenerated is an OWASP LLM01 vector">
+Re-prompting an LLM with `ModelGenerated` content without an isolating system
+message exposes the host to prompt injection (OWASP LLM01): instructions a
+hostile actor embedded in an image or PDF flow into the next prompt verbatim.
+Any consumer that re-prompts an LLM with extracted text **must** consult
+`Confidence` — wrap `ModelGenerated` text in an explicit envelope
+(`<extracted>…</extracted>`) in the downstream system message, or strip it
+before re-use.
+</Aside>
+
+## MIME → extractor matrix
+
+| Content type | Extractor | Package |
+|--------------|-----------|---------|
+| `text/plain`, `text/*` | `PlainTextExtractor` | `Granit.TextExtraction` |
+| `text/html`, `application/xhtml+xml` | `HtmlTextExtractor` | `Granit.TextExtraction.Text` |
+| `text/markdown`, `text/x-markdown` | `MarkdownTextExtractor` | `Granit.TextExtraction.Text` |
+| `application/pdf` | `PdfTextExtractor`, or `PdfOcrTextExtractor` when `Pdf.Ocr` is opted in | `Granit.TextExtraction.Pdf` / `Granit.TextExtraction.Pdf.Ocr` |
+| `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (`.docx`) | `WordTextExtractor` | `Granit.TextExtraction.Office` |
+| `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`) | `ExcelTextExtractor` | `Granit.TextExtraction.Office` |
+| `application/vnd.openxmlformats-officedocument.presentationml.presentation` (`.pptx`) | `PowerPointTextExtractor` | `Granit.TextExtraction.Office` |
+| `message/rfc822`, `application/eml` | `EmailTextExtractor` | `Granit.TextExtraction.Email` |
+| `application/rtf`, `text/rtf`, `application/vnd.oasis.opendocument.*`, `application/mbox`, `application/epub+zip` | `TikaSidecarTextExtractor` | `Granit.TextExtraction.Tika` |
+| `image/png`, `image/jpeg`, `image/tiff`, `image/webp` | `TesseractOcrExtractor` *or* `AIVisionOcrExtractor` (configurable allowlist) | `Granit.TextExtraction.Ocr.Tesseract` / `Granit.TextExtraction.Ocr.AI` |
+
+<Aside type="note" title="Scanned PDFs — opt into Pdf.Ocr">
+The base `PdfTextExtractor` extracts only the embedded text layer, so a scanned
+PDF with no text layer produces empty content. Add
+`Granit.TextExtraction.Pdf.Ocr` to route page-image rasterisation through an
+OCR extractor — `PdfOcrTextExtractor` runs PdfPig per page and falls back to the
+host's `image/png` OCR (Tesseract or AI) only on pages below the native-text
+threshold. See [Add scanned-PDF OCR](#configuration-cookbook). It is opt-in: it
+needs both the PDFium native binary and a registered `image/png` extractor.
+</Aside>
+
+## Truncation contract
+
+`TextExtractionResult.IsTruncated = true` is the **universal soft-fail signal**.
+Every consumer reads it the same way regardless of which extractor produced the
+result:
+
+| Result shape | Meaning | Consumer action |
+|--------------|---------|-----------------|
+| `Content` populated, `IsTruncated = false` | Full extraction succeeded | Index the body verbatim |
+| `Content` populated, `IsTruncated = true` | Extraction stopped at the `MaxExtractedCharLength` cap | Index the prefix, flag the document as "partial" |
+| `Content = ""`, `IsTruncated = true` | Engine soft-failed (malformed PDF, encrypted file, oversized image, zip-bomb, parser exception) | Skip the body; still index the document metadata |
+| Exception raised | Cap breach — `MaxBodySizeBytes` (`input_too_large`) or pipeline plumbing error | Bubble up — these are operator errors, not data errors |
+
+The contract is enforced from two sides. Extractors **must stop** once produced
+text exceeds the caller's `maxCharLength` (set by the host via
+`GranitTextExtractionOptions.MaxExtractedCharLength`, default 500 000 chars ≈
+Postgres `tsvector` limit). And the input stream is **always** wrapped in
+`LimitedStream(MaxBodySizeBytes)` (default 100 MB) before any third-party parser
+sees a byte.
+
+## Security gates
+
+### Body-size cap — `LimitedStream`
+
+Every extractor that ships with the framework wraps its input in
+`LimitedStream` before any allocation by a third-party parser. The cap is
+`GranitTextExtractionOptions.MaxBodySizeBytes` (default 100 MB). Breaching it
+raises `TextExtractionException("input_too_large")` rather than silently
+truncating — operator errors should be loud.
+
+The presence of `LimitedStream` in every extractor package is pinned by the
+`Every_extractor_package_must_reference_LimitedStream` architecture test.
+
+### Zip-bomb gate — `OpenXmlGate`
+
+OpenXml files are ZIP archives. `OpenXmlGate.Inspect` walks the central
+directory **before** handing the stream to `DocumentFormat.OpenXml`:
+
+- Entry count > `MaxZipEntries` (default 10 000) → `TooManyEntries`
+- Cumulative declared uncompressed size > `MaxDecompressedBytes` (default
+  500 MB) → `TooLargeDecompressed`
+- Malformed package → `InvalidPackage`
+
+Any non-`Ok` result is reported as `IsTruncated = true` with empty content —
+never thrown. Per-part char cap (`OpenSettings.MaxCharactersInPart`) is also
+set so the OpenXml parser refuses individual XML parts bigger than the output
+cap.
+
+### Pixel-bomb gate — Tesseract OCR
+
+`TesseractOcrExtractor` reads the image header via `Image.Identify` (no decode)
+and checks `width × height` against `TesseractOcrOptions.MaxImagePixels`
+(default 100 MP — covers an A1 page at 600 DPI). Oversized images soft-skip
+rather than tanking the OCR worker with a multi-gigabyte raster decode.
+
+### SSRF gate — HTML extractor
+
+`HtmlTextExtractor` constructs its AngleSharp converter from
+`AngleSharpConfiguration.BuildForUntrustedContent()` by default. That profile
+**must never** invoke the AngleSharp default-loader fluent helper — doing so
+would let an attacker probe internal hosts via `<img src>`, `<link href>`, or
+`@import url(...)`. The constraint is pinned by an embedded-source architecture
+test in `Granit.Html.AngleSharp.Tests`.
+
+Hosts that index trusted templates (e.g. internal CMS) can opt into
+`ResolveHtmlExternalResources = true`, which switches the converter to
+`BuildForTrustedTemplates()`. The default stays SSRF-safe.
+
+### Tika sidecar — hostname allowlist + mTLS
+
+`TikaSidecarOptions` has no implicit "*" allowlist. `AllowedHosts` must be
+non-empty and must contain the host segment of `Uri`, otherwise the module
+refuses to start. `RequireMutualTls` defaults to `true` in production — the
+module refuses to start unless the named `granit-tika` HTTP client has a
+primary message handler configured (the host wires the client certificate via
+`ConfigurePrimaryHttpMessageHandler`). Response stream reads cap at
+`maxCharLength` so a malicious Tika instance cannot return unbounded text.
+
+### Vision OCR — AIQuota cost ceiling + GDPR Article 28
+
+`AIVisionOcrExtractor` sends document bytes to a third-party LLM provider
+(Azure OpenAI, Anthropic, customer-hosted vLLM, Ollama, ...). Two gates apply:
+
+- **Cost ceiling** — the `Granit.AI` `IChatClient` pipeline applies
+  `AIQuotaOptions.MaxRequestsPerTenantPerHour` automatically; this package
+  does not implement its own counter.
+- **GDPR Article 28 disclosure** — the extractor does NOT auto-register.
+  Enabling it constitutes a sub-processor relationship with the configured
+  LLM provider. Hosts processing personal data must execute a Data Processing
+  Agreement (DPA) with the provider before flipping the switch.
+
+For on-prem-only deployments, point the Granit.AI workspace at a local
+provider (Ollama, vLLM, LM Studio) and pin the workspace configuration with a
+host-level architecture test.
+
+## Configuration cookbook
+
+<Tabs>
+<TabItem label="Typical ingest pipeline">
+
+Wire the base contract plus HTML, Markdown, PDF, and Office for a document
+ingestion service that handles user uploads:
+
+```csharp
+[DependsOn(
+    typeof(GranitTextExtractionTextModule),
+    typeof(GranitTextExtractionPdfModule),
+    typeof(GranitTextExtractionOfficeModule))]
+public sealed class IngestModule : GranitModule { }
+```
+
+```json
+{
+  "TextExtraction": {
+    "MaxConcurrentExtractions": 8,
+    "ExtractionTimeout": "00:00:30",
+    "MaxBodySizeBytes": 104857600,
+    "MaxDecompressedBytes": 524288000,
+    "MaxZipEntries": 10000,
+    "MaxExtractedCharLength": 500000,
+    "ResolveHtmlExternalResources": false
+  }
+}
+```
+
+Inject `ITextExtractionPipeline` and call `ExtractAsync(stream, contentType)`
+— the pipeline picks the right extractor and applies every defence above.
+
+</TabItem>
+<TabItem label="Add cloud Vision OCR">
+
+```csharp
+[DependsOn(typeof(GranitTextExtractionOcrAIModule))]
+public sealed class OcrModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddAIVisionOcrExtractor();
+    }
+}
+```
+
+```json
+{
+  "TextExtraction": {
+    "Ocr": {
+      "AI": {
+        "WorkspaceName": "vision-ocr",
+        "AllowedContentTypes": ["image/png", "image/jpeg", "image/webp", "image/tiff"]
+      }
+    }
+  }
+}
+```
+
+The named workspace MUST exist in `Granit.AI`'s workspace store and MUST point
+at a vision/multimodal model (e.g. `gpt-4o`, `claude-3.5-sonnet`, `llava` on
+Ollama).
+
+<Aside type="caution" title="GDPR Article 28 — sub-processor disclosure">
+Enabling this extractor ships document bytes to the LLM provider configured
+on the workspace. The host is responsible for executing a Data Processing
+Agreement with that provider and disclosing it on the Article 30 register
+before processing personal data.
+</Aside>
+
+</TabItem>
+<TabItem label="Add on-prem Tesseract OCR">
+
+```csharp
+[DependsOn(typeof(GranitTextExtractionOcrTesseractModule))]
+public sealed class OcrModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddTesseractOcrExtractor(o =>
+        {
+            o.DataPath = "/usr/share/tesseract-ocr/5/tessdata";
+            o.Language = "eng+fra";
+        });
+    }
+}
+```
+
+```bash
+# Debian / Ubuntu — needed in the runtime container.
+apt-get install -y libtesseract5 tesseract-ocr-eng tesseract-ocr-fra
+```
+
+Each language pack adds 10–30 MB. There is no safe default — the module does
+not auto-register because deployment requires both the native library and the
+traineddata files. `DefaultTesseractRecognizer` serialises all calls through
+one locked engine (Tesseract is not thread-safe); pool multiple engines via a
+custom `ITesseractRecognizer` for high-throughput workloads.
+
+</TabItem>
+<TabItem label="Add scanned-PDF OCR">
+
+`Pdf.Ocr` turns the base PDF extractor into a scanned-document pipeline: each
+page is read with PdfPig first, and only pages below
+`MinNativeCharsPerPage` are rasterised (PDFium, one bitmap at a time) and
+handed to the host's `image/png` OCR extractor. It **replaces** the base
+`PdfTextExtractor`, so register it after both `AddGranitTextExtractionPdf()` and
+an image OCR extractor (Tesseract above, or AI Vision).
+
+```csharp
+[DependsOn(
+    typeof(GranitTextExtractionPdfModule),
+    typeof(GranitTextExtractionOcrTesseractModule),
+    typeof(GranitTextExtractionPdfOcrModule))]
+public sealed class ScannedPdfModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddTesseractOcrExtractor(o =>
+        {
+            o.DataPath = "/usr/share/tesseract-ocr/5/tessdata";
+            o.Language = "eng+fra";
+        });
+        // Swaps PdfTextExtractor for PdfOcrTextExtractor; the image extractor
+        // is resolved lazily at extraction time, so order vs. the line above
+        // is flexible — both must be registered before the pipeline runs.
+        context.Services.AddGranitTextExtractionPdfOcr();
+    }
+}
+```
+
+```json
+{
+  "TextExtraction": {
+    "Pdf": {
+      "Ocr": {
+        "MinNativeCharsPerPage": 32,
+        "RenderDpi": 300,
+        "MaxPagesToRasterise": 200,
+        "MaxPagePixels": 104857600
+      }
+    }
+  }
+}
+```
+
+| Option | Default | Role |
+|--------|---------|------|
+| `MinNativeCharsPerPage` | `32` | Below this PdfPig char count a page is treated as scanned and sent to OCR |
+| `RenderDpi` | `300` | Rasterisation resolution (Tesseract's 300–600 sweet spot; higher = more memory) |
+| `MaxPagesToRasterise` | `200` | Hard page cap; excess pages drop and the result is flagged `IsTruncated` |
+| `MaxPagePixels` | `100 MP` | Per-page pixel cap — oversized pages skip rasterisation (pixel-bomb defence) |
+
+A document mixing native text and scanned inserts keeps page order; any page
+that went through OCR or the layout fallback drops the whole result to
+`ExtractionConfidence.Heuristic`. Without a registered `image/png` extractor the
+module logs a warning and degrades to native-text-only extraction.
+
+</TabItem>
+<TabItem label="Add Tika sidecar">
+
+```csharp
+[DependsOn(typeof(GranitTextExtractionTikaModule))]
+public sealed class TikaModule : GranitModule
+{
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services
+            .AddTikaSidecarExtractor()
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                // Host wires the client certificate from Granit.Vault here.
+                var handler = new SocketsHttpHandler();
+                handler.SslOptions.ClientCertificates = LoadClientCertificates(sp);
+                return handler;
+            });
+    }
+}
+```
+
+```json
+{
+  "TextExtraction": {
+    "Tika": {
+      "Uri": "https://tika.internal.example/tika",
+      "TimeoutSeconds": 30,
+      "AllowedHosts": ["tika.internal.example"],
+      "RequireMutualTls": true
+    }
+  }
+}
+```
+
+```yaml
+# docker-compose excerpt — bind to localhost only; expose cross-host via mTLS proxy.
+tika:
+  image: apache/tika:3.0.0-full
+  ports:
+    - "127.0.0.1:9998:9998"
+```
+
+</TabItem>
+</Tabs>
+
+## Extending — write your own extractor
+
+The contract is small: implement `ITextExtractor`, register it through
+`AddTextExtractor<T>()`. The pipeline picks extractors in registration order,
+so register the most specific first.
+
+```csharp
+public sealed class CsvSummaryExtractor : ITextExtractor
+{
+    private readonly GranitTextExtractionOptions _options;
+
+    public CsvSummaryExtractor(GranitTextExtractionOptions options)
+        => _options = options;
+
+    public string Name => "acme.csv-summary";
+
+    public bool CanHandle(string contentType)
+        => contentType.Equals("text/csv", StringComparison.OrdinalIgnoreCase);
+
+    public async Task<TextExtractionResult> ExtractAsync(
+        Stream source, string contentType, int maxCharLength, CancellationToken ct)
+    {
+        // 1. Always wrap the input — architecture-test pinned.
+        await using LimitedStream limited = new(source, _options.MaxBodySizeBytes);
+
+        try
+        {
+            string text = await ReadFirstNRowsAsync(limited, maxCharLength, ct);
+            return new TextExtractionResult(
+                Content: text,
+                DetectedLanguage: null,
+                IsTruncated: text.Length >= maxCharLength,
+                CharCount: text.Length,
+                ExtractorName: Name,
+                // 2. Deterministic parser → Deterministic. Use Heuristic for a
+                //    recovery path, ModelGenerated only for LLM/VLM output.
+                Confidence: ExtractionConfidence.Deterministic);
+        }
+        catch (FormatException)
+        {
+            // 3. Soft-skip parser failures — never throw.
+            return new TextExtractionResult(
+                "", null, true, 0, Name, ExtractionConfidence.Deterministic);
+        }
+    }
+}
+```
+
+```csharp
+services.AddGranitTextExtraction();
+services.AddTextExtractor<CsvSummaryExtractor>();
+```
+
+The framework's rules apply to host extractors too: wrap the input in
+`LimitedStream`, soft-skip on parse failure (`IsTruncated = true`, empty
+content), stop producing text once `maxCharLength` is reached, and stamp the
+result's `Confidence` honestly — `ModelGenerated` the moment an LLM touches the
+bytes, so downstream consumers know not to re-prompt with it unguarded. The
+`Every_extractor_package_must_reference_LimitedStream` architecture test runs
+against `Granit.TextExtraction.*` packages — apply the same convention to
+in-house extractors.
+
+## Follow-ups
+
+- **Tika sidecar CI shard** — the `libtesseract`, PDFium, and Apache Tika
+  containers needed for the OCR + Tika integration test shard ship as a
+  follow-up.
+
+Scanned-PDF rasterisation, formerly tracked under epic
+[`#2233`](https://github.com/granit-fx/granit-dotnet/issues/2233), shipped as
+[`Granit.TextExtraction.Pdf.Ocr`](#package-structure) — see [Add scanned-PDF
+OCR](#configuration-cookbook).
+
+## See also
+
+- [Documents](/dotnet/business/documents/) — primary downstream consumer; the
+  document module triggers extraction on upload.
+- [AI — Document Extraction](/dotnet/ai/document-extraction/) — LLM-driven
+  conversion of extracted text into strongly-typed C# objects.
+- [Data Exchange](/dotnet/building-blocks/data-exchange/) — sibling building
+  block for tabular import/export (CSV / Excel).
+- [Query Engine](/dotnet/building-blocks/query-engine/) — sibling building
+  block for declarative filters / sort / paging on top of EF Core.
+- [Indexing](/dotnet/building-blocks/indexing/) — primary downstream consumer:
+  `TextExtractionResult.Content` + `DetectedLanguage` feed straight into
+  `IndexedEntry<TKey>` for full-text + hybrid semantic search.

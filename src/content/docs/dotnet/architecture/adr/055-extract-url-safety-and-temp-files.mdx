@@ -31,7 +31,7 @@ fixes:
    `Granit.Browsing.Playwright` did the same for HAR and trace. The
    GDPR-export pipeline (`Granit.Privacy.BlobStorage.DataExport`) staged
    export ZIPs with `Path.GetTempPath()` + manual cleanup. None of them
-   set 0600. The audit (VULN-103, VULN-301) called out the gap.
+   set 0600. The audit called out the gap.
    `Granit.DataExchange` was the next consumer in the pipeline.
 
 The hardening PR needs a single home for both primitives so the fixes
@@ -118,8 +118,8 @@ Rejected — wrong abstraction.
 ### 4. Separate `Granit.Browsing.Analyzers` for `GRBROWSING001`
 
 The audit shipped a Roslyn analyzer (`GRBROWSING001` — string
-interpolation in `EvaluateAsync` / `AddScriptTagAsync` / `AddStyleTagAsync`,
-VULN-203). Two homes considered:
+interpolation in `EvaluateAsync` / `AddScriptTagAsync` /
+`AddStyleTagAsync`). Two homes considered:
 
 - A new `Granit.Browsing.Analyzers` NuGet — pure: package name maps to
   module. Costs: one more NuGet in the catalog for a single rule; the

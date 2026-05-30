@@ -6,16 +6,45 @@ sidebar:
   order: 17
 ---
 
+import { Aside } from "@astrojs/starlight/components";
+
 Granit.RateLimiting provides per-tenant rate limiting with four algorithms,
-configurable policies, Redis-backed counters (with in-memory fallback), and Wolverine
-message handler support. Integrates with `Granit.Features` for plan-based dynamic
-quotas.
+configurable policies, and Redis-backed counters (with in-memory fallback). The
+core is **framework-pure** — no ASP.NET Core dependency — and the HTTP and
+Wolverine enforcement points ship as separate transport bindings. Integrates with
+`Granit.Features` for plan-based dynamic quotas.
+
+## Choosing the right package
+
+The counters, algorithms, quota resolution, and `TenantPartitionedRateLimiter`
+live in the transport-agnostic core. Add the binding that matches where you
+enforce the limit — most apps reference both `Granit.Http.RateLimiting` (incoming
+requests) and `Granit.RateLimiting.Wolverine` (message handlers).
+
+| Package | Reference when | Brings in |
+| ------- | -------------- | --------- |
+| `Granit.RateLimiting` | Always — the core. Counter stores, algorithms, quota providers, `GranitRateLimitingModule`. | `Granit`, `Granit.Features` |
+| `Granit.Http.RateLimiting` | You throttle HTTP endpoints. Endpoint filter `.RequireGranitRateLimiting("policy")` → `429` + `Retry-After` + `X-RateLimit-*`. | core + `Granit.Http.ExceptionHandling` |
+| `Granit.RateLimiting.Wolverine` | You throttle message handlers. `[RateLimited("policy")]` + pipeline middleware. **No `WolverineFx` reference.** | core |
+
+This core + per-transport binding layout mirrors `Granit.Features` and is
+captured in [ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/).
 
 ## Setup
 
+Reference the binding(s) you need — each transport module pulls in the core
+`GranitRateLimitingModule` automatically.
+
 ```csharp
-[DependsOn(typeof(GranitRateLimitingModule))]
+[DependsOn(
+    typeof(GranitHttpRateLimitingModule),       // HTTP endpoints
+    typeof(GranitRateLimitingWolverineModule))] // Wolverine handlers
 public class AppModule : GranitModule { }
+```
+
+```bash
+dotnet add package Granit.Http.RateLimiting
+dotnet add package Granit.RateLimiting.Wolverine
 ```
 
 ```json
@@ -45,7 +74,11 @@ public class AppModule : GranitModule { }
 
 ## Applying to endpoints
 
+The endpoint filter lives in `Granit.Http.RateLimiting`:
+
 ```csharp
+using Granit.Http.RateLimiting.AspNetCore;
+
 app.MapGet("/api/v1/appointments", GetAppointments)
     .RequireGranitRateLimiting("api-default");
 
@@ -53,11 +86,17 @@ app.MapPost("/api/v1/payments", ProcessPayment)
     .RequireGranitRateLimiting("api-sensitive");
 ```
 
+`GranitHttpRateLimitingModule` registers the RFC 7807 mapper that turns
+`RateLimitExceededException` into an HTTP `429` response.
+
 ## Wolverine message handler support
 
-Decorate message types with `[RateLimited]` and register the Wolverine middleware:
+The `[RateLimited]` attribute and middleware live in `Granit.RateLimiting.Wolverine`.
+Decorate the message type and register the middleware:
 
 ```csharp
+using Granit.RateLimiting.Wolverine.Attributes;
+
 [RateLimited("api-default")]
 public record SyncPatientCommand(Guid PatientId);
 ```
@@ -207,16 +246,36 @@ is `RateLimit.{PolicyName}`, overridable via `RateLimitPolicyOptions.FeatureName
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
-| Module | `GranitRateLimitingModule` | -- |
-| Store | `IRateLimitCounterStore`, `IRateLimitQuotaProvider`, `RateLimitResult` | `Granit.RateLimiting` |
-| Attributes | `RateLimitedAttribute` | `Granit.RateLimiting` |
+| Modules | `GranitRateLimitingModule`, `GranitHttpRateLimitingModule`, `GranitRateLimitingWolverineModule` | -- |
+| Store | `IRateLimitCounterStore`, `IRateLimitQuotaProvider`, `RateLimitResult`, `TenantPartitionedRateLimiter` | `Granit.RateLimiting` |
 | Exceptions | `RateLimitExceededException` | `Granit.RateLimiting` |
 | Options | `GranitRateLimitingOptions`, `RateLimitPolicyOptions`, `RateLimitPartition` | `Granit.RateLimiting` |
-| Extensions | `AddGranitRateLimiting()`, `.RequireGranitRateLimiting()` | `Granit.RateLimiting` |
+| Core extensions | `AddGranitRateLimiting()` | `Granit.RateLimiting` |
+| HTTP binding | `.RequireGranitRateLimiting()`, `AddGranitHttpRateLimiting()` (`Granit.Http.RateLimiting.AspNetCore`) | `Granit.Http.RateLimiting` |
+| Wolverine binding | `RateLimitedAttribute`, `RateLimitMiddleware` (`Granit.RateLimiting.Wolverine.Attributes`) | `Granit.RateLimiting.Wolverine` |
+
+## Migrating from the single package
+
+`Granit.RateLimiting` was a single ASP.NET-Core-coupled package before the
+[layer split](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/). These are breaking moves (pre-1.0):
+
+| Was | Now |
+| --- | --- |
+| `using Granit.RateLimiting.AspNetCore;` (endpoint filter) | `using Granit.Http.RateLimiting.AspNetCore;` + reference `Granit.Http.RateLimiting` |
+| `RateLimitedAttribute` in `Granit.RateLimiting.Attributes` | `Granit.RateLimiting.Wolverine.Attributes` + reference `Granit.RateLimiting.Wolverine` |
+| `AddGranitRateLimiting()` wired the 429 mapper | `AddGranitHttpRateLimiting()` (auto via `GranitHttpRateLimitingModule`) |
+| One `GranitRateLimitingModule` | Core module + `GranitHttpRateLimitingModule` / `GranitRateLimitingWolverineModule` |
+
+<Aside type="note">
+The core carries no ASP.NET Core `FrameworkReference` anymore. A worker service
+or a console host can reference `Granit.RateLimiting` (or its Wolverine binding)
+without dragging in the web stack.
+</Aside>
 
 ## See also
 
+- [Feature Flags](/dotnet/infrastructure/feature-flags/) -- same core + transport-binding split, and the source of dynamic quotas
+- [ADR-062: framework-pure core + transport bindings](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/) -- the layering convention
 - [Exception Handling](/dotnet/api/exception-handling/) -- Problem Details format
 - [Wolverine module](/dotnet/infrastructure/wolverine-messaging/) -- Message bus, retry policies
-- [Features module](/dotnet/infrastructure/feature-flags/) -- Feature flags, dynamic quotas
 - [API & Http overview](/dotnet/api/) -- All HTTP infrastructure packages

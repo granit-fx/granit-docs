@@ -34,7 +34,7 @@ PDF-rasterisation workloads.
   with the framework-internal `Granit.Browsing.Pages.UseFileScheme` grant.
 - **Volatile `_browser` field.** The provider's `_browser` field is now
   `volatile` and read once into a local before dispose to prevent the
-  double-dispose / null-deref race the audit flagged (VULN-206).
+  double-dispose / null-deref race the audit flagged.
 - **Logged disposal catches.** Disposal exceptions are caught and
   `LogWarning`-ed via `[LoggerMessage]` — they no longer poison the host
   shutdown.
