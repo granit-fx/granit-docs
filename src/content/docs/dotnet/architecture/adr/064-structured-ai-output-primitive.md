@@ -98,6 +98,12 @@ public sealed record StructuredCompletionResult<T> where T : class
     public T? Value { get; init; }
     public string? ModelId { get; init; }
     public string? ErrorMessage { get; init; } // always PII-safe
+    // Provenance needed by layered scorers (e.g. Extraction's confidence estimate),
+    // which today reads response.FinishReason and response.AdditionalProperties["confidence"].
+    public ChatFinishReason? FinishReason { get; init; }
+    public IReadOnlyDictionary<string, object?>? Metadata { get; init; }
+    // Token usage so typed calls are tracked like IAIChatCompletionService (see decision 6).
+    public UsageDetails? Usage { get; init; }
 }
 
 public enum StructuredCompletionStatus
@@ -109,15 +115,16 @@ public enum StructuredCompletionStatus
 }
 ```
 
-The five decisions this ADR settles:
+The six decisions this ADR settles:
 
 | # | Decision | Resolution |
 | - | -------- | ---------- |
 | 1 | **Name + home** | `IStructuredCompletion` in `Granit.AI` — pairs with the existing `IAIChatCompletionService`. |
 | 2 | **Generic per call vs per interface** | **Per call**: `CompleteAsync<T>(request)`. One injected service serves every `T`. A per-interface `IStructuredCompletion<T>` would force ~13 DI registrations and re-create today's per-module shape. |
-| 3 | **Confidence** | **Not on the primitive.** It returns `T` + `ModelId` + a raw `Status`. Confidence and a review threshold are a document-extraction concern; translation, moderation, and anomaly detection each have their own domain scoring. |
-| 4 | **Schema fallback** | **The core of the value.** The primitive uses `ForJsonSchema<T>()` when the workspace's provider/model advertises structured-output capability, and otherwise injects the JSON schema into the prompt, strips fences, and deserializes — so **no consumer ever strips a fence by hand again**, and the safe path is the default. |
-| 5 | **`Granit.AI.Extraction`** | Becomes a **thin "document + confidence" surface** over the primitive. `DefaultDocumentExtractor` delegates to `IStructuredCompletion`, maps `StructuredCompletionStatus` → `ExtractionStatus`, and adds the confidence estimate + review-threshold workflow. `ExtractionResult<T>` (data, confidence, warnings, `ModelId`) is preserved. |
+| 3 | **Confidence** | **Not computed by the primitive.** It returns `T` + `ModelId` + a raw `Status`, and **surfaces the provenance** (`FinishReason`, `Metadata`) so a layer can score. Confidence and a review threshold are a document-extraction concern; translation, moderation, and anomaly detection each have their own domain scoring. The provenance fields exist *because* Extraction's `EstimateConfidence` reads `response.FinishReason` and `response.AdditionalProperties["confidence"]` — dropping them would block the re-base (decision 5). |
+| 4 | **Schema fallback** | **The core of the value.** The primitive uses `ForJsonSchema<T>()` when the workspace's provider/model advertises the **`structured-output` capability** (a new `WellKnownAICapabilities.StructuredOutput` key each provider opts into), and otherwise injects the JSON schema into the prompt, strips fences, and deserializes — so **no consumer ever strips a fence by hand again**, and the safe path is the default. |
+| 5 | **`Granit.AI.Extraction`** | Becomes a **thin "document + confidence" surface** over the primitive. `DefaultDocumentExtractor` delegates to `IStructuredCompletion`, maps `StructuredCompletionStatus` → `ExtractionStatus`, and re-derives the confidence estimate from the result's `FinishReason`/`Metadata`. `ExtractionResult<T>` (data, confidence, warnings, `ModelId`) is preserved — the public `IDocumentExtractor` contract is unchanged for downstream consumers (incl. granit-business). |
+| 6 | **Cross-cutting: usage tracking, quota, rate-limiting, sampling** | The primitive builds on `IAIChatClientFactory` (it needs `ChatOptions.ResponseFormat`) **and owns the cross-cutting plumbing the factory path lacks today**: it records usage via `IAIUsageTracker` / `IAIUsageRecordFactory` (typed calls are currently **untracked** — that block lives only in `IAIChatCompletionService`), applies the quota guard, and consumes rate-limiting (`AICallRateLimiter`) + content sampling (`AIContentSampler`), **both moved up from `Granit.AI.Extraction` into `Granit.AI`** so every consumer shares one implementation. It emits an `AIActivitySource` span and `AIMetrics` counters (`granit.ai.structured_completion.*`) per the diagnostics convention. |
 
 The **status taxonomy** is deliberately four-valued (added at the request of the
 first downstream consumer): a caller must be able to distinguish a *model
@@ -186,6 +193,10 @@ or misuse, and keeps the extraction-specific workflow where it belongs.
 + **Downstream unblocked cleanly.** `Granit.Cms.Seo.AI` consumes
   `CompleteAsync<SeoExtraction>` with a per-locale instruction and gets `ModelId`
   for audit and a four-valued status to map onto its own `SuggestionStatus`.
++ **Typed calls become tracked and governed.** Routing every typed call through
+  the primitive brings usage tracking, the quota guard, rate-limiting, and
+  sampling to paths that bypass them today (the factory path used by Extraction
+  and all 13 consumers records no usage), plus uniform spans/metrics.
 
 ### Negative
 
@@ -194,6 +205,10 @@ or misuse, and keeps the extraction-specific workflow where it belongs.
   but touches public-ish internals and DI.
 + **A multi-PR Epic, not a single change.** The new public surface in `Granit.AI`
   plus the sequenced consumer migration is deliberately spread across many PRs.
++ **Rate-limiting and sampling move packages.** `AICallRateLimiter` /
+  `AIContentSampler` relocate from `Granit.AI.Extraction` up into `Granit.AI`
+  (pre-1.0 namespace break); the `Granit.AI.Extraction.StackExchangeRedis`
+  distributed limiter follows. Migration note ships on the AI reference page.
 + **No downstream dev-NuGet of the typed-generation API until this surface is
   built and ratified** — pinning granit-website to an interim shape (e.g. the
   paused #2451) would risk an API condemned by this ADR.
@@ -214,5 +229,12 @@ or misuse, and keeps the extraction-specific workflow where it belongs.
   AI error handling (the contract the primitive centralizes)
 + `Granit.AI` — `IAIChatClientFactory`, `PromptBuilder`, `IAIChatCompletionService`,
   `LlmResponseHelper`, `LlmInputSanitizer` (the crumbs this primitive consolidates)
-+ Epic *(to be created)* — Canonical structured AI output: primitive →
-  reposition Extraction → migrate the 13 `.AI` modules → governance test → docs
++ Epic [#2452](https://github.com/granit-fx/granit-dotnet/issues/2452) — Canonical
+  structured AI output: primitive (#2453) → reposition Extraction (#2454) →
+  migrate the 13 `.AI` modules (#2455) → governance test (#2456) → unblock
+  downstream (#2457)
++ `Granit.AI` cross-cutting — `IAIChatCompletionService` (the usage-tracking
+  block the primitive replicates), `IAIUsageTracker` / `IAIUsageRecordFactory`,
+  `WellKnownAICapabilities` (new `structured-output` key), `AIActivitySource` /
+  `AIMetrics`, and `Granit.AI.Extraction`'s `AICallRateLimiter` / `AIContentSampler`
+  (relocating up)
