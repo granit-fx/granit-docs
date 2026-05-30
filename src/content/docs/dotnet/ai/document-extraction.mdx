@@ -15,11 +15,20 @@ Every B2B application eventually needs to parse documents: invoices from supplie
 candidates, contracts from partners, identity documents for compliance. Traditional parsers
 (regex, iText, rule-based) are fragile — they break on every layout variation.
 
-`Granit.AI.Extraction` takes a different approach: send the document text to an LLM using
-`ChatResponseFormat.ForJsonSchema<T>()` (MEAI native structured output), and get back a
-strongly-typed C# object. The schema is derived automatically from the C# type — no manual
-prompt engineering. The LLM handles layout variations, multilingual content, and messy
+`Granit.AI.Extraction` takes a different approach: send the document text to an LLM and get
+back a strongly-typed C# object. The schema is derived automatically from the C# type — no
+manual prompt engineering. The LLM handles layout variations, multilingual content, and messy
 formatting — you get clean data.
+
+:::note[Built on the structured-completion primitive]
+Since ADR-064, extraction is a thin **"document + confidence"** layer over
+[`IStructuredCompletion`](/dotnet/ai/structured-completion/). The primitive pins the JSON
+schema (provider-enforced, with a fence-strip fallback) and applies usage tracking and
+PII-safe error handling; `DefaultDocumentExtractor` adds the confidence estimate and the
+review-threshold workflow. The `IDocumentExtractor` contract below is unchanged — reach for
+extraction when you want confidence scoring, and the primitive directly when you just need a
+typed object.
+:::
 
 ## The problem
 

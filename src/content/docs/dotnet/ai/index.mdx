@@ -163,4 +163,6 @@ public class MyService(IAIChatClientFactory chatFactory)
 - [Image Analysis](/dotnet/ai/imaging-ai/) — alt text, object detection, smart tagging
 
 For the core module reference (providers, workspaces, configuration), see
-[Setup & Configuration](/dotnet/ai/setup/).
+[Setup & Configuration](/dotnet/ai/setup/). Every feature above that returns a typed
+object is built on one primitive — [Structured Completion](/dotnet/ai/structured-completion/),
+the canonical, schema-enforced path for turning a prompt into a C# `T`.
