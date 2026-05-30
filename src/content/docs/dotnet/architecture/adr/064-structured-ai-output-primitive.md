@@ -124,7 +124,7 @@ The six decisions this ADR settles:
 | 3 | **Confidence** | **Not computed by the primitive.** It returns `T` + `ModelId` + a raw `Status`, and **surfaces the provenance** (`FinishReason`, `Metadata`) so a layer can score. Confidence and a review threshold are a document-extraction concern; translation, moderation, and anomaly detection each have their own domain scoring. The provenance fields exist *because* Extraction's `EstimateConfidence` reads `response.FinishReason` and `response.AdditionalProperties["confidence"]` — dropping them would block the re-base (decision 5). |
 | 4 | **Schema fallback** | **The core of the value.** The primitive uses `ForJsonSchema<T>()` when the workspace's provider/model advertises the **`structured-output` capability** (a new `WellKnownAICapabilities.StructuredOutput` key each provider opts into), and otherwise injects the JSON schema into the prompt, strips fences, and deserializes — so **no consumer ever strips a fence by hand again**, and the safe path is the default. |
 | 5 | **`Granit.AI.Extraction`** | Becomes a **thin "document + confidence" surface** over the primitive. `DefaultDocumentExtractor` delegates to `IStructuredCompletion`, maps `StructuredCompletionStatus` → `ExtractionStatus`, and re-derives the confidence estimate from the result's `FinishReason`/`Metadata`. `ExtractionResult<T>` (data, confidence, warnings, `ModelId`) is preserved — the public `IDocumentExtractor` contract is unchanged for downstream consumers (incl. granit-business). |
-| 6 | **Cross-cutting: usage tracking, quota, rate-limiting, sampling** | The primitive builds on `IAIChatClientFactory` (it needs `ChatOptions.ResponseFormat`) **and owns the cross-cutting plumbing the factory path lacks today**: it records usage via `IAIUsageTracker` / `IAIUsageRecordFactory` (typed calls are currently **untracked** — that block lives only in `IAIChatCompletionService`), applies the quota guard, and consumes rate-limiting (`AICallRateLimiter`) + content sampling (`AIContentSampler`), **both moved up from `Granit.AI.Extraction` into `Granit.AI`** so every consumer shares one implementation. It emits an `AIActivitySource` span and `AIMetrics` counters (`granit.ai.structured_completion.*`) per the diagnostics convention. |
+| 6 | **Cross-cutting: usage tracking, quota, rate-limiting, sampling** | The primitive builds on `IAIChatClientFactory` (it needs `ChatOptions.ResponseFormat`) **and owns the cross-cutting plumbing the factory path lacks today**: it records usage via `IAIUsageTracker` / `IAIUsageRecordFactory` (typed calls are currently **untracked** — that block lives only in `IAIChatCompletionService`), applies the quota guard, and consumes rate-limiting (`AICallRateLimiter`) + content sampling (`AIContentSampler`), **both moved up from `Granit.AI.Extraction` into `Granit.AI`** so every consumer shares one implementation. It emits an `AIActivitySource` span and reuses the **existing** `AIMetrics` counters (`granit.ai.requests.completed`, `granit.ai.tokens.input`/`output`, `granit.ai.request.duration`, all tagged `tenant_id` coalesced to `"global"`) — today under-emitted on the factory path — rather than a parallel `structured_completion.*` tree. Each module keeps its own domain metrics (`{Module}AIMetrics`). |
 
 The **status taxonomy** is deliberately four-valued (added at the request of the
 first downstream consumer): a caller must be able to distinguish a *model
@@ -136,7 +136,9 @@ success/failure boolean is not enough to drive a consumer's own status mapping
 **Governance.** Once the primitive lands and the modules migrate, an
 architecture test forbids the bypass pattern — a `.AI` module calling
 `IChatClient.GetResponseAsync` followed by a manual `JsonSerializer.Deserialize`
-for typed output — so the fragmentation cannot silently return.
+for typed output — so the fragmentation cannot silently return. `Granit.AI`
+itself is the single allowed exemption (the primitive's own implementation
+legitimately calls `GetResponseAsync`).
 
 This ADR is sequenced **ADR-first**: the surface above is ratified before any
 implementation. The work is then cut into an Epic (primitive → reposition
@@ -179,6 +181,17 @@ either domain-specific or absent. Keeping the primitive minimal
 (`T` + `ModelId` + `Status`) avoids a field that 13 of 14 consumers would ignore
 or misuse, and keeps the extraction-specific workflow where it belongs.
 
+### E. Extend `IAIChatCompletionService` with a typed overload instead of a new primitive
+
+Rejected. `IAIChatCompletionService.CompleteAsync` returns `AIChatCompletionResult`
+— a `string`-content record with no `ChatOptions`/`ResponseFormat` input and no
+generic `T`. Bolting structured output onto it would either overload it into two
+contracts or widen its return shape for every existing caller. A dedicated
+`IStructuredCompletion` keeps the typed contract (per-call generic, four-valued
+status, provenance) separate and lets the completion service stay the simple
+string-completion orchestrator. The primitive **reuses** that service's
+usage-tracking block (decision 6) rather than its signature.
+
 ## Consequences
 
 ### Positive
@@ -207,8 +220,13 @@ or misuse, and keeps the extraction-specific workflow where it belongs.
   plus the sequenced consumer migration is deliberately spread across many PRs.
 + **Rate-limiting and sampling move packages.** `AICallRateLimiter` /
   `AIContentSampler` relocate from `Granit.AI.Extraction` up into `Granit.AI`
-  (pre-1.0 namespace break); the `Granit.AI.Extraction.StackExchangeRedis`
-  distributed limiter follows. Migration note ships on the AI reference page.
+  (pre-1.0 namespace break) — `IAICallRateLimiter` is already framework-wide ("for
+  the Granit AI feature family"), so its home in the extraction sub-module was
+  always incidental. The distributed binding **`Granit.AI.Extraction.StackExchangeRedis`
+  is renamed to `Granit.AI.StackExchangeRedis`** and retargeted at the relocated
+  interface (package + namespace + integration tests), superseding the
+  rate-limiting arrangement described in [ADR-062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/).
+  Migration note ships on the AI reference page.
 + **No downstream dev-NuGet of the typed-generation API until this surface is
   built and ratified** — pinning granit-website to an interim shape (e.g. the
   paused #2451) would risk an API condemned by this ADR.
