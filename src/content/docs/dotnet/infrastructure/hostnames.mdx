@@ -1,6 +1,6 @@
 ---
 title: "Hostnames — Custom Domain Management & DNS Verification"
-description: Attach custom hostnames to any opaque resource (OwnerType + OwnerId), verify DNS ownership, and track SSL certificate provisioning — fully decoupled via ETOs.
+description: Give your tenants their own branded domains in minutes. DNS TXT verification, exponential backoff, SSL certificate tracking — zero coupling between the Hostnames module and your app.
 sidebar:
   label: Hostnames
   order: 20
@@ -8,12 +8,46 @@ sidebar:
 
 import { Tabs, TabItem, FileTree, Aside, Badge } from "@astrojs/starlight/components";
 
-Granit.Hostnames lets any consumer (CMS, billing portal, API gateway, …) bind a
-custom domain to an opaque resource identified by an `OwnerType` + `OwnerId` pair.
-The module manages the full lifecycle: DNS TXT-record verification (with exponential
-backoff), SSL certificate provisioning, and status webhooks — without any reverse
-dependency on the consuming application. Communication is fully decoupled via
-**ETOs** (External Transfer Objects).
+Every multi-tenant platform eventually needs to let customers use their own domain —
+`app.theircustomer.com` instead of `yourplatform.com/theircustomer`. Done by hand,
+this means writing DNS polling loops, managing retry state, wiring up SSL provider
+webhooks, and threading custom-domain logic through every service that cares about
+routing. Granit.Hostnames solves this once, generically.
+
+It binds a custom domain to any opaque resource (`OwnerType` + `OwnerId`) and owns
+the full lifecycle: DNS TXT-record verification with exponential backoff, SSL
+certificate provisioning via webhook callback, and notification to consumers via
+**ETOs** — no reverse dependency on your application, no schema changes in your
+modules.
+
+## Why custom domains?
+
+| Challenge | DIY | Granit.Hostnames |
+| --------- | --- | ---------------- |
+| **DNS ownership proof** | Custom polling loop, bespoke retry logic | `HostnameVerificationJob` every 5 min, exponential backoff built-in |
+| **SSL provisioning** | Direct CDN/Let's Encrypt integration per service | Webhook endpoint (`/certificate-status`) updates `CertificateStatus` in one place |
+| **Resource binding** | Custom join tables in each consumer | Generic `OwnerType + OwnerId` — zero schema changes in consumers |
+| **Cross-service events** | Direct calls or shared DTOs between modules | `HostnameVerifiedEto`, `HostnameCertificateSecuredEto` — consumers react without coupling |
+| **User communication** | Notify users yourself | 2 notification types, 36 templates, 18 cultures, shipped |
+
+### Website builder scenario
+
+The canonical use case is a **website builder or white-label portal** where each
+customer gets their own branded domain:
+
+1. Customer registers `app.theircustomer.com` in your portal UI →
+   `POST /api/v1/hostnames`
+2. Your UI shows the DNS TXT record to add — the customer updates their registrar
+3. `HostnameVerificationJob` polls every 5 min; on success it publishes
+   `HostnameVerifiedEto`
+4. Your website module handles the ETO and activates the domain in its own routing
+   table — **no import of `Granit.Hostnames` required**
+5. The SSL provider calls `/certificate-status` → `HostnameCertificateSecuredEto`
+6. If DNS isn't configured after N attempts,
+   `HostnameVerificationFailedNotificationType` notifies the customer automatically
+
+The same pattern applies to billing portals, API gateways, and any multi-tenant
+surface that needs per-tenant vanity domains.
 
 ## Package structure
 
