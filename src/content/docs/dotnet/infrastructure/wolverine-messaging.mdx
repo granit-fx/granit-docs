@@ -6,7 +6,7 @@ sidebar:
   order: 8
 ---
 
-import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
+import { Tabs, TabItem, FileTree, Badge, Steps } from "@astrojs/starlight/components";
 
 Granit.Wolverine integrates the [Wolverine](https://wolverinefx.net/) message bus into the
 module system. Domain events route to local queues, integration events persist in a
@@ -275,6 +275,119 @@ Production implementations use blob storage.
 
 `ValidationException` bypasses retries entirely — sent directly to the error queue.
 
+## Production code generation
+
+Wolverine generates the C# that wires each handler and HTTP endpoint into the bus. By
+default Granit runs in **Dynamic** mode: that code is compiled at runtime with Roslyn
+(via `WolverineFx.RuntimeCompilation`, referenced transitively by `Granit.Wolverine`).
+That is convenient locally, but **every cold start recompiles every handler and endpoint
+chain** — paying both startup latency and ~100 MB of resident Roslyn. In a scaled-out
+deployment that cost is repeated on every replica, on every restart.
+
+`Granit.Wolverine` exposes the mode through `WolverineMessagingOptions.CodeGenerationMode`
+(bound from `Wolverine:CodeGenerationMode`, type `JasperFx.CodeGeneration.TypeLoadMode`):
+
+| Mode | Behavior | When |
+|------|----------|------|
+| `Dynamic` (default) | Roslyn compiles handler code at startup | Local development |
+| `Static` | Loads pre-generated code from the assembly; **no runtime fallback** | Production |
+| `Auto` | Generates on first run if missing, then reuses it | Accepted, but discouraged by the Wolverine community |
+
+### Opt in to Static
+
+Set the mode in `appsettings.Production.json`. No code change is needed — Granit binds it
+onto `opts.CodeGeneration.TypeLoadMode` for you:
+
+```json
+{
+  "Wolverine": {
+    "CodeGenerationMode": "Static"
+  }
+}
+```
+
+:::danger[Static has no runtime fallback]
+`Static` never compiles anything at runtime. If the pre-generated code is missing or
+stale, the host **throws at startup** — there is no environment-based switch back to
+Dynamic. The code must be generated in your build and shipped with the image. Enabling
+Static without the steps below turns a deploy into a crash loop.
+:::
+
+### Pre-generate the code in your build
+
+<Steps>
+
+1. **Wire the JasperFx CLI into `Program.cs`.** Replace the final `await app.RunAsync();`
+   with the JasperFx command runner so the `codegen` verb becomes available:
+
+   ```csharp
+   var app = builder.Build();
+
+   // ... middleware, UseGranitAsync(), etc. ...
+
+   return await app.RunJasperFxCommands(args);
+   ```
+
+   With no arguments this still starts the web host exactly as before — confirm
+   `dotnet run` boots normally. Keep any external-resource calls (database, broker)
+   *after* this line: `codegen write` boots the host only far enough to discover handlers
+   and must not reach infrastructure that is unavailable at build time.
+
+2. **Generate the code as a build step.** Run the `codegen` verb before publishing — a
+   dedicated Docker build stage, or a CI step ahead of `dotnet publish`:
+
+   ```bash
+   dotnet run -- codegen write
+   ```
+
+   This writes the handler and endpoint sources under `Internal/Generated/` (Wolverine
+   handlers land in `Internal/Generated/WolverineHandlers/`).
+
+3. **Ship `Internal/Generated/` with the image.** The generated files must be compiled
+   into the published assembly. Either commit them, or generate them in the build stage
+   and copy them into the publish output — either way they travel with the deployed
+   artifact.
+
+</Steps>
+
+### Fail fast on stale code (optional)
+
+To turn a *silent* mismatch into a loud startup error, assert that every expected
+pre-generated type exists. This flag lives on the Critter Stack production profile, not on
+the Granit option — the mode itself stays controlled by `Wolverine:CodeGenerationMode`;
+this only adds the existence check:
+
+```csharp
+builder.Services.CritterStackDefaults(x =>
+{
+    x.Production.AssertAllPreGeneratedTypesExist = true;
+});
+```
+
+Now a handler added after the last `codegen write` fails the host immediately at
+startup, instead of surfacing as a missing-type error deep in message processing.
+
+### Keep Roslyn out of the production image
+
+`Granit.Wolverine` pulls in `WolverineFx.RuntimeCompilation` transitively so Dynamic mode
+works out of the box. Static mode never compiles at runtime, so that ~100 MB of Roslyn is
+dead weight in a production image. Strip the transitive assets from Release builds while
+keeping them for local Dynamic development:
+
+```xml
+<!-- Roslyn runtime codegen is used only by Dynamic mode (local dev).
+     Production runs Static + pre-generated code, so drop the transitive
+     WolverineFx.RuntimeCompilation assets from Release builds. -->
+<ItemGroup Condition="'$(Configuration)' == 'Release'">
+  <PackageReference Include="WolverineFx.RuntimeCompilation" ExcludeAssets="all" />
+</ItemGroup>
+```
+
+:::note
+Under Central Package Management, add a matching `PackageVersion` entry for
+`WolverineFx.RuntimeCompilation` so the conditional reference resolves.
+:::
+
 ## Wolverine is optional
 
 Wolverine is **not** required to use Granit. These modules have built-in `Channel<T>`
@@ -345,4 +458,5 @@ attribute to the assembly's `AssemblyInfo.cs` or any file in the project.
 - [Multi-tenancy module](./multi-tenancy/) — Tenant context propagation
 - [Security module](./authentication/) — `ICurrentUserService` propagation
 - [API Reference](/api/Granit.Wolverine.html) (auto-generated from XML docs)
+- [Wolverine: Code Generation guide](https://wolverinefx.net/guide/codegen.html) — upstream reference for `TypeLoadMode`, the `codegen` CLI, and pre-built types
 - [Blog: CQRS without MediatR — how Granit uses Wolverine](/blog/cqrs-without-mediatr-how-granit-uses-wolverine/) — the design rationale behind dropping MediatR in favor of Wolverine

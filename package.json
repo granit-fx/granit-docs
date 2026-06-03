@@ -11,13 +11,13 @@
     "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\""
   },
   "dependencies": {
-    "@astrojs/starlight": "~0.39.2",
+    "@astrojs/starlight": "~0.39.3",
     "@fontsource-variable/fira-code": "^5.2.7",
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
     "@lorenzo_lewis/starlight-utils": "^0.3.2",
     "@tailwindcss/vite": "^4.3.0",
-    "astro": "^6.3.7",
-    "astro-mermaid": "^2.0.1",
+    "astro": "^6.4.4",
+    "astro-mermaid": "^2.0.2",
     "mermaid": "^11.15.0",
     "rehype-external-links": "^3.0.0",
     "sharp": "^0.34.5",

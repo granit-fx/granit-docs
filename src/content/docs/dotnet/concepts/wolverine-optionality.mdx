@@ -193,6 +193,13 @@ Add the PostgreSQL transport connection string:
 
 That is the entire migration. Your handlers, your cron expressions, your notification templates -- everything else stays the same.
 
+:::tip[Production hardening]
+Once Wolverine is running in production, switch to **Static** code generation so cold
+starts no longer recompile every handler with Roslyn. See [Production code
+generation](/dotnet/infrastructure/wolverine-messaging/#production-code-generation) for
+the pre-generation recipe.
+:::
+
 ## Architecture
 
 ```mermaid
