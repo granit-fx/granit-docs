@@ -200,22 +200,32 @@ JSON surface is `/bff/user` and `/bff/csrf-token`; the OIDC redirect routes
 (`login` / `logout` / back-channel) are marked `ExcludeFromDescription` and do not
 appear in the contract.
 
-### Wolverine types must resolve during the assembly scan
+### Reflecting over every module at build time
 
-`Granit.Privacy` (a base module) declares Wolverine sagas, and it marks `WolverineFx`
-with `PrivateAssets="all"` so `Wolverine.dll` does **not** flow transitively to
-consumers. Composing the module graph reflects over Privacy's exported types, which
-references Wolverine — so the type scan must tolerate the dependency being absent. The
-framework's assembly scan was hardened to do exactly that, which is what lets the
-generator compose `Granit.Privacy.Endpoints` without dragging Wolverine into every
-consumer.
+Composing the full module graph reflects over **every** module's exported types at
+build time. The generator carries **no** Wolverine reference of its own — two framework
+decisions are what keep that reflection from blowing up:
 
-<Aside type="note">
-A live working-tree change in `granit-dotnet` is removing the generator's private
-`WolverineFx` reference now that the scan tolerates the absent assembly. Confirm
-against the merged state of PR #2542 before relying on the exact `.csproj` package
-list — the **behavior** (Privacy composes without Wolverine flowing transitively) is
-the stable contract here.
+1. **Resilient discovery scans.** `Granit.Reflection.SafeTypeLoader`
+   (granit-dotnet#2541) returns an assembly's *loadable* types instead of letting
+   `GetExportedTypes()` throw when a referenced dependency is not present. One awkward
+   assembly can no longer take down a "scan every loaded assembly" discovery site.
+
+2. **Wolverine stays loadable.** `Granit.Privacy` exposes **public** Wolverine sagas
+   (its export and deletion sagas), so its public surface references Wolverine types. It
+   references `WolverineFx` with **`PrivateAssets="analyzers"`**, which privatises *only*
+   the Wolverine source generator — stopping a duplicate `GeneratedWolverineTypeLoader`
+   (CS0436) conflict in downstream projects — while letting the **Wolverine runtime
+   assembly flow transitively**. Consumers that reflect over Privacy's exported types
+   (the generator, FluentValidation, Wolverine's own discovery) therefore find Wolverine
+   loadable.
+
+<Aside type="caution" title="Keep Privacy's WolverineFx at PrivateAssets=analyzers">
+Do **not** re-broaden `Granit.Privacy`'s `WolverineFx` to `PrivateAssets="all"`. That
+blocks the runtime asset, and every consumer reflecting over Privacy's exported saga
+types then crashes with a `FileNotFoundException` for `Wolverine.dll` — the regression
+granit-dotnet#2540 fixed. `WolverineCouplingTests` only guards against *direct* package
+references, so it will **not** catch this transitive break.
 </Aside>
 
 ## How to run it
