@@ -229,20 +229,34 @@ supported end-to-end (15 base + 3 regional variants).
 
 ## Follow-up work
 
-Delivered in seven sequential PRs (all merged as of 2026-04-23):
+> **Delivery-status correction (2026-06-05).** An earlier revision of this ADR
+> listed all seven follow-up PRs as "merged as of 2026-04-23". That was
+> inaccurate: only the foundation and the QueryEngine *metadata* plumbing had
+> actually landed. The list below reflects the real state of the `.NET` codebase.
 
-1. Foundation — 4 packages + 4 test projects (36 tests).
-2. QueryEngine integration — `FilterableField.Lookup`,
-   `ColumnBuilder.Lookup()`, metadata propagation (12 new tests).
-3. ReferenceData bridge — auto-register every refdata type as a lookup
-   source under `ref-{kebab}` (18 new tests).
-4. Frontend SDK — `@granit/data-lookup` + `@granit/react-data-lookup`
-   (47 tests after coverage follow-up).
-5. SmartFilter wiring — `selectedFieldLookup` on `useSmartFilter`
-   (5 new tests).
-6. First backend adopters — Tenant, MeterDefinition (source), TenantId +
-   MeterDefinitionId (consumer), AuditEntry.TenantId (consumer).
-7. Documentation — this ADR + `docs/guide/patterns/data-lookup.md`.
+**Delivered:**
+
+1. Foundation — 4 packages + 4 test projects (`EnumLookupSource`,
+   `QueryableLookupSource`, registry, endpoints).
+2. QueryEngine metadata — `FilterableField.Lookup`, `ColumnBuilder.Lookup()`,
+   and `/meta` propagation.
+3. QueryEngine-backed source — `QueryDefinition.AsLookup(...)` +
+   `QueryDefinitionLookupSource<T>`, reusing the engine's search/sort and
+   **keyset cursor** so lookups support real infinite-scroll (2026-06-05).
+4. Entity-form binding — `FieldBuilder.Lookup(...)` so edit-form fields resolve
+   the same source as the grid filter (2026-06-05).
+5. Endpoint HTTP integration tests — manifest, search, scope (400), per-source
+   authorization (403), resolve (2026-06-05).
+
+**Not yet delivered (tracked as a separate epic):**
+
+- **ReferenceData bridge** — `ReferenceDataLookupSource<T>` and auto-registration
+  under `ref-{kebab}`. The `Granit.ReferenceData` module does not yet exist; this
+  is module creation, not a finalization, and is scoped as its own epic.
+- **Frontend SDK / SmartFilter wiring / first adopters** — `@granit/data-lookup`,
+  `@granit/react-data-lookup`, `selectedFieldLookup`, and the Tenant /
+  MeterDefinition adopters remain pending and are not covered by this ADR's
+  `.NET` scope.
 
 Follow-up items explicitly out of scope:
 
