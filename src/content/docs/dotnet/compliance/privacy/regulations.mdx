@@ -6,14 +6,30 @@ sidebar:
   label: Regulations
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, Steps } from "@astrojs/starlight/components";
 
 ## Per-tenant regulation resolution
 
-Each tenant can operate under a different regulation. The resolver checks:
+`TenantBasedRegulationResolver` resolves the applicable `PrivacyRegulationProfile` for the
+current request using a four-step chain, evaluated in priority order:
 
-1. Per-tenant override in `appsettings.json`
-2. Default regulation
+<Steps>
+
+1. **`ICurrentTenant.Jurisdiction`** — `TenantResolutionMiddleware` populates this from
+   `Tenant.Jurisdiction` (the database column) as part of its existing `FindByIdAsync` call.
+   There is no extra database round trip.
+
+2. **`Privacy:Regulations:TenantRegulations[<tenantId>]`** — a per-tenant config entry keyed
+   by the tenant's GUID. Use this as an operator override when the stored jurisdiction is absent
+   or incorrect without redeploying.
+
+3. **`Privacy:Regulations:DefaultRegulation`** — the global fallback applied when neither of
+   the above produces a match.
+
+4. **`InvalidOperationException`** — thrown if all three sources fail to resolve a regulation.
+   This prevents requests from proceeding without a known compliance profile.
+
+</Steps>
 
 ```json
 {
@@ -30,10 +46,20 @@ Each tenant can operate under a different regulation. The resolver checks:
 }
 ```
 
+<Aside type="tip">
+**Jurisdiction is free when `Granit.MultiTenancy` is included.**
+`TenantResolutionMiddleware` reuses its existing tenant lookup to populate
+`ICurrentTenant.Jurisdiction` — no additional database call is made.
+Enable it by setting `ValidateTenantExistence: true` in your multi-tenancy options
+(the default). When `ValidateTenantExistence` is `false`, the middleware skips the
+lookup, `Jurisdiction` is `null`, and the resolver falls through to the config-based
+steps above.
+</Aside>
+
 <Aside type="caution">
 `TenantRegulations` keys are **tenant GUIDs** (`ICurrentTenant.Id` is a `Guid?`),
 not friendly slugs. The resolver looks up `tenantId.ToString()`, so a non-GUID key
-never matches and the tenant silently falls back to `DefaultRegulation`.
+never matches and the tenant silently falls back to the next step in the chain.
 </Aside>
 
 ## Built-in profiles
