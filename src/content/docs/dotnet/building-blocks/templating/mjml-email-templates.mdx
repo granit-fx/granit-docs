@@ -37,7 +37,7 @@ services.AddGranitTemplatingWithMjml();
 
 ## How it works
 
-The `MjmlTransformer` (Order=100) runs in the [post-render pipeline](./post-render-transformers/). It auto-detects
+The `MjmlTransformer` (Order=100) runs in the [post-render pipeline](/dotnet/building-blocks/templating/post-render-transformers/). It auto-detects
 MJML content by checking if the rendered output starts with `<mjml>`. Plain HTML
 templates pass through unchanged -- backward compatibility is guaranteed.
 
@@ -97,8 +97,8 @@ notifications (password reset, verification codes), plain HTML with the built-in
 
 ## See also
 
-- [Overview](./) — package structure and setup
-- [Post-Render Transformers](./post-render-transformers/) — `MjmlTransformer` (Order=100) compilation step
-- [Layouts](./layouts/) — the built-in `Layout.Email.html` wrapper
-- [Rendering Pipeline](./rendering-pipeline/) — where MJML compilation runs in the pipeline
+- [Overview](/dotnet/building-blocks/templating/) — package structure and setup
+- [Post-Render Transformers](/dotnet/building-blocks/templating/post-render-transformers/) — `MjmlTransformer` (Order=100) compilation step
+- [Layouts](/dotnet/building-blocks/templating/layouts/) — the built-in `Layout.Email.html` wrapper
+- [Rendering Pipeline](/dotnet/building-blocks/templating/rendering-pipeline/) — where MJML compilation runs in the pipeline
 - [Email channel](/dotnet/infrastructure/notifications/email-channel/) — consumer of MJML output
