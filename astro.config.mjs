@@ -175,6 +175,12 @@ export default defineConfig({
     // Building-blocks sub-pages still indexed under the old /dotnet/business/templating/ prefix.
     "/dotnet/business/templating/reference/": "/dotnet/building-blocks/templating/reference/",
     "/dotnet/business/templating/rendering-pipeline/": "/dotnet/building-blocks/templating/rendering-pipeline/",
+    "/dotnet/business/templating/scriban-engine/": "/dotnet/building-blocks/templating/scriban-engine/",
+    "/dotnet/business/templating/mjml-email-templates/": "/dotnet/building-blocks/templating/mjml-email-templates/",
+    "/dotnet/business/templating/post-render-transformers/": "/dotnet/building-blocks/templating/post-render-transformers/",
+    "/dotnet/business/templating/reference/layouts/": "/dotnet/building-blocks/templating/layouts/",
+    "/dotnet/business/timeline/observability/": "/dotnet/building-blocks/timeline/",
+    "/dotnet/business/timeline/notifications/": "/dotnet/infrastructure/notifications/",
 
     // .NET broken nested paths (wrong sub-path appended to a section URL).
     "/dotnet/infrastructure/wolverine-messaging/persistence/": "/dotnet/infrastructure/wolverine-messaging/",
@@ -189,6 +195,30 @@ export default defineConfig({
       "/dotnet/infrastructure/notifications/wolverine-integration/",
     "/dotnet/business/data-exchange/background-jobs/": "/dotnet/infrastructure/background-jobs/",
     "/dotnet/api/webhooks/persistence/": "/dotnet/api/webhooks/",
+    // Templating sub-pages crawled as children of sibling pages (relative-link mis-resolution).
+    "/dotnet/building-blocks/templating/rendering-pipeline/scriban-engine/": "/dotnet/building-blocks/templating/scriban-engine/",
+    "/dotnet/building-blocks/templating/scriban-engine/reference/": "/dotnet/building-blocks/templating/reference/",
+    "/dotnet/building-blocks/templating/mjml-email-templates/layouts/": "/dotnet/building-blocks/templating/layouts/",
+    "/dotnet/building-blocks/templating/mjml-email-templates/rendering-pipeline/": "/dotnet/building-blocks/templating/rendering-pipeline/",
+    "/dotnet/building-blocks/workflow/persistence/": "/dotnet/data/persistence/",
+    "/dotnet/building-blocks/timeline/observability/": "/dotnet/operations/observability/",
+    // Infrastructure broken nested paths.
+    "/dotnet/infrastructure/localization/persistence/": "/dotnet/data/persistence/",
+    "/dotnet/infrastructure/localization/authentication/": "/dotnet/security/authentication/",
+    "/dotnet/infrastructure/multi-tenancy/cache/resolvers/": "/dotnet/infrastructure/multi-tenancy/resolvers/",
+    "/dotnet/infrastructure/notifications/sms-push-realtime/configuration/": "/dotnet/infrastructure/notifications/configuration/",
+    // ADR pages indexed with wrong parent segment (relative links without trailing slash).
+    "/dotnet/architecture/adr/003-testing-stack/014-migration-shouldly/": "/dotnet/architecture/adr/014-migration-shouldly/",
+    "/dotnet/architecture/adr/020-declarative-definitions-placement/016-sylvan-data-excel-parsing.md": "/dotnet/architecture/adr/016-sylvan-data-excel-parsing/",
+    "/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/020-declarative-definitions-placement.md": "/dotnet/architecture/adr/020-declarative-definitions-placement/",
+    "/dotnet/architecture/adr/049-default-landing-route/044-workspace-navigation": "/dotnet/architecture/adr/044-workspace-navigation/",
+    // Contributing broken nested path.
+    "/contributing/development-setup/definition-of-done/": "/contributing/definition-of-done/",
+    // Frontend broken nested paths.
+    "/frontend/business/templating/data-exchange/": "/frontend/business/data-exchange/",
+    "/frontend/data/query-engine/data-exchange/": "/frontend/business/data-exchange/",
+    "/frontend/api/": "/frontend/api/http-client/",
+    "/frontend/cookies/": "/frontend/security/cookies/",
 
     // Legacy auto-generated API reference pages — redirect to the matching doc section.
     "/api/Granit.Identity.html": "/dotnet/security/identity/",

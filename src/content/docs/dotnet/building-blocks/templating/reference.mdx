@@ -59,14 +59,14 @@ Skip it when:
 The Scriban engine runs in a restricted sandbox: no file I/O, no reflection, no
 `System` namespace access. If a template uses `{{ import }}` or tries to call .NET
 methods directly, it will fail silently (returns empty string). Use `ITemplateGlobalContext`
-to expose safe data instead. See [Scriban Engine](./scriban-engine/) for full sandboxing details.
+to expose safe data instead. See [Scriban Engine](/dotnet/building-blocks/templating/scriban-engine/) for full sandboxing details.
 :::
 
 :::caution[Template not resolving]
 `ITextTemplateRenderer` tries resolvers in priority order (Store = 100, Embedded = 0).
 If a template is in the database but has `LifecycleStatus = Draft`, the `StoreTemplateResolver`
 skips it. Only `Published` templates are resolved in production. For development, use
-embedded templates as fallback. See [Lifecycle](./lifecycle/) for the full resolver chain.
+embedded templates as fallback. See [Lifecycle](/dotnet/building-blocks/templating/lifecycle/) for the full resolver chain.
 :::
 
 :::caution[Missing culture fallback]
@@ -77,12 +77,12 @@ error. Always register templates for your default culture at minimum.
 
 ## See also
 
-- [Rendering Pipeline](./rendering-pipeline/) -- five-stage pipeline from enrichment to transformation
-- [Scriban Engine](./scriban-engine/) -- sandboxing, global contexts, includes
-- [Layouts](./layouts/) -- two-pass rendering, tenant override, safety guards
-- [Lifecycle & Admin API](./lifecycle/) -- state machine, workflow bridge, 17 admin endpoints
-- [Post-Render Transformers](./post-render-transformers/) -- extensible HTML processing pipeline
-- [MJML Email Templates](./mjml-email-templates/) -- responsive email design without Node.js
+- [Rendering Pipeline](/dotnet/building-blocks/templating/rendering-pipeline/) -- five-stage pipeline from enrichment to transformation
+- [Scriban Engine](/dotnet/building-blocks/templating/scriban-engine/) -- sandboxing, global contexts, includes
+- [Layouts](/dotnet/building-blocks/templating/layouts/) -- two-pass rendering, tenant override, safety guards
+- [Lifecycle & Admin API](/dotnet/building-blocks/templating/lifecycle/) -- state machine, workflow bridge, 17 admin endpoints
+- [Post-Render Transformers](/dotnet/building-blocks/templating/post-render-transformers/) -- extensible HTML processing pipeline
+- [MJML Email Templates](/dotnet/building-blocks/templating/mjml-email-templates/) -- responsive email design without Node.js
 - [ADR-010: Scriban](/dotnet/architecture/adr/010-scriban-template-engine/) -- Why Scriban was chosen as the template engine
 - [Document Generation module](/dotnet/building-blocks/document-generation/) -- HTML-to-PDF (Chromium), Excel (ClosedXML), PDF/A-3b
 - [Core module](/dotnet/core/module-system/) -- Module system, domain base types

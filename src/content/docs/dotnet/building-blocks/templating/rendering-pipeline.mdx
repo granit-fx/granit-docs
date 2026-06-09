@@ -61,7 +61,7 @@ Tenant scoping is the resolver's responsibility.
 **Stage 3 -- Layout wrapping.** If a layout is configured (via `TemplateDescriptor.LayoutName`
 from the database, or via `ILayoutRegistry` code-level defaults), the renderer performs
 two-pass rendering: content first, then the layout with `{{ body | raw }}` = rendered content.
-See [Layouts](./layouts/) for details.
+See [Layouts](/dotnet/building-blocks/templating/layouts/) for details.
 
 **Stage 4 -- Engine rendering.** `ITemplateEngine` selects itself via `CanRender(descriptor)`
 based on MIME type. Scriban handles `text/html` and `text/plain`. Global contexts are injected
@@ -168,9 +168,9 @@ from `Granit.AI` to sanitize user-controlled input (prompt injection defense).
 
 ## See also
 
-- [Overview](./) — package structure and setup
-- [Scriban Engine](./scriban-engine/) — stage 4 (render) deep dive
-- [Layouts](./layouts/) — stage 3 (layout wrapping) two-pass rendering
-- [Post-Render Transformers](./post-render-transformers/) — stage 5 (transform) extensibility
-- [Lifecycle](./lifecycle/) — stage 2 (resolver chain) and template state machine
+- [Overview](/dotnet/building-blocks/templating/) — package structure and setup
+- [Scriban Engine](/dotnet/building-blocks/templating/scriban-engine/) — stage 4 (render) deep dive
+- [Layouts](/dotnet/building-blocks/templating/layouts/) — stage 3 (layout wrapping) two-pass rendering
+- [Post-Render Transformers](/dotnet/building-blocks/templating/post-render-transformers/) — stage 5 (transform) extensibility
+- [Lifecycle](/dotnet/building-blocks/templating/lifecycle/) — stage 2 (resolver chain) and template state machine
 - [AI module](/dotnet/ai/) — `PromptBuilder` and AI enrichment integration
