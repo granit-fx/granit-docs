@@ -108,7 +108,7 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 | Library | License | Role | ADR |
 |---------|---------|------|-----|
 | [Sep](https://github.com/nietras/Sep) | MIT | High-performance CSV parsing | [ADR-015](/dotnet/architecture/adr/015-sep-csv-parsing/) |
-| [Sylvan.Data.Excel](https://github.com/MarkPflworkaround/Sylvan) | MIT | Excel (.xlsx/.xls) parsing | [ADR-016](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/) |
+| [Sylvan.Data.Excel](https://github.com/MarkPflug/Sylvan) | MIT | Excel (.xlsx/.xls) parsing | [ADR-016](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/) |
 
 ## Storage and imaging
 
