@@ -220,22 +220,6 @@ export default defineConfig({
         baseUrl:
           "https://github.com/granit-fx/granit-dotnet/edit/develop/docs-site/",
       },
-      head: [
-        {
-          tag: 'script',
-          attrs: {
-            src: 'https://www.googletagmanager.com/gtag/js?id=G-DDTTVZTD67',
-            async: true,
-          },
-        },
-        {
-          tag: 'script',
-          content: `window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-DDTTVZTD67');`,
-        },
-      ],
       plugins: [
         starlightBlog({
           title: "Blog",
@@ -821,6 +805,20 @@ gtag('config', 'G-DDTTVZTD67');`,
         {
           tag: "script",
           content: `document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("a.author[href]").forEach(function(a){a.setAttribute("target","_blank");a.setAttribute("rel","noopener noreferrer")})})`,
+        },
+        {
+          tag: "script",
+          attrs: {
+            src: "https://www.googletagmanager.com/gtag/js?id=G-DDTTVZTD67",
+            async: true,
+          },
+        },
+        {
+          tag: "script",
+          content: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-DDTTVZTD67');`,
         },
       ],
       customCss: ["./src/styles/tailwind.css"],
