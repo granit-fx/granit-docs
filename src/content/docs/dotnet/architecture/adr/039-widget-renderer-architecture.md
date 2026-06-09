@@ -647,5 +647,5 @@ one renderer in place to be testable end-to-end (KPI is enough).
 - [Story #1385](https://github.com/granit-fx/granit-dotnet/issues/1385) — B4 dashboard endpoints (render endpoint clause)
 - [Story #1404](https://github.com/granit-fx/granit-dotnet/issues/1404) — B7 MapWidget
 - [ADR-038](/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/) — `DashboardDefinition` vs persisted `Dashboard` boundary
-- [`IWidgetSource.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics/Widgets/IWidgetSource.cs) — locked v1 contract
-- [`WidgetPayload.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics/Widgets/WidgetPayload.cs) — locked v1 envelope
+- [`IWidgetSource.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics/Widgets/IWidgetSource.cs) — locked v1 contract
+- [`WidgetPayload.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics/Widgets/WidgetPayload.cs) — locked v1 envelope

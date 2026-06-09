@@ -191,5 +191,5 @@ These are the most common regressions caught by architecture tests:
 
 - [CQRS concept](/dotnet/concepts/cqrs-command-query-separation/) — mental model, compliance benefits, and
   common mistakes
-- [CQRS pattern -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/dotnet/architecture/patterns/cqrs)
+- [CQRS pattern -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs)
 - [CQRS -- Martin Fowler](https://martinfowler.com/bliki/CQRS.html)

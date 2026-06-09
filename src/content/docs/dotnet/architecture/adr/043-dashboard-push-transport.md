@@ -26,11 +26,11 @@ carries a `Sequence` field that increments per `(widget, tenant)`, and
 Several call sites in code and docs frame push transport as *"reserved for the
 future `granit-iot` repository"*:
 
-- [`RefreshHint.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics.Abstractions/Metrics/RefreshHint.cs) — `Realtime` value: *"Reserved — requires `granit-iot` transport."*
-- [`MetricDefinition.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics/Metrics/MetricDefinition.cs) — *"`Realtime` is reserved — it requires the push transport scheduled in the `granit-iot` repo."*
-- [`IWidgetSource.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics/Widgets/IWidgetSource.cs) — *"Real push (WebSocket / SSE) replaces the emulation when the `granit-iot` transport lands."*
-- [`MapWidgetDefinition.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics/Dashboards/Widgets/MapWidgetDefinition.cs) — *"a future `granit-iot` dashboard module owns live device traces"*
-- [`AnalyticsEndpointsOptions.cs`](https://github.com/granit-fx/granit-dotnet/blob/develop/src/Granit.Analytics.Endpoints/Options/AnalyticsEndpointsOptions.cs) — *"push transport — see `granit-iot` roadmap"*
+- [`RefreshHint.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Dashboards.Abstractions/RefreshHint.cs) — `Realtime` value: *"Reserved — requires `granit-iot` transport."*
+- [`MetricDefinition.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics.Abstractions/Metrics/MetricDefinition.cs) — *"`Realtime` is reserved — it requires the push transport scheduled in the `granit-iot` repo."*
+- [`IWidgetSource.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics/Widgets/IWidgetSource.cs) — *"Real push (WebSocket / SSE) replaces the emulation when the `granit-iot` transport lands."*
+- [`MapWidgetDefinition.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics.Abstractions/Dashboards/Widgets/MapWidgetDefinition.cs) — *"a future `granit-iot` dashboard module owns live device traces"*
+- [`AnalyticsEndpointsOptions.cs`](https://gitlab.digitaldynamics.be/digital-dynamics/granit-fx/granit-business/-/blob/develop/src/Granit.Analytics.Endpoints/Options/AnalyticsEndpointsOptions.cs) — *"push transport — see `granit-iot` roadmap"*
 
 **This is wrong.** Push transport is not an IoT-specific concern — it is a
 framework-level capability that any vertical may need:

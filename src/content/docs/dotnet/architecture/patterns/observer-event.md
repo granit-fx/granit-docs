@@ -106,4 +106,4 @@ public static class FeatureAuditingHandler
 ## Further reading
 
 - [Observer -- refactoring.guru](https://refactoring.guru/design-patterns/observer)
-- [Publisher-Subscriber -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/dotnet/architecture/patterns/publisher-subscriber)
+- [Publisher-Subscriber -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/architecture/patterns/publisher-subscriber)

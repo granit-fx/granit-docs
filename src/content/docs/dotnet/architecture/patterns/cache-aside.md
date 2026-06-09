@@ -83,4 +83,4 @@ PatientDto patient = await cache.GetOrSetAsync(
 
 ## Further reading
 
-- [Cache-Aside pattern -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/dotnet/architecture/patterns/cache-aside)
+- [Cache-Aside pattern -- Microsoft Cloud Design Patterns](https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside)
