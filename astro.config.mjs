@@ -18,6 +18,7 @@ export default defineConfig({
     assets: "assets",
   },
   markdown: {
+    gfm: true,
     remarkPlugins: [remarkVariables],
     rehypePlugins: [
       [
