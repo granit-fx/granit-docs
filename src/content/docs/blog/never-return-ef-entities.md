@@ -127,3 +127,5 @@ Granit enforces strict naming rules for endpoint DTOs to prevent OpenAPI schema 
 
 - [CQRS pattern](/dotnet/architecture/patterns/cqrs/) — why Granit separates Reader and Writer interfaces
 - [Layered architecture](/dotnet/architecture/patterns/layered-architecture/) — where entities and response records live
+- [Persistence module reference](/dotnet/data/persistence/) — entity conventions and the interceptor stack
+- [5 EF Core Mistakes That Kill Performance](/blog/5-ef-core-mistakes-that-kill-performance/) — more EF Core pitfalls, including this one's performance twin

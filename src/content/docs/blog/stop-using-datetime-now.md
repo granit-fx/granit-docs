@@ -143,3 +143,5 @@ The analyzer runs at build time. You cannot accidentally ship code that bypasses
 
 - [Core & Utilities reference](/dotnet/core/module-system/) — IClock, TimeProvider, IGuidGenerator
 - [Testing stack (ADR-003)](/dotnet/architecture/adr/003-testing-stack/) — xUnit, Shouldly, FakeTimeProvider
+- [Timing — TimeProvider & IClock](/dotnet/core/time-provider-clock/) — the full time abstraction, per-request timezones, FakeTimeProvider
+- [Roslyn analyzers](/dotnet/core/analyzers/) — GRSEC001 flags every DateTime.Now at build time

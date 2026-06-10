@@ -204,3 +204,5 @@ Skip any of these and you will get silent filter bugs, missing audit trails, or 
 
 - [Persistence module reference](/dotnet/data/persistence/) — full API documentation for `AddGranitDbContext`, `UseGranitInterceptors`, and `ApplyGranitConventions`
 - [Layered architecture pattern](/dotnet/architecture/patterns/layered-architecture/) — how modules are structured and why the EF Core layer is always an internal implementation detail
+- [Query filters](/dotnet/data/query-filters/) — soft delete, multi-tenancy, and GDPR filters applied per module
+- [Why Modular Monolith](/blog/why-modular-monolith/) — the architectural case for module isolation

@@ -8,7 +8,7 @@ tags:
   - compliance
   - api
   - deep-dive
-description: "FAPI 2.0 mandates PAR, DPoP, private_key_jwt, PKCE, and issuer verification. Granit implements all five across server, BFF, and resource server — one config flag enables the full profile."
+description: "FAPI 2.0 in .NET: PAR, DPoP, private_key_jwt, PKCE, and issuer verification. Granit enables the full security profile with a single config flag."
 excerpt: >
   FAPI 2.0 is the security profile required by Open Banking, healthcare APIs,
   and government identity systems. Most teams think conformance takes months.
@@ -111,6 +111,7 @@ Never store `ClientSigningKeyJwk` in `appsettings.json` for production. The priv
 ```bash
 export Bff__Frontends__0__ClientSigningKeyJwk='{"kty":"EC","crv":"P-256",...,"d":"..."}'
 ```
+
 </Aside>
 
 ### Resource server

@@ -1,5 +1,5 @@
 ---
-title: "Content Security Policy in ASP.NET Core Without the appsettings Hack"
+title: "Content Security Policy in ASP.NET Core, Per Endpoint"
 date: 2026-06-02
 authors:
   - jfmeyers
@@ -7,7 +7,7 @@ tags:
   - deep-dive
   - security
   - architecture
-description: "Your strict Content Security Policy breaks the moment one ASP.NET Core route serves HTML. The usual fix weakens every other endpoint. Here is the per-endpoint CSP composition pattern that solves it without compromise."
+description: "Per-endpoint CSP composition in ASP.NET Core — keep a strict Content Security Policy everywhere and relax it only on the routes that serve HTML."
 excerpt: >
   Your strict Content Security Policy breaks the moment one ASP.NET Core route
   serves HTML — Scalar, an admin page, a Keycloak iframe. The usual band-aid

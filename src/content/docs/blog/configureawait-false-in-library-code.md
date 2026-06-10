@@ -202,4 +202,5 @@ When reviewing a PR with a new `await`:
 - [Stephen Toub — ConfigureAwait FAQ](https://devblogs.microsoft.com/dotnet/configureawait-faq/) — the canonical reference, still accurate
 - [.NET 8 ConfigureAwaitOptions reference](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.configureawaitoptions)
 - [Granit coding standards](/contributing/coding-standards/) — full async conventions
+- [Roslyn analyzers](/dotnet/core/analyzers/) — the build-time rules Granit ships across all 376 packages
 - [Stop Using DateTime.Now](/blog/stop-using-datetime-now/) — another "the rule still applies, despite the rumor that it doesn't" best-practice
