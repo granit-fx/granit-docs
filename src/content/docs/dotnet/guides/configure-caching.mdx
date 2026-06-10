@@ -123,7 +123,6 @@ Three configuration sections control caching behavior.
 |----------|------|---------|-------------|
 | `KeyPrefix` | `string` | `"dd"` | Prefix for all cache keys. Format: `{KeyPrefix}:{userKey}` |
 | `DefaultAbsoluteExpirationRelativeToNow` | `TimeSpan?` | `1h` | Default entry duration (TTL) |
-| `DefaultSlidingExpiration` | `TimeSpan?` | `20min` | Sliding expiration (reset on each access) |
 | `EncryptValues` | `bool` | `false` | Enable AES-256 encryption globally on L2 |
 | `JsonOptions` | `JsonSerializerOptions?` | `null` | Custom JSON serialization options |
 

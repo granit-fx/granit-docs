@@ -143,7 +143,6 @@ as stale but keeps it available as a fail-safe fallback if the next factory call
 |----------|---------|-------------|
 | `KeyPrefix` | `"dd"` | Global key prefix. FusionCache keys become `{KeyPrefix}:{userKey}` |
 | `DefaultAbsoluteExpirationRelativeToNow` | `01:00:00` | Default TTL (mapped to FusionCache `Duration`) |
-| `DefaultSlidingExpiration` | `00:20:00` | Default sliding expiration |
 | `EncryptValues` | `false` | Enable AES-256 encryption on L2 (Redis) serialization |
 | `JsonOptions` | `null` | Custom `System.Text.Json` serializer options |
 

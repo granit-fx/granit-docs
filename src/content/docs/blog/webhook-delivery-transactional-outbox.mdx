@@ -1,0 +1,354 @@
+---
+title: "Never Lose a Webhook: Signed, Durable Delivery in .NET"
+date: 2026-06-08
+sidebar:
+  order: 36
+authors:
+  - jfmeyers
+tags:
+  - architecture
+  - messaging
+  - deep-dive
+  - resilience
+description: "Webhooks fail silently when you fire-and-forget after commit. How Granit uses the transactional outbox pattern to guarantee at-least-once delivery with HMAC signing."
+excerpt: >
+  A server restart between your database commit and your HTTP POST drops the event
+  forever. The fix is the transactional outbox pattern — persist the event in the
+  same transaction as your data, relay it asynchronously, retry on failure. Here is
+  how Granit.Webhooks implements it end-to-end.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Your application commits an order. Then it calls the subscriber's URL. The server crashes between the two. The subscriber never gets the event. Your database says the order exists; their system has no idea.
+
+This is the **dual-write problem**, and it is the default failure mode of naive webhook implementations. The fix is not retrying the HTTP call — it is never making the HTTP call until the database transaction has committed successfully. That is what the **transactional outbox** pattern solves.
+
+`Granit.Webhooks` builds on this pattern to deliver outbound webhooks with at-least-once guarantees: HMAC-SHA256 signed payloads, exponential backoff retries via Wolverine, an immutable delivery audit trail, and two-layer SSRF protection.
+
+## The naive approach and why it fails
+
+Most webhook implementations follow this sequence:
+
+```text
+1. BEGIN TRANSACTION
+2. INSERT order
+3. COMMIT
+4. POST https://subscriber.example.com/webhooks   ← crash here?
+```
+
+Step 4 is outside the transaction. A process crash, a network timeout, or an unhandled exception between step 3 and step 4 silently drops the event. No retry, no audit record, no alert. The subscriber is never notified.
+
+Even if step 4 succeeds, there is no record of what was sent, when, and whether the subscriber acknowledged it. Auditors and on-call engineers are left guessing.
+
+## Package structure
+
+`Granit.Webhooks` splits across three packages so you only take what you need:
+
+| Package | Role | Use when |
+|---|---|---|
+| `Granit.Webhooks` | Publisher, HMAC signing, in-memory dispatch | Development, tests |
+| `Granit.Webhooks.EntityFrameworkCore` | Durable subscription store + delivery audit | Any production deployment |
+| `Granit.Webhooks.Wolverine` | Transactional outbox dispatch, exponential backoff | Production with Wolverine |
+
+<Tabs>
+<TabItem label="Development">
+
+```csharp title="AppModule.cs"
+[DependsOn(typeof(GranitWebhooksModule))]
+public sealed class AppModule : GranitModule { }
+```
+
+In-memory subscription store and `Channel<T>`-based dispatch. Fast, zero config, no database requirement. Failed deliveries are not retried across restarts.
+
+</TabItem>
+<TabItem label="Production">
+
+```csharp title="AppModule.cs"
+[DependsOn(
+    typeof(GranitWebhooksWolverineModule),
+    typeof(GranitWebhooksEntityFrameworkCoreModule))]
+public sealed class AppModule : GranitModule { }
+```
+
+```csharp title="Program.cs"
+builder.AddGranitWebhooksEntityFrameworkCore(
+    opts => opts.UseNpgsql(connectionString));
+```
+
+Wolverine's PostgreSQL outbox persists every dispatch. Subscriptions and delivery records live in an isolated `DbContext`.
+
+</TabItem>
+</Tabs>
+
+## Declaring event types
+
+Before publishing anything, declare the event types your application supports. Implement `IWebhookEventTypeDefinitionProvider` — it is auto-discovered at startup, no DI registration needed.
+
+```csharp title="OrderWebhookEventTypeProvider.cs"
+using Granit.Webhooks.Definitions;
+
+internal sealed class OrderWebhookEventTypeProvider : IWebhookEventTypeDefinitionProvider
+{
+    public void Define(IWebhookEventTypeDefinitionContext context)
+    {
+        context.Add<OrderLocalizationResource>("order.created",  category: "Orders");
+        context.Add<OrderLocalizationResource>("order.shipped",  category: "Orders");
+        context.Add<OrderLocalizationResource>("order.cancelled", category: "Orders");
+    }
+}
+```
+
+Add the localization keys to each of your module's 17 culture files:
+
+```json title="en.json"
+{
+  "culture": "en",
+  "texts": {
+    "WebhookEventType:order.created": "Order created",
+    "WebhookEventType:order.created:Description": "Fired when a new order is placed.",
+    "WebhookEventTypeCategory:Orders": "Orders"
+  }
+}
+```
+
+The registry serves two purposes: it powers the `GET /event-types` discovery endpoint (used by admin UIs to build subscription forms), and it **validates subscriptions at creation time** — subscribing to an unknown event type is rejected immediately with `Granit:Validation:UnknownWebhookEventType`.
+
+## Publishing — one call, outbox-backed
+
+Inject `IWebhookPublisher` anywhere in your application logic:
+
+```csharp title="OrderService.cs"
+public sealed class OrderService(
+    IOrderRepository orders,
+    IWebhookPublisher webhooks,
+    IGuidGenerator guid,
+    IClock clock)
+{
+    public async Task<Order> CreateAsync(
+        CreateOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        var order = new Order
+        {
+            Id     = guid.Create(),
+            Amount = request.Amount,
+        };
+
+        await orders.AddAsync(order, cancellationToken);
+
+        await webhooks.PublishAsync("order.created", new
+        {
+            orderId = order.Id,
+            amount  = order.Amount,
+        }, cancellationToken);
+
+        return order;
+    }
+}
+```
+
+`PublishAsync` does **not** make an HTTP call. It serializes the payload, wraps it in a `WebhookTrigger`, and inserts it into the Wolverine outbox — inside the same database transaction that persists your order. If the transaction rolls back, the webhook is discarded atomically. If it commits, delivery is guaranteed.
+
+## Inside the outbox: trigger → fan-out → N deliveries
+
+The dispatch chain has three stages, all asynchronous:
+
+```mermaid
+sequenceDiagram
+    participant App as OrderService
+    participant OB as Wolverine Outbox
+    participant FO as WebhookFanoutHandler
+    participant DB as WebhookSubscription store
+    participant DQ as delivery queue
+    participant Sub as Subscriber endpoint
+
+    App->>OB: INSERT WebhookTrigger (same TX as order)
+    Note over App,OB: COMMIT — order + trigger are atomic
+
+    OB->>FO: HandleAsync(WebhookTrigger)
+    FO->>DB: Query active subscriptions for "order.created"
+    DB-->>FO: [Subscription A, Subscription B]
+    FO-->>OB: IEnumerable[SendWebhookCommand A, SendWebhookCommand B]
+    Note over FO,OB: Both commands persisted atomically in outbox
+
+    OB->>DQ: Dispatch Command A
+    OB->>DQ: Dispatch Command B
+    DQ->>Sub: POST /webhooks (signed)
+    Sub-->>DQ: 200 OK
+
+    style OB fill:#e3f2fd,color:#0d47a1
+    style FO fill:#e8f5e9,color:#1b5e20
+    style Sub fill:#f3e5f5,color:#4a148c
+```
+
+`WebhookFanoutHandler` implements Wolverine's `Task<IEnumerable<SendWebhookCommand>>` convention. Every returned command is persisted in the same outbox transaction — if the fan-out handler crashes halfway through, no partial batch is delivered. Each `SendWebhookCommand` gets its own unique `DeliveryId`, enabling isolated retry and audit records per subscriber.
+
+<Aside type="tip">
+When zero subscriptions match an event type, the handler returns `Enumerable.Empty<SendWebhookCommand>()`. No exception, no dead-letter entry. Events without subscribers are silently discarded.
+</Aside>
+
+## The envelope and HMAC signature
+
+Every subscriber receives an HTTP POST with a standardized JSON envelope:
+
+```json
+{
+  "eventId":   "01951234-abcd-7000-8000-000000000001",
+  "eventType": "order.created",
+  "tenantId":  "9f3b1234-0000-0000-0000-000000000001",
+  "timestamp": "2026-06-08T14:32:00Z",
+  "apiVersion": "1.0",
+  "data": {
+    "orderId": "f8e9d0c1-...",
+    "amount":  149.90
+  }
+}
+```
+
+The `eventId` is **stable across retries** — subscribers can use it for idempotency without extra effort.
+
+Three custom headers accompany every request:
+
+| Header | Value |
+|---|---|
+| `x-granit-signature` | `t=<unix>,v1=<hmac-sha256-hex>` |
+| `x-granit-event-id` | UUID of the event |
+| `x-granit-event-type` | e.g. `order.created` |
+
+The signed payload is `{unix_timestamp}.{raw_body}` — identical to Stripe's format, so any library written for Stripe webhook verification works here too.
+
+### Verifying the signature (subscriber side)
+
+```csharp title="WebhookVerifier.cs"
+public static bool Verify(
+    string rawBody,
+    string signatureHeader,
+    string secret,
+    TimeSpan tolerance)
+{
+    // t=1749386400,v1=5d3b2a1c...
+    var parts = signatureHeader.Split(',');
+    var timestamp = long.Parse(parts[0]["t=".Length..]);
+    var receivedHmac = parts[1]["v1=".Length..];
+
+    var age = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - timestamp;
+    if (age > tolerance.TotalSeconds) return false;   // replay protection
+
+    var toSign = $"{timestamp}.{rawBody}";
+    var expected = Convert.ToHexString(
+        HMACSHA256.HashData(
+            Encoding.UTF8.GetBytes(secret),
+            Encoding.UTF8.GetBytes(toSign))).ToLowerInvariant();
+
+    return CryptographicOperations.FixedTimeEquals(
+        Encoding.UTF8.GetBytes(expected),
+        Encoding.UTF8.GetBytes(receivedHmac));
+}
+```
+
+Reject requests older than 5 minutes. Use constant-time comparison to prevent timing attacks.
+
+## Retry policy and subscription lifecycle
+
+When a delivery fails, the behavior depends on the HTTP response code:
+
+| Response | Category | Action |
+|---|---|---|
+| 2xx | Success | Record attempt, continue |
+| 400, 405, 422 | Non-retriable | Record failure, no retry |
+| 401, 403, 404, 410 | Non-retriable + suspend | Record failure, **suspend subscription** |
+| 429, 5xx, timeout | Retriable | Record failure, exponential backoff |
+
+Failed deliveries retry with exponential backoff:
+
+| Attempt | Delay | Cumulative |
+|---|---|---|
+| 1 | 30 s | 30 s |
+| 2 | 2 min | ~2 min 30 s |
+| 3 | 10 min | ~12 min 30 s |
+| 4 | 30 min | ~42 min 30 s |
+| 5 | 2 h | ~2 h 43 min |
+| 6 | 12 h | ~14 h 43 min |
+
+After 6 attempts, the message moves to the Wolverine Dead Letter Queue and the subscription is **suspended**.
+
+A suspended subscription publishes a `WebhookSubscriptionSuspendedEvent` domain event. Wire a handler to send an alert — without one, suspensions are silent.
+
+<Aside type="caution">
+A 404 response **suspends** the subscription immediately, without retrying. If a subscriber endpoint returns 404 transiently (e.g. during a deploy), it will be suspended after a single failure. Monitor `WebhookSubscriptionSuspendedEvent` in production.
+</Aside>
+
+## Two-layer SSRF protection
+
+Webhooks are a textbook SSRF vector: an attacker registers a subscription pointing to `http://169.254.169.254/latest/meta-data/` and your server fetches AWS credentials on their behalf.
+
+Granit blocks this at two points, using `Granit.Http.Security`:
+
+**Layer 1 — at registration.** A FluentValidation rule calls `IUrlSafetyValidator.ValidateAsync` before the subscription is persisted. Blocked by default: `http://` scheme, private IPs (RFC 1918), loopback, link-local, cloud metadata endpoints (`169.254.169.254`), and reserved TLDs (`.local`, `.internal`, `.onion`).
+
+**Layer 2 — at delivery.** A `SocketsHttpHandler.ConnectCallback` re-validates the resolved IP address at the moment the socket opens. This defeats **DNS rebinding**: a hostname that resolves to a public IP at registration but redirects to an internal IP at delivery time is blocked at the socket level.
+
+## Audit trail
+
+`WebhookDeliveryAttempt` is an INSERT-only entity — no updates, no soft-deletes. Every attempt records:
+
+- HTTP status code and duration
+- SHA-256 hash of the payload
+- Timestamp and `DeliveryId`
+- Full payload JSON (when `StorePayload = true`)
+
+The 3-year minimum retention period is enforced by `DeleteBeforeAsync`: attempting to delete records younger than 3 years throws `InvalidOperationException`. This satisfies ISO 27001 A.12.4 log retention requirements out of the box.
+
+```json title="appsettings.json"
+{
+  "Webhooks": {
+    "HttpTimeoutSeconds": 10,
+    "MaxParallelDeliveries": 20,
+    "StorePayload": false
+  }
+}
+```
+
+<Aside type="caution">
+`StorePayload: true` persists the full JSON body unencrypted. If payloads contain PII — user names, amounts, health data — ensure the webhook database has encryption at rest configured and that your DPO has approved the retention policy before enabling this.
+</Aside>
+
+## Signing key rotation
+
+Each subscription owns one or more `WebhookSigningKey` aggregates. The rotation flow keeps two keys active simultaneously so subscribers can roll over without missing any deliveries:
+
+1. Mint a new key via the admin endpoint — the secret is returned exactly once.
+2. Push the new secret to the subscriber alongside the old one; the subscriber verifies against both during the overlap window.
+3. Granit signs each delivery with the most recently activated key and advertises both `kid` values in `x-granit-signature-keys` during the overlap.
+4. Retire the old key once the subscriber confirms it has switched over.
+
+The `webhooks.signing_key_rotation_due` notification fires automatically (default 14 days before expiry) to give operators enough lead time.
+
+## Exposing the endpoints
+
+Map the built-in management endpoints in `Program.cs`:
+
+```csharp title="Program.cs"
+app.MapGranitWebhooksConfig();       // GET  /webhooks/config
+app.MapGranitWebhooksRedelivery();   // POST /webhooks/deliveries/{id}/retry
+```
+
+The redelivery endpoint replays a specific failed delivery — useful when `StorePayload` is enabled and you need to recover from a prolonged subscriber outage without re-triggering business logic.
+
+## Key takeaways
+
+- **`PublishAsync` writes to the outbox**, not to the subscriber. The HTTP call happens after commit, asynchronously.
+- **Fan-out is atomic.** `WebhookFanoutHandler` returns N `SendWebhookCommand` in a single outbox transaction — no partial delivery batches.
+- **`eventId` is retry-stable.** Subscribers get the same UUID on every retry attempt, enabling safe idempotency checks.
+- **Retries run for ~14 hours** across 6 attempts before a subscription is suspended and the message moves to the Dead Letter Queue.
+- **SSRF is blocked at two layers** — at registration and at the socket level on delivery.
+- **3-year audit retention** is enforced by the framework; there is no way to accidentally delete recent delivery records.
+
+## Further reading
+
+- [Webhooks — Outbound Event Delivery](/dotnet/api/webhooks/) — full module reference
+- [Implement Webhooks guide](/dotnet/guides/implement-webhooks/) — step-by-step setup
+- [Transactional Outbox](/dotnet/architecture/patterns/transactional-outbox/) — pattern documentation
+- [Fan-Out Pattern](/dotnet/architecture/patterns/fan-out/) — how `WebhookFanoutHandler` works
+- [Blog: From Channels to Wolverine](/blog/from-channels-to-wolverine-upgrading-messaging/) — upgrading messaging for durability

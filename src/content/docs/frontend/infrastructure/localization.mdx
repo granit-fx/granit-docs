@@ -130,7 +130,7 @@ function resolveInitialLocale(
 #### `applyTranslations(instance, data)`
 
 Applies the backend response to the i18next instance. Backend resources are grouped by
-module (e.g. `{ "Granit": {...}, "Guava": {...} }`) — this function merges them into
+module (e.g. `{ "Granit": {...}, "MyApp": {...} }`) — this function merges them into
 the single `translation` namespace.
 
 ```ts
@@ -199,5 +199,5 @@ For convenience, the following are re-exported from `react-i18next`:
 ## See also
 
 - [Granit.Localization module](/dotnet/infrastructure/localization/) — .NET i18n with 17 cultures, override store, and source-generated keys
-- [Settings](./settings/) — `SETTING_NAMES.PREFERRED_CULTURE` stores the user's language preference
-- [Reference Data](./reference-data/) — Country labels use the same multilingual pattern
+- [Settings](/frontend/infrastructure/settings/) — `SETTING_NAMES.PREFERRED_CULTURE` stores the user's language preference
+- [Reference Data](/frontend/business/reference-data/) — Country labels use the same multilingual pattern

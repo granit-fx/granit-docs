@@ -78,7 +78,7 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 |---------|---------|------|-----|
 | [Asp.Versioning](https://github.com/dotnet/aspnet-api-versioning) | MIT | API versioning (URL segment, header, query) | [ADR-004](/dotnet/architecture/adr/004-asp-versioning/) |
 | [Scalar.AspNetCore](https://github.com/scalar/scalar) | MIT | Interactive OpenAPI documentation UI | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
-| [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/) | MIT | OpenAPI 3.1 document generation (versioned per major API) | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
+| [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview) | MIT | OpenAPI 3.1 document generation (versioned per major API) | [ADR-009](/dotnet/architecture/adr/009-scalar-api-documentation/) |
 | [Microsoft.AspNetCore.OData](https://github.com/OData/AspNetCoreOData) | MIT | OData v4 runtime — bridges `QueryDefinition<T>` to EntitySets for Power BI / Excel / Tableau in `Granit.Http.ODataExposure` | [ADR-050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/) |
 | [Microsoft.AspNetCore.OutputCaching.StackExchangeRedis](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/output) | MIT | Distributed output cache backplane for `Granit.Http.OutputCaching.StackExchangeRedis` | — |
 | [Yarp.ReverseProxy](https://github.com/microsoft/reverse-proxy) | MIT | Reverse-proxy core for the Backend-For-Frontend pattern (`Granit.Bff.Yarp`) | — |
@@ -130,7 +130,7 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 | [AWSSDK.SimpleNotificationService](https://aws.amazon.com/sdk-for-net/) | Apache-2.0 | Amazon SNS SMS delivery — used by `Granit.Notifications.Sms.AwsSns` | — |
 | [Microsoft.Azure.NotificationHubs](https://learn.microsoft.com/en-us/azure/notification-hubs/) | MIT | Azure Notification Hubs push notifications | — |
 | [Microsoft.AspNetCore.SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/) | MIT | Real-time WebSocket notifications | — |
-| [Lib.Net.Http.WebPush](https://github.com/nicoriff/Lib.Net.Http.WebPush) | MIT | Web Push notifications (VAPID) | — |
+| [Lib.Net.Http.WebPush](https://github.com/tpeczek/Lib.Net.Http.WebPush) | MIT | Web Push notifications (VAPID) | — |
 
 Twilio, SendGrid, and Scaleway providers (`Granit.Notifications.Twilio`,
 `Granit.Notifications.Email.SendGrid`, `Granit.Notifications.Email.Scaleway`) use the

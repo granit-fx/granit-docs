@@ -349,7 +349,6 @@ Wolverine__RetryDelays__1=00:00:30
 | **Package** | -- | `Granit.Caching` | |
 | `KeyPrefix` | `string` | `"dd"` | Prefix for all cache keys. |
 | `DefaultAbsoluteExpirationRelativeToNow` | `TimeSpan?` | `01:00:00` | Default absolute expiration. |
-| `DefaultSlidingExpiration` | `TimeSpan?` | `00:20:00` | Default sliding expiration. |
 | `EncryptValues` | `bool` | `false` | Enable AES-256 encryption for all cached values. |
 
 ### Cache encryption -- `CacheEncryptionOptions`

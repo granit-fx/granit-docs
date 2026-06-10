@@ -154,7 +154,7 @@ The CSRF token is session-bound and time-limited (24-hour sliding window). It is
 
 ## Multi-frontend: one backend, many SPAs
 
-Real-world platforms rarely have a single SPA. The [Guava platform](https://granit-fx.dev) serves four distinct frontends — Admin, Physician, Patient, and Insurer — each with different user populations, permissions, and OIDC scopes. All four share the same backend API and identity provider.
+Real-world platforms rarely have a single SPA. A platform built on Granit can serve four distinct frontends — Admin, Physician, Patient, and Insurer — each with different user populations, permissions, and OIDC scopes. All four share the same backend API and identity provider.
 
 Granit.Bff supports this natively. Each frontend gets its own:
 

@@ -25,7 +25,7 @@ Three are registered by default when using `Granit.Templating.Scriban`:
 | `context` | `{{ context.culture_name }}` | `francais (Belgique)` |
 | `context` | `{{ context.tenant_id }}` | `3fa85f64-...` or empty |
 | `context` | `{{ context.tenant_name }}` | `Acme Corp` or empty |
-| `app` | `{{ app.name }}` | `Guava Admin` |
+| `app` | `{{ app.name }}` | `Acme Admin` |
 | `app` | `{{ app.base_url }}` | `https://app.example.com` |
 | `app` | `{{ app.support_email }}` | `support@example.com` |
 | `app` | `{{ app.logo_url }}` | `https://cdn.example.com/logo.png` |
@@ -37,7 +37,7 @@ The `app.*` context is bound to the `Templating:App` configuration section:
   "Granit": {
     "Templating": {
       "App": {
-        "Name": "Guava Admin",
+        "Name": "Acme Admin",
         "BaseUrl": "https://app.example.com",
         "SupportEmail": "support@example.com",
         "LogoUrl": "https://cdn.example.com/logo.png"
