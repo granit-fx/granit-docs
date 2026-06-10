@@ -7,7 +7,7 @@ tags:
   - tutorial
   - security
   - api
-description: "Granit.OpenIddict turns your .NET app into a full OIDC authorization server — no Keycloak, no Auth0, no extra services. Full PKCE, client_credentials, refresh tokens, multi-tenancy."
+description: "Turn your .NET app into a self-hosted OIDC authorization server with Granit.OpenIddict — PKCE, client credentials, refresh tokens, multi-tenancy."
 excerpt: >
   Auth0 costs $240/month past 7 500 users. Keycloak needs its own VM and JVM
   tuning. Granit.OpenIddict ships as NuGet packages and runs in the same process
@@ -187,7 +187,7 @@ The seeder runs on every startup and performs idempotent upserts — running the
 
 PKCE is required by default — `OpenIddict.PkceRequired` feature flag defaults to `true`. This aligns with OAuth 2.1 and protects against authorization code interception.
 
-```
+```text
 Browser  → /connect/authorize?code_challenge=S256...
          ← Login form → consent → authorization code
 Browser  → /connect/token?code_verifier=...
@@ -217,7 +217,7 @@ In practice, wire this with `IHttpClientFactory` and a `DelegatingHandler` that 
 
 ### Refresh Token
 
-```
+```text
 Client  → /connect/token (grant_type=refresh_token, refresh_token=...)
         ← { new access_token, new refresh_token }
 ```

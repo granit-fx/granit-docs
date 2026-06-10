@@ -14,7 +14,7 @@ excerpt: >
   definition to validated endpoints with full audit trail and soft delete.
 ---
 
-You have heard about the module system, browsed the pattern catalog, maybe skimmed an ADR or two. Now you want to build something. This tutorial walks you through creating a **Product catalog module** from an empty folder to a working API with full audit trail, soft delete, validation, and tenant isolation -- all in under 10 minutes.
+A product entity, a DbContext, validation, an audit trail, soft delete, tenant isolation, and a REST API. On a plain ASP.NET Core project, that is a week of plumbing and a dozen design decisions you will second-guess later. This tutorial builds all of it as a **Product catalog module** — from an empty folder to a working API in under 10 minutes.
 
 The entire module is roughly 150 lines of code. Granit handles the rest.
 

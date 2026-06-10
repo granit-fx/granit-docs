@@ -10,7 +10,7 @@ tags:
   - messaging
   - deep-dive
   - resilience
-description: "Webhooks fail silently when you fire-and-forget after commit. How Granit uses the transactional outbox pattern to guarantee at-least-once delivery with HMAC signing."
+description: "Webhooks fail silently when you fire-and-forget after commit. How the transactional outbox guarantees at-least-once webhook delivery with HMAC signing."
 excerpt: >
   A server restart between your database commit and your HTTP POST drops the event
   forever. The fix is the transactional outbox pattern — persist the event in the

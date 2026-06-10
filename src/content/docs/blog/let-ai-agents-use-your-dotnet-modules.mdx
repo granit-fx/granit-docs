@@ -17,9 +17,11 @@ excerpt: >
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Your API already exposes endpoints for humans. What if AI agents could discover and
-invoke them too — with the same permissions, the same multi-tenancy isolation, and
-automatic PII redaction?
+Your API already exposes endpoints for humans. AI agents are its next consumers —
+and the usual shortcuts give them either too little access (a hand-written chatbot
+proxy that covers four endpoints) or far too much (an API key with god-mode scope).
+What agents actually need is your existing authorization, your multi-tenancy
+isolation, and automatic PII redaction.
 
 That's what the **Model Context Protocol** (MCP) enables. And with the new
 `Granit.Tools.Mcp` module family, any Granit module can become an MCP server in 3 steps.

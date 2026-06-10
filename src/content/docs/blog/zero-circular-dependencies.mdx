@@ -1,5 +1,5 @@
 ---
-title: "100+ Packages, Zero Circular Dependencies"
+title: "376 Packages, Zero Circular Dependencies"
 date: 2026-03-11
 sidebar:
   order: 9
@@ -8,13 +8,13 @@ authors:
 tags:
   - architecture
   - code-quality
-description: "Granit ships 100+ NuGet packages with zero circular dependencies, enforced by Kahn's algorithm at startup and architecture tests at build time."
+description: "Granit ships 376 NuGet packages with zero circular dependencies, enforced by Kahn's algorithm at startup and architecture tests at build time."
 excerpt: >
-  Granit ships 100+ NuGet packages with zero circular dependencies, enforced by
+  Granit ships 376 NuGet packages with zero circular dependencies, enforced by
   Kahn's algorithm at startup and architecture tests at build time.
 ---
 
-A framework with 100+ NuGet packages sounds like a dependency management nightmare. At that scale, one careless `ProjectReference` can create a cycle that makes incremental builds impossible, forces unnecessary recompilation, and turns your dependency graph into a tangled mess that no one dares to refactor.
+A framework with 376 NuGet packages sounds like a dependency management nightmare. At that scale, one careless `ProjectReference` can create a cycle that makes incremental builds impossible, forces unnecessary recompilation, and turns your dependency graph into a tangled mess that no one dares to refactor.
 
 Granit has shipped every release with zero circular dependencies. Not because we got lucky, but because the architecture makes cycles structurally impossible at three reinforcing levels: the module system rejects them at startup, architecture tests reject them at build time, and the layered design makes them unlikely in the first place.
 
@@ -227,7 +227,7 @@ Critically, bundles compose. `Granit.Bundle.Api` references `Granit.Bundle.Essen
 
 The zero-cycle guarantee is not an academic exercise. It has practical consequences that compound over time.
 
-**Incremental builds are fast.** When a developer changes `Granit.Notifications.Email.Smtp`, only that project and its dependents rebuild. There are no hidden reverse edges that pull in unrelated packages. On a 100+-package solution, this is the difference between a 4-second incremental build and a 40-second full rebuild.
+**Incremental builds are fast.** When a developer changes `Granit.Notifications.Email.Smtp`, only that project and its dependents rebuild. There are no hidden reverse edges that pull in unrelated packages. On a 376-package solution, this is the difference between a 4-second incremental build and a 40-second full rebuild.
 
 **Teams can work in parallel.** Two teams working on Notifications and DataExchange cannot create a cycle between their packages. The layering rules make it structurally impossible. If both teams need shared functionality, it belongs in a lower layer — which forces the right architectural conversation.
 
@@ -235,7 +235,7 @@ The zero-cycle guarantee is not an academic exercise. It has practical consequen
 
 **Build-time safety catches mistakes early.** Architecture tests run in CI on every push. A junior developer adding a convenient `ProjectReference` that breaks the layering gets immediate feedback — not a design review two weeks later. The rules are encoded as tests, not as wiki pages that no one reads.
 
-The combination of runtime DAG validation, build-time architecture tests, and a layered design that makes cycles unlikely creates a system where the dependency graph is both a design artifact and an enforced invariant. At 100+ packages, that enforcement is not optional — it is the only thing standing between a modular framework and an accidental monolith.
+The combination of runtime DAG validation, build-time architecture tests, and a layered design that makes cycles unlikely creates a system where the dependency graph is both a design artifact and an enforced invariant. At 376 packages, that enforcement is not optional — it is the only thing standing between a modular framework and an accidental monolith.
 
 ## Further reading
 
