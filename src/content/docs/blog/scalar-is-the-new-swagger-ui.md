@@ -154,8 +154,8 @@ production environment.
 ```json title="appsettings.json"
 {
   "Http:ApiDocumentation": {
-    "Title": "Guava API",
-    "Description": "Internal REST API for the Guava platform.",
+    "Title": "Acme API",
+    "Description": "Internal REST API for the Acme platform.",
     "PartyEmail": "api-support@example.com",
     "LogoUrl": "/logo.svg",
     "FaviconUrl": "/favicon.svg",

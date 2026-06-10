@@ -94,7 +94,7 @@ The instance automatically:
 
 ### `createMutator(instance)`
 
-Creates an [orval-compatible mutator](https://orval.dev/guides/custom-client) from an
+Creates an [orval-compatible mutator](https://orval.dev/docs/guides/custom-client/) from an
 existing Axios instance. The mutator reuses all interceptors and returns `response.data`
 directly.
 
@@ -254,6 +254,6 @@ vi.mocked(client.get).mockResolvedValue(axiosResponse({ items: [], total: 0 }));
 
 - [Granit module](/dotnet/core/module-system/) — .NET foundation (exception hierarchy, batch operations)
 - [Granit.Http.Idempotency module](/dotnet/api/) — .NET idempotency middleware
-- [Authentication](./authentication/) — `setTokenGetter` is wired automatically by `@granit/react-authentication`
-- [Multi-tenancy](./multi-tenancy/) — `setTenantGetter` is wired automatically by `@granit/react-multi-tenancy`
+- [Authentication](/frontend/security/authentication/) — `setTokenGetter` is wired automatically by `@granit/react-authentication`
+- [Multi-tenancy](/frontend/infrastructure/multi-tenancy/) — `setTenantGetter` is wired automatically by `@granit/react-multi-tenancy`
 - [OpenAPI Contract Generator](/contributing/openapi-contract-generator/) — where the generated `_generated.ts` types come from, and why `int64` fields are typed `string | number`

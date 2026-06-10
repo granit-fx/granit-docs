@@ -1,0 +1,321 @@
+---
+title: "Build Your Own Identity Server in .NET: OpenIddict + Granit"
+date: 2026-06-15
+authors:
+  - jfmeyers
+tags:
+  - tutorial
+  - security
+  - api
+description: "Granit.OpenIddict turns your .NET app into a full OIDC authorization server — no Keycloak, no Auth0, no extra services. Full PKCE, client_credentials, refresh tokens, multi-tenancy."
+excerpt: >
+  Auth0 costs $240/month past 7 500 users. Keycloak needs its own VM and JVM
+  tuning. Granit.OpenIddict ships as NuGet packages and runs in the same process
+  as your API — full OIDC compliance, zero external services.
+---
+
+import { Aside, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Auth0 charges $240/month once you cross 7 500 monthly active users. Keycloak needs a dedicated VM, JVM heap tuning, and a team member who remembers how to configure its admin console. Cognito locks you into AWS and charges per MAU. Most teams accept this operational tax without questioning it.
+
+`Granit.OpenIddict` is the alternative. It turns any Granit application into a fully compliant OpenID Connect authorization server — Authorization Code + PKCE, client_credentials, refresh tokens, device flow, passkeys, multi-tenancy — running in the same process as your API. No sidecar. No extra service to monitor. No vendor lock-in.
+
+This article walks through the complete setup: from a blank project to a working OIDC server that issues tokens for both a SPA and an M2M service.
+
+## What you get
+
+- **Authorization Code + PKCE** — the secure flow for web and mobile apps, PKCE enforced by default
+- **Client Credentials** — M2M communication between backend services
+- **Refresh tokens** — silent renewal without re-authentication
+- **Device Authorization Grant** — CLI tools, smart TVs, IoT (opt-in)
+- **Discovery endpoint** — `/.well-known/openid-configuration` for automatic client configuration
+- **Declarative seeding** — register OIDC clients via `appsettings.json`, no admin UI required
+- **Multi-tenancy** — per-tenant user stores, applications, and scopes with automatic query filters
+- **Background jobs** — token cleanup and idle session enforcement, wired automatically
+
+## Prerequisites
+
+- A Granit application (see [From Zero to CRUD](/blog/from-zero-to-crud/) if you are starting fresh)
+- PostgreSQL (or any EF Core provider you already use)
+- `Granit.Bundle.OpenIddict` — the meta-package that pulls everything in
+
+## Step 1: Add the package
+
+```xml title="YourApp.csproj"
+<PackageReference Include="Granit.Bundle.OpenIddict" />
+```
+
+Or add packages individually if you only need a subset:
+
+```bash
+dotnet add package Granit.OpenIddict.EntityFrameworkCore
+dotnet add package Granit.OpenIddict.Endpoints
+dotnet add package Granit.OpenIddict.BackgroundJobs
+dotnet add package Granit.Identity.OpenIddict
+```
+
+## Step 2: Register the modules
+
+`Granit.Bundle.OpenIddict` provides a convenience extension, but the explicit `[DependsOn]` form makes the dependency graph readable:
+
+```csharp title="AppModule.cs"
+[DependsOn(
+    typeof(GranitIdentityLocalAspNetIdentityModule),
+    typeof(GranitOpenIddictEntityFrameworkCoreModule),
+    typeof(GranitOpenIddictEndpointsModule),
+    typeof(GranitOpenIddictBackgroundJobsModule))]
+public sealed class AppModule : GranitModule;
+```
+
+## Step 3: Register services
+
+```csharp title="Program.cs"
+var builder = WebApplication.CreateBuilder(args);
+builder.AddGranit(granit => granit.AddModule<AppModule>());
+
+builder.AddGranitOpenIddict(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Identity")));
+
+var app = builder.Build();
+app.UseGranit();
+
+// Middleware order is non-negotiable
+app.UseAuthentication();
+app.UseOpenIddict();      // must be between Authentication and Authorization
+app.UseAuthorization();
+
+app.MapGranitOpenIddict();
+app.Run();
+```
+
+<Aside type="caution">
+`UseOpenIddict()` must be placed between `UseAuthentication()` and `UseAuthorization()`. Placing it after `UseAuthorization()` causes OIDC endpoints to be blocked by authorization policies.
+</Aside>
+
+## Step 4: Run migrations
+
+Include `ConfigureOpenIddictModule()` in your host `DbContext.OnModelCreating`:
+
+```csharp title="AppDbContext.cs"
+protected override void OnModelCreating(ModelBuilder builder)
+{
+    base.OnModelCreating(builder);
+    builder.ConfigureOpenIddictModule();
+}
+```
+
+Then generate and apply the migration:
+
+```bash
+dotnet ef migrations add AddOpenIddict
+dotnet run --migrate
+```
+
+## Step 5: Seed your OIDC clients
+
+Granit seeds OIDC applications idempotently at startup from `appsettings.json`. No admin UI, no SQL scripts, no migration step — just config.
+
+<Tabs>
+  <TabItem label="SPA (PKCE)">
+```json title="appsettings.json"
+{
+  "OpenIddict": {
+    "Issuer": "https://localhost:5001",
+    "Seeding": {
+      "Applications": [
+        {
+          "ClientId": "my-spa",
+          "ClientSecret": null,
+          "DisplayName": "My SPA",
+          "Permissions": [
+            "ept:authorization", "ept:token", "ept:logout",
+            "gt:authorization_code", "gt:refresh_token",
+            "scp:openid", "scp:profile", "scp:email", "scp:offline_access"
+          ],
+          "RedirectUris": ["https://localhost:5173/callback"],
+          "PostLogoutRedirectUris": ["https://localhost:5173"]
+        }
+      ]
+    }
+  }
+}
+```
+  </TabItem>
+  <TabItem label="M2M (client_credentials)">
+```json title="appsettings.json"
+{
+  "OpenIddict": {
+    "Issuer": "https://localhost:5001",
+    "Seeding": {
+      "Applications": [
+        {
+          "ClientId": "my-worker",
+          "ClientSecret": "dev-secret-replace-with-vault",
+          "DisplayName": "Background Worker",
+          "Permissions": [
+            "ept:token",
+            "gt:client_credentials",
+            "scp:api"
+          ],
+          "RedirectUris": [],
+          "PostLogoutRedirectUris": []
+        }
+      ],
+      "Scopes": [
+        {
+          "Name": "api",
+          "DisplayName": "API Access",
+          "Resources": ["my-api"]
+        }
+      ]
+    }
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+The seeder runs on every startup and performs idempotent upserts — running the application multiple times produces no duplicates and existing applications are updated (permissions, redirect URIs) but secrets are not overwritten.
+
+<Aside type="caution">
+`ClientSecret` in `appsettings.json` is for development only. In production, inject secrets from [Granit.Vault](/dotnet/data/vault/) or environment variables. Never commit secrets to source control.
+</Aside>
+
+## The flows in practice
+
+### Authorization Code + PKCE (SPA / mobile)
+
+PKCE is required by default — `OpenIddict.PkceRequired` feature flag defaults to `true`. This aligns with OAuth 2.1 and protects against authorization code interception.
+
+```
+Browser  → /connect/authorize?code_challenge=S256...
+         ← Login form → consent → authorization code
+Browser  → /connect/token?code_verifier=...
+         ← { access_token, refresh_token, id_token }
+```
+
+The full flow is described in the [OIDC Server Configuration](/dotnet/security/openiddict/openid-connect-server/) reference. Scalar's OAuth2 integration lets you test this directly from the API docs UI — see [Scalar Is the New Swagger UI](/blog/scalar-is-the-new-swagger-ui/) for the wiring.
+
+### Client Credentials (M2M)
+
+```csharp title="WorkerService.cs"
+// Using HttpClient with IHttpClientFactory
+var response = await httpClient.PostAsync("/connect/token",
+    new FormUrlEncodedContent(new Dictionary<string, string>
+    {
+        ["grant_type"] = "client_credentials",
+        ["client_id"] = "my-worker",
+        ["client_secret"] = workerSecret,
+        ["scope"] = "api"
+    }));
+
+var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
+// Use token.AccessToken in downstream API calls
+```
+
+In practice, wire this with `IHttpClientFactory` and a `DelegatingHandler` that automatically refreshes the token — Granit's OIDC client primitives provide typed helpers for this pattern.
+
+### Refresh Token
+
+```
+Client  → /connect/token (grant_type=refresh_token, refresh_token=...)
+        ← { new access_token, new refresh_token }
+```
+
+Refresh token rotation is enabled by default — each use issues a new refresh token and invalidates the previous one.
+
+## Signing keys
+
+### Development
+
+By default, Granit registers **ephemeral keys** — regenerated on every restart. Perfect for development; tokens from the previous run are instantly invalid after a restart.
+
+### Production
+
+Production deployments must configure persistent keys. The cleanest approach is Vault:
+
+```csharp title="Program.cs"
+// After AddGranitOpenIddict()
+builder.Services.AddOpenIddict()
+    .AddServer(options =>
+    {
+        var signingCert = vaultService
+            .GetCertificateAsync("oidc-signing").GetAwaiter().GetResult();
+        var encryptionCert = vaultService
+            .GetCertificateAsync("oidc-encryption").GetAwaiter().GetResult();
+
+        options.AddSigningCertificate(signingCert);
+        options.AddEncryptionCertificate(encryptionCert);
+    });
+```
+
+Alternatively, enable **automatic key rotation** (RSA keys stored encrypted in the database via `IStringEncryptionService`):
+
+```json title="appsettings.json"
+{
+  "OpenIddict": {
+    "KeyRotation": {
+      "Enabled": true,
+      "KeyLifetime": "90.00:00:00",
+      "GracePeriod": "14.00:00:00",
+      "RotationLeadTime": "7.00:00:00"
+    }
+  }
+}
+```
+
+A new key is generated 7 days before the active key expires, ensuring zero-downtime rotation.
+
+## Multi-tenancy gotcha: entity caching
+
+If your application uses `Granit.MultiTenancy`, keep this in mind:
+
+OpenIddict's built-in entity cache uses `ClientId` as the sole cache key. In a multi-tenant setup, two tenants with the same `ClientId` would share cached data — a cross-tenant data pollution risk.
+
+**Entity caching is disabled by default** (`EnableEntityCaching = false`). Leave it that way for multi-tenant deployments. Only enable it for single-tenant apps where cache performance is critical:
+
+```json title="appsettings.json — single-tenant only"
+{
+  "OpenIddict": {
+    "EnableEntityCaching": true
+  }
+}
+```
+
+## Token lifetimes
+
+Token lifetimes are managed via `Granit.Settings` — configurable per-tenant at runtime without redeployment:
+
+| Token            | Default  | Setting key                              |
+|------------------|----------|------------------------------------------|
+| Access token     | 1 hour   | `OpenIddict.AccessTokenLifetime`         |
+| Refresh token    | 14 days  | `OpenIddict.RefreshTokenLifetime`        |
+| Authorization code | 5 min  | `OpenIddict.AuthCodeLifetime`            |
+
+Override per-tenant via the Settings admin API without touching `appsettings.json`.
+
+## What else ships in the box
+
+- **40+ admin REST endpoints** (`/api/admin/users`, `/api/admin/oidc/applications`, `/api/admin/oidc/scopes`) for user management and OIDC configuration
+- **Account self-service API** — registration, password reset, 2FA, GDPR account deletion
+- **Impersonation** — admins can act as any user for support scenarios, with mandatory audit trail and transparency notification
+- **Passkeys (WebAuthn)** — opt-in via `OpenIddict.Passkeys` feature flag
+- **TOTP 2FA** — built-in via `urn:granit:grant_type:two_factor` custom grant
+- **Integration events** — `UserRegisteredEto`, `PasswordResetRequestedEto`, `AccountDeletedEto`, `UserImpersonatedEto` published via Wolverine outbox
+
+## Takeaways
+
+- `Granit.OpenIddict` adds a fully compliant OIDC authorization server to your existing Granit app — no separate service required.
+- PKCE is enforced by default; ephemeral keys in development, persistent keys in production.
+- Clients are seeded declaratively from `appsettings.json` — idempotent upserts, no admin UI needed.
+- Disable `EnableEntityCaching` in multi-tenant deployments — it defaults to `false` for this exact reason.
+- Token lifetimes are configurable per-tenant at runtime via `Granit.Settings`.
+
+## Further reading
+
+- [Granit.OpenIddict — Overview](/dotnet/security/openiddict/)
+- [OIDC Server Configuration](/dotnet/security/openiddict/openid-connect-server/) — flows, endpoints, signing keys
+- [Configuration Reference](/dotnet/security/openiddict/configuration/) — all options with JSON examples
+- [Advanced Features](/dotnet/security/openiddict/advanced/) — multi-tenancy, impersonation, passkeys
+- [FAPI 2.0 Security Profile](/blog/fapi-2-security-profile-dotnet/) — harden this server for regulated industries
+- [Adding Authentication with Keycloak in Granit](/blog/adding-authentication-with-keycloak-in-granit/) — the external IdP alternative

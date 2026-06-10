@@ -29,7 +29,7 @@ An architecture test is a unit test that asserts a structural rule about your co
 
 In .NET, the two mainstream libraries are:
 
-- **[ArchUnitNET](https://github.com/TngTech/ArchUnitNET)** — fluent rules over the type graph. Battle-tested, port of the JVM `ArchUnit`.
+- **[ArchUnitNET](https://github.com/TNG/ArchUnitNET)** — fluent rules over the type graph. Battle-tested, port of the JVM `ArchUnit`.
 - **[NetArchTest](https://github.com/BenMorris/NetArchTest)** — simpler, lighter, also based on Mono.Cecil.
 
 For non-graph rules ("no `HasQueryFilter` outside the persistence layer", "every `OnModelCreating` must call `ApplyGranitConventions`") you also need **source scanners** — plain file globbing with regex. Both are part of a healthy architecture test suite.
