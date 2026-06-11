@@ -276,6 +276,28 @@ suite refuses to compile if a `[SensitiveData(>=Confidential)]` field is added w
 the matching `[Encrypted]`.
 :::
 
+## Default role provisioning
+
+Self-registered users — both local (`POST /api/account/register`) and external
+(sign in with Google / Microsoft / GitHub) — can be granted a default role
+automatically. A single opt-in setting, `Identity.Local.DefaultUserRole` (default
+empty), names the role; a shared `AssignDefaultRoleHandler` subscribes to
+`UserRegisteredEto` — published by **both** registration paths — so the two flows
+provision roles symmetrically through one handler.
+
+The assignment is **idempotent, tenant-scoped, and non-blocking**: it resolves the
+role inside the registering user's tenant scope (so a per-tenant override wins
+under SchemaPerTenant — see [ADR-023](/dotnet/architecture/adr/023-tenant-aware-role-lookup/)),
+and if the configured role does not exist, **registration still succeeds but the
+user receives no role** (logged at `Warning`, never thrown). That is the
+secure-by-default outcome: a misconfigured role grants nothing rather than
+breaking sign-up or over-granting.
+
+See [ADR-066](/dotnet/architecture/adr/066-account-creation-role-provisioning-and-external-profile-completion/)
+for the full decision, and the
+[account API](/dotnet/security/openiddict/account-management-api/#identitylocaldefaultuserrole)
+for the setting and the external profile-completion flow.
+
 ## User cache (cache-aside)
 
 `Granit.Identity.Federated.EntityFrameworkCore` maintains a local cache of user data from the

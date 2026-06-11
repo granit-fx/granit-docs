@@ -24,7 +24,7 @@ versioned API route group:
 | [Profile](#profile) | 2 | Authenticated |
 | [Password](#password-management) | 3 | Mixed |
 | [Two-factor setup](#two-factor-authentication-totp) | 5 | Authenticated |
-| [External logins](#external-logins) | 4 | Mixed |
+| [External logins](#external-logins) | 6 | Mixed |
 | [Passkeys](#passkeys-webauthn--fido2) | 7 | Mixed |
 | [Session](#session-management) | 2 | Authenticated |
 | [Deletion](#account-deletion-gdpr) | 1 | Authenticated |
@@ -252,11 +252,21 @@ Uses `IAsyncModuleConfigProvider` to resolve settings from `Granit.Settings`.
 
 ### `Identity.Local.AllowSelfRegistration`
 
+The **master switch for account creation** — it governs *both* the local
+[`POST /api/account/register`](#register) flow and the external-provider flow
+(auto-registration and profile completion). There is no separate switch for
+external registration.
+
 | Property | Value |
 |----------|-------|
 | Default | `"false"` (disabled) |
 | Visible to clients | Yes |
 | Providers | Tenant (`T`), Global (`G`) |
+
+The gate separates **authentication** from **creation**: when disabled, an
+external login still authenticates an *existing* linked account, but a *new*
+account is never created. The provider registry's `AutoRegisterExternalUsers`
+flag is subordinate — it can only narrow, never widen, what this setting permits.
 
 Enable via the Settings admin API or `appsettings.json`:
 
@@ -267,6 +277,43 @@ Enable via the Settings admin API or `appsettings.json`:
   }
 }
 ```
+
+### `Identity.Local.DefaultUserRole`
+
+The role assigned to **every** newly self-registered user — local *and* external.
+Assignment runs through the shared `AssignDefaultRoleHandler`, which subscribes to
+`UserRegisteredEto` (published by both the [`register`](#register) endpoint and
+[`complete-registration`](#complete-external-registration)).
+
+| Property | Value |
+|----------|-------|
+| Default | `""` (empty — opt-in disabled, no role assigned) |
+| Visible to clients | No |
+| Providers | Tenant (`T`), Global (`G`) |
+
+```json
+{
+  "Settings": {
+    "Identity.Local.DefaultUserRole": "Member"
+  }
+}
+```
+
+:::caution[Degraded, secure-by-default behaviour]
+Assignment is **non-blocking**. If `DefaultUserRole` names a role that **does not
+exist** (no seed), registration **still succeeds** — the user is created and
+signed in — but receives **no role at all**. The missing role is logged at
+`Warning` and skipped; it never throws, never blocks the welcome notification or
+session, and never grants a broader role. The safe outcome of "I could not grant
+the intended role" is "grant nothing", not "abort sign-up" and not "grant
+something else".
+
+The handler is idempotent (a user already in the role is skipped) and resolves
+the role **inside the registering user's tenant scope**, so a per-tenant override
+wins and the lookup hits the correct tenant schema under SchemaPerTenant. See
+[ADR-066](/dotnet/architecture/adr/066-account-creation-role-provisioning-and-external-profile-completion/)
+and [ADR-023](/dotnet/architecture/adr/023-tenant-aware-role-lookup/).
+:::
 
 ## Registration and email confirmation
 
@@ -279,6 +326,15 @@ POST /api/account/register
 Creates a new user account. Sends a confirmation email via `IEmailConfirmationService`.
 Publishes `UserRegisteredEto` via `IDistributedEventBus`. Increments
 `granit.identity.local.users.registered` metric.
+
+Publishing `UserRegisteredEto` is also what provisions the new user's role: the
+shared `AssignDefaultRoleHandler` subscribes to that event and assigns
+[`Identity.Local.DefaultUserRole`](#identitylocaldefaultuserrole) if it is
+configured. The **same** event — and therefore the same handler — fires for
+external sign-ups completed via
+[`complete-registration`](#complete-external-registration), so local and external
+users are provisioned symmetrically. See
+[ADR-066](/dotnet/architecture/adr/066-account-creation-role-provisioning-and-external-profile-completion/).
 
 :::caution[Self-registration gate]
 This endpoint checks the `Identity.Local.AllowSelfRegistration` setting before
@@ -545,31 +601,163 @@ GET /api/account/external-logins
 ]
 ```
 
-### Challenge (initiate OAuth flow)
+### Challenge (probe provider availability)
 
 ```text
 POST /api/account/external-logins/challenge/{provider}
 ```
 
-Validates that the provider is configured in `IExternalProviderRegistry.Providers`.
-Returns `400` if not configured. The actual OAuth redirect is handled by the OpenIddict
-client middleware.
+Validates that the provider is both configured **and** backed by a registered
+authentication handler. Returns `200` to confirm availability, `400` if the
+provider is not configured, or `500` if it is configured but no authentication
+scheme is registered for it (a host wiring error — the host forgot `AddGoogle()` /
+`AddMicrosoftAccount()`). This endpoint does **not** redirect; it is a pre-flight
+check the frontend can call before sending the user to `.../start`.
+
+### Start challenge (redirect to provider)
+
+```text
+GET /api/account/external-logins/challenge/{provider}/start?returnUrl=/dashboard
+```
+
+Issues the **real** OAuth challenge: validates the provider, then returns a `302`
+redirect to it. The browser navigates here directly — it is **not** an XHR
+endpoint.
+
+An optional **site-relative** `returnUrl` is carried through the external ticket
+so the [callback](#oauth-callback) can resume the original OIDC authorization
+request after sign-in. Only single-leading-slash relative paths are accepted
+(`/dashboard`); absolute URLs and protocol-relative (`//evil.com`) values are
+dropped to prevent open redirects.
+
+**Responses:**
+
+- `302 Found` — redirect to the external provider
+- `400 Bad Request` — provider not configured or no handler registered
 
 ### OAuth callback
 
 ```text
-GET /api/account/external-logins/callback?provider=Google
+GET /api/account/external-logins/callback
 ```
 
-Processes the OAuth callback. Behavior depends on
-`IExternalProviderRegistry.AutoRegisterExternalUsers`:
+Handles the redirect from the external provider. The provider is resolved from the
+external authentication ticket, **never from the query string** (a query parameter
+is attacker-controlled and could mis-attribute the link). On success the callback
+establishes the Identity session via `SignInManager.SignInAsync` — mirroring the
+local login path — so the OIDC authorization request can resume.
 
-| Scenario | `AutoRegister = true` | `AutoRegister = false` |
-|----------|----------------------|------------------------|
+Behaviour is governed by the master
+[`Identity.Local.AllowSelfRegistration`](#identitylocalallowselfregistration) gate
+(resolved per-tenant), **not** by a separate external flag:
+
+| Scenario | `AllowSelfRegistration = true` | `AllowSelfRegistration = false` |
+|----------|--------------------------------|---------------------------------|
 | Existing user with linked provider | Authenticates | Authenticates |
 | Existing email, no link | Links + authenticates | Links + authenticates |
-| No existing user | Creates + authenticates | `403 Forbidden` |
+| No existing user, **sufficient** provider data | Creates + authenticates (`UserRegisteredEto` published) | `403 Forbidden` |
+| No existing user, **insufficient** data (e.g. no email) | `needs-profile-completion` — signed token + prefill, **no account created** | `403 Forbidden` |
 | Email taken by another account | `409 Conflict` | `409 Conflict` |
+| Callback carries no authentication scheme | `400 Bad Request` | `400 Bad Request` |
+
+#### Response shape
+
+The callback responds in one of two modes:
+
+- **`302` redirect** when `ExternalLoginCallbackRedirectUrl` is configured (see
+  [endpoint options](#endpoint-route-customization)). The status — and, for
+  profile completion, the `token` + non-sensitive prefill, or otherwise the
+  validated `returnUrl` — is appended as query parameters to the frontend URL.
+- **JSON** (`ExternalLoginCallbackResponse`) when no redirect URL is configured
+  (headless / test hosts) **or** when `?mode=json` is set, which forces JSON
+  regardless of configuration.
+
+The JSON body:
+
+```json
+{
+  "status": "completed",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "isNewUser": true,
+  "continuationToken": null,
+  "prefill": null
+}
+```
+
+When the provider data was insufficient, `status` is `needs-profile-completion`,
+`userId` is `null`, and the response carries the continuation token plus prefill:
+
+```json
+{
+  "status": "needs-profile-completion",
+  "userId": null,
+  "isNewUser": false,
+  "continuationToken": "CfDJ8...",
+  "prefill": { "email": null, "firstName": "Alex", "lastName": "Doe" }
+}
+```
+
+:::note[The provider key never leaves the server in plaintext]
+The `continuationToken` is signed and encrypted with ASP.NET Core Data Protection
+(time-limited, **~10 minutes**). It carries the provider **key** — which is
+**never** exposed as a response field, query parameter, or request body field.
+The client holds only the opaque token; the server reads the provider and key
+back out of it at completion time.
+:::
+
+### Complete external registration
+
+```text
+POST /api/account/external-logins/complete-registration
+```
+
+Creates the account when the external provider did not return enough data for a
+one-click sign-up. The user fills the pre-filled form (typically just the missing
+email); this endpoint creates the account, **links the external login carried by
+the token**, establishes the session, and publishes `UserRegisteredEto` (which
+triggers [default-role assignment](#identitylocaldefaultuserrole) and the welcome
+notification).
+
+**Request:**
+
+```json
+{
+  "token": "CfDJ8...",
+  "email": "alex@example.com",
+  "firstName": "Alex",
+  "lastName": "Doe"
+}
+```
+
+The `provider` and `providerKey` are **not** accepted from the body — they travel
+inside the signed `token` minted by the callback. `firstName` / `lastName` are
+optional and fall back to the provider values.
+
+**Responses:**
+
+- `200 OK` with `{ "succeeded": true }` — account created, linked, and signed in
+- `400 Bad Request` — the token is invalid, tampered with, or expired (restart
+  the sign-in)
+- `403 Forbidden` — self-registration is disabled, **or** the token does not match
+  the current tenant
+- `409 Conflict` — the email is already taken
+- `422 Validation Problem` — the email does not match the provider-verified one,
+  or the create/link otherwise failed
+
+:::caution[Cross-tenant guard]
+A continuation token minted in tenant A can be redeemed **only** in tenant A. The
+issuing tenant id is sealed into the token at callback time and re-checked here; a
+token presented in a different tenant (or the host) is rejected with `403`. This
+blocks cross-tenant replay of a captured token.
+:::
+
+When the provider supplied a **verified** email, that email is authoritative — the
+submitted `email` must match it (mismatch → `422`). When the provider gave no
+email, the entered email is **unverified** and a confirmation email is sent. A
+failed login-link rolls back the just-created account so a half-finished
+completion never leaves an orphan.
+
+Rate-limited via the `authentication` policy.
 
 ### Unlink a provider
 
@@ -774,6 +962,13 @@ api.MapGranitAccount(options =>
 {
     options.AccountRoutePrefix = "account";    // default
     options.AdminRoutePrefix = "admin";        // default
+
+    // Absolute frontend URL the external-login callback redirects to after
+    // processing. When set, the callback responds 302 and appends `status`
+    // (plus `token` + prefill on profile completion, or `returnUrl` otherwise).
+    // When null (default), the callback returns JSON — `?mode=json` forces JSON
+    // regardless.
+    options.ExternalLoginCallbackRedirectUrl = "https://app.example.com/auth/callback";
 });
 ```
 
