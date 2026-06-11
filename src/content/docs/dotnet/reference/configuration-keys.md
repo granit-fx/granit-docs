@@ -479,7 +479,7 @@ Wolverine__RetryDelays__1=00:00:30
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `AI:QueryEngine` | |
+| **Section** | -- | `QueryEngine:AI` | |
 | **Package** | -- | `Granit.QueryEngine.AI` | |
 | `WorkspaceName` | `string` | `"default"` | AI workspace for NLQ translation. |
 | `TimeoutSeconds` | `int` | `5` | Timeout for LLM calls. Validated at startup (must be > 0). |
