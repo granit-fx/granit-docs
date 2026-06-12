@@ -125,6 +125,13 @@ app.MapGet("/api/v1/health", () => "OK")
    .CacheOutput(GranitOutputCachePolicyNames.NoCache);
 ```
 
+<Aside type="note">
+[BFF](/dotnet/security/bff/) endpoints are registered with `GranitNoCache` and are **never**
+cached. Every BFF response is per-session and credentialed, so the private-response policy's
+"skip authenticated/credentialed requests" rule is reinforced with an explicit opt-out rather
+than relied upon.
+</Aside>
+
 ## Tag-based eviction
 
 Inject `IOutputCacheEvictionService` to invalidate cached responses:

@@ -16,7 +16,7 @@ topic: backend
 Granit's AI story is, today, **fifteen autonomous single-shot tools**. Every `*.AI`
 module (Privacy, Validation, Workflow, Observability, Localization, …) takes a
 developer-controlled instruction, sends *one* request through
-[`IStructuredCompletion`](./064-structured-ai-output-primitive) (ADR-064), and
+[`IStructuredCompletion`](/dotnet/architecture/adr/064-structured-ai-output-primitive/) (ADR-064), and
 returns typed output. The prompt is hidden, the output is structured, the module
 hands the model the content it needs.
 
@@ -227,6 +227,6 @@ vision.
 
 ## References
 
-- [ADR-064 — Structured AI output primitive](./064-structured-ai-output-primitive)
+- [ADR-064 — Structured AI output primitive](/dotnet/architecture/adr/064-structured-ai-output-primitive/)
 - Epic `Granit.AI` (#14); streaming chat endpoints (#496)
 - Epic *Agentic AI Chat & Prompt Catalog* (this ADR's delivery epic)

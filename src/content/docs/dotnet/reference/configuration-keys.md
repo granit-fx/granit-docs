@@ -263,6 +263,50 @@ Wolverine__RetryDelays__1=00:00:30
 | `ExportTimeoutMinutes` | `int` | `5` | GDPR export saga timeout. |
 | `ExportMaxSizeMb` | `int` | `100` | Maximum export archive size (MB). |
 
+### IP geolocation -- `GranitIpGeolocationOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `IpGeolocation` | |
+| **Package** | -- | `Granit.IpGeolocation` | |
+| `CacheKeySecret` | `string?` | `null` | HMAC key for cache-key hashing. **Unset = reversible SHA-256 hash of the IP (GDPR risk on a shared cache).** Source from Vault, stable across instances. |
+| `CacheDuration` | `TimeSpan` | `01:00:00` | TTL for positive and negative results. |
+| `ResolvePrivateAddresses` | `bool` | `false` | When `false`, short-circuit private/loopback/link-local IPs to `null`. |
+| `ProviderOrder` | `string[]` | `[]` | Provider fallback order; empty = registration order. |
+
+### IP geolocation -- ip-api -- `IpApiIpGeolocationOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `IpGeolocation:IpApi` | |
+| **Package** | -- | `Granit.IpGeolocation.IpApi` | |
+| `ProviderName` | `string` | `"IpApi"` | Identifier used in `ProviderOrder`. |
+| `ApiToken` | `string?` | `null` | ipinfo.io token sent as `Bearer`; tokenless tier is rate-limited. |
+| `BaseAddress` | `Uri` | `https://ipinfo.io` | Provider base address. |
+| `Timeout` | `TimeSpan` | `00:00:03` | Per-request timeout. |
+| `MaxResponseSizeBytes` | `long` | `65536` | Max buffered response size. |
+
+### IP geolocation -- MaxMind -- `MaxMindIpGeolocationOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `IpGeolocation:MaxMind` | |
+| **Package** | -- | `Granit.IpGeolocation.MaxMind` | |
+| `DatabasePath` | `string` | *(required)* | Path to the `.mmdb` file; must exist at startup. |
+| `ProviderName` | `string` | `"MaxMind"` | Identifier used in `ProviderOrder`. |
+| `ReloadOnChange` | `bool` | `true` | Reload the database when the file changes. |
+| `FileAccess` | `enum` | `Memory` | `Memory` (load to RAM, release handle) or `MemoryMapped`. |
+
+### User session anomaly detection -- `UserSessionsAnomalyDetectionOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `UserSessions:AnomalyDetection` | |
+| **Package** | -- | `Granit.UserSessions.AnomalyDetection` | |
+| `MaxAiCallsPerHourPerUser` | `int` | `50` | AI assessments per user per hour. Checked **before** the per-tenant cap. |
+| `MaxAiCallsPerHourPerTenant` | `int` | `500` | AI assessments per tenant per hour. |
+| `MaxTravelKilometersPerHour` | `double` | `1000` | Impossible-travel speed threshold. |
+
 ---
 
 ## Identity
