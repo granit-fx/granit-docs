@@ -1,0 +1,243 @@
+---
+title: "User Sessions — Anomaly Detection & Risk Scoring"
+description: Detect suspicious sessions with AI + heuristics — impossible travel, new device, new country — with per-user AI rate limits, prompt-injection hardening, and EF Core risk persistence.
+sidebar:
+  order: 10
+  label: User Sessions
+---
+
+import { Tabs, TabItem, FileTree, Aside, Badge } from "@astrojs/starlight/components";
+
+## Why session anomaly detection?
+
+A valid session token says _the credential is correct_. It does not say _this is really the
+user_. A stolen session cookie, a phished login, or a hijacked refresh token all present a
+perfectly valid session. The signal that something is wrong lives in the **pattern**: a
+login from Brussels followed eight minutes later by one from São Paulo, a brand-new device
+family, a country the account has never touched.
+
+`Granit.UserSessions` turns that pattern into a risk verdict. It combines cheap, deterministic
+heuristics with an optional AI layer, persists the verdict, and raises an integration event
+when a session looks suspicious — so the [session list](/dotnet/security/identity/) a user
+sees can flag it and your handlers can step up authentication or notify the account owner.
+
+## Package structure
+
+<FileTree>
+- Granit.UserSessions.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
+- Granit.UserSessions.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
+- Granit.UserSessions.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core (`user_sessions_risks`)
+</FileTree>
+
+| Package | Role | Depends on |
+| ------- | ---- | ---------- |
+| `Granit.UserSessions.Abstractions` | Contracts + no-op detector + in-memory store | `Granit` |
+| `Granit.UserSessions.AnomalyDetection` | Heuristic + AI detector, risk evaluator | `Granit.AI`, `Granit.UserSessions.Abstractions` |
+| `Granit.UserSessions.EntityFrameworkCore` | Durable `IUserSessionRiskStore` | `Granit.Persistence.EntityFrameworkCore`, `Granit.UserSessions.Abstractions` |
+
+<Aside type="note">
+`Granit.UserSessions.Abstractions` alone registers a **no-op** detector (`None` for every
+session) and an **in-memory** risk store. That keeps development and single-node setups
+working with zero configuration; the production behaviour switches on when you add the
+AnomalyDetection and EntityFrameworkCore packages.
+</Aside>
+
+## The session descriptor
+
+The detector reasons over `UserSessionDescriptor` — a candidate session plus the user's
+recent history.
+
+```csharp
+public sealed record UserSessionDescriptor
+{
+    public required string SessionId { get; init; }
+    public string? UserId { get; init; }
+    public bool IsCurrent { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset? LastAccessedAt { get; init; }   // last-activity
+    public string? UserAgent { get; init; }
+    public string? IpAddress { get; init; }                // raw IP — server-side only, never log in clear
+    public GeoLocation? Location { get; init; }            // derived via Granit.IpGeolocation
+}
+```
+
+`Location` comes from [IP Geolocation](/dotnet/security/ip-geolocation/) — the privacy-friendly,
+country/city read-model rather than the raw IP.
+
+## Heuristics
+
+Three deterministic checks run with no external dependency and no cost:
+
+| Heuristic | Signal | Contribution |
+|-----------|--------|--------------|
+| **Impossible travel** | Great-circle (Haversine) distance between consecutive session locations vs. elapsed time exceeds `MaxTravelKilometersPerHour` (default **1000 km/h**) | **High** |
+| **New country** | Candidate `Location.CountryCode` not seen in any prior session | Low |
+| **New device** | `UserAgent` device family (`DeviceFingerprint.Family`) never seen before | Low |
+
+```csharp
+public interface IUserSessionAnomalyDetector
+{
+    Task<UserSessionRiskAssessment> AssessAsync(
+        UserSessionDescriptor candidate,
+        IReadOnlyList<UserSessionDescriptor> history,
+        CancellationToken cancellationToken = default);
+}
+```
+
+The result combines the heuristic verdict and (if enabled) the AI verdict by taking the
+**higher** risk level and the **maximum** score — the AI can escalate but never silently
+downgrade a heuristic that already fired.
+
+## The AI layer (opt-in)
+
+When `Granit.UserSessions.AnomalyDetection` is wired with an AI provider, the detector also
+asks the model — via `IStructuredCompletion` from [Granit.AI](/dotnet/ai/) — for a structured
+verdict: level, score, reason codes, and a short explanation. It degrades gracefully to the
+heuristic verdict on rate-limit, timeout, or refusal.
+
+```csharp
+public sealed record UserSessionRiskAssessment
+{
+    public UserSessionRiskLevel Level { get; init; }        // None | Low | Medium | High
+    public double Score { get; init; }                      // normalized [0, 1]
+    public IReadOnlyList<string> Reasons { get; init; }     // machine-readable reason codes
+    public string? Explanation { get; init; }               // ⚠ untrusted model output — see below
+}
+```
+
+<Aside type="danger" title="Explanation is untrusted model output">
+When the AI layer produces it, `UserSessionRiskAssessment.Explanation` is **untrusted model
+output**. The model is _instructed_ to keep it PII-safe and benign, but that is **not
+enforced**. Before you render it to a user, write it to logs or traces, or persist it:
+
+- **Sanitize and bound it** — treat it as you would any user-supplied string (HTML-encode on
+  display, strip control characters, cap the length).
+- **Never persist it as-is.** The durable risk store deliberately keeps only `Level`,
+  `Reasons`, and `AssessedAt` — not the free-text explanation.
+
+Reason **codes** (`Reasons`) are the machine-readable, trustworthy output; the `Explanation`
+is convenience text only.
+</Aside>
+
+<Aside type="caution" title="Prompt-injection hardening">
+The country and city of each session are attacker-influenceable (a crafted `User-Agent` or a
+spoofable header can steer what ends up here), and they are fed into the model's prompt. The
+detector **sanitizes every tier before it reaches the prompt**: values are trimmed, capped at
+64 characters, and any character outside `[A-Za-z0-9 .,'-]` is collapsed to `_`. This strips
+the newlines and structural characters a prompt-injection payload would need. Keep this in
+mind if you build your own descriptors — never hand the model un-sanitized free text.
+</Aside>
+
+## Rate limiting the AI calls
+
+AI calls cost money and latency, so they are budgeted per hour on **two** axes. The crucial
+detail: the **per-user** budget is checked **before** the per-tenant budget.
+
+```json
+{
+  "UserSessions": {
+    "AnomalyDetection": {
+      "MaxAiCallsPerHourPerUser": 50,
+      "MaxAiCallsPerHourPerTenant": 500,
+      "MaxTravelKilometersPerHour": 1000
+    }
+  }
+}
+```
+
+<Aside type="note" title="Why per-user is checked first">
+Checking the per-user cap first means one noisy subject — a bot hammering logins, a
+misbehaving client — **cannot drain the shared tenant budget** and silently downgrade every
+other user in the tenant to heuristics-only detection. The blast radius of an abusive account
+is contained to that account.
+</Aside>
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `UserSessions:AnomalyDetection:MaxAiCallsPerHourPerUser` | `int` | `50` | AI assessments per user per hour. Checked **first**. |
+| `UserSessions:AnomalyDetection:MaxAiCallsPerHourPerTenant` | `int` | `500` | AI assessments per tenant per hour. |
+| `UserSessions:AnomalyDetection:MaxTravelKilometersPerHour` | `double` | `1000` | Impossible-travel speed threshold. |
+
+## Persisting verdicts
+
+`Granit.UserSessions.EntityFrameworkCore` swaps the in-memory store for a durable one backed
+by the `user_sessions_risks` table.
+
+```csharp
+builder.AddGranitUserSessionsEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("UserSessions")));
+```
+
+```csharp
+public interface IUserSessionRiskStore
+{
+    Task SetAsync(string userId, string sessionId, UserSessionRiskVerdict verdict, CancellationToken ct);
+    Task<UserSessionRiskVerdict?> GetAsync(string userId, string sessionId, CancellationToken ct);
+    Task<IReadOnlyDictionary<string, UserSessionRiskVerdict>> GetManyAsync(
+        string userId, IReadOnlyCollection<string> sessionIds, CancellationToken ct);
+}
+```
+
+The stored `UserSessionRiskVerdict` carries only `Level`, `Reasons`, and `AssessedAt` — the
+untrusted `Explanation` is intentionally **not** persisted. Table prefix and schema are
+configurable via `GranitUserSessionsDbProperties` (default prefix `user_sessions_`).
+
+## End-to-end flow
+
+`IUserSessionRiskEvaluator` orchestrates the pipeline: assess, persist any non-`None` verdict,
+and publish a `SuspiciousUserSessionDetectedEto` integration event for **Medium/High** risk so
+downstream handlers (notifications, step-up auth) can react.
+
+```mermaid
+sequenceDiagram
+    participant App as Login / session pipeline
+    participant Eval as IUserSessionRiskEvaluator
+    participant Det as IUserSessionAnomalyDetector
+    participant RL as AI rate limiter
+    participant AI as Granit.AI
+    participant Store as IUserSessionRiskStore
+    participant Bus as IDistributedEventBus
+
+    App->>Eval: EvaluateAsync(candidate, history)
+    Eval->>Det: AssessAsync
+    Det->>Det: heuristics (impossible travel, new country/device)
+    Det->>RL: per-user budget? then per-tenant budget?
+    alt budget available
+        RL-->>Det: ok
+        Det->>AI: structured completion (sanitized features)
+        AI-->>Det: level / score / reasons / explanation
+    else exhausted
+        RL-->>Det: rate-limited → heuristic verdict only
+    end
+    Det-->>Eval: max(heuristic, AI)
+    Eval->>Store: persist verdict (Level, Reasons, AssessedAt)
+    opt Medium / High
+        Eval->>Bus: SuspiciousUserSessionDetectedEto
+    end
+```
+
+## Public API summary
+
+| Category | Key types | Package |
+|----------|-----------|---------|
+| Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.UserSessions.Abstractions` |
+| Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.UserSessions.Abstractions` |
+| AI + heuristics | `IUserSessionRiskEvaluator`, `UserSessionsAnomalyDetectionOptions` | `Granit.UserSessions.AnomalyDetection` |
+| Persistence | `AddGranitUserSessionsEntityFrameworkCore()`, `GranitUserSessionsDbProperties` | `Granit.UserSessions.EntityFrameworkCore` |
+
+## Compliance
+
+- **GDPR Art. 5(1)(f) / Art. 32** — integrity and confidentiality: anomaly detection is a
+  technical measure against unauthorized account access; the untrusted model explanation is
+  kept out of persistence and logs by default.
+- **ISO 27001 A.8.16** — monitoring activities: suspicious-session events feed your SOC /
+  notification bridge.
+
+## See also
+
+- [IP Geolocation](/dotnet/security/ip-geolocation/) — supplies the `GeoLocation` driving the
+  travel and country heuristics
+- [Identity](/dotnet/security/identity/) — the user-facing session list, now enriched with risk
+- [BFF](/dotnet/security/bff/) — the SPA session endpoint exposing geolocation, risk, and last-activity
+- [AI](/dotnet/ai/) — the `IStructuredCompletion` abstraction the AI layer builds on
+- [Audit Log](/dotnet/compliance/audit-log/) — authentication audit, owned at its source

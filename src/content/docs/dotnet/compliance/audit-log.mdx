@@ -6,7 +6,7 @@ sidebar:
   label: Audit Log
 ---
 
-import { Tabs, TabItem, FileTree, Badge } from "@astrojs/starlight/components";
+import { Tabs, TabItem, FileTree, Badge, Aside } from "@astrojs/starlight/components";
 
 Granit.Auditing provides a turnkey audit trail solution for ISO 27001 A.12.4 compliance.
 It automatically captures entity changes from EF Core's ChangeTracker and persists them
@@ -123,6 +123,26 @@ with different retention defaults:
 | `ConfigurationChange` | Settings, feature flags | ~7 years | Yes |
 | `DataAccess` | Read operations | 90 days | Opt-in |
 | `AccessDenied` | Authorization failures | ~7 years | Opt-in |
+
+## Authentication audit — owned at its source
+
+Authentication crosses several components — a BFF session, the OIDC token endpoint, an API
+key handler — and each could plausibly write its own login audit. If they all did, a single
+sign-in would produce duplicate rows, half of them with a machine's `User-Agent` instead of
+the browser's. Granit applies one rule: **the component that performs the authentication owns
+its audit, and no one else re-audits it.**
+
+| Authentication path | Success audited? | Failure audited? | Owner & notes |
+| ------------------- | ---------------- | ---------------- | ------------- |
+| Interactive login fronted by the **BFF** | **Yes** | **Yes** | The BFF owns it: it carries the **real browser `User-Agent`** and sets `CreatedBy` to the authenticated user. |
+| OIDC **token endpoint** — `authorization_code` / `refresh_token` | **No** | Yes | A grant exchange is not a fresh authentication — it redeems one already audited at its source (the BFF callback, or the interactive login for direct clients). Re-auditing would duplicate that row. **Failures** are still audited: a forged or replayed code/token is a security event seen only here. |
+| **API key** authentication | **No** | **Yes** (`AccessDenied`) | A key authenticates on every call; auditing each one is noise. What the key _does_ is attributed via `CreatedBy` on the entities it touches. Only rejections (invalid, revoked, expired, IP not allow-listed) are audited. |
+
+<Aside type="note">
+The audited `UserName` for an interactive login is the **`preferred_username`** claim (falling
+back to `email`), **not** the `name` display-name claim — so the audit trail records the stable
+login identifier rather than a mutable display name.
+</Aside>
 
 ## Persistence modes
 

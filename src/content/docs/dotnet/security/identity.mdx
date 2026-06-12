@@ -227,6 +227,14 @@ public class SessionService(
 }
 ```
 
+:::note[Enriched session list]
+`GetUserSessionsAsync` returns each session enriched with **geolocation**, a **risk level**,
+and **last-activity** — so a security settings screen can show "Brussels · low risk · active
+2 min ago" per session. Geolocation comes from [IP Geolocation](/dotnet/security/ip-geolocation/)
+and the risk level from [User Sessions](/dotnet/security/user-sessions/) anomaly detection.
+The same fields are exposed on the [BFF](/dotnet/security/bff/) session endpoint for SPAs.
+:::
+
 ## Feeding the notification pipeline
 
 Building on `IIdentityUserReader`, the opt-in `Granit.Identity.Notifications` bridge is

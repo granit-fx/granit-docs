@@ -1,9 +1,9 @@
 ---
-title: "ADR-066: Validation message key naming convention"
+title: "ADR-068: Validation message key naming convention"
 description: "Give validation localization keys a deterministic shape — Validation:{Category}:{Rule} for framework keys, {Module}:Validation:{Rule} for module-owned domain keys — replacing four incompatible ad-hoc styles, and enforce it with an architecture test."
 sidebar:
-  order: 66
-  label: "066 - Validation key naming"
+  order: 68
+  label: "068 - Validation key naming"
 topic: backend
 ---
 
