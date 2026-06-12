@@ -165,7 +165,7 @@ application — not the framework — decides how to organize its database:
 - **When do migrations run?** At startup (`MigrateAsync`) for dev/staging, or via
   idempotent SQL scripts in CI/CD for production.
 - **How do schema changes deploy?** Simple `ALTER TABLE` for single-instance apps,
-  or [Expand & Contract](./migrations/) for zero-downtime K8s deployments.
+  or [Expand & Contract](/dotnet/data/migrations/) for zero-downtime K8s deployments.
 
 The framework cannot make these decisions — only the host can. So Granit modules
 expose their entity configurations via `Configure{Module}Module()` and let the host
@@ -275,7 +275,7 @@ dotnet ef migrations script --idempotent -o migrate.sql \
 psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f migrate.sql
 ```
 
-Combine with [Expand & Contract](./migrations/) for column renames, type changes,
+Combine with [Expand & Contract](/dotnet/data/migrations/) for column renames, type changes,
 and other breaking schema changes that require data backfill.
 
 </TabItem>
@@ -427,9 +427,9 @@ For integration tests with real PostgreSQL, use Testcontainers to get full fidel
 
 ## See also
 
-- [Interceptors](./interceptors/) — audit, soft delete, concurrency, domain events, versioning
-- [Query filters](./query-filters/) — named filters, runtime bypass, translations
-- [Zero-downtime migrations](./migrations/) — Expand & Contract pattern
+- [Interceptors](/dotnet/data/interceptors/) — audit, soft delete, concurrency, domain events, versioning
+- [Query filters](/dotnet/data/query-filters/) — named filters, runtime bypass, translations
+- [Zero-downtime migrations](/dotnet/data/migrations/) — Expand & Contract pattern
 - [Adding Persistence guide](/dotnet/getting-started/adding-persistence/) — step-by-step tutorial
 - [Core module](/dotnet/core/module-system/) — domain base types, filter interfaces, `IDataFilter`
 - [Multi-tenancy concept](/dotnet/concepts/multi-tenancy/) — isolation strategies in depth

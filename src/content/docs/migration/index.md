@@ -96,4 +96,4 @@ When upgrading Granit to a new version:
 
 ## Section contents
 
-- [Changelog](./changelog/) -- format, conventions, and version history
+- [Changelog](/migration/changelog/) -- format, conventions, and version history

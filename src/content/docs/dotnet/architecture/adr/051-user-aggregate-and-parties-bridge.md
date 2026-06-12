@@ -208,7 +208,7 @@ the "extension *Parties* of Identity" reading.
 **Amended:** The bridge ships as **`Granit.Parties.Identity`** instead.
 
 **Why:** The repo already has a precedent for this kind of bridge —
-[`Granit.Parties.MultiTenancy`](https://github.com/granit-fx/granit-dotnet/tree/develop/src/Granit.Parties.MultiTenancy)
+[`Granit.Parties.MultiTenancy`](/dotnet/guides/parties-tenant-seeding/)
 ships the handler that creates a host-scoped `Party` on
 `TenantCreatedEvent`. The convention is "the bridge lives in the
 **consumer's** tier, named after what it consumes" — Parties is the

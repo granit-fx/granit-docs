@@ -175,4 +175,4 @@ by `CognitoIdentityProvider` (`ListUsersAsync`, `AdminGetUserAsync`, etc.)
 - ADR-026 — Entra ID App Role sync (parallel implementation).
 - #1100 — this ADR's implementing PR.
 - [AWS Cognito — Adding groups to a user pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
-- [AWS Cognito — `ListGroups`](https://docs.aws.amazon.com/cognitoidentityprovider/latest/APIReference/API_ListGroups.html)
+- [AWS Cognito — `ListGroups`](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListGroups.html)

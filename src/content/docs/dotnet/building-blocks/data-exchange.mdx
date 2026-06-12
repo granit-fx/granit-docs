@@ -674,9 +674,9 @@ The DataExchange module includes several hardening measures:
 - [ADR-015: Sep](/dotnet/architecture/adr/015-sep-csv-parsing/) -- Why Sep was chosen for CSV parsing
 - [ADR-016: Sylvan.Data.Excel](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/) -- Why Sylvan was chosen for Excel reading
 - [Core module](/dotnet/core/module-system/) — Module system, domain types
-- [Persistence module](./persistence/) — EF Core interceptors, `ApplyGranitConventions`
-- [Wolverine module](./wolverine/) — Transactional outbox, context propagation
-- [Background jobs module](./background-jobs/) — Scheduling integration
+- [Persistence module](/dotnet/data/persistence/) — EF Core interceptors, `ApplyGranitConventions`
+- [Wolverine module](/dotnet/infrastructure/wolverine-messaging/) — Transactional outbox, context propagation
+- [Background jobs module](/dotnet/infrastructure/background-jobs/) — Scheduling integration
 - [Query Engine](/dotnet/building-blocks/query-engine/) — peer building block: declarative filters / sort / paging
 - [TextExtraction](/dotnet/building-blocks/text-extraction/) — peer building block: bytes → plain text for unstructured documents
 - [Indexing](/dotnet/building-blocks/indexing/) — peer building block: full-text + hybrid semantic search. Imported rows are commonly indexed in the same Wolverine workflow.

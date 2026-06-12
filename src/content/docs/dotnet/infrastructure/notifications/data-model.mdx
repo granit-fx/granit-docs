@@ -128,7 +128,7 @@ public interface IUserNotificationWriter
 ## Notification definitions
 
 Notification types are declared at startup via `INotificationDefinitionProvider`
-and stored in `INotificationDefinitionStore` (singleton). The [fan-out handler](./fan-out-engine/)
+and stored in `INotificationDefinitionStore` (singleton). The [fan-out handler](/dotnet/infrastructure/notifications/fan-out-engine/)
 uses definitions to determine default channels and whether user opt-out is
 allowed.
 
@@ -221,9 +221,9 @@ When `Patient.Status` changes, the interceptor publishes an
 
 ## See also
 
-- [Overview](./) — fan-out engine and package structure
-- [Fan-out engine](./fan-out-engine/) — how preferences and definitions drive dispatch
-- [Endpoints](./endpoints/) — REST API exposing preferences, subscriptions, followers
-- [Package conventions](./conventions/) — module-local notification definition layout
+- [Overview](/dotnet/infrastructure/notifications/) — fan-out engine and package structure
+- [Fan-out engine](/dotnet/infrastructure/notifications/fan-out-engine/) — how preferences and definitions drive dispatch
+- [Endpoints](/dotnet/infrastructure/notifications/endpoints/) — REST API exposing preferences, subscriptions, followers
+- [Package conventions](/dotnet/infrastructure/notifications/conventions/) — module-local notification definition layout
 - [Persistence module](/dotnet/data/persistence/) — `AuditedEntity`, `Entity`, EF Core interceptors
 - [Timeline module](/dotnet/building-blocks/timeline/) — companion audit trail for entity changes

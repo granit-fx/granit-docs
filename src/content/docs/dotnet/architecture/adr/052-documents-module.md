@@ -11,7 +11,7 @@ topic: backend
 > **Date:** 2026-05-02
 > **Authors:** Jean-Francois Meyers
 > **Scope:** NEW modules `Granit.Documents`, `Granit.Documents.EntityFrameworkCore`, `Granit.Documents.Endpoints`, `Granit.Documents.BackgroundJobs`, `Granit.Documents.Notifications` (phase 1). Future opt-in extensions: `Granit.Documents.Renditions`, `Granit.Documents.AssetMetadata`, `Granit.Documents.PublicLinks`, `Granit.Documents.Indexing`, `Granit.Documents.Workflow`, `Granit.Documents.Collections`.
-> **Status:** Accepted (tagging story superseded by [ADR-054](054-taxonomy-module.md) — Documents wires up to `Granit.Taxonomy` instead of building its own `DocumentTag` join.)
+> **Status:** Accepted (tagging story superseded by [ADR-054](/dotnet/architecture/adr/054-taxonomy-module/) — Documents wires up to `Granit.Taxonomy` instead of building its own `DocumentTag` join.)
 
 ## Context
 
@@ -386,7 +386,7 @@ Tracked as a single Epic with three phases. Only phase 1 is actively planned; ph
 | Folder hierarchy (CRUD, move, breadcrumb, path materialisation) | 2 |
 | Document aggregate + upload flow (presigned via BlobStorage, finalize, descriptor wiring) | 2 |
 | Versioning (autonomous, monotonic, restore) | 1 |
-| Tags (wired via [Granit.Taxonomy](054-taxonomy-module.md) — see ADR-054 / T6.1) | 1 |
+| Tags (wired via [Granit.Taxonomy](/dotnet/architecture/adr/054-taxonomy-module/) — see ADR-054 / T6.1) | 1 |
 | Share ACL (User / Role / Group, with inheritance from folder default) | 2 |
 | Tenant quota (model, enforcement, recompute job) | 1 |
 | Trash / soft-delete with retention | 1 |

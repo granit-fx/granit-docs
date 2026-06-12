@@ -128,7 +128,7 @@ flowchart TD
 This is the **only** place tenant authority is decided. Downstream code reads
 `ICurrentTenant`; it never re-checks the JWT or the header.
 
-See [Tenant Resolvers](./resolvers/) for the resolver pipeline and the trust
+See [Tenant Resolvers](/dotnet/infrastructure/multi-tenancy/resolvers/) for the resolver pipeline and the trust
 modes (`Unrestricted` vs `CrossValidate`).
 
 ## Host impersonation
@@ -182,9 +182,9 @@ domain into its lowest-level packages.
 
 ## See also
 
-- [Tenant Resolvers](./resolvers/) — `JwtClaimTenantResolver`, header trust
+- [Tenant Resolvers](/dotnet/infrastructure/multi-tenancy/resolvers/) — `JwtClaimTenantResolver`, header trust
   modes, and the resolver pipeline
-- [Host vs Tenant](./host-tenant/) — schema separation and host admin
+- [Host vs Tenant](/dotnet/infrastructure/multi-tenancy/host-tenant/) — schema separation and host admin
   cross-tenant access
 - [Multi-tenancy concept](/dotnet/concepts/multi-tenancy/) — the problem and
   the query-filter model

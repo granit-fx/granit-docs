@@ -13,44 +13,44 @@ from scratch, begin with [Getting Started](/dotnet/getting-started/).
 
 ## Modules and endpoints
 
-- [Create a Module](./create-a-module/) -- build a new Granit module from scratch
-- [Add an Endpoint](./add-an-endpoint/) -- Minimal API with validation and Problem Details
-- [Configure Multi-Tenancy](./configure-multi-tenancy/) -- shared DB, per-schema, or per-database
+- [Create a Module](/dotnet/guides/create-a-module/) -- build a new Granit module from scratch
+- [Add an Endpoint](/dotnet/guides/add-an-endpoint/) -- Minimal API with validation and Problem Details
+- [Configure Multi-Tenancy](/dotnet/guides/configure-multi-tenancy/) -- shared DB, per-schema, or per-database
 
 ## Messaging and events
 
-- [Set Up Notifications](./set-up-notifications/) -- 6-channel notification engine
-- [Implement Data Import](./implement-data-import/) -- CSV/Excel import pipeline
-- [Add Background Jobs](./add-background-jobs/) -- recurring and delayed jobs
-- [Configure Blob Storage](./configure-blob-storage/) -- S3-compatible file storage
-- [Implement Webhooks](./implement-webhooks/) -- event delivery with retry
+- [Set Up Notifications](/dotnet/guides/set-up-notifications/) -- 6-channel notification engine
+- [Implement Data Import](/dotnet/guides/implement-data-import/) -- CSV/Excel import pipeline
+- [Add Background Jobs](/dotnet/guides/add-background-jobs/) -- recurring and delayed jobs
+- [Configure Blob Storage](/dotnet/guides/configure-blob-storage/) -- S3-compatible file storage
+- [Implement Webhooks](/dotnet/guides/implement-webhooks/) -- event delivery with retry
 
 ## Features and settings
 
-- [Add Feature Flags](./add-feature-flags/) -- toggle, numeric, and selection features
-- [Set Up Localization](./set-up-localization/) -- 18 cultures, source-generated keys
-- [Use Reference Data](./use-reference-data/) -- i18n reference tables
-- [Manage Application Settings](./manage-application-settings/) -- runtime settings store
+- [Add Feature Flags](/dotnet/guides/add-feature-flags/) -- toggle, numeric, and selection features
+- [Set Up Localization](/dotnet/guides/set-up-localization/) -- 18 cultures, source-generated keys
+- [Use Reference Data](/dotnet/guides/use-reference-data/) -- i18n reference tables
+- [Manage Application Settings](/dotnet/guides/manage-application-settings/) -- runtime settings store
 
 ## Documents and workflow
 
-- [Create Document Templates](./create-document-templates/) -- Scriban, PDF, Excel
-- [Implement Workflow](./implement-workflow/) -- FSM engine, publication lifecycle
+- [Create Document Templates](/dotnet/guides/create-document-templates/) -- Scriban, PDF, Excel
+- [Implement Workflow](/dotnet/guides/implement-workflow/) -- FSM engine, publication lifecycle
 
 ## Caching, versioning, and API
 
-- [Configure Caching](./configure-caching/) -- memory, Redis, FusionCache
-- [Add API Versioning](./add-api-versioning/) -- URL segment and header versioning
-- [Configure Idempotency](./configure-idempotency/) -- Idempotency-Key middleware
+- [Configure Caching](/dotnet/guides/configure-caching/) -- memory, Redis, FusionCache
+- [Add API Versioning](/dotnet/guides/add-api-versioning/) -- URL segment and header versioning
+- [Configure Idempotency](/dotnet/guides/configure-idempotency/) -- Idempotency-Key middleware
 
 ## Security and observability
 
-- [Secure your Application](./secure-your-application/) -- end-to-end hardening guide (HTTPS, CSP, auth, BFF, encryption, audit)
-- [Encrypt Sensitive Data](./encrypt-sensitive-data/) -- Vault Transit and AES-256
-- [Implement Audit Timeline](./implement-audit-timeline/) -- entity change tracking
-- [End-to-End Tracing](./end-to-end-tracing/) -- OpenTelemetry distributed tracing
-- [Testing](./testing/) -- unit and integration test patterns with GranitTestFixture
+- [Secure your Application](/dotnet/guides/secure-your-application/) -- end-to-end hardening guide (HTTPS, CSP, auth, BFF, encryption, audit)
+- [Encrypt Sensitive Data](/dotnet/guides/encrypt-sensitive-data/) -- Vault Transit and AES-256
+- [Implement Audit Timeline](/dotnet/guides/implement-audit-timeline/) -- entity change tracking
+- [End-to-End Tracing](/dotnet/guides/end-to-end-tracing/) -- OpenTelemetry distributed tracing
+- [Testing](/dotnet/guides/testing/) -- unit and integration test patterns with GranitTestFixture
 
 ## AI and tooling
 
-- [Use with AI Assistants](./use-with-ai-assistants/) -- ingest Granit docs into ChatGPT, Claude, Copilot
+- [Use with AI Assistants](/dotnet/guides/use-with-ai-assistants/) -- ingest Granit docs into ChatGPT, Claude, Copilot

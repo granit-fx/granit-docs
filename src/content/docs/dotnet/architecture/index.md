@@ -19,20 +19,20 @@ each design choice to its concrete implementation in the framework.
 
 ## What lives here
 
-- **[Pattern Library](./patterns/)** — 60 design patterns with their concrete
+- **[Pattern Library](/dotnet/architecture/patterns/)** — 60 design patterns with their concrete
   implementation in Granit, organized by category (architecture, cloud/SaaS, GoF,
   data, concurrency, .NET idioms, security, AI).
-- **[ADRs](./adr/)** — 56 Architecture Decision Records documenting library
+- **[ADRs](/dotnet/architecture/adr/)** — 56 Architecture Decision Records documenting library
   selections, design pivots, and the trade-offs behind each. Read these when a
   convention surprises you — the *why* is in the record.
-- **[Architecture Styles](./architecture-styles/)** — DDD ≠ architecture style.
+- **[Architecture Styles](/dotnet/architecture/architecture-styles/)** — DDD ≠ architecture style.
   Granit supports both Clean Architecture and Vertical Slice Architecture; pick
   what fits your team.
-- **[Dependency Graph](./dependency-graph/)** — visual map of every Granit
+- **[Dependency Graph](/dotnet/architecture/dependency-graph/)** — visual map of every Granit
   package and how it depends on the rest. Read before adding a reference.
-- **[HTTP Conventions](./http-conventions/)** — status codes, RFC 7807 Problem
+- **[HTTP Conventions](/dotnet/architecture/http-conventions/)** — status codes, RFC 7807 Problem
   Details, DTO naming, pagination — the contract every Granit endpoint honours.
-- **[Tech Stack](./tech-stack/)** — every direct production dependency, organized
+- **[Tech Stack](/dotnet/architecture/tech-stack/)** — every direct production dependency, organized
   by domain, with the ADR that justifies it.
 
 ## Design principles
@@ -54,15 +54,15 @@ multiple ADRs — they're not retrofits, they're the framework's spine.
 Three reading paths depending on what you're trying to do:
 
 - **Onboarding a Granit module for the first time** → start with the relevant
-  [pattern](./patterns/) page. It's the shortest description of how a concept is
+  [pattern](/dotnet/architecture/patterns/) page. It's the shortest description of how a concept is
   implemented, with file paths to the actual source.
 - **A convention is blocking you and you want to know if you should fight it** →
-  search the [ADRs](./adr/). If the constraint isn't justified there, it's
+  search the [ADRs](/dotnet/architecture/adr/). If the constraint isn't justified there, it's
   probably accidental and open for change. If it is, the *Consequences* section
   tells you what breaks when you bend it.
 - **You're picking a library or pattern for a new module** → check
-  [Tech Stack](./tech-stack/) first (libraries Granit already uses) and the
-  [Pattern Library](./patterns/) (idioms the rest of the framework follows).
+  [Tech Stack](/dotnet/architecture/tech-stack/) first (libraries Granit already uses) and the
+  [Pattern Library](/dotnet/architecture/patterns/) (idioms the rest of the framework follows).
   Aligning saves you from reinventing what's already tested.
 
 ## See also

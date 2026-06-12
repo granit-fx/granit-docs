@@ -179,4 +179,4 @@ public class AppModule : GranitModule { }
 
 - [AI module overview](/dotnet/ai/) — full workspace and provider documentation
 - [AI Workspace pattern — Microsoft Extensions.AI](https://devblogs.microsoft.com/dotnet/introducing-microsoft-extensions-ai-preview/)
-- [Factory Method](./factory-method/) — the GoF pattern underlying workspace creation
+- [Factory Method](/dotnet/architecture/patterns/factory-method/) — the GoF pattern underlying workspace creation

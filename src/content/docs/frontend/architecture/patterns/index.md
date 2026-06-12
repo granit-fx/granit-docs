@@ -17,26 +17,26 @@ packages, and concrete code examples from the SDK.
 
 | Pattern | Description |
 | ------- | ----------- |
-| [Factory](./factory/) | Hide instance creation complexity behind simple functions |
-| [Module Singleton](./module-singleton/) | Cross-package state sharing via ES module cache |
+| [Factory](/frontend/architecture/patterns/factory/) | Hide instance creation complexity behind simple functions |
+| [Module Singleton](/frontend/architecture/patterns/module-singleton/) | Cross-package state sharing via ES module cache |
 
 ## Structural patterns
 
 | Pattern | Description |
 | ------- | ----------- |
-| [Adapter](./adapter/) | Convert 3rd-party APIs into React-compatible interfaces |
+| [Adapter](/frontend/architecture/patterns/adapter/) | Convert 3rd-party APIs into React-compatible interfaces |
 
 ## Behavioral patterns
 
 | Pattern | Description |
 | ------- | ----------- |
-| [Interceptor](./interceptor/) | Transparent HTTP request/response pipeline processing |
-| [Strategy](./strategy/) | Pluggable implementations behind a common interface |
-| [Observer](./observer/) | Event notification without direct coupling |
+| [Interceptor](/frontend/architecture/patterns/interceptor/) | Transparent HTTP request/response pipeline processing |
+| [Strategy](/frontend/architecture/patterns/strategy/) | Pluggable implementations behind a common interface |
+| [Observer](/frontend/architecture/patterns/observer/) | Event notification without direct coupling |
 
 ## React patterns
 
 | Pattern | Description |
 | ------- | ----------- |
-| [Provider](./provider/) | Context-based dependency injection with typed hooks |
-| [Hook Composition](./hook-composition/) | Layer framework + application logic via hook wrapping |
+| [Provider](/frontend/architecture/patterns/provider/) | Context-based dependency injection with typed hooks |
+| [Hook Composition](/frontend/architecture/patterns/hook-composition/) | Layer framework + application logic via hook wrapping |

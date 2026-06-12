@@ -6,7 +6,7 @@ sidebar:
   order: 2
 ---
 
-Every delivery channel implements `INotificationChannel`. The engine resolves all registered channels and routes delivery commands by name. See [email-specific details](./email-channel/) and [SMS, push, and real-time channels](./sms-push-realtime/) for provider configuration.
+Every delivery channel implements `INotificationChannel`. The engine resolves all registered channels and routes delivery commands by name. See [email-specific details](/dotnet/infrastructure/notifications/email-channel/) and [SMS, push, and real-time channels](/dotnet/infrastructure/notifications/sms-push-realtime/) for provider configuration.
 
 ## INotificationChannel
 
@@ -185,10 +185,10 @@ Tracked as follow-ups on
 
 ## See also
 
-- [Overview](./) — fan-out engine, channels, dependency graph
-- [Fan-out engine](./fan-out-engine/) — dispatch mechanics and `INotificationPublisher`
-- [Email channel](./email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo provider configuration
-- [SMS, push & real-time](./sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push, Zulip
-- [Data model](./data-model/) — entities, CQRS stores, preferences
-- [Configuration](./configuration/) — options and health checks
+- [Overview](/dotnet/infrastructure/notifications/) — fan-out engine, channels, dependency graph
+- [Fan-out engine](/dotnet/infrastructure/notifications/fan-out-engine/) — dispatch mechanics and `INotificationPublisher`
+- [Email channel](/dotnet/infrastructure/notifications/email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo provider configuration
+- [SMS, push & real-time](/dotnet/infrastructure/notifications/sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push, Zulip
+- [Data model](/dotnet/infrastructure/notifications/data-model/) — entities, CQRS stores, preferences
+- [Configuration](/dotnet/infrastructure/notifications/configuration/) — options and health checks
 - [Identity module](/dotnet/security/identity/) — user lookup for `IRecipientResolver` implementations

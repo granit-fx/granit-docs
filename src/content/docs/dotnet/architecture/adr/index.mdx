@@ -25,69 +25,69 @@ Justification, and Consequences.
 
 | # | Title | Status | Date | Scope |
 | --- | ----- | ------ | ---- | ----- |
-| [001](001-observability/) | Observability Stack — Serilog + OpenTelemetry | Accepted | 2026-02-21 | Granit.Observability |
-| [002](002-redis/) | Redis via StackExchange.Redis — Distributed Cache | Accepted | 2026-02-21 | Granit.Caching |
-| [003](003-testing-stack/) | Testing Stack — xUnit v3, NSubstitute and Bogus | Accepted | 2026-02-21 | granit-dotnet |
-| [004](004-asp-versioning/) | Asp.Versioning — REST API Versioning | Accepted | 2026-02-22 | Granit.Http.ApiVersioning |
-| [005](005-wolverine-cronos/) | Wolverine + Cronos — Messaging, CQRS and Scheduling | Accepted | 2026-02-22 | Granit.Wolverine |
-| [006](006-fluentvalidation/) | FluentValidation — Business Validation Framework | Accepted | 2026-02-24 | Granit.Validation |
-| [007](007-testcontainers/) | Testcontainers — Containerized Integration Tests | Accepted | 2026-02-24 | Integration Tests |
-| [008](008-smartformat-pluralization/) | SmartFormat.NET — CLDR Pluralization | Accepted | 2026-02-26 | Granit.Localization |
-| [009](009-scalar-api-documentation/) | Scalar.AspNetCore — Interactive API Documentation | Accepted | 2026-02-26 | Granit.Http.ApiDocumentation |
-| [010](010-scriban-template-engine/) | Scriban — Text Template Engine | Accepted | 2026-02-27 | Granit.Templating.Scriban |
-| [011](011-closedxml-excel-generation/) | ClosedXML — Excel Spreadsheet Generation | Accepted | 2026-02-27 | Granit.DocumentGeneration.Excel |
-| [012](012-puppeteersharp-pdf-rendering/) | PuppeteerSharp — HTML to PDF Rendering | Accepted | 2026-02-28 | Granit.DocumentGeneration.Pdf |
-| [013](013-magicknet-image-processing/) | Magick.NET — Image Processing | Accepted | 2026-02-28 | Granit.Imaging.MagickNet |
-| [014](014-migration-shouldly/) | Migrate FluentAssertions to Shouldly | Accepted | 2026-02-28 | granit-dotnet |
-| [015](015-sep-csv-parsing/) | Sep — High-Performance CSV Parsing | Accepted | 2026-03-01 | Granit.DataExchange.Csv |
-| [016](016-sylvan-data-excel-parsing/) | Sylvan.Data.Excel — Streaming Excel File Reading | Accepted | 2026-03-01 | Granit.DataExchange.Excel |
-| [017](017-ddd-aggregate-value-object-strategy/) | DDD Aggregate Root & Value Object Strategy | Accepted | 2026-03-19 | granit-dotnet (all modules) |
-| [018](018-fusioncache-caching-provider/) | FusionCache — Caching Provider | Accepted | — | Granit.Caching |
-| [019](019-user-lookup-dual-mode/) | User Lookup — Dual Mode | Accepted | — | Granit.Identity |
-| [020](020-declarative-definitions-placement/) | Declarative Definitions Placement (Query & Export) | Accepted | 2026-04-18 | Granit.QueryEngine, Granit.DataExchange, all modules |
-| [021](021-privacy-data-export-defaults/) | Privacy Data Export — Framework Defaults | Accepted | 2026-04-19 | Granit.Privacy, Granit.Privacy.BlobStorage, Granit.Privacy.EntityFrameworkCore |
-| [022](022-command-sender-and-module-naming/) | ICommandSender + Module Naming — No Technology Suffix on Domain Modules | Accepted | 2026-04-20 | All business modules, Granit.Commands, Granit.Wolverine |
-| [023](023-tenant-aware-role-lookup/) | Tenant-aware role lookup | Accepted | 2026-04-22 | Granit.Identity.Local, Granit.Identity.Local.AspNetIdentity |
-| [024](024-role-orchestrator-shared-connection-transaction/) | Shared-connection EF Core transaction for role orchestration | Accepted | 2026-04-22 | Granit.Identity.Local.AspNetIdentity, Granit.Authorization.EntityFrameworkCore, Granit.OpenIddict.EntityFrameworkCore, Granit.Persistence.EntityFrameworkCore |
-| [025](025-keycloak-client-role-sync/) | Keycloak client-role distinction and boot-time sync | Accepted | 2026-04-22 | Granit.Identity, Granit.Identity.Federated.Keycloak |
-| [026](026-entraid-app-role-sync/) | Entra ID App Role distinction and boot-time sync | Accepted | 2026-04-22 | Granit.Identity.Federated.EntraId |
-| [027](027-cognito-app-client-group-sync/) | Cognito app-client group sync via naming-prefix convention | Accepted | 2026-04-23 | Granit.Identity.Federated.Cognito |
-| [028](028-unified-data-lookup/) | Unified Data Lookup for QueryEngine Filters and Form Dropdowns | Accepted | 2026-04-23 | Granit.DataLookup.\*, Granit.QueryEngine.\*, Granit.ReferenceData.\*, @granit/data-lookup, @granit/react-data-lookup |
-| [029](029-client-role-orphan-cleanup-policy/) | Client-role sync — opt-in orphan cleanup policy | Accepted | 2026-04-23 | Granit.Authorization.\*, Granit.Identity.Federated.\* |
-| [030](030-client-role-scheduled-resync/) | Client-role sync — scheduled re-sync via Granit.BackgroundJobs | Accepted | 2026-04-23 | Granit.Identity.Federated.\*.BackgroundJobs |
-| [031](031-client-role-write-operations/) | Client-role write operations on IIdentityClientRoleManager | Accepted | 2026-04-23 | Granit.Identity, Granit.Identity.Federated.\* |
-| [032](032-catalog-product-shared-billing-aggregate/) | Granit.Catalog with Product as the shared billing aggregate | Accepted | 2026-04-24 | Granit.Catalog.\*, Granit.Metering, Granit.Subscriptions, Granit.Invoicing |
-| [033](033-metering-hybrid-lifecycle-and-recompute/) | Metering hybrid — lifecycle, CountDistinct, recompute, backfill, deprecate | Accepted | 2026-04-25 | Granit.Metering.\* |
-| [034](034-subscriptions-phases-and-tiered-pricing/) | Subscriptions — pricing tiers, phases, discounts, price overrides | Accepted | 2026-04-25 | Granit.Subscriptions, Granit.Subscriptions.EntityFrameworkCore, Granit.Subscriptions.Endpoints |
-| [035](035-customer-balance-orb-credits-mapping/) | Granit.CustomerBalance ↔ ORB Credits term-by-term mapping | Accepted | 2026-04-25 | Granit.CustomerBalance.\* |
-| [036](036-invoicing-line-source-convention/) | Invoicing line item source + product convention | Accepted | 2026-04-25 | Granit.Invoicing.\*, Granit.Subscriptions, Granit.Metering |
-| [037](037-party-merge-framework/) | Party Merge Framework — Mergeable primitive + cross-module rewriters | Accepted | 2026-04-27 | Granit.EntityMerge, Granit.EntityMerge.EntityFrameworkCore, Granit.Parties, Granit.Parties.Mergeable, Granit.Parties.Endpoints |
-| [038](038-analytics-dashboard-definition-vs-aggregate/) | DashboardDefinition vs Dashboard boundary | Accepted | 2026-04-28 | Granit.Analytics, Granit.Analytics.EntityFrameworkCore, Granit.Analytics.Endpoints |
-| [039](039-widget-renderer-architecture/) | Widget renderer architecture — typed `IWidgetSource<TSnapshot>` + non-generic adapter | Accepted | 2026-04-29 | Granit.Dashboards, Granit.Dashboards.Endpoints, Granit.Analytics |
-| [040](040-three-tier-metadata-architecture/) | Three-tier metadata architecture (compiled / tenant customization / Niveau B) | Accepted | 2026-05-01 | Granit.Entities, Granit.Entities.Customization |
-| [041](041-component-catalog/) | Field component catalog + closed naming convention | Accepted | 2026-05-01 | Granit.Entities (form/detail builders); @granit/entities-react |
-| [042](042-view-catalog/) | View catalog + per-kind config schema | Accepted | 2026-05-01 | Granit.Entities (collections facet); @granit/entities-react |
-| [043](043-dashboard-push-transport/) | Dashboard push transport (SSE / WebSocket) is framework-owned | Accepted | 2026-04-30 | Granit.Analytics, Granit.Dashboards, Granit.Dashboards.Push |
-| [044](044-workspace-navigation/) | Workspace navigation — hierarchical + additive presets + agnostic detail routes | Accepted | 2026-04-30 | Granit.Workspaces.\*, @granit/workspaces-react |
-| [045](045-contributor-pattern/) | Inversion-of-control contributor pattern (workspaces, relations, activities) | Accepted | 2026-04-30 | Granit.Workspaces.Abstractions, Granit.Entities.Abstractions, Granit.Activities.Abstractions |
-| [046](046-activities-vs-timeline/) | Activities vs Timeline split — past vs future, narrative vs action-required | Accepted | 2026-04-30 | Granit.Timeline, Granit.Activities |
-| [047](047-entity-view/) | EntityView supersedes Granit.QueryEngine.SavedViews | Accepted | 2026-04-30 | Granit.Entities.Views, Granit.Entities.Views.Endpoints; @granit/entities-react |
-| [048](048-cross-module-entity-relations/) | Cross-module entity relations (smart buttons + sidebar + tab + inline-chips) | Accepted | 2026-05-01 | Granit.Entities.Abstractions, Granit.Entities, Granit.Entities.Endpoints |
-| [049](049-default-landing-route/) | Default landing route — 5-tier precedence with URL/route output | Accepted | 2026-04-30 | Granit.Workspaces, Granit.Workspaces.Endpoints |
-| [050](050-odata-edm-whitelist-via-entity-definition/) | OData EDM whitelist via EntityDefinition (gate) + ExportDefinition (field source) | Accepted | 2026-05-01 | Granit.Http.ODataExposure |
-| [051](051-user-aggregate-and-parties-bridge/) | User aggregate in Granit.Identity + optional `Granit.Parties.Identity` bridge | Accepted | 2026-05-02 | Granit.Identity, Granit.Identity.Local, Granit.Identity.Federated, Granit.Authorization, Granit.Parties.Identity |
-| [052](052-documents-module/) | Granit.Documents — user-managed file & asset module | Accepted | 2026-05-10 | Granit.Documents.\* (+ Renditions, AssetMetadata, PublicLinks, Indexing, Workflow, Collections) |
-| [053](053-entities-customization-layer-1/) | Granit.Entities.Customization — Layer 1 tenant overrides (reorder / regroup / hide) | Accepted | 2026-05-02 | Granit.Entities.Customization.\* (+ touches Granit.Entities.Endpoints) |
-| [054](054-taxonomy-module/) | Granit.Taxonomy — cross-cutting tags and hierarchical categories | Accepted | 2026-05-02 | Granit.Taxonomy.\* (replaces per-module `*Tag` join tables) |
-| [055](055-extract-url-safety-and-temp-files/) | Extract URL safety + temp-file primitives into shared packages | Accepted | 2026-05-11 | Granit.Http.Security, Granit.IO; consumers refactored: Browsing, Webhooks, Privacy.BlobStorage |
-| [056](056-server-side-action-execution/) | Server-side entity-action execution + bulk endpoint | Accepted | 2026-05-13 | Granit.Entities.Abstractions (`Actions/Execution/`), Granit.Entities.Endpoints (`BulkActionEndpoint`) |
-| [057](057-workspace-composition-belongs-to-the-application/) | Workspace composition belongs to the application, not the module | Accepted | 2026-05-15 | Granit.Workspaces.\*, every `*.Endpoints` package shipping a `*WorkspaceContribution` |
-| [058](058-json-persistence-policy/) | JSON Persistence Policy | Accepted | 2026-05-21 | Granit.Persistence |
-| [059](059-enum-persistence-strategy/) | Enum persistence strategy | Accepted | 2026-05-24 | Granit.Persistence |
-| [060](060-identity-sub-as-guid/) | OIDC sub-as-Guid policy for domain ownership | Accepted | 2026-05-26 | Granit.Users, Granit.Documents |
-| [061](061-optimistic-concurrency-strategy/) | Optimistic concurrency strategy | Accepted | 2026-05-27 | Granit.Persistence |
-| [062](062-framework-pure-core-transport-bindings/) | Framework-pure core + transport bindings (.Http / .Wolverine) | Accepted | 2026-05-27 | Granit.RateLimiting.\*, Granit.Features.\* |
-| [063](063-tenant-host-data-storage-modes/) | Tenant/Host data storage modes — reverted to single-DbContext baseline | Superseded | 2026-05-31 | Granit.Persistence, all `*.EntityFrameworkCore` packages |
-| [064](064-structured-ai-output-primitive/) | Structured AI output as a first-class Granit.AI primitive | Accepted | 2026-05-30 | Granit.AI, Granit.AI.Extraction, all `.AI` consumer modules |
-| [065](065-privacy-capability-modularization/) | Privacy capability modularization — extract Data Export as an opt-in module | Accepted | 2026-06-03 | Granit.Privacy, Granit.Privacy.DataExport, Granit.Parties.Privacy, Granit.Documents.Privacy |
-| [066](066-account-creation-role-provisioning-and-external-profile-completion/) | Account creation — master gate, default-role provisioning, external profile completion | Accepted | 2026-06-11 | Granit.Identity.Local, Granit.Identity.Local.Endpoints, Granit.OpenIddict |
+| [001](/dotnet/architecture/adr/001-observability/) | Observability Stack — Serilog + OpenTelemetry | Accepted | 2026-02-21 | Granit.Observability |
+| [002](/dotnet/architecture/adr/002-redis/) | Redis via StackExchange.Redis — Distributed Cache | Accepted | 2026-02-21 | Granit.Caching |
+| [003](/dotnet/architecture/adr/003-testing-stack/) | Testing Stack — xUnit v3, NSubstitute and Bogus | Accepted | 2026-02-21 | granit-dotnet |
+| [004](/dotnet/architecture/adr/004-asp-versioning/) | Asp.Versioning — REST API Versioning | Accepted | 2026-02-22 | Granit.Http.ApiVersioning |
+| [005](/dotnet/architecture/adr/005-wolverine-cronos/) | Wolverine + Cronos — Messaging, CQRS and Scheduling | Accepted | 2026-02-22 | Granit.Wolverine |
+| [006](/dotnet/architecture/adr/006-fluentvalidation/) | FluentValidation — Business Validation Framework | Accepted | 2026-02-24 | Granit.Validation |
+| [007](/dotnet/architecture/adr/007-testcontainers/) | Testcontainers — Containerized Integration Tests | Accepted | 2026-02-24 | Integration Tests |
+| [008](/dotnet/architecture/adr/008-smartformat-pluralization/) | SmartFormat.NET — CLDR Pluralization | Accepted | 2026-02-26 | Granit.Localization |
+| [009](/dotnet/architecture/adr/009-scalar-api-documentation/) | Scalar.AspNetCore — Interactive API Documentation | Accepted | 2026-02-26 | Granit.Http.ApiDocumentation |
+| [010](/dotnet/architecture/adr/010-scriban-template-engine/) | Scriban — Text Template Engine | Accepted | 2026-02-27 | Granit.Templating.Scriban |
+| [011](/dotnet/architecture/adr/011-closedxml-excel-generation/) | ClosedXML — Excel Spreadsheet Generation | Accepted | 2026-02-27 | Granit.DocumentGeneration.Excel |
+| [012](/dotnet/architecture/adr/012-puppeteersharp-pdf-rendering/) | PuppeteerSharp — HTML to PDF Rendering | Accepted | 2026-02-28 | Granit.DocumentGeneration.Pdf |
+| [013](/dotnet/architecture/adr/013-magicknet-image-processing/) | Magick.NET — Image Processing | Accepted | 2026-02-28 | Granit.Imaging.MagickNet |
+| [014](/dotnet/architecture/adr/014-migration-shouldly/) | Migrate FluentAssertions to Shouldly | Accepted | 2026-02-28 | granit-dotnet |
+| [015](/dotnet/architecture/adr/015-sep-csv-parsing/) | Sep — High-Performance CSV Parsing | Accepted | 2026-03-01 | Granit.DataExchange.Csv |
+| [016](/dotnet/architecture/adr/016-sylvan-data-excel-parsing/) | Sylvan.Data.Excel — Streaming Excel File Reading | Accepted | 2026-03-01 | Granit.DataExchange.Excel |
+| [017](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/) | DDD Aggregate Root & Value Object Strategy | Accepted | 2026-03-19 | granit-dotnet (all modules) |
+| [018](/dotnet/architecture/adr/018-fusioncache-caching-provider/) | FusionCache — Caching Provider | Accepted | — | Granit.Caching |
+| [019](/dotnet/architecture/adr/019-user-lookup-dual-mode/) | User Lookup — Dual Mode | Accepted | — | Granit.Identity |
+| [020](/dotnet/architecture/adr/020-declarative-definitions-placement/) | Declarative Definitions Placement (Query & Export) | Accepted | 2026-04-18 | Granit.QueryEngine, Granit.DataExchange, all modules |
+| [021](/dotnet/architecture/adr/021-privacy-data-export-defaults/) | Privacy Data Export — Framework Defaults | Accepted | 2026-04-19 | Granit.Privacy, Granit.Privacy.BlobStorage, Granit.Privacy.EntityFrameworkCore |
+| [022](/dotnet/architecture/adr/022-command-sender-and-module-naming/) | ICommandSender + Module Naming — No Technology Suffix on Domain Modules | Accepted | 2026-04-20 | All business modules, Granit.Commands, Granit.Wolverine |
+| [023](/dotnet/architecture/adr/023-tenant-aware-role-lookup/) | Tenant-aware role lookup | Accepted | 2026-04-22 | Granit.Identity.Local, Granit.Identity.Local.AspNetIdentity |
+| [024](/dotnet/architecture/adr/024-role-orchestrator-shared-connection-transaction/) | Shared-connection EF Core transaction for role orchestration | Accepted | 2026-04-22 | Granit.Identity.Local.AspNetIdentity, Granit.Authorization.EntityFrameworkCore, Granit.OpenIddict.EntityFrameworkCore, Granit.Persistence.EntityFrameworkCore |
+| [025](/dotnet/architecture/adr/025-keycloak-client-role-sync/) | Keycloak client-role distinction and boot-time sync | Accepted | 2026-04-22 | Granit.Identity, Granit.Identity.Federated.Keycloak |
+| [026](/dotnet/architecture/adr/026-entraid-app-role-sync/) | Entra ID App Role distinction and boot-time sync | Accepted | 2026-04-22 | Granit.Identity.Federated.EntraId |
+| [027](/dotnet/architecture/adr/027-cognito-app-client-group-sync/) | Cognito app-client group sync via naming-prefix convention | Accepted | 2026-04-23 | Granit.Identity.Federated.Cognito |
+| [028](/dotnet/architecture/adr/028-unified-data-lookup/) | Unified Data Lookup for QueryEngine Filters and Form Dropdowns | Accepted | 2026-04-23 | Granit.DataLookup.\*, Granit.QueryEngine.\*, Granit.ReferenceData.\*, @granit/data-lookup, @granit/react-data-lookup |
+| [029](/dotnet/architecture/adr/029-client-role-orphan-cleanup-policy/) | Client-role sync — opt-in orphan cleanup policy | Accepted | 2026-04-23 | Granit.Authorization.\*, Granit.Identity.Federated.\* |
+| [030](/dotnet/architecture/adr/030-client-role-scheduled-resync/) | Client-role sync — scheduled re-sync via Granit.BackgroundJobs | Accepted | 2026-04-23 | Granit.Identity.Federated.\*.BackgroundJobs |
+| [031](/dotnet/architecture/adr/031-client-role-write-operations/) | Client-role write operations on IIdentityClientRoleManager | Accepted | 2026-04-23 | Granit.Identity, Granit.Identity.Federated.\* |
+| [032](/dotnet/architecture/adr/032-catalog-product-shared-billing-aggregate/) | Granit.Catalog with Product as the shared billing aggregate | Accepted | 2026-04-24 | Granit.Catalog.\*, Granit.Metering, Granit.Subscriptions, Granit.Invoicing |
+| [033](/dotnet/architecture/adr/033-metering-hybrid-lifecycle-and-recompute/) | Metering hybrid — lifecycle, CountDistinct, recompute, backfill, deprecate | Accepted | 2026-04-25 | Granit.Metering.\* |
+| [034](/dotnet/architecture/adr/034-subscriptions-phases-and-tiered-pricing/) | Subscriptions — pricing tiers, phases, discounts, price overrides | Accepted | 2026-04-25 | Granit.Subscriptions, Granit.Subscriptions.EntityFrameworkCore, Granit.Subscriptions.Endpoints |
+| [035](/dotnet/architecture/adr/035-customer-balance-orb-credits-mapping/) | Granit.CustomerBalance ↔ ORB Credits term-by-term mapping | Accepted | 2026-04-25 | Granit.CustomerBalance.\* |
+| [036](/dotnet/architecture/adr/036-invoicing-line-source-convention/) | Invoicing line item source + product convention | Accepted | 2026-04-25 | Granit.Invoicing.\*, Granit.Subscriptions, Granit.Metering |
+| [037](/dotnet/architecture/adr/037-party-merge-framework/) | Party Merge Framework — Mergeable primitive + cross-module rewriters | Accepted | 2026-04-27 | Granit.EntityMerge, Granit.EntityMerge.EntityFrameworkCore, Granit.Parties, Granit.Parties.Mergeable, Granit.Parties.Endpoints |
+| [038](/dotnet/architecture/adr/038-analytics-dashboard-definition-vs-aggregate/) | DashboardDefinition vs Dashboard boundary | Accepted | 2026-04-28 | Granit.Analytics, Granit.Analytics.EntityFrameworkCore, Granit.Analytics.Endpoints |
+| [039](/dotnet/architecture/adr/039-widget-renderer-architecture/) | Widget renderer architecture — typed `IWidgetSource<TSnapshot>` + non-generic adapter | Accepted | 2026-04-29 | Granit.Dashboards, Granit.Dashboards.Endpoints, Granit.Analytics |
+| [040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) | Three-tier metadata architecture (compiled / tenant customization / Niveau B) | Accepted | 2026-05-01 | Granit.Entities, Granit.Entities.Customization |
+| [041](/dotnet/architecture/adr/041-component-catalog/) | Field component catalog + closed naming convention | Accepted | 2026-05-01 | Granit.Entities (form/detail builders); @granit/entities-react |
+| [042](/dotnet/architecture/adr/042-view-catalog/) | View catalog + per-kind config schema | Accepted | 2026-05-01 | Granit.Entities (collections facet); @granit/entities-react |
+| [043](/dotnet/architecture/adr/043-dashboard-push-transport/) | Dashboard push transport (SSE / WebSocket) is framework-owned | Accepted | 2026-04-30 | Granit.Analytics, Granit.Dashboards, Granit.Dashboards.Push |
+| [044](/dotnet/architecture/adr/044-workspace-navigation/) | Workspace navigation — hierarchical + additive presets + agnostic detail routes | Accepted | 2026-04-30 | Granit.Workspaces.\*, @granit/workspaces-react |
+| [045](/dotnet/architecture/adr/045-contributor-pattern/) | Inversion-of-control contributor pattern (workspaces, relations, activities) | Accepted | 2026-04-30 | Granit.Workspaces.Abstractions, Granit.Entities.Abstractions, Granit.Activities.Abstractions |
+| [046](/dotnet/architecture/adr/046-activities-vs-timeline/) | Activities vs Timeline split — past vs future, narrative vs action-required | Accepted | 2026-04-30 | Granit.Timeline, Granit.Activities |
+| [047](/dotnet/architecture/adr/047-entity-view/) | EntityView supersedes Granit.QueryEngine.SavedViews | Accepted | 2026-04-30 | Granit.Entities.Views, Granit.Entities.Views.Endpoints; @granit/entities-react |
+| [048](/dotnet/architecture/adr/048-cross-module-entity-relations/) | Cross-module entity relations (smart buttons + sidebar + tab + inline-chips) | Accepted | 2026-05-01 | Granit.Entities.Abstractions, Granit.Entities, Granit.Entities.Endpoints |
+| [049](/dotnet/architecture/adr/049-default-landing-route/) | Default landing route — 5-tier precedence with URL/route output | Accepted | 2026-04-30 | Granit.Workspaces, Granit.Workspaces.Endpoints |
+| [050](/dotnet/architecture/adr/050-odata-edm-whitelist-via-entity-definition/) | OData EDM whitelist via EntityDefinition (gate) + ExportDefinition (field source) | Accepted | 2026-05-01 | Granit.Http.ODataExposure |
+| [051](/dotnet/architecture/adr/051-user-aggregate-and-parties-bridge/) | User aggregate in Granit.Identity + optional `Granit.Parties.Identity` bridge | Accepted | 2026-05-02 | Granit.Identity, Granit.Identity.Local, Granit.Identity.Federated, Granit.Authorization, Granit.Parties.Identity |
+| [052](/dotnet/architecture/adr/052-documents-module/) | Granit.Documents — user-managed file & asset module | Accepted | 2026-05-10 | Granit.Documents.\* (+ Renditions, AssetMetadata, PublicLinks, Indexing, Workflow, Collections) |
+| [053](/dotnet/architecture/adr/053-entities-customization-layer-1/) | Granit.Entities.Customization — Layer 1 tenant overrides (reorder / regroup / hide) | Accepted | 2026-05-02 | Granit.Entities.Customization.\* (+ touches Granit.Entities.Endpoints) |
+| [054](/dotnet/architecture/adr/054-taxonomy-module/) | Granit.Taxonomy — cross-cutting tags and hierarchical categories | Accepted | 2026-05-02 | Granit.Taxonomy.\* (replaces per-module `*Tag` join tables) |
+| [055](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/) | Extract URL safety + temp-file primitives into shared packages | Accepted | 2026-05-11 | Granit.Http.Security, Granit.IO; consumers refactored: Browsing, Webhooks, Privacy.BlobStorage |
+| [056](/dotnet/architecture/adr/056-server-side-action-execution/) | Server-side entity-action execution + bulk endpoint | Accepted | 2026-05-13 | Granit.Entities.Abstractions (`Actions/Execution/`), Granit.Entities.Endpoints (`BulkActionEndpoint`) |
+| [057](/dotnet/architecture/adr/057-workspace-composition-belongs-to-the-application/) | Workspace composition belongs to the application, not the module | Accepted | 2026-05-15 | Granit.Workspaces.\*, every `*.Endpoints` package shipping a `*WorkspaceContribution` |
+| [058](/dotnet/architecture/adr/058-json-persistence-policy/) | JSON Persistence Policy | Accepted | 2026-05-21 | Granit.Persistence |
+| [059](/dotnet/architecture/adr/059-enum-persistence-strategy/) | Enum persistence strategy | Accepted | 2026-05-24 | Granit.Persistence |
+| [060](/dotnet/architecture/adr/060-identity-sub-as-guid/) | OIDC sub-as-Guid policy for domain ownership | Accepted | 2026-05-26 | Granit.Users, Granit.Documents |
+| [061](/dotnet/architecture/adr/061-optimistic-concurrency-strategy/) | Optimistic concurrency strategy | Accepted | 2026-05-27 | Granit.Persistence |
+| [062](/dotnet/architecture/adr/062-framework-pure-core-transport-bindings/) | Framework-pure core + transport bindings (.Http / .Wolverine) | Accepted | 2026-05-27 | Granit.RateLimiting.\*, Granit.Features.\* |
+| [063](/dotnet/architecture/adr/063-tenant-host-data-storage-modes/) | Tenant/Host data storage modes — reverted to single-DbContext baseline | Superseded | 2026-05-31 | Granit.Persistence, all `*.EntityFrameworkCore` packages |
+| [064](/dotnet/architecture/adr/064-structured-ai-output-primitive/) | Structured AI output as a first-class Granit.AI primitive | Accepted | 2026-05-30 | Granit.AI, Granit.AI.Extraction, all `.AI` consumer modules |
+| [065](/dotnet/architecture/adr/065-privacy-capability-modularization/) | Privacy capability modularization — extract Data Export as an opt-in module | Accepted | 2026-06-03 | Granit.Privacy, Granit.Privacy.DataExport, Granit.Parties.Privacy, Granit.Documents.Privacy |
+| [066](/dotnet/architecture/adr/066-account-creation-role-provisioning-and-external-profile-completion/) | Account creation — master gate, default-role provisioning, external profile completion | Accepted | 2026-06-11 | Granit.Identity.Local, Granit.Identity.Local.Endpoints, Granit.OpenIddict |

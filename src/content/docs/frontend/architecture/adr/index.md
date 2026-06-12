@@ -18,12 +18,12 @@ Conditions.
 
 | # | Title | Status | Date | Scope |
 | - | ----- | ------ | ---- | ----- |
-| [001](001-source-direct/) | TypeScript Source-Direct — No Build Step | Accepted | 2026-02-27 | All `@granit/*` packages |
-| [002](002-pnpm-workspace/) | pnpm Workspace Monorepo | Accepted | 2026-02-27 | granit-front |
-| [003](003-react-19/) | React 19 as Minimum Version | Accepted | 2026-02-27 | All React packages |
-| [004](004-headless-packages/) | Headless Packages — Hooks Only, UI in Consumer Apps | Accepted | 2026-03-06 | All `@granit/*` packages |
-| [005](005-keycloak/) | Keycloak as Authentication Provider | Accepted | 2026-02-27 | @granit/authentication |
-| [006](006-tanstack-query/) | TanStack Query for Data Fetching | Accepted | 2026-03-04 | All React data-fetching packages |
-| [007](007-vitest/) | Vitest as Test Runner | Accepted | 2026-02-27 | granit-front |
-| [008](008-opentelemetry/) | OpenTelemetry for Distributed Tracing | Accepted | 2026-03-04 | @granit/tracing |
-| [009](009-branded-types/) | Branded Types for Dates, IDs, and Currencies | Accepted | 2026-04-06 | All `@granit/*` packages |
+| [001](/frontend/architecture/adr/001-source-direct/) | TypeScript Source-Direct — No Build Step | Accepted | 2026-02-27 | All `@granit/*` packages |
+| [002](/frontend/architecture/adr/002-pnpm-workspace/) | pnpm Workspace Monorepo | Accepted | 2026-02-27 | granit-front |
+| [003](/frontend/architecture/adr/003-react-19/) | React 19 as Minimum Version | Accepted | 2026-02-27 | All React packages |
+| [004](/frontend/architecture/adr/004-headless-packages/) | Headless Packages — Hooks Only, UI in Consumer Apps | Accepted | 2026-03-06 | All `@granit/*` packages |
+| [005](/frontend/architecture/adr/005-keycloak/) | Keycloak as Authentication Provider | Accepted | 2026-02-27 | @granit/authentication |
+| [006](/frontend/architecture/adr/006-tanstack-query/) | TanStack Query for Data Fetching | Accepted | 2026-03-04 | All React data-fetching packages |
+| [007](/frontend/architecture/adr/007-vitest/) | Vitest as Test Runner | Accepted | 2026-02-27 | granit-front |
+| [008](/frontend/architecture/adr/008-opentelemetry/) | OpenTelemetry for Distributed Tracing | Accepted | 2026-03-04 | @granit/tracing |
+| [009](/frontend/architecture/adr/009-branded-types/) | Branded Types for Dates, IDs, and Currencies | Accepted | 2026-04-06 | All `@granit/*` packages |
