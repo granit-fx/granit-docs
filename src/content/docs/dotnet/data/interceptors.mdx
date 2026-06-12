@@ -37,6 +37,29 @@ Resolves audit data from DI:
 | `Added` | Sets `CreatedAt`, `CreatedBy`. Auto-generates `Id` if `Guid.Empty`. Injects `TenantId` if `IMultiTenant` and null. |
 | `Modified` | Protects `CreatedAt`/`CreatedBy` from overwrite. Sets `ModifiedAt`, `ModifiedBy`. |
 
+### What gets audited
+
+The interceptor pivots on **interfaces**, not on a base class:
+
+- `ICreationAuditedObject` (`CreatedAt`, `CreatedBy`) — populated on `Added`
+- `IModificationAuditedObject` (`ModifiedAt`, `ModifiedBy`) — populated on `Modified`
+
+The `CreationAuditedEntity` / `AuditedEntity` / aggregate-root base classes implement
+these interfaces, so the common case needs nothing extra. But an entity that **cannot**
+inherit those base classes still participates by implementing the interfaces directly.
+The canonical case is `LocalIdentity`, forced to extend ASP.NET Identity's
+`IdentityUser<Guid>` (single inheritance is already spent), which implements both audit
+interfaces. `Id` generation stays gated on the `Entity` hierarchy — types that own their
+own key (like `IdentityUser`) keep it.
+
+:::caution[Unaudited `CreatedAt` persists as `-infinity` on PostgreSQL]
+An entity that carries a non-nullable `CreatedAt` but is **not** reached by the
+interceptor (neither a `CreationAuditedEntity` nor an `ICreationAuditedObject`) leaves
+`CreatedAt` at `default(DateTimeOffset)`. Npgsql maps that to the `timestamptz` special
+value `-infinity` rather than a real date. If you see `-infinity` in an audit column, the
+entity is missing `ICreationAuditedObject`.
+:::
+
 :::caution[ExecuteUpdate bypasses this interceptor]
 `ExecuteUpdate()` and `ExecuteUpdateAsync()` emit a raw SQL `UPDATE` and never
 reach `AuditedEntityInterceptor`. Set `ModifiedAt`, `ModifiedBy`, and `TenantId`
