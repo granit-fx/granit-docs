@@ -274,15 +274,15 @@ Wolverine__RetryDelays__1=00:00:30
 | `ResolvePrivateAddresses` | `bool` | `false` | When `false`, short-circuit private/loopback/link-local IPs to `null`. |
 | `ProviderOrder` | `string[]` | `[]` | Provider fallback order; empty = registration order. |
 
-### IP geolocation -- ip-api -- `IpApiIpGeolocationOptions`
+### IP geolocation -- ipinfo -- `IpInfoIpGeolocationOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `IpGeolocation:IpApi` | |
-| **Package** | -- | `Granit.IpGeolocation.IpApi` | |
-| `ProviderName` | `string` | `"IpApi"` | Identifier used in `ProviderOrder`. |
+| **Section** | -- | `IpGeolocation:IpInfo` | |
+| **Package** | -- | `Granit.IpGeolocation.IpInfo` | |
+| `ProviderName` | `string` | `"IpInfo"` | Identifier used in `ProviderOrder`. |
 | `ApiToken` | `string?` | `null` | ipinfo.io token sent as `Bearer`; tokenless tier is rate-limited. |
-| `BaseAddress` | `Uri` | `https://ipinfo.io` | Provider base address. |
+| `BaseAddress` | `Uri` | `https://ipinfo.io` | Provider base address. **Must be HTTPS for non-loopback hosts** -- the request carries the client IP and the API token, so a plaintext `http` URL to a remote host is rejected at startup (loopback allowed for dev/mocks). |
 | `Timeout` | `TimeSpan` | `00:00:03` | Per-request timeout. |
 | `MaxResponseSizeBytes` | `long` | `65536` | Max buffered response size. |
 

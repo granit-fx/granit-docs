@@ -186,6 +186,8 @@ const layers: Layer[] = [
       { name: "BFF",             pkg: "Granit.Bff",             href: "/dotnet/security/bff/",             tip: "Backend For Frontend: OIDC proxy, token store, CSRF, YARP" },
       { name: "SecurityHeaders",   pkg: "Granit.Http.SecurityHeaders",   href: "/dotnet/security/security-headers/",         tip: "OWASP security headers: Server suppression, HSTS, X-Content-Type-Options, X-Frame-Options, CSP, COOP/COEP" },
       { name: "Http.Security",     pkg: "Granit.Http.Security",          href: "/dotnet/api/url-safety/",           tip: "Shared URL safety primitive: SSRF guard against cloud metadata, RFC 1918, loopback, DNS-rebinding" },
+      { name: "IpGeolocation",     pkg: "Granit.IpGeolocation (family)", href: "/dotnet/security/ip-geolocation/",  tip: "Source-agnostic IP → GeoLocation: MaxMind (offline .mmdb) + ipinfo (online) providers, fallback chain, HMAC-keyed cache, GDPR-safe defaults" },
+      { name: "UserSessions",      pkg: "Granit.UserSessions (family)",  href: "/dotnet/security/user-sessions/",   tip: "Session anomaly detection: impossible travel, new device/country heuristics + optional AI risk scoring, EF Core persistence" },
     ],
   },
   {

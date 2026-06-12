@@ -32,7 +32,7 @@ chain; and the cache is keyed with HMAC-SHA-256 once you supply a secret.
 <FileTree>
 - Granit.IpGeolocation.Abstractions/ `GeoLocation` read-model, `IpMasking` — zero dependencies, safe to reference from contracts
 - Granit.IpGeolocation/ `IIpGeolocationResolver`, fallback chain, FusionCache caching, the cache-key security knob
-- Granit.IpGeolocation.IpApi/ ip-api.com / ipinfo.io HTTP provider (online, no local data)
+- Granit.IpGeolocation.IpInfo/ ipinfo.io HTTP provider (online, no local data)
 - Granit.IpGeolocation.MaxMind/ MaxMind GeoIP2 / DB-IP `.mmdb` provider (offline, in-process)
 </FileTree>
 
@@ -40,7 +40,7 @@ chain; and the cache is keyed with HMAC-SHA-256 once you supply a secret.
 | ------- | ---- | ---------- |
 | `Granit.IpGeolocation.Abstractions` | `GeoLocation` record, `IpMasking` utility | _(none — contract-only)_ |
 | `Granit.IpGeolocation` | `IIpGeolocationResolver`, `IIpGeolocationProvider`, caching | `Granit.Caching` |
-| `Granit.IpGeolocation.IpApi` | `IpApiIpGeolocationProvider` (online HTTP lookup) | `Granit.IpGeolocation` |
+| `Granit.IpGeolocation.IpInfo` | `IpInfoIpGeolocationProvider` (online HTTP lookup) | `Granit.IpGeolocation` |
 | `Granit.IpGeolocation.MaxMind` | `MaxMindIpGeolocationProvider` (offline `.mmdb` lookup) | `Granit.IpGeolocation` |
 
 ## The GeoLocation read-model
@@ -122,20 +122,31 @@ into RAM and releases the OS handle — recommended, because it lets you atomica
 the file on disk while the app runs. `"MemoryMapped"` trades a lower RAM footprint for a
 held file handle.
 
+The `MaxMind` provider reads **any** MaxMind-DB-format (`.mmdb`) file — not only MaxMind's own
+GeoIP2. That includes [DB-IP](https://db-ip.com/) databases, published by a Belgian (EU) company.
+
+<Aside type="tip" title="Strictest GDPR: EU, zero third-party transfer">
+For the tightest data-protection posture, run the offline `MaxMind` provider with a **DB-IP
+(EU) `.mmdb`** and register no online provider. The lookup happens entirely in-process, so the
+client IP — personal data — **never leaves the application**: no HTTP call, no third-party
+processor, no cross-border transfer to reason about under Schrems II / SCCs. Treat the US-hosted
+ipinfo HTTP provider as an **opt-in online fallback**, added only when you accept that transfer.
+</Aside>
+
 </TabItem>
-<TabItem label="ip-api (online)">
+<TabItem label="ipinfo (online)">
 
 An HTTP lookup against ipinfo.io — no local data to ship or refresh, at the cost of a
 network round-trip and a rate limit on the tokenless tier.
 
 ```csharp
-builder.AddGranitIpGeolocationIpApi();
+builder.AddGranitIpGeolocationIpInfo();
 ```
 
 ```json
 {
   "IpGeolocation": {
-    "IpApi": {
+    "IpInfo": {
       "ApiToken": "${IPINFO_TOKEN}",
       "Timeout": "00:00:03"
     }
@@ -146,21 +157,25 @@ builder.AddGranitIpGeolocationIpApi();
 The token is sent as a `Bearer` header; lookup failures are logged **without** the request
 URI (which carries the IP). Auto-redirect is disabled and the response is size-bounded.
 
+`BaseAddress` **must be HTTPS** for any non-loopback host: the request carries the client IP
+(personal data) and the API token, so a plaintext `http` URL to a remote host is rejected at
+startup. `http` stays allowed for loopback, so local mocks and integration tests still work.
+
 </TabItem>
 <TabItem label="Both (chain)">
 
-Run MaxMind first (fast, offline), fall through to ip-api only when the local database has
+Run MaxMind first (fast, offline), fall through to ipinfo only when the local database has
 no answer.
 
 ```csharp
 builder.AddGranitIpGeolocationMaxMind();
-builder.AddGranitIpGeolocationIpApi();
+builder.AddGranitIpGeolocationIpInfo();
 ```
 
 ```json
 {
   "IpGeolocation": {
-    "ProviderOrder": ["MaxMind", "IpApi"]
+    "ProviderOrder": ["MaxMind", "IpInfo"]
   }
 }
 ```
@@ -171,7 +186,10 @@ builder.AddGranitIpGeolocationIpApi();
 ## Caching & the cache-key security knob
 
 Results (positive _and_ negative) are cached via `IFusionCache` for `CacheDuration`
-(default **1 hour**). When `Granit.Caching.StackExchangeRedis` is installed, that cache is
+(default **1 hour**). Lookups go through `GetOrSetAsync`, so concurrent requests for the same
+uncached IP are **coalesced into a single provider call** — a burst on one address resolves once,
+not once per request (per instance; a shared cache still resolves once per node on first miss).
+When `Granit.Caching.StackExchangeRedis` is installed, that cache is
 shared across pods — which is exactly where the privacy trap lives.
 
 <Aside type="danger" title="Set IpGeolocation:CacheKeySecret in production">
@@ -219,7 +237,7 @@ sequenceDiagram
     participant R as IIpGeolocationResolver
     participant Cache as IFusionCache
     participant P1 as MaxMind (offline)
-    participant P2 as ip-api (online)
+    participant P2 as ipinfo (online)
 
     C->>R: ResolveAsync("203.0.113.42")
     R->>R: parse — private/loopback? → null
@@ -250,10 +268,10 @@ sequenceDiagram
 | `IpGeolocation:MaxMind:ProviderName` | `string` | `"MaxMind"` | Identifier used in `ProviderOrder`. |
 | `IpGeolocation:MaxMind:ReloadOnChange` | `bool` | `true` | Reload the database when the file changes. |
 | `IpGeolocation:MaxMind:FileAccess` | `enum` | `Memory` | `Memory` (load to RAM, release handle) or `MemoryMapped`. |
-| `IpGeolocation:IpApi:ApiToken` | `string?` | `null` | ipinfo.io token sent as `Bearer`; tokenless tier is rate-limited. |
-| `IpGeolocation:IpApi:BaseAddress` | `Uri` | `https://ipinfo.io` | Provider base address. |
-| `IpGeolocation:IpApi:Timeout` | `TimeSpan` | `00:00:03` | Per-request timeout. |
-| `IpGeolocation:IpApi:MaxResponseSizeBytes` | `long` | `65536` | Max buffered response size. |
+| `IpGeolocation:IpInfo:ApiToken` | `string?` | `null` | ipinfo.io token sent as `Bearer`; tokenless tier is rate-limited. |
+| `IpGeolocation:IpInfo:BaseAddress` | `Uri` | `https://ipinfo.io` | Provider base address. **Must be HTTPS for non-loopback hosts** — the request carries the client IP and the API token, so a plaintext `http` URL to a remote host is rejected at startup (loopback allowed for dev/mocks). |
+| `IpGeolocation:IpInfo:Timeout` | `TimeSpan` | `00:00:03` | Per-request timeout. |
+| `IpGeolocation:IpInfo:MaxResponseSizeBytes` | `long` | `65536` | Max buffered response size. |
 
 ## Public API summary
 
@@ -262,7 +280,7 @@ sequenceDiagram
 | Read-model | `GeoLocation`, `IpMasking` | `Granit.IpGeolocation.Abstractions` |
 | Resolver | `IIpGeolocationResolver`, `IIpGeolocationProvider` | `Granit.IpGeolocation` |
 | Options | `GranitIpGeolocationOptions` | `Granit.IpGeolocation` |
-| ip-api provider | `AddGranitIpGeolocationIpApi()`, `IpApiIpGeolocationOptions` | `Granit.IpGeolocation.IpApi` |
+| ipinfo provider | `AddGranitIpGeolocationIpInfo()`, `IpInfoIpGeolocationOptions` | `Granit.IpGeolocation.IpInfo` |
 | MaxMind provider | `AddGranitIpGeolocationMaxMind()`, `MaxMindIpGeolocationOptions`, `MaxMindFileAccess` | `Granit.IpGeolocation.MaxMind` |
 
 ## Compliance
