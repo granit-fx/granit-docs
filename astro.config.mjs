@@ -224,6 +224,11 @@ export default defineConfig({
     "/api/Granit.Identity.html": "/dotnet/security/identity/",
     "/api/Granit.Workflow.html": "/dotnet/building-blocks/workflow/",
     "/api/Granit.BackgroundJobs.html": "/dotnet/infrastructure/background-jobs/",
+    "/api/Granit.html": "/dotnet/core/module-system/",
+    "/api/Granit.Caching.html": "/dotnet/data/caching/",
+    "/api/Granit.Wolverine.html": "/dotnet/infrastructure/wolverine-messaging/",
+    "/api/Granit.DataExchange.html": "/dotnet/building-blocks/data-exchange/",
+    "/api/Granit.Notifications.html": "/dotnet/infrastructure/notifications/",
   },
   integrations: [
     starlight({
@@ -737,7 +742,7 @@ export default defineConfig({
           },
         ),
         starlightLinksValidator({
-          errorOnRelativeLinks: false,
+          errorOnRelativeLinks: true,
           exclude: ["/", "/api/**", "/blog/**"],
         }),
         starlightImageZoom(),

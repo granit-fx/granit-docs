@@ -85,8 +85,9 @@ The handler MUST:
 - Treat `AddRole` as idempotent. Persist only when the call returns `true` so the
   outbox does not accumulate no-op rows.
 - Live in a downstream module that depends on `Granit.Parties` — never the reverse.
-  An [architecture test](https://github.com/granit-fx/granit-dotnet/blob/develop/tests/Granit.ArchitectureTests/PartiesDependencyDirectionTests.cs)
-  enforces this dependency direction.
+  The [no-circular-reference architecture test](https://github.com/granit-fx/granit-dotnet/blob/develop/tests/Granit.ArchitectureTests/ProjectDependencyTests.cs)
+  guarantees the direction cannot invert: once a module depends on `Granit.Parties`,
+  a back-reference would form a cycle and fail the build.
 
 ## Manual admin overrides
 

@@ -15,7 +15,7 @@ incomprehensible response) silently falls back to a deterministic baseline. The 
 experience degrades gracefully — from AI-enhanced to standard — rather than failing
 with an error.
 
-The pattern is the AI-specific application of the [Circuit Breaker and Retry](./circuit-breaker-retry/)
+The pattern is the AI-specific application of the [Circuit Breaker and Retry](/dotnet/architecture/patterns/circuit-breaker-retry/)
 pattern: when the AI "circuit" opens, the fallback path takes over without bubbling
 an exception to the caller.
 
@@ -147,7 +147,7 @@ internal sealed class AIMappingSuggestionService(
 
 ## Further reading
 
-- [Circuit Breaker and Retry](./circuit-breaker-retry/) — the underlying resilience pattern
+- [Circuit Breaker and Retry](/dotnet/architecture/patterns/circuit-breaker-retry/) — the underlying resilience pattern
 - [AI module overview](/dotnet/ai/) — workspace and timeout configuration
 - [QueryEngine.AI — Natural Language Query](/dotnet/ai/natural-language-query/)
 - [DataExchange.AI — AI-assisted import mapping](/dotnet/ai/import-mapping/)

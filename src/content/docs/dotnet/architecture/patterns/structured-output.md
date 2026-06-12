@@ -124,7 +124,7 @@ call works across all providers.
 
 ## Further reading
 
-- [Graceful AI Fallback](./ai-fallback/) — what to do when structured output fails
-- [AI Workspace](./ai-workspace/) — provider and workspace configuration
+- [Graceful AI Fallback](/dotnet/architecture/patterns/ai-fallback/) — what to do when structured output fails
+- [AI Workspace](/dotnet/architecture/patterns/ai-workspace/) — provider and workspace configuration
 - [Microsoft.Extensions.AI — Structured Output](https://devblogs.microsoft.com/dotnet/introducing-microsoft-extensions-ai-preview/)
 - [OpenAI Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs)

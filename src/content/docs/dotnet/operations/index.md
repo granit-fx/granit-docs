@@ -19,11 +19,11 @@ on European sovereign infrastructure.
 
 | Guide | Description |
 | --- | --- |
-| [Deployment](./deployment/) | Kubernetes deployment, Docker, health probes, scaling |
-| [Configuration](./configuration/) | Vault secrets, environment variables, appsettings layering |
-| [Observability](./observability/) | LGTM stack, Serilog, OpenTelemetry, Grafana dashboards |
-| [CI/CD](./ci-cd/) | GitHub Actions pipeline, build, test, pack, publish |
-| [Production checklist](./production-checklist/) | Go-live verification for security, GDPR, ISO 27001 |
+| [Deployment](/dotnet/operations/deployment/) | Kubernetes deployment, Docker, health probes, scaling |
+| [Configuration](/dotnet/operations/configuration/) | Vault secrets, environment variables, appsettings layering |
+| [Observability](/dotnet/operations/observability/) | LGTM stack, Serilog, OpenTelemetry, Grafana dashboards |
+| [CI/CD](/dotnet/operations/ci-cd/) | GitHub Actions pipeline, build, test, pack, publish |
+| [Production checklist](/dotnet/operations/production-checklist/) | Go-live verification for security, GDPR, ISO 27001 |
 
 ## Sovereign infrastructure
 

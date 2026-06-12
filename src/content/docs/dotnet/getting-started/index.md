@@ -27,8 +27,8 @@ Each step builds on the previous one. By the end, you will have a production-rea
 
 ## Steps
 
-1. [Your First API](./your-first-api/) — Create a module, wire it into `Program.cs`, define a domain model, and expose your first endpoint.
-2. [Adding Persistence](./adding-persistence/) — Add EF Core with PostgreSQL, automatic audit fields, and soft delete.
-3. [Adding Authentication](./adding-authentication/) — Secure endpoints with JWT Bearer tokens and Keycloak.
-4. [Project Templates](./project-templates/) — Use `dotnet new` templates to scaffold new Granit projects.
-5. [Next Steps](./next-steps/) — Explore advanced modules: notifications, workflows, blob storage, and more.
+1. [Your First API](/dotnet/getting-started/your-first-api/) — Create a module, wire it into `Program.cs`, define a domain model, and expose your first endpoint.
+2. [Adding Persistence](/dotnet/getting-started/adding-persistence/) — Add EF Core with PostgreSQL, automatic audit fields, and soft delete.
+3. [Adding Authentication](/dotnet/getting-started/adding-authentication/) — Secure endpoints with JWT Bearer tokens and Keycloak.
+4. [Project Templates](/dotnet/getting-started/project-templates/) — Use `dotnet new` templates to scaffold new Granit projects.
+5. [Next Steps](/dotnet/getting-started/next-steps/) — Explore advanced modules: notifications, workflows, blob storage, and more.

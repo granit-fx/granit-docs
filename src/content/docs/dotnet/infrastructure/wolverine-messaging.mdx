@@ -454,9 +454,9 @@ attribute to the assembly's `AssemblyInfo.cs` or any file in the project.
 - [ADR-005: Wolverine + Cronos](/dotnet/architecture/adr/005-wolverine-cronos/) -- Why Wolverine was chosen for messaging and CQRS
 - [ADR-022: ICommandSender + module naming](/dotnet/architecture/adr/022-command-sender-and-module-naming/) — command dispatch abstraction and `.Wolverine` suffix policy
 - [Core module](/dotnet/core/module-system/) — `IDomainEvent`, `IIntegrationEvent`, `IDomainEventDispatcher`
-- [Persistence module](./persistence/) — `DomainEventDispatcherInterceptor`, transactional outbox
-- [Multi-tenancy module](./multi-tenancy/) — Tenant context propagation
-- [Security module](./authentication/) — `ICurrentUserService` propagation
+- [Persistence module](/dotnet/data/persistence/) — `DomainEventDispatcherInterceptor`, transactional outbox
+- [Multi-tenancy module](/dotnet/infrastructure/multi-tenancy/) — Tenant context propagation
+- [Security module](/dotnet/security/authentication/) — `ICurrentUserService` propagation
 - [API Reference](/api/Granit.Wolverine.html) (auto-generated from XML docs)
 - [Wolverine: Code Generation guide](https://wolverinefx.net/guide/codegen.html) — upstream reference for `TypeLoadMode`, the `codegen` CLI, and pre-built types
 - [Blog: CQRS without MediatR — how Granit uses Wolverine](/blog/cqrs-without-mediatr-how-granit-uses-wolverine/) — the design rationale behind dropping MediatR in favor of Wolverine

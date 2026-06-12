@@ -581,7 +581,7 @@ custom grant type is also supported for stateless flows.
 
 External login support is gated behind the `OpenIddict.ExternalLogins` feature flag
 (default: `true`). Supported providers are configured in
-[`IExternalProviderRegistry`](./configuration/#granitopeniddictclientoptions).
+[`IExternalProviderRegistry`](/dotnet/security/openiddict/configuration/#granitopeniddictclientoptions).
 
 ### List linked providers
 
@@ -793,7 +793,7 @@ services.AddScoped<ExternalClaimsMapper, MyCustomClaimsMapper>();
 ## Passkeys (WebAuthn / FIDO2)
 
 Passkey endpoints are gated behind the `OpenIddict.Passkeys` feature flag (default:
-`false`). When enabled, requires [`GranitPasskeyOptions`](./configuration/#granitpasskeyoptions)
+`false`). When enabled, requires [`GranitPasskeyOptions`](/dotnet/security/openiddict/configuration/#granitpasskeyoptions)
 configuration. Uses ASP.NET Core Identity's built-in .NET 10 WebAuthn support.
 
 | Method | Path | Auth | Description |
@@ -974,7 +974,7 @@ api.MapGranitAccount(options =>
 
 ## See also
 
-- [Overview](./index/)
-- [User management (admin API)](./user-management/)
-- [Advanced features](./advanced/)
-- [Configuration reference](./configuration/)
+- [Overview](/dotnet/security/openiddict/)
+- [User management (admin API)](/dotnet/security/openiddict/user-management/)
+- [Advanced features](/dotnet/security/openiddict/advanced/)
+- [Configuration reference](/dotnet/security/openiddict/configuration/)

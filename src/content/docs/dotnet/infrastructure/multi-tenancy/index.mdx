@@ -99,15 +99,15 @@ app.UseAuthorization();
 
 This section covers multi-tenancy in depth:
 
-- [**Tenant Resolvers**](./resolvers/) — the four built-in resolvers and how to
+- [**Tenant Resolvers**](/dotnet/infrastructure/multi-tenancy/resolvers/) — the four built-in resolvers and how to
   add custom ones
-- [**Isolation Strategies**](./isolation/) — shared database, schema-per-tenant,
+- [**Isolation Strategies**](/dotnet/infrastructure/multi-tenancy/isolation/) — shared database, schema-per-tenant,
   database-per-tenant, and the hybrid model
-- [**Host vs Tenant**](./host-tenant/) — how to separate host infrastructure
+- [**Host vs Tenant**](/dotnet/infrastructure/multi-tenancy/host-tenant/) — how to separate host infrastructure
   from tenant data using `GranitDbDefaults`
-- [**Cache Isolation**](./cache/) — automatic tenant-scoped cache keys with
+- [**Cache Isolation**](/dotnet/infrastructure/multi-tenancy/cache/) — automatic tenant-scoped cache keys with
   `TenantAwareFusionCache`
-- [**Automatic Provisioning**](./isolation/#automatic-tenant-provisioning) —
+- [**Automatic Provisioning**](/dotnet/infrastructure/multi-tenancy/isolation/#automatic-tenant-provisioning) —
   zero-config schema creation, migrations, and seeding for new tenants
 
 ## See also

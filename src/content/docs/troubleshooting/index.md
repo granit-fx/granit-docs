@@ -11,12 +11,12 @@ patterns to avoid, and answers to frequently asked questions.
 
 ## Section contents
 
-- [Common Errors](./common-errors/) -- module loading failures, DbContext
+- [Common Errors](/troubleshooting/common-errors/) -- module loading failures, DbContext
   misconfiguration, validator registration, multi-tenancy, authentication, and
   caching issues with solutions
-- [Anti-patterns](./anti-patterns/) -- code patterns that compile but cause
+- [Anti-patterns](/troubleshooting/anti-patterns/) -- code patterns that compile but cause
   runtime issues, performance problems, or violate Granit conventions
-- [FAQ](./faq/) -- answers to the most frequently asked questions about Granit's
+- [FAQ](/troubleshooting/faq/) -- answers to the most frequently asked questions about Granit's
   architecture, requirements, and capabilities
 
 ## Getting help

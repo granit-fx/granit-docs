@@ -8,7 +8,7 @@ sidebar:
 Frameworks fail when their dependencies stop being maintained. Granit picks each
 direct dependency the way a senior engineer picks a kitchen knife — based on what's
 been kept sharp for years, not what's trending this quarter. Every choice that had
-alternatives is captured in an [ADR](./adr/) so the reasoning survives the person
+alternatives is captured in an [ADR](/dotnet/architecture/adr/) so the reasoning survives the person
 who made it.
 
 This page lists every direct production dependency, organized by functional domain.

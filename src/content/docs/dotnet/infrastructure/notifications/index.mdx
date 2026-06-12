@@ -195,23 +195,23 @@ context.Services.AddGranitNotificationsWhatsApp(opts => opts.Provider = "Brevo")
 Modules that emit user-facing events (export ready, payment succeeded, quota
 exceeded…) ship a sibling `Granit.{Module}.Notifications` package wiring the
 event to the fan-out engine and providing the email templates. The
-[notifications package conventions](./conventions/) page documents the
+[notifications package conventions](/dotnet/infrastructure/notifications/conventions/) page documents the
 canonical file layout, the Wolverine handler shape, the `<title>`-tag subject
 extraction, the JSON-array `*Display` companion gotcha, the manifest pinning
 test, and the embedded-vs-DB template override mechanics.
 
 ## What's next
 
-- [Fan-Out Engine](./fan-out-engine/) — multi-channel dispatch, preference filtering, audit trail
-- [Channels Overview](./channels/) — capability matrix across InApp, Email, SMS, Push, Realtime
-- [Email Channel](./email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo providers
-- [SMS, Push & Real-Time](./sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push
-- [Wolverine Integration](./wolverine-integration/) — durable outbox dispatch with retry
-- [Data Model](./data-model/) — entities, CQRS stores, user preferences
-- [Endpoints](./endpoints/) — inbox, preferences, subscriptions, follower REST API
-- [Configuration](./configuration/) — options, health checks, provider selection
-- [Package Conventions](./conventions/) — file layout, Wolverine handler shape, manifest pinning
-- [Recipes](./recipes/) — workflow integration, authorization, encryption patterns
+- [Fan-Out Engine](/dotnet/infrastructure/notifications/fan-out-engine/) — multi-channel dispatch, preference filtering, audit trail
+- [Channels Overview](/dotnet/infrastructure/notifications/channels/) — capability matrix across InApp, Email, SMS, Push, Realtime
+- [Email Channel](/dotnet/infrastructure/notifications/email-channel/) — SMTP, SendGrid, Azure, Scaleway, Brevo providers
+- [SMS, Push & Real-Time](/dotnet/infrastructure/notifications/sms-push-realtime/) — WhatsApp, FCM, SignalR, SSE, Web Push
+- [Wolverine Integration](/dotnet/infrastructure/notifications/wolverine-integration/) — durable outbox dispatch with retry
+- [Data Model](/dotnet/infrastructure/notifications/data-model/) — entities, CQRS stores, user preferences
+- [Endpoints](/dotnet/infrastructure/notifications/endpoints/) — inbox, preferences, subscriptions, follower REST API
+- [Configuration](/dotnet/infrastructure/notifications/configuration/) — options, health checks, provider selection
+- [Package Conventions](/dotnet/infrastructure/notifications/conventions/) — file layout, Wolverine handler shape, manifest pinning
+- [Recipes](/dotnet/infrastructure/notifications/recipes/) — workflow integration, authorization, encryption patterns
 
 ## See also
 

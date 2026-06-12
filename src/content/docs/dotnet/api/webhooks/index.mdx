@@ -350,10 +350,10 @@ opt in via the notifications admin UI.
 | Notification | Trigger | Channels | Severity |
 | ------------ | ------- | -------- | :------: |
 | `webhooks.delivery_failure_threshold` | `WebhookDeliveryFailureThresholdExceededEto` | Email, InApp | Warning |
-| `webhooks.signing_key_rotation_due` | `WebhookSigningKeyRotationDueEto` (emitted daily by the [rotation scanner](./signing-keys/)) | Email, InApp | Warning |
+| `webhooks.signing_key_rotation_due` | `WebhookSigningKeyRotationDueEto` (emitted daily by the [rotation scanner](/dotnet/api/webhooks/signing-keys/)) | Email, InApp | Warning |
 
 The `signing_key_rotation_due` notification is the operator-facing arm of the
-[dual-key rotation flow](./signing-keys/) — it gives administrators a
+[dual-key rotation flow](/dotnet/api/webhooks/signing-keys/) — it gives administrators a
 configurable lead time (`WebhooksOptions.RotationLeadTimeDays`, default 14 days)
 to rotate before a key's `ExpiresAt` passes.
 
@@ -393,8 +393,8 @@ event in production.
 ## See also
 
 - [Implement webhooks guide](/dotnet/guides/implement-webhooks/) — step-by-step setup walkthrough
-- [Signing keys (dual-key rotation)](./signing-keys/) — `WebhookSigningKey` aggregate, overlap rotation, verification fallback
-- [Webhook endpoints](./webhooks-endpoints/) — full Minimal API surface (subscriptions, deliveries, stats)
-- [API & Web module](./api-web/) — Exception handling, versioning, idempotency
-- [Persistence module](./persistence/) — EF Core interceptors, query filters
-- [Wolverine module](./wolverine/) — Messaging, transactional outbox
+- [Signing keys (dual-key rotation)](/dotnet/api/webhooks/signing-keys/) — `WebhookSigningKey` aggregate, overlap rotation, verification fallback
+- [Webhook endpoints](/dotnet/api/webhooks/endpoints/) — full Minimal API surface (subscriptions, deliveries, stats)
+- [API & Web module](/dotnet/api/) — Exception handling, versioning, idempotency
+- [Persistence module](/dotnet/api/webhooks/persistence/) — EF Core interceptors, query filters
+- [Wolverine module](/dotnet/api/webhooks/wolverine/) — Messaging, transactional outbox

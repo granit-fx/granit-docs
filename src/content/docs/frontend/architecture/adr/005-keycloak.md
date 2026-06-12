@@ -116,4 +116,4 @@ This decision should be re-evaluated if:
 ## References
 
 - Keycloak: <https://www.keycloak.org/>
-- keycloak-js: <https://www.keycloak.org/docs/latest/securing_apps/index.html#_javascript_adapter>
+- keycloak-js: <https://www.keycloak.org/securing-apps/javascript-adapter>

@@ -6,7 +6,7 @@ sidebar:
   order: 1
 ---
 
-The fan-out engine is the core dispatch mechanism of Granit.Notifications. A single `PublishAsync()` call produces one `DeliverNotificationCommand` per recipient per channel, after filtering through [user preferences](./data-model/#notification-preferences).
+The fan-out engine is the core dispatch mechanism of Granit.Notifications. A single `PublishAsync()` call produces one `DeliverNotificationCommand` per recipient per channel, after filtering through [user preferences](/dotnet/infrastructure/notifications/data-model/#notification-preferences).
 
 ## Fan-out pattern
 
@@ -170,9 +170,9 @@ public class AppointmentReminderService(INotificationPublisher publisher)
 
 ## See also
 
-- [Overview](./) — package structure and setup
-- [Channels](./channels/) — `INotificationChannel`, custom channel implementation
-- [Data model](./data-model/) — `NotificationPreference`, recipient resolution
-- [Wolverine integration](./wolverine-integration/) — durable outbox dispatch with retry
-- [Configuration](./configuration/) — provider options and telemetry
+- [Overview](/dotnet/infrastructure/notifications/) — package structure and setup
+- [Channels](/dotnet/infrastructure/notifications/channels/) — `INotificationChannel`, custom channel implementation
+- [Data model](/dotnet/infrastructure/notifications/data-model/) — `NotificationPreference`, recipient resolution
+- [Wolverine integration](/dotnet/infrastructure/notifications/wolverine-integration/) — durable outbox dispatch with retry
+- [Configuration](/dotnet/infrastructure/notifications/configuration/) — provider options and telemetry
 - [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/) — outbox pattern and tenant context propagation

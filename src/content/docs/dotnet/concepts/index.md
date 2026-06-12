@@ -37,42 +37,42 @@ Start with the **Module System** — every other concept builds on it.
 
 ## Core architecture
 
-- [Module System](./module-system/) — `[DependsOn]`, topological sort, conditional modules,
+- [Module System](/dotnet/concepts/module-system/) — `[DependsOn]`, topological sort, conditional modules,
   two-phase lifecycle
-- [Dependency Injection](./dependency-injection/) — module service registration, Options
+- [Dependency Injection](/dotnet/concepts/dependency-injection/) — module service registration, Options
   pattern, PostConfigure
-- [Configuration](./configuration/) — Options (startup), Settings (runtime), Module Config
+- [Configuration](/dotnet/concepts/configuration/) — Options (startup), Settings (runtime), Module Config
   (frontend read-only)
 
 ## Data and infrastructure
 
-- [Persistence](./persistence/) — isolated DbContext, interceptors (audit, soft delete,
+- [Persistence](/dotnet/concepts/persistence/) — isolated DbContext, interceptors (audit, soft delete,
   versioning), automatic query filters
-- [CQRS](./cqrs/) — Reader/Writer separation, compliance-driven data access,
+- [CQRS](/dotnet/concepts/cqrs-command-query-separation/) — Reader/Writer separation, compliance-driven data access,
   least-privilege injection
-- [Multi-Tenancy](./multi-tenancy/) — three isolation strategies, transparent query filters,
+- [Multi-Tenancy](/dotnet/concepts/multi-tenancy/) — three isolation strategies, transparent query filters,
   async-safe tenant context
-- [Messaging](./messaging/) — domain events, integration events, transactional outbox,
+- [Messaging](/dotnet/concepts/messaging/) — domain events, integration events, transactional outbox,
   automatic context propagation
-- [Wolverine Optionality](./wolverine-optionality/) — Channel fallback, crash behavior,
+- [Wolverine Optionality](/dotnet/concepts/wolverine-optionality/) — Channel fallback, crash behavior,
   when you actually need a message bus
 
 ## Security and compliance
 
-- [Security Model](./security-model/) — JWT authentication, provider-agnostic RBAC,
+- [Security Model](/dotnet/concepts/security-model/) — JWT authentication, provider-agnostic RBAC,
   per-role caching, back-channel logout
-- [Compliance](./compliance/) — GDPR and ISO 27001 enforcement as structural patterns
+- [Compliance](/dotnet/concepts/compliance/) — GDPR and ISO 27001 enforcement as structural patterns
 
 ## Architecture
 
-- [Framework vs Modules](./framework-vs-modules/) — classification boundary and
+- [Framework vs Modules](/dotnet/concepts/framework-vs-modules/) — classification boundary and
   dependency rules between horizontal framework and vertical business modules
 
 ## Tooling
 
-- [Bundles](./bundles/) — meta-packages and the fluent `GranitBuilder` API for quick onboarding
+- [Bundles](/dotnet/concepts/bundles/) — meta-packages and the fluent `GranitBuilder` API for quick onboarding
 
 ## Architecture decisions
 
-- [Modular Monolith vs Microservices](./modular-monolith-vs-microservices/) — decision
+- [Modular Monolith vs Microservices](/dotnet/concepts/modular-monolith-vs-microservices/) — decision
   framework, migration path, operational trade-offs

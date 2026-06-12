@@ -76,7 +76,7 @@ src/Granit.BlobStorage.EntityFrameworkCore/  # Persistence
 
 ### Feature level — fine-grained slices
 
-Within a module, the [REPR pattern](./repr/) already groups endpoints by
+Within a module, the [REPR pattern](/dotnet/architecture/patterns/repr/) already groups endpoints by
 feature. Application developers building **on** Granit can take this further
 by organizing their own modules as full vertical slices.
 
@@ -207,7 +207,7 @@ public sealed record PatientManagementPatientResponse(
 ## Further reading
 
 - [Vertical Slice Architecture -- Jimmy Bogard](https://www.jimmybogard.com/vertical-slice-architecture/)
-- [REPR pattern in Granit](./repr/)
-- [CQRS -- Reader/Writer separation](./cqrs/)
-- [Module System -- topological loading](./module-system/)
+- [REPR pattern in Granit](/dotnet/architecture/patterns/repr/)
+- [CQRS -- Reader/Writer separation](/dotnet/architecture/patterns/cqrs/)
+- [Module System -- topological loading](/dotnet/architecture/patterns/module-system/)
 - [Architecture Styles -- DDD, Clean Architecture & Vertical Slices](/dotnet/architecture/architecture-styles/)

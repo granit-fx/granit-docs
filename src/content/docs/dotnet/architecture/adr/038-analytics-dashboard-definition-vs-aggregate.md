@@ -334,7 +334,7 @@ widgets) and keeps reorder updates to two rows.
 
 ## References
 
-- [`CLAUDE.md` — Analytics conventions section](../../../../../../../CLAUDE.md)
+- [`CLAUDE.md` — Analytics conventions section](https://github.com/granit-fx/granit-dotnet/blob/develop/CLAUDE.md)
 - ADR-017 — [DDD Aggregate Root & Value Object Strategy](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/)
 - ADR-018 — [FusionCache Caching Provider](/dotnet/architecture/adr/018-fusioncache-caching-provider/)
 - ADR-020 — [Declarative Definitions Placement (Query & Export)](/dotnet/architecture/adr/020-declarative-definitions-placement/)
