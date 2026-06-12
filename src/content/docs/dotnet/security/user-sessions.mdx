@@ -16,27 +16,27 @@ perfectly valid session. The signal that something is wrong lives in the **patte
 login from Brussels followed eight minutes later by one from São Paulo, a brand-new device
 family, a country the account has never touched.
 
-`Granit.UserSessions` turns that pattern into a risk verdict. It combines cheap, deterministic
-heuristics with an optional AI layer, persists the verdict, and raises an integration event
+Granit's **Identity** session-risk packages turn that pattern into a risk verdict. They combine
+cheap, deterministic heuristics with an optional AI layer, persist the verdict, and raise an integration event
 when a session looks suspicious — so the [session list](/dotnet/security/identity/) a user
 sees can flag it and your handlers can step up authentication or notify the account owner.
 
 ## Package structure
 
 <FileTree>
-- Granit.UserSessions.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
-- Granit.UserSessions.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
-- Granit.UserSessions.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core (`user_sessions_risks`)
+- Granit.Identity.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
+- Granit.Identity.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
+- Granit.Identity.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core, persisted in the User DbContext (`user_sessions_risks`)
 </FileTree>
 
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
-| `Granit.UserSessions.Abstractions` | Contracts + no-op detector + in-memory store | `Granit` |
-| `Granit.UserSessions.AnomalyDetection` | Heuristic + AI detector, risk evaluator | `Granit.AI`, `Granit.UserSessions.Abstractions` |
-| `Granit.UserSessions.EntityFrameworkCore` | Durable `IUserSessionRiskStore` | `Granit.Persistence.EntityFrameworkCore`, `Granit.UserSessions.Abstractions` |
+| `Granit.Identity.Abstractions` | Contracts + no-op detector + in-memory store | `Granit` |
+| `Granit.Identity.AnomalyDetection` | Heuristic + AI detector, risk evaluator | `Granit.AI`, `Granit.Identity.Abstractions` |
+| `Granit.Identity.EntityFrameworkCore` | Durable `IUserSessionRiskStore`, mapped into the User DbContext | `Granit.Persistence.EntityFrameworkCore`, `Granit.Identity.Abstractions` |
 
 <Aside type="note">
-`Granit.UserSessions.Abstractions` alone registers a **no-op** detector (`None` for every
+`Granit.Identity.Abstractions` alone registers a **no-op** detector (`None` for every
 session) and an **in-memory** risk store. That keeps development and single-node setups
 working with zero configuration; the production behaviour switches on when you add the
 AnomalyDetection and EntityFrameworkCore packages.
@@ -90,7 +90,7 @@ downgrade a heuristic that already fired.
 
 ## The AI layer (opt-in)
 
-When `Granit.UserSessions.AnomalyDetection` is wired with an AI provider, the detector also
+When `Granit.Identity.AnomalyDetection` is wired with an AI provider, the detector also
 asks the model — via `IStructuredCompletion` from [Granit.AI](/dotnet/ai/) — for a structured
 verdict: level, score, reason codes, and a short explanation. It degrades gracefully to the
 heuristic verdict on rate-limit, timeout, or refusal.
@@ -160,13 +160,29 @@ is contained to that account.
 
 ## Persisting verdicts
 
-`Granit.UserSessions.EntityFrameworkCore` swaps the in-memory store for a durable one backed
-by the `user_sessions_risks` table.
+`Granit.Identity.EntityFrameworkCore` swaps the in-memory store for a durable one backed by
+the `user_sessions_risks` table. The table is mapped into the **User DbContext**
+(`IdentityDbContext`), so the risk store shares the identity connection and migrations — there
+is no separate session-risk database to provision.
+
+Adding the package and calling `AddGranitIdentityEntityFrameworkCore` is all that is required;
+the module registers the EF Core–backed `IUserSessionRiskStore` automatically, overriding the
+in-memory default.
 
 ```csharp
-builder.AddGranitUserSessionsEntityFrameworkCore(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("UserSessions")));
+builder.AddGranitIdentityEntityFrameworkCore(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Identity")));
 ```
+
+<Aside type="caution" title="Breaking change">
+`AddGranitUserSessionsEntityFrameworkCore(...)` and the standalone
+`Granit.UserSessions.EntityFrameworkCore` package have been **removed**. The durable risk store
+now lives in `Granit.Identity.EntityFrameworkCore`, and its `user_sessions_risks` table is part
+of the User DbContext. Migrate by deleting the separate registration call and the
+`UserSessions` connection string; once you call `AddGranitIdentityEntityFrameworkCore`, the risk
+store is wired automatically. Existing `user_sessions_risks` data is unaffected — only its
+owning DbContext changes.
+</Aside>
 
 ```csharp
 public interface IUserSessionRiskStore
@@ -220,10 +236,10 @@ sequenceDiagram
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.UserSessions.Abstractions` |
-| Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.UserSessions.Abstractions` |
-| AI + heuristics | `IUserSessionRiskEvaluator`, `UserSessionsAnomalyDetectionOptions` | `Granit.UserSessions.AnomalyDetection` |
-| Persistence | `AddGranitUserSessionsEntityFrameworkCore()`, `GranitUserSessionsDbProperties` | `Granit.UserSessions.EntityFrameworkCore` |
+| Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.Identity.Abstractions` |
+| Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
+| AI + heuristics | `IUserSessionRiskEvaluator`, `UserSessionsAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
+| Persistence | EF Core `IUserSessionRiskStore`, `GranitUserSessionsDbProperties` | `Granit.Identity.EntityFrameworkCore` |
 
 ## Compliance
 
