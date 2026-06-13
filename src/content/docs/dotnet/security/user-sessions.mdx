@@ -26,7 +26,7 @@ sees can flag it and your handlers can step up authentication or notify the acco
 <FileTree>
 - Granit.Identity.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
 - Granit.Identity.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
-- Granit.Identity.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core, persisted in the Identity DbContext (`identity_user_session_risks`)
+- Granit.Identity.EntityFrameworkCore/ Durable `IUserSessionRiskStore` and `IDeviceTrustStore`, persisted in the Identity DbContext (`identity_user_session_risks`, `identity_device_trusts`)
 </FileTree>
 
 | Package | Role | Depends on |
@@ -232,12 +232,32 @@ sequenceDiagram
     end
 ```
 
+## Device trust dampens anomaly noise
+
+When the user has explicitly [trusted the device](/dotnet/security/identity/#trusted-devices)
+the session originates from, the evaluator dampens the noise without masking real threats.
+`IUserSessionRiskEvaluator.EvaluateAsync` takes the resolved `deviceId` and consults the
+`IDeviceTrustStore`:
+
+| Detected level | On an actively-trusted device |
+|----------------|-------------------------------|
+| `High` | **Preserved** — a trusted device can still be compromised |
+| `Medium` | **Downgraded to `Low`**, the `trusted_device` reason is appended, and the `SuspiciousUserSessionDetectedEto` alert is suppressed |
+| `Low` / `None` | Unchanged |
+
+The `deviceId` reaches the evaluator only when the browser traverses Granit and the
+[device-trust middleware](/dotnet/security/identity/#wiring) (`UseGranitDeviceTrust()`) decoded
+the cookie: a **BFF** or **OpenIddict front-channel** sign-in stamps it onto
+`UserSessionCreatedEto`. A pure IdP webhook session is server-to-server with no browser cookie,
+so it carries no `deviceId` and is treated as untrusted — the full risk verdict stands.
+
 ## Public API summary
 
 | Category | Key types | Package |
 |----------|-----------|---------|
 | Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.Identity.Abstractions` |
 | Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
+| Device trust | `IDeviceTrustStore`, `DeviceTrustVerdict`, `DeviceTrustLevel` | `Granit.Identity.Abstractions` |
 | AI + heuristics | `IUserSessionRiskEvaluator`, `IdentityAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
 | Persistence | EF Core `IUserSessionRiskStore`, `GranitIdentityDbProperties` | `Granit.Identity.EntityFrameworkCore` |
 

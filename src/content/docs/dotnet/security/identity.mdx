@@ -279,7 +279,9 @@ Google Cloud deployments.
 | `/sessions` | `GET` | Authenticated caller | List the caller's own sessions |
 | `/sessions/{sessionId}` | `DELETE` | Authenticated caller | Revoke one of the caller's sessions |
 | `/sessions` | `DELETE` | Authenticated caller | Revoke all the caller's sessions except the current one |
-| `/devices` | `GET` | Authenticated caller | List the caller's own devices |
+| `/devices` | `GET` | Authenticated caller | List the caller's own devices (each carries `isTrusted` / `trustedUntil`) |
+| `/devices/trust` | `POST` | Authenticated caller | Mark the caller's current device as [trusted](#trusted-devices) |
+| `/devices/{deviceId}/trust` | `DELETE` | Authenticated caller | Revoke trust for one of the caller's devices |
 | `/identity/provider/users/{userId}/sessions` | `GET` | `Identity.Sessions.Read` | List another user's sessions (admin) |
 | `/identity/provider/users/{userId}/sessions/{sessionId}` | `DELETE` | `Identity.Sessions.Manage` | Terminate one session (admin) |
 | `/identity/provider/users/{userId}/sessions` | `DELETE` | `Identity.Sessions.Manage` | Terminate all sessions (admin) |
@@ -313,6 +315,169 @@ endpoints are permission-gated, for forensics). The raw value always stays serve
 `UserSessionDescriptor` so geolocation and [anomaly detection](/dotnet/security/user-sessions/)
 keep working regardless of the flag.
 :::
+
+## Trusted devices
+
+"Remember this device" lets a user vouch for the browser they routinely sign in from, so the
+framework can reduce sign-in friction on that device without weakening security everywhere
+else. The anchor is a **signed device cookie** bound to a stable device identity, backed by a
+**durable trust store**; a recorded trust verdict then feeds two independent decisions — the
+two-factor step-up at login and the [session-risk signal](/dotnet/security/user-sessions/).
+
+### Trust levels
+
+```csharp
+public enum DeviceTrustLevel
+{
+    None = 0,        // no trust recorded — the device is treated as new/unknown
+    Remembered = 1,  // signed, revocable "remember this device" cookie (time-bounded)
+    Strong = 2,      // device-bound credential (passkey / WebAuthn) — strongest signal
+}
+```
+
+Marking a device through `POST /devices/trust` records `Remembered` — trust derived from a
+data-protected cookie, spoofable only by exfiltrating the token. `Strong` is reserved for
+trust backed by a device-bound passkey (the credential cannot leave the authenticator);
+wiring passkey assertions to `Strong` is a planned follow-up, so today the manage endpoint
+always grants `Remembered`.
+
+### Endpoints
+
+The trust endpoints ride on the canonical `/devices` surface — self-service, scoped to the
+authenticated caller, mapped by `MapGranitUserSessions()`:
+
+| Route | Method | Body / result | Purpose |
+|-------|--------|---------------|---------|
+| `/devices/trust` | `POST` | → `{ deviceId, trustedUntil }` | Bind the current browser to a device identity and record a trust verdict for `TrustDuration` |
+| `/devices/{deviceId}/trust` | `DELETE` | → `204 No Content` | Remove the trust verdict; if it is the current device, clear the cookie too |
+
+Listing devices (`GET /devices`) now enriches each `UserDeviceResponse` with `isTrusted` and
+`trustedUntil`, read back from the trust store by the manager.
+
+:::note[Trust shows on a listed device only when its id matches the cookie]
+`isTrusted` surfaces on a *listed* device only when its backend device id matches the cookie's
+device id. The authoritative path — cookie → store → step-up / risk — is reliable regardless;
+the list flag is a convenience that depends on the backend reporting the same id.
+:::
+
+### Configuration
+
+```json
+{
+  "Identity": {
+    "DeviceTrust": {
+      "TrustDuration": "30.00:00:00",
+      "AllowMfaBypass": false,
+      "CookieName": "__Host-id-devicetrust"
+    }
+  }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `Identity:DeviceTrust:TrustDuration` | `TimeSpan` | `30.00:00:00` (30 d) | Lifetime carried by both the signed cookie and the stored verdict |
+| `Identity:DeviceTrust:AllowMfaBypass` | `bool` | `false` | Whether a trusted device may skip the 2FA step-up (see below) |
+| `Identity:DeviceTrust:CookieName` | `string` | `__Host-id-devicetrust` | Device-cookie name; the `__Host-` prefix requires HTTPS + `Path=/` + no `Domain` (override for plain-HTTP dev) |
+
+### Wiring
+
+The manage endpoints and the login step-up bypass work out of the box once
+`AddGranitIdentityEndpoints()` is registered. To also feed the **federated risk signal**, add
+the resolution middleware so the device binding is decoded once per request and stamped onto
+the session-created event:
+
+```csharp
+app.UseGranitDeviceTrust();   // decode the device cookie into HttpContext.Items, before endpoints
+```
+
+`UseGranitDeviceTrust()` is **optional**: when absent, trust still drives the manage endpoints
+and the step-up bypass, but sessions are treated as coming from an untrusted device for risk
+scoring (the signal degrades safely, never fails).
+
+### Step-up bypass
+
+When `AllowMfaBypass` is **enabled**, a login from a current device that is actively trusted
+completes **without** the two-factor challenge; otherwise the challenge proceeds as usual.
+
+:::caution[MFA bypass is opt-in, off by default (ISO 27001 A.9.4)]
+Skipping 2FA on a trusted device is a deliberate relaxation of the authentication posture, so
+it ships **disabled**. Leaving `AllowMfaBypass = false` keeps device trust useful elsewhere
+(risk scoring, friction reduction) while **never** weakening the step-up. Turn it on only when
+the trade-off — convenience versus a stolen, still-trusted device — is acceptable for the
+deployment.
+:::
+
+### Risk interplay
+
+An actively-trusted device dampens anomaly noise without masking real threats:
+
+| Anomaly level | On a trusted device |
+|---------------|---------------------|
+| `High` | **Preserved** — a trusted device can still be compromised |
+| `Medium` | **Downgraded to `Low`** and the suspicious-session alert is suppressed (reason `trusted_device` recorded) |
+| `Low` / `None` | Unchanged |
+
+Federated topologies benefit **only when the browser actually traverses Granit** — a BFF or
+OpenIddict front-channel sign-in carries the device cookie, so the resolved `DeviceId` reaches
+the risk evaluator. A pure IdP webhook session (server-to-server, no browser cookie) is
+treated as **untrusted by design**. See [User Sessions](/dotnet/security/user-sessions/#device-trust-dampens-anomaly-noise)
+for the evaluator detail.
+
+### Persistence
+
+`Granit.Identity.Abstractions` registers an in-memory, single-node `IDeviceTrustStore` — fine
+for development. Installing `Granit.Identity.EntityFrameworkCore` swaps in a durable store
+backed by the `identity_device_trusts` table (unique on `(UserId, DeviceId)`), mapped into the
+**same `IdentityDbContext`** as the user-session risk store — one DbContext, one set of
+migrations, no separate database to provision. The application owns the migration.
+
+```csharp
+public interface IDeviceTrustStore
+{
+    Task SetAsync(string userId, string deviceId, DeviceTrustVerdict verdict, CancellationToken ct = default);
+    Task<DeviceTrustVerdict?> GetAsync(string userId, string deviceId, CancellationToken ct = default);
+    Task<IReadOnlyDictionary<string, DeviceTrustVerdict>> GetManyAsync(
+        string userId, IReadOnlyCollection<string> deviceIds, CancellationToken ct = default);
+    Task RevokeAsync(string userId, string deviceId, CancellationToken ct = default);
+}
+```
+
+### Security posture
+
+:::note[The device cookie is a managed, signed security cookie]
+The device-trust cookie is `__Host-`-prefixed, **HttpOnly**, **Secure**, `SameSite=Lax`, and
+**DataProtection-signed** with an enforced lifetime; the user-binding is re-checked on read,
+so a cookie minted for one subject is rejected for another. It is classified
+`StrictlyNecessary` (a security control, exempt from consent suppression) and is written
+through the managed [cookie registry](/dotnet/security/security-headers/) via
+`IGranitCookieManager` — never raw `Response.Cookies` (GRSEC004). `SameSite=Lax` (not `Strict`)
+is deliberate: the cookie must accompany the top-level navigation back through an OpenIddict
+front-channel redirect for the trusted-device decision to apply.
+:::
+
+```mermaid
+sequenceDiagram
+    participant U as User / browser
+    participant API as /devices/trust
+    participant Cookie as IDeviceTrustCookieService
+    participant Store as IDeviceTrustStore
+    participant Login as Login pipeline
+
+    U->>API: POST /devices/trust
+    API->>Cookie: IssueDeviceCookieAsync(user)
+    Cookie-->>U: Set-Cookie __Host-id-devicetrust (signed)
+    API->>Store: SetAsync(user, deviceId, Remembered, trustedUntil)
+    Note over U,Login: later sign-in from the same browser
+    U->>Login: authenticate (2FA required)
+    Login->>Cookie: ResolveDeviceId(user)
+    Login->>Store: GetAsync(user, deviceId) → active?
+    alt trusted & AllowMfaBypass
+        Login-->>U: signed in, 2FA skipped
+    else
+        Login-->>U: 2FA challenge
+    end
+```
 
 ## Feeding the notification pipeline
 
@@ -811,6 +976,7 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Module | `GranitIdentityModule`, `GranitIdentityFederatedModule`, `GranitIdentityFederatedKeycloakModule`, `GranitIdentityFederatedCognitoModule`, `GranitIdentityFederatedGoogleCloudModule`, `GranitAuthenticationJwtBearerGoogleCloudModule`, `GranitIdentityFederatedEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule`, `GranitIdentityLocalAspNetIdentityModule` | — |
 | Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
 | Sessions | `IUserSessionManager`, `IUserSessionProvider`, `IUserDeviceProvider` | `Granit.Identity` |
+| Device trust | `IDeviceTrustStore`, `DeviceTrustVerdict`, `DeviceTrustLevel`, `IDeviceTrustCookieService`, `DeviceTrustOptions`, `UseGranitDeviceTrust()` | `Granit.Identity` · `Granit.Identity.Endpoints` |
 | Lookup | `IUserLookupService`, `IUserCacheStats`, `IIdentityProviderCapabilities` | `Granit.Identity` |
 | Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `UserSessionDescriptor`, `UserSessionView`, `UserDevice` | `Granit.Identity` |
 | Keycloak | `KeycloakIdentityProvider`, `KeycloakAdminOptions` | `Granit.Identity.Federated.Keycloak` |
