@@ -297,11 +297,11 @@ Wolverine__RetryDelays__1=00:00:30
 | `ReloadOnChange` | `bool` | `true` | Reload the database when the file changes. |
 | `FileAccess` | `enum` | `Memory` | `Memory` (load to RAM, release handle) or `MemoryMapped`. |
 
-### User session anomaly detection -- `UserSessionsAnomalyDetectionOptions`
+### User session anomaly detection -- `IdentityAnomalyDetectionOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `UserSessions:AnomalyDetection` | |
+| **Section** | -- | `Identity:AnomalyDetection` | |
 | **Package** | -- | `Granit.Identity.AnomalyDetection` | |
 | `MaxAiCallsPerHourPerUser` | `int` | `50` | AI assessments per user per hour. Checked **before** the per-tenant cap. |
 | `MaxAiCallsPerHourPerTenant` | `int` | `500` | AI assessments per tenant per hour. |

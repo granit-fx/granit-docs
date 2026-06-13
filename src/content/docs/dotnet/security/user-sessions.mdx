@@ -135,7 +135,7 @@ detail: the **per-user** budget is checked **before** the per-tenant budget.
 
 ```json
 {
-  "UserSessions": {
+  "Identity": {
     "AnomalyDetection": {
       "MaxAiCallsPerHourPerUser": 50,
       "MaxAiCallsPerHourPerTenant": 500,
@@ -154,9 +154,9 @@ is contained to that account.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `UserSessions:AnomalyDetection:MaxAiCallsPerHourPerUser` | `int` | `50` | AI assessments per user per hour. Checked **first**. |
-| `UserSessions:AnomalyDetection:MaxAiCallsPerHourPerTenant` | `int` | `500` | AI assessments per tenant per hour. |
-| `UserSessions:AnomalyDetection:MaxTravelKilometersPerHour` | `double` | `1000` | Impossible-travel speed threshold. |
+| `Identity:AnomalyDetection:MaxAiCallsPerHourPerUser` | `int` | `50` | AI assessments per user per hour. Checked **first**. |
+| `Identity:AnomalyDetection:MaxAiCallsPerHourPerTenant` | `int` | `500` | AI assessments per tenant per hour. |
+| `Identity:AnomalyDetection:MaxTravelKilometersPerHour` | `double` | `1000` | Impossible-travel speed threshold. |
 
 ## Persisting verdicts
 
@@ -196,7 +196,7 @@ public interface IUserSessionRiskStore
 
 The stored `UserSessionRiskVerdict` carries only `Level`, `Reasons`, and `AssessedAt` — the
 untrusted `Explanation` is intentionally **not** persisted. Table prefix and schema are
-configurable via `GranitUserSessionsDbProperties` (default prefix `user_sessions_`).
+configurable via `GranitIdentitySessionDbProperties` (default prefix `user_sessions_`).
 
 ## End-to-end flow
 
@@ -238,8 +238,8 @@ sequenceDiagram
 |----------|-----------|---------|
 | Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.Identity.Abstractions` |
 | Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
-| AI + heuristics | `IUserSessionRiskEvaluator`, `UserSessionsAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
-| Persistence | EF Core `IUserSessionRiskStore`, `GranitUserSessionsDbProperties` | `Granit.Identity.EntityFrameworkCore` |
+| AI + heuristics | `IUserSessionRiskEvaluator`, `IdentityAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
+| Persistence | EF Core `IUserSessionRiskStore`, `GranitIdentitySessionDbProperties` | `Granit.Identity.EntityFrameworkCore` |
 
 ## Compliance
 

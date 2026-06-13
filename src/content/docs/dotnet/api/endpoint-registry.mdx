@@ -343,10 +343,10 @@ no permission required.
 
 | Method | Route | Operation | Auth |
 |--------|-------|-----------|------|
-| <Badge text="GET" variant="note" /> | `/sessions` | ListUserSessions | Authenticated |
-| <Badge text="DELETE" variant="danger" /> | `/sessions/{sessionId}` | RevokeUserSession | Authenticated |
-| <Badge text="DELETE" variant="danger" /> | `/sessions` | RevokeOtherUserSessions | Authenticated |
-| <Badge text="GET" variant="note" /> | `/devices` | ListUserDevices | Authenticated |
+| <Badge text="GET" variant="note" /> | `/sessions` | ListMyUserSessions | Authenticated |
+| <Badge text="DELETE" variant="danger" /> | `/sessions/{sessionId}` | RevokeMyUserSession | Authenticated |
+| <Badge text="DELETE" variant="danger" /> | `/sessions` | RevokeMyOtherUserSessions | Authenticated |
+| <Badge text="GET" variant="note" /> | `/devices` | ListMyUserDevices | Authenticated |
 
 ### User Cache (`identity/users`)
 
