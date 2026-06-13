@@ -26,7 +26,7 @@ sees can flag it and your handlers can step up authentication or notify the acco
 <FileTree>
 - Granit.Identity.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
 - Granit.Identity.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
-- Granit.Identity.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core, persisted in the User DbContext (`user_sessions_risks`)
+- Granit.Identity.EntityFrameworkCore/ `IUserSessionRiskStore` backed by EF Core, persisted in the Identity DbContext (`identity_user_session_risks`)
 </FileTree>
 
 | Package | Role | Depends on |
@@ -161,7 +161,7 @@ is contained to that account.
 ## Persisting verdicts
 
 `Granit.Identity.EntityFrameworkCore` swaps the in-memory store for a durable one backed by
-the `user_sessions_risks` table. The table is mapped into the **User DbContext**
+the `identity_user_session_risks` table. The table is mapped into the **Identity DbContext**
 (`IdentityDbContext`), so the risk store shares the identity connection and migrations — there
 is no separate session-risk database to provision.
 
@@ -177,11 +177,10 @@ builder.AddGranitIdentityEntityFrameworkCore(options =>
 <Aside type="caution" title="Breaking change">
 `AddGranitUserSessionsEntityFrameworkCore(...)` and the standalone
 `Granit.UserSessions.EntityFrameworkCore` package have been **removed**. The durable risk store
-now lives in `Granit.Identity.EntityFrameworkCore`, and its `user_sessions_risks` table is part
-of the User DbContext. Migrate by deleting the separate registration call and the
+now lives in `Granit.Identity.EntityFrameworkCore` as the canonical `identity_user_session_risks`
+table in the Identity DbContext. Migrate by deleting the separate registration call and the
 `UserSessions` connection string; once you call `AddGranitIdentityEntityFrameworkCore`, the risk
-store is wired automatically. Existing `user_sessions_risks` data is unaffected — only its
-owning DbContext changes.
+store is wired automatically.
 </Aside>
 
 ```csharp
@@ -195,8 +194,9 @@ public interface IUserSessionRiskStore
 ```
 
 The stored `UserSessionRiskVerdict` carries only `Level`, `Reasons`, and `AssessedAt` — the
-untrusted `Explanation` is intentionally **not** persisted. Table prefix and schema are
-configurable via `GranitIdentitySessionDbProperties` (default prefix `user_sessions_`).
+untrusted `Explanation` is intentionally **not** persisted. The risk store has no DbProperties
+of its own — table prefix and schema follow the canonical `GranitIdentityDbProperties`
+(default prefix `identity_`).
 
 ## End-to-end flow
 
@@ -239,7 +239,7 @@ sequenceDiagram
 | Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.Identity.Abstractions` |
 | Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
 | AI + heuristics | `IUserSessionRiskEvaluator`, `IdentityAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
-| Persistence | EF Core `IUserSessionRiskStore`, `GranitIdentitySessionDbProperties` | `Granit.Identity.EntityFrameworkCore` |
+| Persistence | EF Core `IUserSessionRiskStore`, `GranitIdentityDbProperties` | `Granit.Identity.EntityFrameworkCore` |
 
 ## Compliance
 
