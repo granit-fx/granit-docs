@@ -193,7 +193,6 @@ All endpoints are grouped under `/bff`:
 | `GET` | `/bff/callback` | Exchange authorization code for tokens | No |
 | `GET` | `/bff/logout` | Clear session + RP-Initiated Logout | No (idempotent) |
 | `GET` | `/bff/user` | Return filtered user claims for the SPA | No (returns `authenticated: false`) |
-| `GET` | `/bff/sessions` | List the user's active sessions, enriched with geolocation, risk level, and last-activity | Yes (session cookie) |
 | `POST` | `/bff/csrf-token` | Generate a CSRF token for the session | Yes (session cookie) |
 
 :::note[Multi-frontend]
@@ -202,9 +201,11 @@ See [Configuration](/dotnet/security/bff/configuration/) for details.
 :::
 
 :::tip[Session enrichment]
-The `/bff/sessions` payload carries a [geolocation](/dotnet/security/ip-geolocation/) and a
-[risk level](/dotnet/security/user-sessions/) per session, letting a SPA flag a suspicious
-login ("new country, high risk") and offer one-click termination.
+Listing and revoking sessions runs through the canonical
+[`/sessions` + `/devices` API](/dotnet/security/identity/#user-sessions--devices), backed by
+`BffUserSessionProvider` when the BFF is configured. Each session carries a
+[geolocation](/dotnet/security/ip-geolocation/) and a [risk level](/dotnet/security/user-sessions/),
+letting a SPA flag a suspicious login ("new country, high risk") and offer one-click termination.
 :::
 
 ## Next steps

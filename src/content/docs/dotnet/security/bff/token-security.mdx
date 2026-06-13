@@ -393,10 +393,11 @@ the session duration starts at login and is never extended.
 
 Sessions can be revoked in three ways:
 
-1. **User self-service** -- the BFF exposes session management endpoints per frontend:
-   - `GET /{prefix}/bff/sessions` -- list active sessions (masked IDs, timestamps, user agents)
-   - `DELETE /{prefix}/bff/sessions/{id}` -- revoke a specific session ("log out that device")
-   - `DELETE /{prefix}/bff/sessions` -- revoke all other sessions ("log out everywhere else")
+1. **User self-service** -- the canonical [`/sessions` API](/dotnet/security/identity/#user-sessions--devices)
+   (backed by `BffUserSessionProvider` when the BFF is configured), not a BFF-specific route:
+   - `GET /sessions` -- list active sessions, enriched with location and risk
+   - `DELETE /sessions/{sessionId}` -- revoke a specific session ("log out that device")
+   - `DELETE /sessions` -- revoke all other sessions ("log out everywhere else")
 
 2. **Back-channel logout** -- when the IdP sends a `logout_token` to
    `/{prefix}/bff/backchannel-logout`, all sessions for that subject are removed.

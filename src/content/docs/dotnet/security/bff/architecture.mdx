@@ -316,16 +316,24 @@ without calling `/bff/logout`.
 
 ## Session management
 
-The BFF provides endpoints for listing and revoking active sessions per user:
+Listing and revoking sessions is no longer a BFF-specific concern. The old
+`/{prefix}/bff/sessions` endpoints have been **removed** in favour of the canonical,
+topology-agnostic [`/sessions` + `/devices` API](/dotnet/security/identity/#user-sessions--devices)
+served by `IUserSessionManager`. When the BFF is configured, `BffUserSessionProvider`
+(`Granit.Bff.UserSessions`) backs that API from the BFF token store — so a SPA calls the
+same `/sessions` and `/devices` routes whether the deployment runs on a BFF, OpenIddict,
+or Keycloak.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/{prefix}/bff/sessions` | `GET` | Lists the current user's active sessions (masked IDs, timestamps, user agents) |
-| `/{prefix}/bff/sessions/{id}` | `DELETE` | Revokes a specific session ("log out that device") |
-| `/{prefix}/bff/sessions` | `DELETE` | Revokes all other sessions ("log out everywhere else") |
+| `/sessions` | `GET` | Lists the current user's active sessions, enriched with location and risk |
+| `/sessions/{sessionId}` | `DELETE` | Revokes a specific session ("log out that device") |
+| `/sessions` | `DELETE` | Revokes all other sessions ("log out everywhere else") |
+| `/devices` | `GET` | Lists the user's devices |
 
-These endpoints require a valid session cookie. The current session cannot be revoked
-via `DELETE /sessions/{id}` -- use `/bff/logout` instead.
+These endpoints require an authenticated caller and operate on that caller's own
+sessions. The current session cannot be revoked via `DELETE /sessions/{sessionId}` while
+it backs the request — use `/bff/logout` instead.
 
 ## Sliding session expiration
 

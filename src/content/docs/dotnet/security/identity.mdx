@@ -17,7 +17,7 @@ with GDPR erasure and pseudonymization built in.
 ## Package structure
 
 <FileTree>
-- Granit.Identity/ Abstractions (7 interfaces), null defaults
+- Granit.Identity/ Abstractions (6 identity interfaces + unified session manager), null defaults
   - Granit.Identity.Federated/ Federated identity abstractions
     - Granit.Identity.Federated.Keycloak Keycloak Admin API implementation (+ realm-vs-client role distinction)
     - Granit.Identity.Federated.EntraId Microsoft Graph API implementation (+ Entra ID App Role distinction)
@@ -30,7 +30,7 @@ with GDPR erasure and pseudonymization built in.
     - Granit.Identity.Local.Endpoints Account self-service endpoints (login, register, profile, 2FA, passkey) + role CRUD + admin impersonation
     - Granit.Identity.Local.Notifications 9 security notifications (welcome, password reset, 2FA, email change, impersonation)
     - Granit.Identity.Local.Privacy Personal-data export provider for the local identity store
-  - Granit.Identity.Endpoints Minimal API endpoints (provider CRUD, user cache sync, GDPR, webhook)
+  - Granit.Identity.Endpoints Minimal API endpoints (provider CRUD, user cache sync, sessions & devices, GDPR, webhook)
   - Granit.Identity.Notifications Opt-in IRecipientResolver bridge for the notification pipeline
 </FileTree>
 
@@ -176,7 +176,7 @@ context.Services.AddIdentityProvider<MyCustomIdentityProvider>();
 
 ## Interface Segregation
 
-`IIdentityProvider` is a composite interface built from 7 fine-grained interfaces
+`IIdentityProvider` is a composite interface built from 6 fine-grained interfaces
 following ISP (Interface Segregation Principle). Inject only what you need:
 
 | Interface | Methods | Purpose |
@@ -185,9 +185,16 @@ following ISP (Interface Segregation Principle). Inject only what you need:
 | `IIdentityUserWriter` | `CreateUserAsync`, `UpdateUserAsync`, `SetUserEnabledAsync` | Mutate user profiles |
 | `IIdentityRoleManager` | `GetRolesAsync`, `GetUserRolesAsync`, `AssignRoleAsync`, `RemoveRoleAsync`, `GetRoleMembersAsync` | Role assignments |
 | `IIdentityGroupManager` | `GetGroupsAsync`, `GetUserGroupsAsync`, `AddUserToGroupAsync`, `RemoveUserFromGroupAsync` | Group membership |
-| `IIdentitySessionManager` | `GetUserSessionsAsync`, `GetUserDeviceActivityAsync`, `TerminateSessionAsync`, `TerminateAllSessionsAsync` | Active session control |
 | `IIdentityPasswordManager` | `GetPasswordChangedAtAsync`, `SendPasswordResetEmailAsync`, `SetTemporaryPasswordAsync` | Password operations |
 | `IIdentityCredentialVerifier` | `VerifyUserCredentialsAsync` | Credential validation |
+
+:::note[Sessions are no longer part of `IIdentityProvider`]
+Active-session and device control moved out of the provider composite into a dedicated,
+topology-agnostic orchestrator — [`IUserSessionManager`](#user-sessions--devices). The old
+`IIdentitySessionManager` sub-interface (and its `IdentitySession` / `IdentityDeviceActivity`
+models) has been **removed**: session reads and revocation are now served identically whether the
+backend is a BFF, OpenIddict, or Keycloak.
+:::
 
 ```csharp
 // Inject only what you need — not the full IIdentityProvider
@@ -207,32 +214,104 @@ public class UserProfileService(IIdentityUserReader userReader)
 Not all providers support every operation. Query capabilities at runtime:
 
 ```csharp
-public class SessionService(
-    IIdentitySessionManager sessions,
+public class GroupService(
+    IIdentityGroupManager groups,
     IIdentityProviderCapabilities capabilities)
 {
-    public async Task TerminateSessionAsync(
-        string userId, string sessionId, CancellationToken cancellationToken)
+    public async Task PromoteToHierarchyAsync(
+        string userId, string groupId, CancellationToken cancellationToken)
     {
-        if (!capabilities.SupportsIndividualSessionTermination)
+        if (!capabilities.SupportsGroupHierarchy)
         {
             throw new BusinessException(
                 "Identity:UnsupportedOperation",
-                "Provider does not support individual session termination");
+                "Provider does not support nested groups");
         }
 
-        await sessions.TerminateSessionAsync(userId, sessionId, cancellationToken)
+        await groups.AddUserToGroupAsync(userId, groupId, cancellationToken)
             .ConfigureAwait(false);
     }
 }
 ```
 
+## User sessions & devices
+
+Listing a user's active sessions, revoking them, and inspecting their devices is a
+**single, topology-agnostic API** — `IUserSessionManager`. It is the one orchestrator
+every backend funnels through; the backend only contributes *mechanism* (where sessions
+live, how to revoke them) through an `IUserSessionProvider` / `IUserDeviceProvider`
+adapter, never *policy*.
+
+```csharp
+public interface IUserSessionManager
+{
+    // Caller's own sessions, enriched with geolocation + persisted risk (computed once).
+    Task<IReadOnlyList<UserSessionView>> ListAsync(
+        string userId, string? currentSessionId, CancellationToken cancellationToken = default);
+
+    Task<bool> RevokeAsync(string userId, string sessionId, CancellationToken cancellationToken = default);
+    Task<int> RevokeOthersAsync(string userId, string currentSessionId, CancellationToken cancellationToken = default);
+    Task<int> RevokeAllAsync(string userId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<UserDevice>> ListDevicesAsync(string userId, CancellationToken cancellationToken = default);
+}
+```
+
+The manager owns the cross-cutting concerns — authorization, audit, geolocation, and
+risk enrichment are applied **exactly once**, regardless of backend. Each topology ships
+one adapter:
+
+| Adapter | Package | Backs |
+|---------|---------|-------|
+| `BffUserSessionProvider` | `Granit.Bff.UserSessions` | Cookie sessions in the BFF token store |
+| `OpenIddictUserSessionProvider` | `Granit.OpenIddict` | OpenIddict refresh tokens (one valid refresh token = one session) |
+| Keycloak / Cognito / Entra ID provider | `Granit.Identity.Federated.*` | The provider's own session/device APIs |
+
+Firebase Auth ships no session adapter, so the endpoints return an empty list for
+Google Cloud deployments.
+
+### Endpoints
+
+`Granit.Identity.Endpoints` exposes two route families over the same manager:
+
+| Route | Method | Authorization | Purpose |
+|-------|--------|---------------|---------|
+| `/sessions` | `GET` | Authenticated caller | List the caller's own sessions |
+| `/sessions/{sessionId}` | `DELETE` | Authenticated caller | Revoke one of the caller's sessions |
+| `/sessions` | `DELETE` | Authenticated caller | Revoke all the caller's sessions except the current one |
+| `/devices` | `GET` | Authenticated caller | List the caller's own devices |
+| `/identity/provider/users/{userId}/sessions` | `GET` | `Identity.Sessions.Read` | List another user's sessions (admin) |
+| `/identity/provider/users/{userId}/sessions/{sessionId}` | `DELETE` | `Identity.Sessions.Manage` | Terminate one session (admin) |
+| `/identity/provider/users/{userId}/sessions` | `DELETE` | `Identity.Sessions.Manage` | Terminate all sessions (admin) |
+| `/identity/provider/users/{userId}/devices` | `GET` | `Identity.Sessions.Read` | List another user's devices (admin) |
+
+The canonical `/sessions` + `/devices` surface is **self-service**: it requires only an
+authenticated caller and always scopes to that caller's own subject — there is no
+`/bff/sessions` variant and no provider-specific read path anymore. Map it with
+`MapGranitUserSessions()` (route prefix optional); the admin family rides on
+`MapGranitIdentityProvider()` and is permission-gated per [authz convention](/dotnet/security/authorization/#authorization-is-permission-based).
+
+```csharp
+app.MapGranitUserSessions();            // → /sessions, /devices
+app.MapGranitIdentityProvider();        // → /identity/provider/users/{userId}/sessions|devices
+```
+
 :::note[Enriched session list]
-`GetUserSessionsAsync` returns each session enriched with **geolocation**, a **risk level**,
-and **last-activity** — so a security settings screen can show "Brussels · low risk · active
-2 min ago" per session. Geolocation comes from [IP Geolocation](/dotnet/security/ip-geolocation/)
-and the risk level from [User Sessions](/dotnet/security/user-sessions/) anomaly detection.
-The same fields are exposed on the [BFF](/dotnet/security/bff/) session endpoint for SPAs.
+`ListAsync` returns each session as a `UserSessionView` enriched with **geolocation**, a
+**risk level**, and **last-activity** — so a security settings screen can show
+"Brussels · low risk · active 2 min ago" per session. Geolocation comes from
+[IP Geolocation](/dotnet/security/ip-geolocation/) and the risk level from
+[User Sessions](/dotnet/security/user-sessions/) anomaly detection. The same fields reach
+SPAs unchanged through the canonical `/sessions` endpoint, whatever backend serves them.
+:::
+
+:::caution[The client IP is masked by default (GDPR)]
+The session response returns the client IP **masked to its network portion** (IPv4 `/24`,
+IPv6 `/48`) — data minimisation by default. The raw IP is *never* serialized unless a
+deployment explicitly opts in via `Identity:Endpoints:ExposeRawIpAddress = true` (and the
+endpoints are permission-gated, for forensics). The raw value always stays server-side on
+`UserSessionDescriptor` so geolocation and [anomaly detection](/dotnet/security/user-sessions/)
+keep working regardless of the flag.
 :::
 
 ## Feeding the notification pipeline
@@ -466,7 +545,8 @@ default credential chain (IAM role, environment variables, `~/.aws/credentials`)
 - **No individual session termination** — Cognito supports `AdminUserGlobalSignOut`
   (terminate all sessions) but not individual session termination.
   `IIdentityProviderCapabilities.SupportsIndividualSessionTermination` returns `false`.
-- **No device activity** — `GetUserDeviceActivityAsync` returns an empty list.
+- **No device tracking** — Cognito exposes no per-device data, so the `/devices` endpoint
+  returns an empty list for Cognito deployments.
 
 ### OpenTelemetry
 
@@ -574,12 +654,17 @@ duplication.
 | PATCH | `/identity/users/{id}/pseudonymize` | `Identity.UserCache.Delete` | GDPR pseudonymize |
 | GET | `/identity/users/stats` | `Identity.UserCache.Read` | Cache statistics |
 | GET | `/identity/users/capabilities` | `Identity.UserCache.Read` | Provider capabilities |
-| POST | `/identity-webhook` | *(anonymous, signature-validated)* | IdP webhook receiver |
+| POST | `/identity/webhook` | *(anonymous, signature-validated)* | IdP webhook receiver |
 
 ### Webhook
 
-The webhook endpoint receives events from the identity provider (user created, updated,
-deleted) and updates the local cache accordingly.
+The webhook endpoint receives events from the identity provider and reacts to each:
+
+| `EventType` | Reaction |
+|-------------|----------|
+| `user_created` / `user_updated` | Refresh the [user cache](#user-cache-cache-aside) entry |
+| `user_deleted` | Drop the user cache entry |
+| `login` | Publish a `UserSessionCreatedEto` so [anomaly detection](/dotnet/security/user-sessions/) runs off the login critical path |
 
 :::caution[Secret required]
 The webhook endpoint is **fail-closed**: all requests are rejected with `401 Unauthorized`
@@ -587,8 +672,35 @@ unless `Identity:Webhook:Secret` is configured. A warning is logged at startup w
 secret is missing. Payloads are limited to **64 KB**.
 :::
 
-Payload authenticity is verified via HMAC-SHA256 signature validation using the shared
-secret configured in `IdentityWebhookOptions`.
+Payload authenticity is verified via HMAC-SHA256 over `"{unix-timestamp}.{body}"`, presented
+in a Stripe-style header (default `X-Webhook-Signature: t=<unix-seconds>,v1=<hex-digest>`) and
+compared in constant time. Stale timestamps are rejected by a configurable replay window
+(default 5 minutes). The secret, header name, and window live on `IdentityWebhookOptions`
+(`Identity:Webhook`).
+
+#### Keycloak login events (SPI event-listener)
+
+Keycloak does not call the API on login, so it never sees session-creation directly. To feed
+suspicious-session detection from a Keycloak topology, deploy the **Keycloak SPI event-listener**
+(shipped with #2690): it subscribes to `LOGIN` events and `POST`s them to `/identity/webhook`
+as a `login` payload (`UserId`, the Keycloak `sid` as `SessionId`, plus `IpAddress` and
+`UserAgent`), signed with the shared HMAC secret.
+
+```json
+{
+  "Identity": {
+    "Webhook": {
+      "Secret": "<shared-with-the-keycloak-spi>",
+      "SignatureHeaderName": "X-Webhook-Signature",
+      "ReplayWindow": "00:05:00"
+    }
+  }
+}
+```
+
+Configure the matching secret on the Keycloak side so the SPI signs with the same key. The
+receiver turns each `login` into a `UserSessionCreatedEto` (source `Keycloak`), decoupling
+anomaly detection from the login path — the raw IP stays server-side for geolocation.
 
 ## GDPR operations
 
@@ -697,9 +809,10 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Category | Key types | Package |
 |----------|-----------|---------|
 | Module | `GranitIdentityModule`, `GranitIdentityFederatedModule`, `GranitIdentityFederatedKeycloakModule`, `GranitIdentityFederatedCognitoModule`, `GranitIdentityFederatedGoogleCloudModule`, `GranitAuthenticationJwtBearerGoogleCloudModule`, `GranitIdentityFederatedEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule`, `GranitIdentityLocalAspNetIdentityModule` | — |
-| Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentitySessionManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
+| Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
+| Sessions | `IUserSessionManager`, `IUserSessionProvider`, `IUserDeviceProvider` | `Granit.Identity` |
 | Lookup | `IUserLookupService`, `IUserCacheStats`, `IIdentityProviderCapabilities` | `Granit.Identity` |
-| Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `IdentitySession`, `IdentityDeviceActivity` | `Granit.Identity` |
+| Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `UserSessionDescriptor`, `UserSessionView`, `UserDevice` | `Granit.Identity` |
 | Keycloak | `KeycloakIdentityProvider`, `KeycloakAdminOptions` | `Granit.Identity.Federated.Keycloak` |
 | Cognito | `CognitoIdentityProvider`, `CognitoAdminOptions` | `Granit.Identity.Federated.Cognito` |
 | Google Cloud | `GoogleCloudIdentityProvider`, `GoogleCloudIdentityOptions` | `Granit.Identity.Federated.GoogleCloud` |
@@ -710,7 +823,7 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Notifications options | `IdentityNotificationOptions` | `Granit.Identity.Local.Notifications` |
 | Recipient resolver | `GranitIdentityNotificationsModule`, `IdentityRecipientResolverOptions`, `AddGranitIdentityRecipientResolver()` | `Granit.Identity.Notifications` |
 | Events | `PasswordChangedEto`, `AccountLockedEto` (includes `LockoutEndUtc` + `ResetToken`), `TwoFactorChangedEto`, `EmailConfirmationRequestedEto`, `EmailChangeRequestedEto` | `Granit.Identity.Local` |
-| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapGranitIdentityUserCache()` | — |
+| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapGranitIdentityUserCache()`, `MapGranitUserSessions()`, `MapGranitIdentityProvider()` | — |
 
 ## See also
 

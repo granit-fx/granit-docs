@@ -82,7 +82,8 @@ private static IdentityUser ToIdentityUser(KeycloakUserRepresentation user) =>
 
 - `FlattenAttributes()` -- converts Keycloak `Dictionary(string, List(string))`
   to Granit `Dictionary(string, string)` (multi-value attributes to single value)
-- `ToIdentitySession()` -- converts Unix timestamps (milliseconds) to `DateTimeOffset`
+- `ToSessionDescriptor()` -- maps a Keycloak session to a `UserSessionDescriptor`,
+  converting Unix timestamps (milliseconds) to `DateTimeOffset`
 - `ToIdentityGroup()` -- recursive mapping for subgroups
 
 ### Claims transformation (JWT)

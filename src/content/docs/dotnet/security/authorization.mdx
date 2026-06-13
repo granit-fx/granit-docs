@@ -151,6 +151,35 @@ public class InvoiceService(IPermissionChecker permissionChecker)
 }
 ```
 
+## Authorization is permission-based
+
+Granit authorizes on **permissions, end to end — never on roles**. Endpoints gate on a
+permission (`[Permission(...)]` or `RequireAuthorization(<permission>)`); roles exist only
+as a way to *grant* permissions, never as a thing an endpoint checks directly. `RequireRole`
+is banned everywhere — production code **and** tests.
+
+```csharp
+// ✅ Gate on the permission
+group.MapDelete("/{userId}/sessions/{sessionId}", TerminateSession)
+    .RequireAuthorization(IdentityPermissions.Sessions.Manage);   // "Identity.Sessions.Manage"
+
+// ❌ Never gate on a role
+group.MapDelete("/{userId}/sessions/{sessionId}", TerminateSession)
+    .RequireAuthorization(p => p.RequireRole("admin"));           // forbidden
+```
+
+The reason is subtle but important: **a role-based policy in a test gives false confidence**.
+It passes while exercising a mechanism production never uses, so the test proves nothing
+about the permission the endpoint actually enforces. Tests must therefore grant the same
+*permission* the endpoint requires — see [Testing authorization](#testing-authorization).
+
+:::note[Enforced by an architecture test]
+`EndpointAuthorizationRules.RequireRoleMustNotBeUsed` scans `src` **and** `tests` and fails
+the build on any `RequireRole(...)` call. A companion rule
+(`EveryEndpointMustDeclareAuthorizationStance`) requires every endpoint file to declare
+`.RequireAuthorization(...)` or `.AllowAnonymous()` explicitly — there is no implicit default.
+:::
+
 ## Configuration
 
 ```json
@@ -359,6 +388,25 @@ public async Task Should_reject_unauthorized_user()
         () => service.DeleteAsync(invoiceId));
 }
 ```
+
+For **endpoint integration tests**, grant the exact *permission* the endpoint requires —
+never a role (see [permission-based convention](#authorization-is-permission-based)). The
+test auth handler reads a comma-separated `X-Test-Permissions` header and emits each entry as
+a `permission` claim, which the endpoint's permission policy matches via
+`RequireClaim("permission", <name>)`:
+
+```csharp
+// Grant exactly what the endpoint gates on — here Identity.Sessions.Manage
+client.DefaultRequestHeaders.Add(
+    TestAuthHandler.PermissionsHeader,            // "X-Test-Permissions"
+    "Identity.Sessions.Read,Identity.Sessions.Manage");
+
+var response = await client.DeleteAsync($"/identity/provider/users/{userId}/sessions/{sessionId}");
+response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+```
+
+This keeps the test honest: it passes only because the caller holds the permission the
+endpoint actually enforces, exactly as production does.
 
 ## See also
 
