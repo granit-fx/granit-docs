@@ -253,7 +253,8 @@ sequenceDiagram
 
 - [IP Geolocation](/dotnet/security/ip-geolocation/) — supplies the `GeoLocation` driving the
   travel and country heuristics
-- [Identity](/dotnet/security/identity/) — the user-facing session list, now enriched with risk
-- [BFF](/dotnet/security/bff/) — the SPA session endpoint exposing geolocation, risk, and last-activity
+- [Identity](/dotnet/security/identity/#user-sessions--devices) — the canonical session list
+  (`/sessions` + `/devices`), now enriched with risk
+- [BFF](/dotnet/security/bff/) — one backend behind that canonical session API for SPAs
 - [AI](/dotnet/ai/) — the `IStructuredCompletion` abstraction the AI layer builds on
 - [Audit Log](/dotnet/compliance/audit-log/) — authentication audit, owned at its source

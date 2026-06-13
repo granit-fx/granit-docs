@@ -179,15 +179,16 @@ with the frontend name (e.g., `BffLogin_Admin`).
 | <Badge text="GET" variant="note" /> | `/logout` | BffLogout\_\{Name\} | Anonymous |
 | <Badge text="POST" variant="success" /> | `/backchannel-logout` | BffBackChannelLogout\_\{Name\} | Anonymous |
 
-### Session & User
+### User
+
+Session listing and revocation are no longer BFF-specific — use the canonical
+[`/sessions` + `/devices` API](#user-sessions-sessions--devices) (backed by
+`BffUserSessionProvider` when the BFF is configured).
 
 | Method | Route | Operation | Auth |
 |--------|-------|-----------|------|
 | <Badge text="GET" variant="note" /> | `/user` | BffGetUser\_\{Name\} | Anonymous |
 | <Badge text="POST" variant="success" /> | `/csrf-token` | BffGenerateCsrfToken\_\{Name\} | Anonymous |
-| <Badge text="GET" variant="note" /> | `/sessions` | BffListSessions\_\{Name\} | Anonymous |
-| <Badge text="DELETE" variant="danger" /> | `/sessions/{targetSessionId}` | BffRevokeSession\_\{Name\} | Anonymous |
-| <Badge text="DELETE" variant="danger" /> | `/sessions` | BffRevokeAllSessions\_\{Name\} | Anonymous |
 
 ### Static Files (conditional)
 
@@ -328,8 +329,24 @@ rate limiting, and host-feed cross-tenant analytics.
 
 ## Identity
 
-Identity uses **three separate endpoint groups** with distinct prefixes and separate
+Identity uses **separate endpoint groups** with distinct prefixes and separate
 registration methods.
+
+### User Sessions (`sessions` / `devices`)
+
+**Module:** `Granit.Identity.Endpoints` — `MapGranitUserSessions()`
+**Prefix:** none (self-service, root-mapped)
+
+Canonical, topology-agnostic session API — the caller's own sessions, served by
+`IUserSessionManager` whatever the backend (BFF, OpenIddict, Keycloak). Authentication only;
+no permission required.
+
+| Method | Route | Operation | Auth |
+|--------|-------|-----------|------|
+| <Badge text="GET" variant="note" /> | `/sessions` | ListUserSessions | Authenticated |
+| <Badge text="DELETE" variant="danger" /> | `/sessions/{sessionId}` | RevokeUserSession | Authenticated |
+| <Badge text="DELETE" variant="danger" /> | `/sessions` | RevokeOtherUserSessions | Authenticated |
+| <Badge text="GET" variant="note" /> | `/devices` | ListUserDevices | Authenticated |
 
 ### User Cache (`identity/users`)
 

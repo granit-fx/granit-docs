@@ -119,7 +119,7 @@ Applications and scopes with `TenantId == null` are global (visible to all tenan
 
 `Granit.Identity.Local.AspNetIdentity` registers `AspNetIdentityProvider` as the
 `IIdentityProvider` implementation, replacing the default `NullIdentityProvider`.
-It implements all 7 sub-interfaces of the Granit.Identity abstraction layer:
+It implements all 6 sub-interfaces of the Granit.Identity abstraction layer:
 
 | Interface | Implementation detail |
 |-----------|---------------------|
@@ -127,9 +127,14 @@ It implements all 7 sub-interfaces of the Granit.Identity abstraction layer:
 | `IIdentityUserWriter` | `UserManager.CreateAsync()`, `UpdateAsync()` |
 | `IIdentityRoleManager` | `RoleManager<GranitRole>` operations |
 | `IIdentityGroupManager` | Direct EF Core queries on `GranitUserGroup` |
-| `IIdentitySessionManager` | No-op (`SupportsIndividualSessionTermination = false`) |
-| `IIdentityPasswordManager` | `UserManager.ResetPasswordAsync()` |
+| `IIdentityPasswordManager` | `UserManager.ResetPasswordAsync()`; `reset-email` publishes `PasswordResetRequestedEto` (delivered by `Granit.Identity.Local.Notifications`) |
 | `IIdentityCredentialVerifier` | `UserManager.CheckPasswordAsync()` |
+
+Session management is **not** one of these interfaces — it moved to the topology-agnostic
+[`IUserSessionManager`](/dotnet/security/identity/#user-sessions--devices). In an OpenIddict
+deployment the manager is backed by `OpenIddictUserSessionProvider`
+(`Granit.OpenIddict`): every **valid refresh token** in the OpenIddict token store is one
+live session, keyed by token id.
 
 ### Provider capabilities
 
@@ -138,13 +143,25 @@ It implements all 7 sub-interfaces of the Granit.Identity abstraction layer:
 ```csharp
 ProviderName = "AspNetIdentity"
 SupportsIndividualSessionTermination = false
-SupportsNativePasswordResetEmail = false
+SupportsNativePasswordResetEmail = true
 SupportsGroupHierarchy = false
 SupportsCustomAttributes = true
 MaxCustomAttributes = int.MaxValue
 SupportsCredentialVerification = true
 SupportsUserCreation = true
 ```
+
+:::note[Session revocation is real — it revokes the refresh token]
+`SupportsIndividualSessionTermination = false` reflects the **ASP.NET Identity provider**
+itself; it does not gate the canonical session API. Revoking a session through
+[`/sessions`](/dotnet/security/identity/#user-sessions--devices) calls
+`OpenIddictUserSessionProvider.RevokeAsync`, which looks the session up by token id and
+calls `IOpenIddictTokenManager.TryRevokeAsync` to **revoke the underlying refresh token**.
+The session genuinely disappears: the next time that client tries to refresh its access
+token, OpenIddict rejects the revoked refresh token. (The earlier no-op behaviour is gone —
+revocation now changes server state, not just the response.) "Revoke all others" applies
+the same revocation to every refresh token except the caller's current one.
+:::
 
 :::caution
 Do **NOT** add `Granit.Identity.Federated.EntityFrameworkCore` alongside `Granit.Identity.Local.AspNetIdentity`.
