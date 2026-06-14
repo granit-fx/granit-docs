@@ -1,0 +1,270 @@
+---
+title: "Bank Accounts — Centralized Account Referential"
+description: One referential for every bank account number — IBAN and domestic schemes, encrypted at rest, masked across boundaries. Resolver/provisioner contracts, endpoints, permissions.
+sidebar:
+  label: Bank Accounts
+  order: 19
+---
+
+import { FileTree, Aside, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+When account numbers are scattered — an IBAN on a mandate here, a creditor IBAN in
+host options there, a beneficiary IBAN in a third config — you get the same number
+stored five ways, masked in one place and clear in another, and no single answer to
+"which accounts does this customer have?". `Granit.BankAccounts` is the one store for
+all of them: a centralized bank-account referential modelled on Odoo's
+`res.partner.bank`. Every account is owned by a [Party](/dotnet/business/parties/);
+other modules link to it instead of copying numbers around.
+
+| Pain | This module's answer |
+|------|----------------------|
+| The same IBAN stored in five modules, masked inconsistently | One `BankAccount` aggregate; consumers read a masked [snapshot](#cross-module-contracts) |
+| Clear IBANs leaking into grids, exports, logs | Identifier is `[Encrypted]` at rest and **never** a column, filter, search term, or export field |
+| IBAN-only assumptions break outside SEPA | [Scheme-aware](#scheme-support) model: IBAN + US ACH, Canada EFT, AU/NZ BSB, India IFSC, Other |
+| Duplicate accounts on every mandate setup | [`IBankAccountProvisioner`](#cross-module-contracts) deduplicates by `(PartyId, normalized identifier)` |
+| Cross-module code reaching into the account store | Modules depend only on `Granit.BankAccounts.Abstractions` (read) — never the persistence |
+
+<Aside type="caution" title="Single source of truth — with stamped snapshots">
+BankAccounts is the single source of truth for account **numbers**, but
+legally-binding artefacts do **not** depend on the mutable referential at use time.
+A [SEPA mandate](/dotnet/saas/payments/sepa-configuration/#mandate-snapshot-model) and
+the [per-tenant creditor / beneficiary
+config](/dotnet/saas/payments/sepa-configuration/) each stamp their **own encrypted
+snapshot** of the signed IBAN/BIC and never re-read it from here — so editing a source
+account can never silently invalidate a historical mandate. The clear IBAN never
+crosses a module boundary and never reaches a grid or export: only the masked value
+does.
+</Aside>
+
+## Package structure
+
+<FileTree>
+
+- Granit.BankAccounts.Abstractions/ Cross-module contracts (read + provision), no persistence
+  - IBankAccountResolver.cs Masked read across modules
+  - IBankAccountProvisioner.cs Resolve-or-create (dedup)
+  - Domain/ `BankAccountScheme`, `BankAccountType`, `BankAccountStatus`
+  - Snapshots/ `BankAccountSnapshot` (masked projection)
+  - Validation/ `BankAccountMasking`
+- Granit.BankAccounts/ `BankAccount` aggregate, CQRS readers/writers, Query + Export definitions
+- Granit.BankAccounts.EntityFrameworkCore Isolated DbContext, at-rest encryption, queryable source
+- Granit.BankAccounts.Endpoints Admin API (create / read / list / verify / archive), masked
+
+</FileTree>
+
+`Granit.BankAccounts` ships in
+[granit-business](https://github.com/granit-fx/granit-business) alongside
+[Parties](/dotnet/business/parties/). A `BankAccount` is owned by a Party
+(`PartyId`), the same way `res.partner.bank` hangs off `res.partner` in Odoo.
+
+## Scheme support
+
+IBAN is far from universal — many countries use domestic numbering. The `Scheme`
+drives how the identifier and routing code are validated and stored.
+
+| Scheme | Identifier | Routing code | Validator (`Granit.Validation.Finance`) |
+|--------|-----------|--------------|-----------------------------------------|
+| `Iban` | IBAN (SEPA, CH, UK, TR, much of MENA) | none — self-contained | `.Iban()` (+ `.BicSwift()`) |
+| `UsAch` | account number | 9-digit ABA routing | `.AbaRouting()` |
+| `CaEft` | account number | 8-digit institution + transit | `.CanadianRouting()` |
+| `AuBsb` | account number | 6-digit BSB | `.Bsb()` |
+| `InIfsc` | account number | 11-character IFSC | `.Ifsc()` |
+| `Other` | account number | optional | minimal (non-empty) |
+
+The aggregate enforces **scheme/routing coherence** (format validation lives in the
+input layer): an IBAN account must **not** carry a routing code (it is self-contained),
+and a non-IBAN/non-`Other` scheme **requires** one. IBANs are normalized
+space-stripped and upper-cased before storage and matching; `BIC` is upper-cased.
+
+## Encryption & masking model
+
+Two classes of data, two treatments:
+
+- **Account identifier** (IBAN / domestic number) — personal, sensitive. Stored
+  `[Encrypted]` at rest (GDPR / ISO 27001), decrypted in-process only when a legitimate
+  flow needs the clear value (e.g. provisioning a snapshot). It is **never** returned
+  in clear by any endpoint, and is deliberately excluded from the query grid and the
+  export.
+- **Routing code & BIC** — *public* bank identifiers (an ABA number or a BIC is
+  printed on cheques and invoices). Stored in clear, returned in clear, filterable.
+
+```csharp
+BankAccountMasking.Mask("BE68539007547034");   // → "**** 7034"
+BankAccountMasking.Mask("7034");               // → "****"  (≤ 4 chars fully masked)
+```
+
+<Aside type="note" title="The encrypted identifier is never a column">
+`BankAccountQueryDefinition` and `BankAccountExportDefinition` (paired per
+[ADR-020](/dotnet/architecture/adr/020-declarative-definitions-placement/)) expose
+`PartyId`, `Scheme`, `HolderName`, `RoutingCode`, `BIC`, `Status`, `Verified`,
+`Trusted`, and audit fields — but **not** `AccountIdentifier`. A predicate over
+non-deterministic ciphertext never matches plaintext (and may fail EF translation), so
+the admin grid and every export are masked-or-absent by construction, not by a runtime
+filter.
+</Aside>
+
+## The `BankAccount` aggregate
+
+`BankAccount : AuditedAggregateRoot, IMultiTenant` — owned by a Party, scoped to a
+tenant.
+
+| Member | Purpose |
+|--------|---------|
+| `Create(id, tenantId, partyId, scheme, accountIdentifier, holderName, countryCode, routingCode?, bic?)` | Factory; enforces scheme/routing coherence, normalizes IBAN, emits `BankAccountCreatedEto` (masked) |
+| `Verify()` | Records proof of ownership; idempotent (returns `false` if already verified) |
+| `Archive()` | Soft-archive (`Status = Archived`); idempotent |
+| `Trust()` / `Untrust()` | Anti-fraud gate for **outbound** payments — defaults to untrusted; a payout flow must require a trusted account (Odoo "trust bank account") |
+| `SetAccountType(type)` | `Checking` / `Savings` / `Unknown` |
+| `SetBankInformation(name, address, intermediaryBic)` | Denormalized bank info; `IntermediaryBic` for correspondent wires |
+| `SetInternalNote(note)` | Operational free text |
+
+Lifecycle: `Active → Archived` (archived accounts are retained for audit/regulatory
+history and drop out of a party's active list). Verification and trust are orthogonal
+flags, not states.
+
+## Cross-module contracts
+
+Consumers depend **only** on `Granit.BankAccounts.Abstractions`. There is no path from
+another module to the persistence layer.
+
+### `IBankAccountResolver` — masked read
+
+```csharp
+public interface IBankAccountResolver
+{
+    Task<BankAccountSnapshot?> GetByIdAsync(
+        Guid bankAccountId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<BankAccountSnapshot>> GetForPartyAsync(
+        Guid partyId, CancellationToken cancellationToken = default);
+}
+```
+
+A `BankAccountSnapshot` is a read-only projection whose `AccountIdentifierMasked` is
+always masked (`**** 7034`); `RoutingCode` and `Bic` are returned in clear (public
+identifiers). The clear identifier never crosses this boundary.
+
+### `IBankAccountProvisioner` — resolve-or-create
+
+```csharp
+public interface IBankAccountProvisioner
+{
+    Task<BankAccountSnapshot> ResolveOrCreateAsync(
+        BankAccountProvisionRequest request, CancellationToken cancellationToken = default);
+}
+```
+
+Returns the existing account matching `(PartyId, normalized identifier)`, or creates
+one when none exists — so repeated mandate / config setups for the same party never
+spawn duplicates. The returned snapshot is masked. This is the write-side contract
+SEPA modules call at setup time:
+
+```csharp
+// e.g. SEPA Direct Debit mandate setup provisions the debtor account
+BankAccountSnapshot debtor = await provisioner.ResolveOrCreateAsync(
+    new BankAccountProvisionRequest(
+        TenantId: tenantId,
+        PartyId: debtorPartyId,
+        Scheme: BankAccountScheme.Iban,
+        AccountIdentifier: debtorIban,   // clear in, matched after normalization
+        HolderName: debtorName,
+        CountryCode: "BE",               // IBAN prefix for SEPA
+        Bic: debtorBic),
+    ct);
+// debtor.Id → stored as an *indicative* back-reference; the mandate keeps its own
+// encrypted IBAN snapshot as the source of truth for collection.
+```
+
+## Endpoints
+
+`Granit.BankAccounts.Endpoints` mounts under `RoutePrefix` (default `bank-accounts`,
+OpenAPI tag `Bank Accounts`). Every endpoint is fully described — name, summary,
+description, success `Produces<T>`, and `ProducesProblem` — and **masks the IBAN in
+every response** (`**** 7034`).
+
+| Method | Route | Success | Permission |
+|--------|-------|---------|------------|
+| `POST` | `/bank-accounts` | `201 Created` `BankAccountResponse` | `BankAccounts.Accounts.Manage` |
+| `GET` | `/bank-accounts/{id}` | `200` `BankAccountResponse` | `BankAccounts.Accounts.Read` |
+| `GET` | `/bank-accounts` | `200` admin grid (paged, filterable, masked) | `BankAccounts.Accounts.Read` |
+| `GET` | `/bank-accounts/by-party/{partyId}` | `200` `BankAccountResponse[]` (non-archived) | `BankAccounts.Accounts.Read` |
+| `POST` | `/bank-accounts/{id}/verify` | `200` `BankAccountResponse` (idempotent) | `BankAccounts.Accounts.Verify` |
+| `DELETE` | `/bank-accounts/{id}` | `204 No Content` (soft archive, idempotent) | `BankAccounts.Accounts.Manage` |
+
+- The bare `GET /bank-accounts` is the cross-tenant admin grid via
+  [`MapGranitQuery<BankAccount>`](/dotnet/building-blocks/query-engine/) (filter / sort
+  / page + `/meta`), gated by `Read`. `by-party/{partyId}` is the per-party app-facing
+  view.
+- `POST` returns `400 Bad Request` when the scheme and routing code are incoherent
+  (defense-in-depth behind the request validator), `422` on validation failure.
+- Scheme-aware input validation runs through
+  `Granit.Validation.Finance` (`.Iban` / `.AbaRouting` / `.Bsb` /
+  `.CanadianRouting` / `.Ifsc` / `.BicSwift`).
+
+### Permissions
+
+A dedicated group — bank accounts are a shared referential consumed by several payment
+modules, so their stewardship is its own least-privilege role.
+
+| Permission | Grants |
+|------------|--------|
+| `BankAccounts.Accounts.Read` | Read accounts (single, per-party, admin grid) |
+| `BankAccounts.Accounts.Manage` | Create and archive accounts |
+| `BankAccounts.Accounts.Verify` | Mark proof of ownership |
+
+`Verify` is split from `Manage` deliberately (ISO 27001 A.9.4 least privilege):
+verification is a control step a payout/treasury operator may hold *without* the right
+to create or archive accounts.
+
+## Host wiring
+
+```csharp
+// Program.cs — persistence (isolated DbContext + at-rest encryption)
+builder.AddGranitBankAccountsEntityFrameworkCore(options =>
+    options.UseNpgsql(connectionString));
+
+// Endpoints
+app.MapGranitBankAccounts();
+
+// With custom options:
+app.MapGranitBankAccounts(opts =>
+{
+    opts.RoutePrefix = "api/bank-accounts";
+    opts.TagName = "Accounts";
+});
+```
+
+`AddGranitBankAccountsEntityFrameworkCore` registers the `BankAccountsDbContext`, the
+`IBankAccountReader` / `IBankAccountWriter` / `IBankAccountResolver` implementations,
+and the `IQueryableSource<BankAccount>` backing the grid and export. The
+`IBankAccountProvisioner` is registered by the base `GranitBankAccountsModule`.
+`MapGranitBankAccounts()` returns the `RouteGroupBuilder` for chaining framework
+filters (CORS, rate limits) over the whole surface.
+
+## Consumers
+
+<CardGrid>
+  <LinkCard
+    title="SEPA configuration"
+    description="Per-tenant creditor (Direct Debit) and beneficiary (Transfer) accounts are stamped from a BankAccount; mandates provision the debtor account here."
+    href="/dotnet/saas/payments/sepa-configuration/"
+  />
+  <LinkCard
+    title="Payments — Providers"
+    description="SEPA Direct Debit and SEPA Transfer providers use the referential for account stewardship."
+    href="/dotnet/saas/payments/providers/"
+  />
+  <LinkCard
+    title="Parties"
+    description="Every BankAccount is owned by a Party (Odoo res.partner.bank). The owning customer / supplier / company is a Party."
+    href="/dotnet/business/parties/"
+  />
+</CardGrid>
+
+## See also
+
+- [SEPA configuration](/dotnet/saas/payments/sepa-configuration/) — the convergence onto BankAccounts, snapshot model, host wiring, migration
+- [Parties](/dotnet/business/parties/) — the owning aggregate (`PartyId`)
+- [ADR-069 — Bank accounts as the single source of truth](/dotnet/architecture/adr/069-bank-accounts-single-source-of-truth/)
+- [Encrypt Sensitive Data](/dotnet/guides/encrypt-sensitive-data/) — the `[Encrypted]` at-rest model
+- [Payments overview](/dotnet/saas/payments/) — the payment ecosystem
