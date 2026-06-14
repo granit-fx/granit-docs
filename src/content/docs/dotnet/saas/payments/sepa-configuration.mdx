@@ -1,0 +1,201 @@
+---
+title: "SEPA Configuration — Per-Tenant Creditor & Beneficiary Accounts"
+description: SEPA Direct Debit and Transfer converge onto BankAccounts — per-tenant creditor/beneficiary accounts stamped as encrypted snapshots, immutable signed mandates, removed host options.
+sidebar:
+  label: SEPA Configuration
+  order: 4
+---
+
+import { FileTree, Aside, Steps, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+SEPA needs three account numbers in three places: the **creditor** IBAN that signs a
+pain.008 direct-debit batch, the **debtor** IBAN a mandate authorises, and the
+**beneficiary** IBAN a customer transfers to. Historically those lived as host options
+and ad-hoc fields. They now converge onto a single referential —
+[`Granit.BankAccounts`](/dotnet/business/bank-accounts/) — while the *legally-binding*
+copies are stamped as immutable, encrypted snapshots that never re-read the
+referential.
+
+<Aside type="tip" title="The convergence principle">
+**One source of truth for the number; a stamped snapshot for the binding artefact.**
+A mandate, a per-tenant creditor config, and a per-tenant beneficiary config each keep
+their **own encrypted IBAN/BIC snapshot** and never read it back from BankAccounts at
+use time. Mutating the source account therefore cannot silently invalidate a signed
+mandate or break pain.008 generation. The referential's masked projection would not
+serve a real instruction anyway — the snapshot is the SEPA-local copy.
+</Aside>
+
+## What changed
+
+| Area | Before | After |
+|------|--------|-------|
+| SDD creditor IBAN/BIC | `SepaDirectDebitBuiltinOptions` (host config) | Per-tenant `SepaDirectDebitConfiguration`, stamped from a `BankAccount` |
+| SCT beneficiary IBAN/BIC | `SepaTransferOptions` (host config) | Per-tenant `SepaTransferConfiguration`, stamped from a `BankAccount` (new EF Core + Endpoints packages) |
+| Mandate debtor account | IBAN only on the mandate | `DebtorPartyId` + immutable signed IBAN snapshot; debtor account provisioned into BankAccounts |
+| Account numbers | scattered per module | centralized in [BankAccounts](/dotnet/business/bank-accounts/) |
+
+Stripe is unchanged — it is tokenised and stores no local IBAN.
+
+## SEPA Direct Debit — creditor configuration
+
+`SepaDirectDebitConfiguration` is the per-tenant singleton holding the **Creditor
+Identifier (SCI)**, the scheme/provider defaults, *and now* the **creditor collection
+account**. The SCI and the creditor account are governed independently:
+
+- **SCI** is contractually bound to every mandate reference (RUM). It is **locked**
+  once the tenant has any mandate — changing it requires a SEPA mandate migration
+  (amendment indicator + original SCI in pain.008), not an in-place edit.
+- **Creditor account** (`CompanyPartyId`, `CreditorIban`, `CreditorBic`) may change
+  when the merchant changes bank. It is stamped from a `BankAccount` on the company
+  Party; `CreditorIban`/`CreditorBic` are `[Encrypted]` at rest and decrypted in-process
+  for pain.008 generation.
+
+```csharp
+// PUT /sepa-direct-debit/configuration  (permission: SepaDirectDebit.Configuration.Manage)
+// When a CreditorIban is supplied with a CompanyPartyId, the endpoint provisions the
+// account into BankAccounts and stamps the snapshot onto the configuration:
+BankAccountSnapshot creditor = await provisioner.ResolveOrCreateAsync(
+    new BankAccountProvisionRequest(
+        tenantId, companyPartyId, BankAccountScheme.Iban,
+        creditorIban, creditorName, ibanCountryCode, creditorBic), ct);
+
+configuration.SetCreditorAccount(companyPartyId, creditor.Id, creditorIban, creditorBic);
+```
+
+`pain.008` reads `CreditorIban` / `CreditorBic` from the configuration — **not** from
+host options. `HasCreditorAccount` gates file generation: no stamped account, no batch.
+The response masks the IBAN (`CreditorIbanMasked`).
+
+### Mandate snapshot model
+
+A `Mandate` carries the **contractually signed** account, captured once and never
+re-read:
+
+| Field | Role |
+|-------|------|
+| `DebtorPartyId` | The debtor **is a Party** — the contractual debtor link (required) |
+| `DebtorIban` / `DebtorBic` | The **immutable signed snapshot** — `[Encrypted]`, the source of truth for collection |
+| `DebtorBankAccountId` | **Indicative, non-binding** back-reference to the BankAccounts entry — *no foreign key*, traceability only |
+| `CreditorId` | SCI active at creation, stamped for historical traceability |
+
+At mandate setup the debtor account is provisioned into the referential (dedup by
+`(PartyId, IBAN)`), but the mandate still stamps and keeps its own encrypted IBAN:
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant MS as MandateSetupService
+    participant BA as IBankAccountProvisioner
+    participant M as Mandate (aggregate)
+    App->>MS: SetupAsync(DebtorPartyId, DebtorIban, DebtorBic)
+    MS->>BA: ResolveOrCreateAsync(Party, IBAN)  %% dedup
+    BA-->>MS: BankAccountSnapshot (masked, .Id)
+    MS->>M: Create(... DebtorIban [signed], debtorBankAccountId = snapshot.Id)
+    Note over M: signed IBAN/BIC copied & encrypted;<br/>never re-read from the referential
+```
+
+<Aside type="caution" title="Why no foreign key">
+`DebtorBankAccountId` is a soft, indicative link. If it were an FK and someone archived
+or edited the source account, a historical mandate's bank coordinates could shift or
+fail referential integrity — corrupting a legally-signed artefact. The mandate's own
+encrypted snapshot is authoritative; the referential only aids traceability.
+</Aside>
+
+## SEPA Transfer — beneficiary configuration
+
+The convergence adds two **new** packages —
+`Granit.Payments.SepaTransfer.EntityFrameworkCore` and
+`Granit.Payments.SepaTransfer.Endpoints` — mirroring the creditor pattern for the
+**beneficiary** (collection) account.
+
+`SepaTransferConfiguration` is a per-tenant singleton: `BeneficiaryName`, `IsActive`,
+and the stamped `CompanyPartyId` / `BeneficiaryIban` / `BeneficiaryBic` (the last two
+`[Encrypted]`). The checkout-session factory reads this snapshot to print transfer
+instructions — never the referential's masked projection.
+
+| Method | Route | Success | Permission |
+|--------|-------|---------|------------|
+| `GET` | `/sepa-transfer/configuration` | `200` config (masked IBAN) / `404` if unconfigured | `SepaTransfer.Configuration.Manage` |
+| `PUT` | `/sepa-transfer/configuration` | `200` upserted config | `SepaTransfer.Configuration.Manage` |
+
+On `PUT`, when a `BeneficiaryIban` + `CompanyPartyId` is supplied the account is
+provisioned into BankAccounts on the company Party and `SetBeneficiaryAccount(...)`
+stamps the snapshot. Optimistic concurrency (`ConcurrencyStamp`,
+[ADR-061](/dotnet/architecture/adr/061-optimistic-concurrency-strategy/)) guards the
+singleton against a lost update.
+
+<Aside type="caution" title="Graceful failure on missing beneficiary">
+If a tenant enables transfers but never configures a beneficiary
+(`HasBeneficiaryAccount == false`), the checkout factory fails with a **business
+error** rather than throwing — the customer is told the method is unavailable, not shown
+a stack trace.
+</Aside>
+
+### Host wiring
+
+```csharp
+// Program.cs — SEPA Transfer per-tenant beneficiary config
+builder.AddGranitPaymentsSepaTransferEntityFrameworkCore(o => o.UseNpgsql(connectionString));
+app.MapGranitSepaTransfer();          // GET/PUT /sepa-transfer/configuration
+
+// SEPA Direct Debit (creditor config lives on the existing configuration)
+builder.AddGranitPaymentsSepaDirectDebitEntityFrameworkCore(o => o.UseNpgsql(connectionString));
+app.MapGranitSepaDirectDebit();       // mandates + /sepa-direct-debit/configuration
+
+// Required by both — the centralized referential the snapshots are provisioned from
+builder.AddGranitBankAccountsEntityFrameworkCore(o => o.UseNpgsql(connectionString));
+app.MapGranitBankAccounts();
+```
+
+## Migration notes for adopters
+
+<Steps>
+
+1. **Install the referential.** Add
+   `Granit.BankAccounts` (+ `.EntityFrameworkCore`, `.Endpoints`) and wire it — the
+   SEPA modules now depend on `IBankAccountProvisioner`. See
+   [Bank Accounts → Host wiring](/dotnet/business/bank-accounts/#host-wiring).
+
+2. **Move the creditor coordinates out of host options.** The creditor
+   `IBAN` / `BIC` / `Name` were **removed** from `SepaDirectDebitBuiltinOptions`
+   (only `DefaultScheme` remains, under `Payments:SepaDirectDebit:Internal`). Set them
+   per tenant via `PUT /sepa-direct-debit/configuration` (with `CompanyPartyId` +
+   `CreditorIban`). The SCI stays where it was.
+
+3. **Move the beneficiary coordinates out of host options.** The beneficiary
+   `IBAN` / `BIC` / `Name` were **removed** from `SepaTransferOptions` (only
+   `ReferencePrefix` and `ExpirationDays` remain, under `Payments:SepaTransfer`). Set
+   them per tenant via `PUT /sepa-transfer/configuration`, and add the new persistence
+   package.
+
+4. **Supply a debtor Party at mandate setup.** Mandate creation now requires
+   `DebtorPartyId`. Existing signed mandates keep their stamped IBAN; only new setups
+   provision a referential entry.
+
+</Steps>
+
+<Aside type="note" title="Removed options summary">
+`SepaDirectDebitBuiltinOptions` — creditor `IBAN`/`BIC`/`Name`/`SCI` removed (SCI now
+on `SepaDirectDebitConfiguration`; creditor account stamped there too).
+`SepaTransferOptions` — beneficiary `IBAN`/`BIC`/`Name` removed. A deployment that set
+these in `appsettings` must move them to the per-tenant configuration endpoints.
+</Aside>
+
+## See also
+
+<CardGrid>
+  <LinkCard
+    title="Bank Accounts"
+    description="The centralized referential: schemes, encryption/masking, resolver & provisioner contracts."
+    href="/dotnet/business/bank-accounts/"
+  />
+  <LinkCard
+    title="Payments — Providers"
+    description="The SEPA Direct Debit and SEPA Transfer providers, plus Stripe and Mollie."
+    href="/dotnet/saas/payments/providers/"
+  />
+</CardGrid>
+
+- [ADR-069 — Bank accounts as the single source of truth](/dotnet/architecture/adr/069-bank-accounts-single-source-of-truth/)
+- [Payments overview](/dotnet/saas/payments/) — the payment ecosystem and FSM
+- [Optimistic concurrency (ADR-061)](/dotnet/architecture/adr/061-optimistic-concurrency-strategy/) — the per-tenant singleton guard

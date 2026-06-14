@@ -24,6 +24,11 @@ and bank transfers to SEPA — all simultaneously. No card data ever touches Gra
     description="Provider-driven method catalogue, capability snapshots, and runtime filtering by country / currency / amount / sequence type."
     href="/dotnet/saas/payments/availability/"
   />
+  <LinkCard
+    title="SEPA configuration"
+    description="Per-tenant creditor / beneficiary accounts stamped from BankAccounts, the immutable signed mandate snapshot, host wiring and the migration note."
+    href="/dotnet/saas/payments/sepa-configuration/"
+  />
 </CardGrid>
 
 ## Package structure
@@ -36,8 +41,14 @@ and bank transfers to SEPA — all simultaneously. No card data ever touches Gra
   - Granit.Payments.Mollie Mollie EU-sovereign provider
   - Granit.Payments.Notifications Payment lifecycle notifications (5 types)
   - Granit.Payments.SepaTransfer Bank transfer + reconciliation
+    - Granit.Payments.SepaTransfer.EntityFrameworkCore Per-tenant beneficiary config store
+    - Granit.Payments.SepaTransfer.Endpoints `GET`/`PUT /sepa-transfer/configuration`
   - Granit.Payments.SepaDirectDebit Mandate management + SDD collection
 </FileTree>
+
+SEPA bank coordinates converge onto the centralized
+[BankAccounts referential](/dotnet/business/bank-accounts/) — see
+[SEPA configuration](/dotnet/saas/payments/sepa-configuration/).
 
 ## Payment transaction FSM
 
@@ -240,6 +251,8 @@ also idempotent. The `/methods/available` endpoint accepts
 
 - [Providers](/dotnet/saas/payments/providers/) — `IPaymentProvider` contract, Stripe, Mollie, SEPA
 - [Availability & provider catalog](/dotnet/saas/payments/availability/) — method catalog, capability snapshots, runtime filtering
+- [SEPA configuration](/dotnet/saas/payments/sepa-configuration/) — per-tenant creditor / beneficiary accounts, mandate snapshot, migration
+- [Bank Accounts](/dotnet/business/bank-accounts/) — the centralized account referential SEPA stamps from
 - [SaaS Overview](/dotnet/saas/) — ecosystem architecture and choreography
 - [Invoicing](/dotnet/saas/invoicing/) — invoice lifecycle and partial payments
 - [Subscriptions](/dotnet/saas/subscriptions/) — billing cycle orchestration

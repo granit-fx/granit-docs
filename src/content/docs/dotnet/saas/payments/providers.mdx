@@ -166,6 +166,15 @@ The three SDD packages all implement `IPaymentProvider` with the same surface; t
 runtime selector picks one based on `PaymentMethodType = "sepa_debit"` plus the
 provider id you configured (`Granit:Payments:SepaDirectDebit:Provider`).
 
+The **creditor** IBAN/BIC and the **mandate** debtor account now converge onto the
+[BankAccounts referential](/dotnet/business/bank-accounts/): the per-tenant
+`SepaDirectDebitConfiguration` stamps an encrypted creditor snapshot (pain.008 reads it
+instead of host options), and each mandate carries a `DebtorPartyId` plus an immutable
+signed IBAN snapshot. See
+[SEPA configuration](/dotnet/saas/payments/sepa-configuration/) for the full model and
+the migration note (creditor coordinates were removed from
+`SepaDirectDebitBuiltinOptions`).
+
 ## SEPA Transfer (`Granit.Payments.SepaTransfer`)
 
 Bank transfers with structured reference reconciliation. The charge returns a
@@ -180,6 +189,14 @@ open transactions by reference + amount, promoting `Processing` → `Succeeded`.
 | `StructuredReferenceGenerator` | Belgian OGM-VCS / SEPA RF reference formats |
 | `Camt053Parser` | Parses `camt.053.001.xx` account statements |
 | `DefaultBankReconciliationProcessor` | Matches CAMT entries to open transactions |
+
+The **beneficiary** (collection) account is now per-tenant: the new
+`Granit.Payments.SepaTransfer.EntityFrameworkCore` + `.Endpoints` packages hold a
+`SepaTransferConfiguration` stamped from a [BankAccount](/dotnet/business/bank-accounts/)
+on the company Party (`GET`/`PUT /sepa-transfer/configuration`). The beneficiary
+coordinates were **removed** from `SepaTransferOptions`. See
+[SEPA configuration](/dotnet/saas/payments/sepa-configuration/) for wiring and the
+migration note.
 
 ## Health check
 
