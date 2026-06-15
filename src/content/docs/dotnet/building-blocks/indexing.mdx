@@ -24,7 +24,7 @@ forwarding raw operator syntax straight into `to_tsquery`.
 One write port (`IIndexer<TKey>`), one read port
 (`ISearchService<TKey, TResult>`), pluggable backends behind both. The default
 backend is **Postgres `tsvector`** (`Granit.Indexing.EntityFrameworkCore`) — zero
-new infrastructure for a Granit host. **Elasticsearch 8.x** is opt-in
+new infrastructure for a Granit host. **Elasticsearch 9.x** is opt-in
 (`Granit.Indexing.Elasticsearch`) for low-millions-of-rows corpora or per-language
 analyzer needs. Embeddings + hybrid Reciprocal Rank Fusion ship as a separate
 opt-in (`Granit.Indexing.Embeddings`), as do AI summaries
@@ -49,7 +49,7 @@ opt-in (`Granit.Indexing.Embeddings`), as do AI summaries
 
 - Granit.Indexing/ Contracts: `IIndexer<TKey>`, `ISearchService<TKey, TResult>`, `ISearchBackend<TKey, TResult>`, `ISearchResultAuthorizer<TKey>`, `IIndexedEntrySource<TKey>`, `IIndexedDataEraser`, `IndexedEntry<TKey>`, `SearchPage<TResult>`
   - Granit.Indexing.EntityFrameworkCore/ **Default backend** — Postgres `tsvector` (`GENERATED ALWAYS … STORED`) + GIN index, `PersonalDataDeletionHandler`
-  - Granit.Indexing.Elasticsearch/ ES 8.x backend, `Shared` / `PerTenant` strategies, restricted `simple_query_string`
+  - Granit.Indexing.Elasticsearch/ ES 9.x backend, `Shared` / `PerTenant` strategies, restricted `simple_query_string`
   - Granit.Indexing.AI/ `ISummarizer` — one-shot LLM call, JSON-schema-pinned, AIQuota-rate-limited
   - Granit.Indexing.Embeddings/ Decorator: `IEmbeddingGenerator` write + RRF hybrid retriever (k=60 default, dense ranking)
   - Granit.Indexing.BackgroundJobs/ `RebuildIndexJob<TKey>` + checkpoint store (in-memory or EF)
@@ -61,7 +61,7 @@ opt-in (`Granit.Indexing.Embeddings`), as do AI summaries
 |---------|------|------------|
 | `Granit.Indexing` | Contract root — `IIndexer<TKey>`, `ISearchService<TKey, TResult>`, `ISearchBackend<TKey, TResult>`, `ISearchResultAuthorizer<TKey>`, `IIndexedEntrySource<TKey>`, `IIndexedDataEraser`, `IndexedEntry<TKey>`, `SearchPage<TResult>`, `DefaultSearchService`, empty-result rate limiter | `Granit`, `Granit.LanguageDetection` |
 | `Granit.Indexing.EntityFrameworkCore` | Default Postgres `tsvector` backend — `IndexingDbContext`, `IndexedEntryRow<TKey>`, `HasGeneratedTsVectorColumn`, `EfIndexer<TKey>`, `EfSearchBackend<TKey, TResult>`, `EfIndexedDataEraser` | `Granit.Indexing`, `Granit.Persistence.EntityFrameworkCore` |
-| `Granit.Indexing.Elasticsearch` | ES 8.x backend — BM25 multi-field per-language analyzers, `Shared` / `PerTenant` strategy, `delete_by_query` eraser | `Granit.Indexing`, `Elastic.Clients.Elasticsearch` |
+| `Granit.Indexing.Elasticsearch` | ES 9.x backend — BM25 multi-field per-language analyzers, `Shared` / `PerTenant` strategy, `delete_by_query` eraser | `Granit.Indexing`, `Elastic.Clients.Elasticsearch` |
 | `Granit.Indexing.AI` | `ISummarizer` LLM provider — JSON-schema response, AIQuota counter, prompt-injection isolation | `Granit.Indexing`, `Granit.AI` |
 | `Granit.Indexing.Embeddings` | Decorator pair: `IIndexer<TKey>` writer (embeds Content) + `ISearchBackend<TKey, TResult>` hybrid retriever (BM25 ∪ kNN → RRF) | `Granit.Indexing`, `Microsoft.Extensions.AI.Abstractions` |
 | `Granit.Indexing.BackgroundJobs` | `RebuildIndexJob<TKey>` (on-demand, host-dispatched), `InMemoryRebuildCheckpointStore<TKey>` default, EF persistent checkpoint opt-in | `Granit.Indexing`, `Granit.BackgroundJobs` |
@@ -253,7 +253,7 @@ dotnet ef migrations add InitIndexing \
     --project YourHost/YourHost.csproj
 ```
 
-### Elasticsearch 8.x (opt-in)
+### Elasticsearch 9.x (opt-in)
 
 `Granit.Indexing.Elasticsearch` swaps the backend wholesale: registering it
 strips any previously-registered `IIndexer<TKey>` and `IIndexedDataEraser` to
@@ -318,7 +318,7 @@ longer addressable, but bit-level disposal depends on the host's storage policy.
 
 ### Backend comparison
 
-| Concern | Postgres `tsvector` | Elasticsearch 8.x |
+| Concern | Postgres `tsvector` | Elasticsearch 9.x |
 |---------|---------------------|--------------------|
 | Infrastructure cost | None beyond Postgres | Dedicated cluster |
 | Default query parser | `plainto_tsquery` (operator characters → literals) | `simple_query_string` with restricted flags |
