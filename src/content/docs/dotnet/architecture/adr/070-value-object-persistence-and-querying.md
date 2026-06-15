@@ -13,7 +13,7 @@ topic: backend
 
 ## Context
 
-`ApplyGranitConventions` maps every `SingleValueObject<T>` property as a **scalar column through an EF `ValueConverter`** (`vo => vo.Value`). EF Core treats a value converter as an **opaque whole-value round-trip** — it never decomposes `vo.Value` into a column operation (deliberate: a converter may encrypt, hash, or JSON-encode, where `LIKE` is meaningless). Empirically verified (EF Core 10 / SQLite, the real `SingleValueObjectConverter`):
+`ApplyGranitConventions` maps every `SingleValueObject<T>` property as a **scalar column through an EF `ValueConverter`** (`vo => vo.Value`). EF Core treats a value converter as an **opaque whole-value round-trip** — it never decomposes `vo.Value` into a column operation (deliberate: a converter may encrypt, hash, or JSON-encode, where `LIKE` is meaningless). This is documented: *"It isn't possible to query into value-converted properties, e.g. reference members on the value-converted .NET type in your LINQ queries"* ([EF Core — Value Conversions, Limitations](https://learn.microsoft.com/en-us/ef/core/modeling/value-conversions#limitations); [dotnet/efcore#10434](https://github.com/dotnet/efcore/issues/10434)). Empirically verified (EF Core 10 / SQLite, the real `SingleValueObjectConverter`):
 
 | Operation on a converter-mapped VO column | Result |
 | --- | --- |
@@ -61,5 +61,6 @@ On a converter-mapped VO column the engine never silently misbehaves:
 
 - VO column capabilities are now explicit and safe rather than silent (#2769, #2770). Authors learn the limit at build time, with the escape hatch named.
 - Strategy **B** is offered as an **opt-in** (a `[QueryableValueObject]` marker drives the `ComplexProperty` mapping and tells the engine to drill into `.Value`); it is **not** the default — the migration blast radius (column mapping change across all consumers) is not justified for VOs that never needed substring/group-by.
-- Nullable searchable VO columns have no clean B path today (EF complex-type nullability limit); use **A**.
-- Related: #2767 (umbrella), #2769 (fail-loud), #2770 (equality/`In` + cursor/group-by/aggregate guards), #2771 (the `== null` mistranslation), ADR-017 (DDD VO strategy), ADR-058 (JSON persistence policy).
+- **Nullability nuance.** A converter never receives `null` (*"a null in a database column is always a null in the entity instance"*), so a **nullable converter-mapped VO works fine** for equality/sort/display — it just is not searchable. Strategy **B** is the one that cannot be nullable (EF complex-type limit, verified: a null value throws on save). So a nullable *searchable* column uses **A**.
+- **Possible future avenue (not yet evaluated): JSON column.** The EF docs suggest a JSON column as the alternative to query into otherwise-opaque values, and a JSON column *can* be null. Mapping a VO to a JSON column and querying `e.Vo.Value` via JSON path could cover the nullable-searchable gap that **B** leaves open — to be spiked if a real consumer needs it (multi-field queryable VOs already use JSON per ADR-058).
+- Related: #2767 (umbrella), #2769 (fail-loud), #2770 (equality/`In` + cursor/group-by/aggregate guards), #2771 (the `== null` mistranslation), #2772 (strategy B prototype: `[QueryableValueObject]`), ADR-017 (DDD VO strategy), ADR-058 (JSON persistence policy).
