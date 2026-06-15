@@ -33,13 +33,14 @@ The friction is not the value object as a *domain* concept — it is that the `Q
 
 `SingleValueObject<T>` stays mapped as a scalar `ValueConverter`. It supports **equality, `In`, sort, display**. This is correct for identifier-like VOs (`EventTypeName`, `BlobReference`, `ContentType`, `ScheduledActionId`) where substring/analytics are not needed.
 
-### 2. Three strategies for a *queryable* VO column
+### 2. Four strategies for a *queryable* VO column
 
 | Strategy | What | Enables | Cost |
 | --- | --- | --- | --- |
 | **A. Plain string at the boundary** | The entity column is `string`; the VO validates in the factory / `*Request`. | Everything (it is a primitive). | The entity property loses the VO type. Established pattern (`EventTypeName`/`FileName` exist as VOs while the column is `string`). |
-| **B. `ComplexProperty` opt-in** | Map the VO as an EF complex type so `.Value` is a **genuinely mapped scalar column** (`builder.ComplexProperty(e => e.Slug, b => b.Property(s => s.Value).HasColumnName("Slug"))`). | Substring, range, `GROUP BY`, cursor — **all translate**; the VO type is kept on the entity. | **Required (non-nullable) columns only** — a nullable VO complex property builds but throws `DbUpdateException` on a null value (verified, EF Core 10). Default column name is `X_Value` unless renamed. |
+| **B. `ComplexProperty` opt-in** | Map the VO as an EF complex type so `.Value` is a **genuinely mapped scalar column** (`builder.ComplexProperty(e => e.Slug, b => b.Property(s => s.Value).HasColumnName("Slug"))`). | Substring, range, `GROUP BY`, sort — **all translate** (the inner `.Value` is a real column); the VO type is kept on the entity. | **Required (non-nullable) columns only** — a nullable complex property builds but throws on a null value (verified, EF Core 10). Column nameable to match the existing schema (no rename). |
 | **C. Read-model projection** | The grid/analytics runs over a flat read DTO (primitives) via `ProjectTo` or a dedicated read store; the domain entity keeps its VOs. | Everything, with full CQRS separation. | A second model to maintain; best when read needs diverge from the domain shape. |
+| **D. JSON column** | Map the VO as a JSON column (`OwnsOne(e => e.Slug, o => o.ToJson())`); query `e.Slug.Value` via the provider's JSON path. | Substring, `GROUP BY`, **and `null`** — all translate (verified, EF Core 10 / SQLite). The one option that covers **nullable + searchable**. | Stores `{"Value":"…"}` (JSON), not the bare value → **switching to it is a data migration**; weaker indexing (needs an expression/`jsonb` index); needs a carve-out from the framework's "no `OwnsOne` for VOs" convention rule (ADR-058). |
 
 ### 3. The QueryEngine contract is fail-loud (converter-mapped VOs)
 
@@ -52,15 +53,16 @@ On a converter-mapped VO column the engine never silently misbehaves:
 
 ## Choice rule
 
-> - **Converter (default)** — a column carrying invariants/identity that you only **filter by equality, sort, and display**.
-> - **B — `ComplexProperty`** — you need **substring search / group-by** on the column **and** want to keep the VO type, **and** the column is **non-nullable**.
-> - **A — plain string** — the column is **nullable and searchable**, or the VO buys nothing at read time.
+> - **Converter (default)** — a column carrying invariants/identity that you only **filter by equality, sort, and display** (nullable is fine).
+> - **B — `ComplexProperty`** — you need **substring search / group-by** on the column, want to keep the VO type, and the column is **non-nullable**. Preferred when applicable: a real scalar column, indexable, no storage change.
+> - **D — JSON column** — same need as B but the column must be **nullable** (the only option covering nullable + searchable), and you accept the JSON storage format + weaker indexing.
+> - **A — plain string** — the VO buys nothing at read time, or you want a plain indexable column without the complex-type/JSON machinery.
 > - **C — read-model** — the read surface diverges enough from the domain to deserve its own model.
 
 ## Consequences
 
 - VO column capabilities are now explicit and safe rather than silent (#2769, #2770). Authors learn the limit at build time, with the escape hatch named.
 - Strategy **B** is offered as an **opt-in** (a `[QueryableValueObject]` marker drives the `ComplexProperty` mapping and tells the engine to drill into `.Value`); it is **not** the default — the migration blast radius (column mapping change across all consumers) is not justified for VOs that never needed substring/group-by.
-- **Nullability nuance.** A converter never receives `null` (*"a null in a database column is always a null in the entity instance"*), so a **nullable converter-mapped VO works fine** for equality/sort/display — it just is not searchable. Strategy **B** is the one that cannot be nullable (EF complex-type limit, verified: a null value throws on save). So a nullable *searchable* column uses **A**.
-- **Possible future avenue (not yet evaluated): JSON column.** The EF docs suggest a JSON column as the alternative to query into otherwise-opaque values, and a JSON column *can* be null. Mapping a VO to a JSON column and querying `e.Vo.Value` via JSON path could cover the nullable-searchable gap that **B** leaves open — to be spiked if a real consumer needs it (multi-field queryable VOs already use JSON per ADR-058).
+- **Nullability nuance.** A converter never receives `null` (*"a null in a database column is always a null in the entity instance"*), so a **nullable converter-mapped VO works fine** for equality/sort/display — it just is not searchable. Strategy **B** is the one that cannot be nullable (EF complex-type limit, verified: a null value throws on save); the nullable + searchable case falls to **D** (or **A**).
+- **The QueryEngine `.Value` drilling is mapping-agnostic.** The engine builds `e.Vo.Value`, which translates identically whether the VO is mapped via **B** (`ComplexProperty`) or **D** (JSON) — so the same `[QueryableValueObject]` marker can drive either mapping (B for required, D for nullable) with no engine change. Verified for both against SQLite.
 - Related: #2767 (umbrella), #2769 (fail-loud), #2770 (equality/`In` + cursor/group-by/aggregate guards), #2771 (the `== null` mistranslation), #2772 (strategy B prototype: `[QueryableValueObject]`), ADR-017 (DDD VO strategy), ADR-058 (JSON persistence policy).
