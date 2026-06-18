@@ -224,10 +224,10 @@ saved views, and metadata, all from one query definition.
 
 | Feature | Fields |
 |---------|--------|
-| Filterable | `WorkspaceName`, `Provider`, `Model`, `Timestamp` |
+| Filterable | `WorkspaceName`, `Provider`, `Model`, `Timestamp`, `ConversationId` |
 | Sortable | `Timestamp` (default `-timestamp`), `InputTokens`, `OutputTokens`, `EstimatedCost` |
 | GlobalSearch | `WorkspaceName`, `Provider`, `Model` |
-| GroupBy | `WorkspaceName`, `Provider`, `Model` |
+| GroupBy | `WorkspaceName`, `Provider`, `Model`, `ConversationId` |
 | Aggregates | `Sum(InputTokens)`, `Sum(OutputTokens)`, `Sum(EstimatedCost)` |
 | Date filter | `Timestamp` (default `ThisMonth`) |
 
@@ -239,6 +239,18 @@ GET /ai/usage?groupBy=provider&dateRange=last30days
 
 returns one row per provider with summed tokens and estimated cost — exactly what a
 billing dashboard needs, in a single request.
+
+**Cost per agentic-chat conversation:**
+
+```http
+GET /ai/usage?filter=conversationId eq {id}&groupBy=conversationId
+```
+
+`ConversationId` (`Guid?`, `null` for non-chat calls) is the relational path for
+per-conversation billing and audit. It is intentionally **not** an OpenTelemetry metric
+tag — its cardinality is unbounded — so this query, not a metric dimension, is how you
+slice cost by conversation. The column lives on `ai_usage_records`; the consuming app
+owns the EF migration that adds it. See [Usage tracking](/dotnet/ai/setup/#per-conversation-slicing).
 
 ## Chat completion proxy
 

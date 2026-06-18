@@ -407,6 +407,7 @@ Every `IChatClient` call is tracked when `GranitAIOptions.EnableUsageTracking` i
 | `TenantId` | Tenant that made the request |
 | `UserId` | User who triggered the AI call |
 | `WorkspaceName` | Workspace used |
+| `ConversationId` | Agentic-chat conversation the call belongs to (`Guid?`, `null` for non-chat calls) |
 | `Provider` / `Model` | Provider and model identifier |
 | `InputTokens` / `OutputTokens` | Token consumption |
 | `EstimatedCost` / `CostCurrency` | Cost estimate and ISO 4217 currency code |
@@ -418,6 +419,21 @@ emits a `UsageContent` final chunk). Records are persisted by
 `Granit.AI.EntityFrameworkCore` and queryable through
 [`GET /ai/usage`](/dotnet/ai/endpoints/) for billing dashboards, cost alerts, and
 showback per tenant.
+
+### Per-conversation slicing
+
+When the call originates from the [agentic chat surface](/dotnet/architecture/adr/067-agentic-chat-tool-registry-prompt-catalog/),
+`ConversationId` links the usage record to its conversation, so tokens, latency, and
+cost can be billed or audited per conversation. It is filterable and group-by enabled
+on the [`GET /ai/usage`](/dotnet/ai/endpoints/) query. Three constraints apply:
+
+- **No migration ships with the framework.** `ConversationId` is a new column on
+  `ai_usage_records`; the consuming application owns the EF migration that adds it.
+- **Not an OpenTelemetry tag.** `ConversationId` is deliberately excluded from the
+  metric tags — its cardinality is unbounded. Per-conversation slicing is a relational
+  query, never a metric dimension.
+- **No per-turn linkage yet.** Records attach to the conversation, not to an individual
+  message. Per-message (`MessageId`) linkage is a planned follow-up.
 
 ## Quotas — fail safe before it costs you money
 
