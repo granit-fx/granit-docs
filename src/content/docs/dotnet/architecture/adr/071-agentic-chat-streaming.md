@@ -112,4 +112,5 @@ records even if the client disconnects mid-stream, without leaking an orphaned w
 ## References
 
 - [ADR-067: Agentic chat, tool registry, prompt catalog](/dotnet/architecture/adr/067-agentic-chat-tool-registry-prompt-catalog/)
+- [ADR-067 §9 — Reading a message thread (backwards keyset)](/dotnet/architecture/adr/067-agentic-chat-tool-registry-prompt-catalog/#9-reading-a-message-thread-backwards-keyset) — thread history loads newest-first via the backwards-keyset messages endpoint; this ADR covers only the send/stream path.
 - [`FunctionInvokingChatClient`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.ai.functioninvokingchatclient)

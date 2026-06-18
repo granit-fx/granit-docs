@@ -161,6 +161,106 @@ of the prompts used (guardrail and catalogue), closing the audit loop without
 persisting prompt or completion *content* (consistent with the framework's
 no-PII-in-logs baseline).
 
+### 9. Reading a message thread (backwards keyset)
+
+The chat surface renders a thread **newest-first** and scrolls **upward into the
+past**, so its read model pages **backwards by keyset (cursor)** — never by offset:
+
+```text
+GET {basePath}/conversations/{id}/messages?cursor={opaque}&pageSize={N}
+```
+
+- **No cursor** → the newest `pageSize` messages. **A cursor** → the `pageSize`
+  messages *older* than it.
+- `pageSize` defaults to **30** and is clamped to a maximum of **100** by the query
+  definition.
+- A **`200`** returns a `PagedResult<MessageResponse>`:
+  - `items` — newest-first (sorted `-createdAt`).
+  - `totalCount` — always **`null`**; keyset mode never counts.
+  - `nextCursor` — `string | null`, **`null` once the start of history is reached.**
+- **Owner-only.** A conversation outside the caller's own returns **`404`** — a
+  caller can never page another user's thread. Gated by
+  `AIChat.Conversations.Read`; the `MessageResponse` DTO is unchanged.
+
+The send/stream path is [ADR-071](/dotnet/architecture/adr/071-agentic-chat-streaming/);
+this endpoint is purely the read model.
+
+**First page** — no cursor, newest two messages:
+
+```http
+GET {basePath}/conversations/4f3a.../messages?pageSize=2
+```
+
+```json
+// 200 OK — newest-first
+{
+  "items": [
+    { "id": "0b91...", "role": "assistant", "content": "…", "createdAt": "2026-06-18T09:12:30Z" },
+    { "id": "0b90...", "role": "user",      "content": "…", "createdAt": "2026-06-18T09:12:24Z" }
+  ],
+  "totalCount": null,
+  "nextCursor": "eyJpZCI6IjBiOTAifQ"
+}
+```
+
+**Next page** — pass the returned `nextCursor` to fetch the two messages older than it:
+
+```http
+GET {basePath}/conversations/4f3a.../messages?cursor=eyJpZCI6IjBiOTAifQ&pageSize=2
+```
+
+```json
+// 200 OK — the two messages older than the cursor
+{
+  "items": [
+    { "id": "0b8f...", "role": "assistant", "content": "…", "createdAt": "2026-06-18T09:08:02Z" },
+    { "id": "0b8e...", "role": "user",      "content": "…", "createdAt": "2026-06-18T09:07:51Z" }
+  ],
+  "totalCount": null,
+  "nextCursor": null
+}
+```
+
+`nextCursor: null` signals the **start of history** — there is nothing older to load.
+
+```mermaid
+sequenceDiagram
+    participant UI as Chat UI
+    participant API as Conversations endpoint
+    participant Store as IConversationStore (EF Core)
+
+    UI->>API: GET …/messages?pageSize=30
+    API->>Store: GetMessagesPageAsync(id, cursor: "", 30)
+    Store-->>API: newest 30 + nextCursor
+    API-->>UI: 200 — items (newest-first) + nextCursor
+    Note over UI: user scrolls up
+    UI->>API: GET …/messages?cursor={nextCursor}&pageSize=30
+    API->>Store: GetMessagesPageAsync(id, cursor, 30)
+    Store-->>API: 30 older + nextCursor
+    API-->>UI: 200 — items + nextCursor
+    Note over UI: nextCursor = null → top of thread, stop paging
+```
+
+#### Reusing the generic keyset engine
+
+The endpoint adds **no bespoke pagination** — it rides the query engine's generic
+keyset support. Three framework behaviours are worth carrying to future read models:
+
+- **One query definition, no custom shape.** A
+  `ChatMessageQueryDefinition : QueryDefinition<Message>` declares
+  `SupportsCursorPagination(m => m.Id)` and `DefaultSort("-createdAt")`. Backwards
+  paging falls out of the engine; the endpoint owns no SQL.
+- **Send an *empty* cursor — not `null` — to enter keyset mode.** The first page must
+  pass an **empty** cursor to opt into keyset pagination *and still receive a*
+  `nextCursor`. A **`null`** cursor falls back to **offset** pagination, which emits no
+  cursor at all. Use the **entity** `ExecuteAsync` overload and project to
+  `MessageResponse` afterwards — the projection overload (`ProjectTo`) never computes a
+  `nextCursor`.
+- **`IQueryable` stays in the persistence layer.** The architecture rule keeps
+  `IQueryable` out of the HTTP layer, so the query engine runs inside the EF Core store
+  (`IConversationStore.GetMessagesPageAsync`), not the endpoint handler. The endpoint
+  stays HTTP-only: validate ownership, call the store, return the `PagedResult`.
+
 ### v1 perimeter (frozen)
 
 Streaming chat + private persisted conversations + Privacy integration; read-only
