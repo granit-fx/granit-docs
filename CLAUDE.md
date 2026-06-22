@@ -5,8 +5,8 @@
 - **Type**: Documentation site for the Granit framework (Astro + Starlight)
 - **Repo**: `granit-fx/granit-docs` (open-source, Apache-2.0)
 - **Stack**: Astro 6 · Starlight · Tailwind 4 · Mermaid · pnpm · Node 22
-- **Deployment**: Cloudflare Pages (auto-deploy from `main`), URL <https://granit-fx.dev>
-- **Sibling repos**: framework code lives in `granit-fx/granit-dotnet`,
+- **Deployment**: Cloudflare Pages (auto-deploy from `main`), <https://granit-fx.dev>
+- **Sibling repos**: framework code in `granit-fx/granit-dotnet`,
   `granit-fx/granit-front`, `granit-fx/granit-microservice-template`.
 
 ## Layout
@@ -47,13 +47,12 @@ CI runs `pnpm lint` + `pnpm build` on every PR (`.github/workflows/ci.yml`).
 - **Language: English.** Active voice, declarative, short sentences. Audience is
   intermediate-to-senior .NET / React engineers.
 - Every page has frontmatter with `title` and `description`. The description feeds
-  the SEO meta tag and the search snippet — write it like ad copy, not like a recap.
+  the SEO meta tag and the search snippet — write it like ad copy, not a recap.
 - Code samples must compile against the latest released Granit version. No
   boilerplate unless it carries meaning.
 - Diagrams: **Mermaid** (`astro-mermaid` is wired in) — never ASCII art for
-  non-trivial flowcharts. Sequence and component diagrams ship as fenced code blocks
-  with `mermaid` language.
-- Cross-link aggressively: when adding a module page, link from related modules and
+  non-trivial flowcharts. Sequence/component diagrams ship as fenced `mermaid` code blocks.
+- Cross-link aggressively: a new module page links from related modules and
   the relevant section index.
 
 ### File placement
@@ -61,7 +60,7 @@ CI runs `pnpm lint` + `pnpm build` on every PR (`.github/workflows/ci.yml`).
 - `.NET` reference → `src/content/docs/dotnet/<area>/`
 - React reference → `src/content/docs/front/<area>/`
 - ADRs → `src/content/docs/dotnet/architecture/adr/NNN-<kebab-title>.md`
-- Adding a new module page → bump `PACKAGE_COUNT` in `src/data/constants.ts` and add
+- New module page → bump `PACKAGE_COUNT` in `src/data/constants.ts` and add
   a sidebar entry in `astro.config.mjs` (Starlight sidebar config).
 
 ### Linking
@@ -69,14 +68,13 @@ CI runs `pnpm lint` + `pnpm build` on every PR (`.github/workflows/ci.yml`).
 - Use **root-relative** internal links: `[ADR-017](/dotnet/architecture/adr/017-…/)`.
   Never relative `../../`. Trailing slash mandatory (Starlight convention).
 - External links open in a new tab automatically via `rehype-external-links`.
-- `starlight-links-validator` runs as part of the build — broken internal links
-  fail CI.
+- `starlight-links-validator` runs in the build — broken internal links fail CI.
 
 ### Localization
 
-The site is English-only. Granit's framework strings are localized in 18 cultures,
-but the documentation deliberately stays in English (lower maintenance burden,
-canonical reference). Do not introduce a second locale without discussion.
+English-only. Granit's framework strings are localized in 18 cultures, but the
+documentation deliberately stays English (lower maintenance, canonical reference).
+Do not introduce a second locale without discussion.
 
 ### Cross-repo coordination
 
@@ -132,5 +130,5 @@ Never push a PR without:
 ## MCP
 
 The MCP server `granit-tools` ships the **published** content of this site at
-`granit-fx.dev/llms-full.txt`. After merging a doc PR, the new content becomes
+`granit-fx.dev/llms-full.txt`. After merging a doc PR, new content becomes
 queryable via `docs_search` / `docs_get` once the Cloudflare Pages deploy completes.

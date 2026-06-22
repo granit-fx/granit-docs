@@ -68,6 +68,7 @@ live tool-status frames (front-rendered as chips, à la Claude.ai/ChatGPT):
 | `delta` | `content` | assistant text token |
 | `tool_call` | `toolName`, `toolCallId` | a tool started |
 | `tool_result` | `toolName`, `toolCallId`, `succeeded` | a tool finished |
+| `persisted` | `messages` | terminal — the turn's saved rows |
 | `usage` | `inputTokens`, `outputTokens` | terminal |
 | `suggestions` / `clarification` | … | terminal |
 
@@ -75,6 +76,15 @@ Tool frames carry **only** the tool name and call id — never arguments or raw 
 the front maps the name to a localized label. Tool frames are **de-duplicated by call id** (streamed
 `FunctionCallContent` arrives fragmented). No `thinking` frame is emitted: the front derives the
 "Thinking…" indicator from a `tool_result` not yet followed by a `delta`, keeping the wire minimal.
+
+The `persisted` frame carries the turn's two newly-saved message rows — the user message then the
+assistant message, oldest-first — as the same `messages` (`id`, `role`, `content`, `createdAt`)
+projection `GET {basePath}/conversations/{id}` returns. Emitted **once on a successful turn, just
+before `usage`**, it lets the client render the real rows (server ids + timestamps) and report the
+just-streamed assistant message immediately, instead of optimistically appending client-synthesised
+ids. It is **omitted** on a `clarification` turn (no answer to append) and on the `error` frame; when
+absent, the client keeps its optimistic, client-id append. Older clients ignore the unknown frame, so
+the addition is backward compatible.
 
 ### 4. Persist the user turn before the stream
 
