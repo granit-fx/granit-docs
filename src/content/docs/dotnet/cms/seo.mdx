@@ -1,0 +1,120 @@
+---
+title: "SEO — cascading metadata, sitemaps, and AI suggestions"
+description: Per-page SEO that cascades over site defaults, generates sitemap/robots/manifest and JSON-LD, and proposes AI-written titles and descriptions through a reviewable suggestion inbox.
+sidebar:
+  label: SEO
+  order: 5
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+`Granit.Cms.Seo` owns everything a search engine and a social card need: title and meta
+description, canonical URL, robots directives, Open Graph and Twitter cards, hreflang
+alternates, JSON-LD, and the generated `sitemap.xml` / `robots.txt` / `manifest.webmanifest`.
+`Granit.Cms.Seo.AI` adds a reviewable layer that **proposes** those fields with an LLM.
+
+## The cascade
+
+Effective SEO is resolved through three tiers — framework defaults, then per-site defaults,
+then per-content overrides. `ISeoResolver` flattens them into a concrete `EffectiveSeo` with
+no inheritance left to compute.
+
+```mermaid
+flowchart LR
+    F["Framework defaults"] --> S["SiteSeoDefaults<br/>(per site)"]
+    S --> M["SeoMetadata<br/>(per page + culture)"]
+    M --> E["EffectiveSeo<br/>(fully resolved)"]
+```
+
+- **`SiteSeoDefaults`** (one per site): title template, site name, default description/robots,
+  default OG image, canonical host, `robots.txt` rules, PWA manifest, sitemap sizing, and the
+  `EnableAutomaticSeoGeneration` opt-in.
+- **`SeoMetadata`** (sparse, keyed `(SiteId, ContentType, ContentId, Culture)`): per-page
+  overrides — title, description, keywords, canonical, robots, OG/Twitter, JSON-LD extras,
+  hreflang. Only the fields an editor set are stored.
+
+```csharp
+EffectiveSeo seo = await resolver.ResolveEffectiveAsync(
+    new SeoResolutionRequest(contentKey, siteId, contentTitle, contentDescription), ct);
+```
+
+`SeoMetadata` carries a `ConcurrencyStamp` (a stale save returns `409`) and a review status
+so an editorial workflow can track what's been checked.
+
+## Generated files
+
+Three builders turn site defaults + published pages into the files crawlers expect — served
+anonymously, ETag-aware, and cached:
+
+| Route | Content type | Notes |
+|-------|--------------|-------|
+| `GET /api/cms/seo/sites/{siteId}/sitemap.xml` | `application/xml` | Root or index; 304 on `If-None-Match` |
+| `GET …/sitemap/{file}` | `application/xml` | Child files (sharded at `SitemapMaxUrlsPerFile`, max 50 000) |
+| `GET …/robots.txt` | `text/plain` | Always 200, even with no defaults |
+| `GET …/manifest.webmanifest` | `application/manifest+json` | 404 when no manifest configured |
+
+A recurring `SitemapRebuildJob` (every 2 min) warms the sitemap cache for sites marked dirty
+by publish events, so the first crawler hit is never a cold rebuild. JSON-LD is assembled by a
+registry of builders (`WebPage`, `BreadcrumbList`, `Organization`, `WebSite`, `Article`) and
+previewable per page.
+
+## Admin & preview
+
+| Route | Permission | Purpose |
+|-------|------------|---------|
+| `GET …/metadata/{contentType}/{contentId}/{culture}` | `Cms.Seo.Read` | Raw saved overrides |
+| `GET …/{culture}/effective` | `Cms.Seo.Read` | Cascade-resolved result |
+| `PUT …/{culture}` · `DELETE …/{culture}` | `Cms.Seo.Manage` | Upsert / delete overrides (`409` on stale stamp) |
+| `GET …/defaults` · `PUT …/defaults` | `Cms.Seo.Read` / `Manage` | Site defaults |
+| `GET …/preview/serp` · `…/preview/og` · `…/preview/jsonld` | `Cms.Seo.Read` | Render the SERP snippet, OG card, JSON-LD |
+| `GET …/metadata` (grid) | `Cms.Seo.Read` | Audit grid — filters: missing description, no canonical, title too long, missing OG image |
+
+A nightly `SeoAuditJob` (opt-in) sweeps for the same drift the grid surfaces.
+
+## AI suggestions
+
+`Granit.Cms.Seo.AI` generates titles, descriptions, keywords, OG alt text, and JSON-LD — but
+never writes them straight to live metadata. It produces a reviewable **suggestion** an editor
+applies field-by-field.
+
+It runs on the framework's typed-output primitive, [`IStructuredCompletion`](/dotnet/ai/structured-completion/)
+(ADR-064) — so provider choice, workspace routing, quota, usage tracking, and prompt-injection
+isolation are all inherited; the module never touches a vendor SDK.
+
+```csharp
+public interface ISeoMetadataGenerator
+{
+    Task<SeoGenerationResult> GenerateAsync(
+        SeoGenerationRequest request, CancellationToken cancellationToken = default);
+}
+```
+
+<Aside type="tip" title="Partial apply, with a diff">
+A suggestion's `Scope` is a flag set (Title, Description, Keywords, OgImageAltText, JsonLd).
+On apply, the editor passes a mask; only the intersection of mask and scope is written to live
+`SeoMetadata`. A `GET …/diff` shows current-vs-proposed before anyone commits.
+</Aside>
+
+The content is sanitized and wrapped before it reaches the model; the page title and culture
+ride as labeled context (not in the instruction), keeping untrusted page content off the
+prompt-injection surface. A 7-day **fingerprint** (model + template version + content hash +
+culture) makes re-generation idempotent — unchanged content reuses the pending suggestion.
+
+| Route | Permission | Purpose |
+|-------|------------|---------|
+| `POST /api/cms/seo/ai/suggest` | `Cms.Seo.AI.Generate` | Generate a suggestion (idempotent within 7 days) |
+| `GET …/suggestions` | `Cms.Seo.AI.Read` | The review inbox (filter by site/type/status) |
+| `GET …/suggestions/{id}/diff` | `Cms.Seo.AI.Read` | Current vs proposed, per field |
+| `POST …/suggestions/{id}/apply` | `Cms.Seo.AI.Apply` | Write selected fields to live metadata |
+| `POST …/suggestions/{id}/reject` | `Cms.Seo.AI.Apply` | Dismiss (with optional reason) |
+| `POST …/sites/{siteId}/audit` | `Cms.Seo.AI.Generate` | Enqueue a bulk generation sweep (`202`) |
+
+Sites that opt in via `EnableAutomaticSeoGeneration` are swept nightly
+(`cms-seo-ai-nightly-sweep`), enqueuing one bulk run each — suggestions land in the inbox for
+review, never auto-applied.
+
+## See also
+
+- [Structured Completion](/dotnet/ai/structured-completion/) — the typed-output primitive Seo.AI builds on
+- [Sites & Pages](/dotnet/cms/sites-and-pages/) — the content SEO describes
+- [Media References](/dotnet/cms/documents/) — how the OG image resolves to a stable URL

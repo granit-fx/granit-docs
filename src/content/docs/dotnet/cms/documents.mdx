@@ -1,0 +1,87 @@
+---
+title: "Media References — stable URLs for embedded documents"
+description: Resolve documents embedded in CMS blocks into stable, site-scoped asset URLs at publish time, so the anonymous renderer never mints a public link at runtime — with a nightly job that renews links before they expire.
+sidebar:
+  label: Media References
+  order: 8
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+When an editor drops an image or a PDF into a block, the block stores a *document reference*,
+not a URL. `Granit.Cms.Documents` resolves those references — at **publish time** — into
+stable, site-scoped asset URLs, so the public SSR renderer never has to mint a (rotating,
+signed) public link at request time. It is a thin layer over
+[`Granit.Documents`](/dotnet/business/documents/) resolution.
+
+## The problem it solves
+
+Document public links rotate and expire. If the renderer minted them per request, every page
+view would hit the document service and leak short-lived signed URLs into the ISR cache. So
+the resolution moves to publish time, behind a stable indirection:
+
+```mermaid
+flowchart LR
+    Publish["Page publish"] -->|walk block JSON| P["Reference processor"]
+    P -->|resolve| DR["Granit.Documents resolver"]
+    P -->|store mapping| Store[("cms_documents_assets")]
+    Renderer["SSR renderer"] -->|GET /api/cms/assets/{site}/{doc}| EP["Asset endpoint"]
+    EP -->|302| Public["current public link"]
+```
+
+## At publish time
+
+A `PublishedDocumentReferenceProcessor` runs in the publish pipeline. Guided by each block's
+schema, it walks the opaque page JSON, collects every `DocumentReference` field (top-level, in
+lists, nested), batch-resolves them through `IDocumentRenderResolver`, and:
+
+- persists the `(siteId, documentId) → current public URL` mapping (`IPublishedAssetStore`), and
+- injects a `_resolved_<field>` sibling carrying the **stable** path
+  `/api/cms/assets/{siteId}/{documentId}` into the published JSON — never the rotating link.
+
+## At render time
+
+The renderer reads the stable path and the anonymous endpoint redirects to the current link:
+
+```http
+GET /api/cms/assets/{siteId}/{documentId}
+→ 302 Found  (current public link)   |   404 if the document isn't in the site's published content
+```
+
+The endpoint **never mints** a link — it only redirects to one already resolved at publish.
+A missing mapping is a `404`, not an on-the-fly resolution.
+
+<Aside type="note" title="Not tenant-filtered by design">
+The asset row is intentionally **not** `IMultiTenant`: the anonymous endpoint resolves by an
+explicit `(siteId, documentId)` with no ambient tenant. The renewal sweep still re-resolves
+each document in its correct tenant scope.
+</Aside>
+
+## Keeping links fresh
+
+Public links expire, so a nightly job (`cms-documents-renew-links`, 03:00 UTC) re-resolves
+stored URLs before they lapse and updates only the rows whose URL changed. The resolver's cache
+throttles re-minting to roughly once per link, a few days ahead of expiry — unchanged links are
+skipped, so the sweep stays cheap.
+
+## Setup
+
+```csharp
+builder.AddGranitCmsDocumentsEntityFrameworkCore(db => db.UseNpgsql(connectionString));
+app.MapGranitCmsDocuments();   // the anonymous /api/cms/assets endpoint
+```
+
+The mapping lives in `cms_documents_assets` (unique on `(SiteId, DocumentId)`); the module
+depends on `Granit.Documents` resolution for the actual link minting.
+
+<Aside type="tip" title="OpenAPI generator">
+`Granit.Cms.OpenApi.Generator` is a build-time tool (not a runtime module): it composes the
+`Granit.Cms.*.Endpoints` modules and emits one OpenAPI 3.1 document per CMS module — vendored
+by the front for contract testing — without running a host.
+</Aside>
+
+## See also
+
+- [Granit.Documents](/dotnet/business/documents/) — the document/asset module this resolves against
+- [Blocks](/dotnet/cms/blocks/) — where `DocumentReference` fields are declared
+- [SEO](/dotnet/cms/seo/) — the OG image resolves through the same document path

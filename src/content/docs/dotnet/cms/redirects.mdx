@@ -1,0 +1,82 @@
+---
+title: "Redirects — loop-safe, per-site URL redirects"
+description: Per-site 301/302/307/308 redirects with exact or prefix matching, chain resolution that refuses loops, automatic redirect creation on page moves, and buffered hit analytics.
+sidebar:
+  label: Redirects
+  order: 6
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+`Granit.Cms.Redirects` keeps URLs stable across restructures. Each `Redirect` maps a
+site-relative source path to a target (path or absolute URL) with an HTTP status, scoped to a
+site and optionally a culture. Resolution follows chains and **refuses loops**, and a page
+move can mint the redirect for you.
+
+## A redirect
+
+```csharp
+Redirect redirect = Redirect.Create(
+    id, siteId,
+    source: RedirectSource.Create("/old-pricing"),
+    matchType: RedirectMatchType.Exact,        // or Prefix
+    target: RedirectTarget.Create("/pricing"), // site-relative or absolute URL
+    type: RedirectType.MovedPermanently,       // 301 / 302 / 307 / 308
+    culture: null);                            // null ⇒ all cultures
+```
+
+- **Match type** — `Exact` for one path, `Prefix` to move a whole subtree (`/blog/*`).
+- **Status** — `MovedPermanently` (301), `Found` (302), `TemporaryRedirect` (307),
+  `PermanentRedirect` (308).
+- **Source** is normalized (leading slash, no trailing slash except `/`, no query/fragment)
+  and matched case-insensitively. The **source is immutable** after creation; retarget instead.
+- **Origin** records provenance — `Manual`, `AutoFromPageMove`, or `Imported`.
+
+## Resolution, chains, and loops
+
+Resolution works off an immutable per-site `RedirectMapSnapshot`. It follows chains (A→B→C),
+stops at absolute targets, and treats a chain longer than **10 hops** as a loop.
+
+<Aside type="caution" title="Loops are refused at write time">
+A redirect that would create a cycle throws `RedirectLoopException` on persist — surfaced as a
+`422` with code `Granit:Cms:RedirectLoop`. The loop check runs before the row is saved, so a
+bad redirect never reaches the resolver.
+</Aside>
+
+```http
+GET /api/cms/redirects/resolve?path=/old-pricing&culture=en
+→ 200 { "target": "/pricing", "statusCode": 301 }   (or 204 when nothing matches)
+```
+
+## Automatic redirects on page move
+
+When a page is moved or renamed, its old URL would 404. If the site's `SiteRedirectSettings`
+has `AutoRedirectOnMove` enabled (the default), the module listens for the page's
+path-change event and creates `AutoFromPageMove` 301s for the affected paths — no manual step.
+
+## Hit analytics
+
+Each redirect tracks `HitCount` and `LastHitAt`, but counting on the hot path would be a
+write per request. Instead hits accumulate in an in-process buffer and a recurring
+`RedirectHitFlushJob` (every 5 min) drains them to the store. A nightly
+`RedirectIntegritySweepJob` flags drift — sources now shadowed by a live page, dangling
+internal targets.
+
+## API
+
+`MapGranitCmsRedirects()` maps everything under `/api/cms/redirects`:
+
+| Route | Permission | Purpose |
+|-------|------------|---------|
+| `GET /resolve?path=…&culture=…` | anonymous | Resolve a path (the renderer's call) |
+| `GET /sites/{siteId}/redirects` · `GET /{id}` | `Cms.Redirects.Read` | List by site / read one |
+| `POST /sites/{siteId}/redirects` | `Cms.Redirects.Manage` | Create (loop + duplicate checked; warns if it shadows a live page) |
+| `PUT /{id}` · `DELETE /{id}` | `Cms.Redirects.Manage` | Retarget (source immutable) / soft-delete |
+| `GET /grid` | `Cms.Redirects.Read` | Filterable grid (Inactive / AutoFromPageMove / Imported) |
+| `GET /sites/{siteId}/settings` · `PUT …/settings` | `Cms.Redirects.Read` / `Manage` | `AutoRedirectOnMove` toggle |
+| `GET /sites/{siteId}/preview?path=…` | `Cms.Redirects.Read` | Test a path before relying on it |
+
+## See also
+
+- [Sites & Pages](/dotnet/cms/sites-and-pages/) — page moves that trigger auto-redirects
+- [Custom Domains](/dotnet/cms/hostnames/) — the other half of stable URLs

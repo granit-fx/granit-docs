@@ -1,0 +1,85 @@
+---
+title: "Mentions — the @mention picker over Data Lookup"
+description: Turn any existing lookup source into an @mentionable type with one line. A single mentions facade fans the picker across tagged sources with lenient per-type ACL and composite type:value resolution — no new contract.
+sidebar:
+  label: Mentions
+  order: 18
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+`Granit.Mentions` is the `@mention` picker — the typeahead that pops when a user types
+`@` in a comment, a chat message, or a task description. Its trick is that it adds **no
+new contract**: a mention is just an existing [lookup source](/dotnet/building-blocks/data-lookup/)
+tagged as mentionable. One facade source fans the picker across every tagged type, so
+`@alice` (a user), `@INV-2043` (an invoice), and `@Cardiology` (a department) all surface
+from the same search box.
+
+## How it works
+
+The module registers a single facade `ILookupSource` named `mentions`. When the client
+queries it, the facade fans the search across every source you tagged with
+`AddMentionSource`, merges the hits, and re-stamps each item's value as a composite
+`type:value` so one endpoint can resolve any type. Because it rides on Data Lookup, there
+is **no new endpoint** — the picker is served by the existing
+`GET /lookups/mentions`.
+
+<FileTree>
+
+- Granit.Mentions/ **the whole module — `GranitMentionsModule`, `MentionLookup`, the facade source**
+
+</FileTree>
+
+There are no satellite packages: it depends only on `Granit.DataLookup` and
+`Granit.Authorization`.
+
+## Make an entity mentionable
+
+A mention source must already exist as a lookup source — register it the usual Data Lookup
+way (`AddQueryDefinitionLookup`, `AddQueryableLookup`, or a custom `ILookupSource`), then
+tag it:
+
+```csharp
+// 'users' and 'invoices' are lookup sources registered elsewhere
+builder.Services.AddMentionSource("users");
+builder.Services.AddMentionSource("invoices");
+```
+
+`AddMentionSource` registers the `mentions` facade on first use (it is idempotent), so you
+do not call anything else. Each tag is one line; the entity keeps its own label
+formatting, localization, and permission from its lookup source.
+
+## Querying the picker
+
+```http
+GET /lookups/mentions?search=ali
+GET /lookups/mentions?search=2043&scope.type=invoices
+```
+
+| Parameter | Role |
+|-----------|------|
+| `search` | The typeahead term |
+| `scope.type` | *Optional* — narrow the picker to one tagged type (e.g. `users`) |
+| `PageSize` | Caps the merged result count |
+
+Each returned item carries a composite `Value` (`users:3f2a…`), the source's own `Label`,
+and an `extra.type` field naming the source — so the client can render a per-type icon and,
+later, resolve the pick back through the same facade.
+
+## Lenient per-type authorization
+
+This is the design's one sharp edge, and it is deliberate. Each tagged source keeps its own
+`RequiredPermission`. When the facade fans a search, a source the caller may **not** see is
+**silently skipped** — not refused. The picker returns what the user is allowed to mention
+and stays quiet about the rest, instead of failing the whole request with a `403` because
+one type among five was off-limits.
+
+Resolution (`type:value` → item) applies the same rule: an unknown type, an unregistered
+source, or a denied permission yields `null`, never an error. The composite value means a
+single resolve call handles every mentionable type.
+
+## See also
+
+- [Data Lookup](/dotnet/building-blocks/data-lookup/) — the lookup-source primitive mentions builds on
+- [Agentic Chat](/dotnet/ai/agentic-chat/) — where `@mentions` feed entity context into an AI turn
+- [QueryEngine](/dotnet/building-blocks/query-engine/) — the filter pickers that share the same lookup sources

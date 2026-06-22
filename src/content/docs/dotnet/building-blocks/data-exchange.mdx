@@ -23,6 +23,8 @@ integrate with Wolverine for durable outbox-backed execution when installed.
     - Granit.DataExchange.BlobStorage Bridges `IDataExchangeFileProvider` to `IBlobStoreProvider` (S3, Azure, FileSystem)
     - Granit.DataExchange.Csv CSV parser (Sep SIMD) and writer (semicolon separator)
     - Granit.DataExchange.Excel Excel parser (Sylvan.Data.Excel) and writer (ClosedXML)
+    - Granit.DataExchange.Json Export-only writer (System.Text.Json), hierarchical fields
+    - Granit.DataExchange.Xml Export-only writer (System.Xml), `<Export>` root element
     - Granit.DataExchange.EntityFrameworkCore `DataExchangeDbContext`, EF executor, identity resolvers, stores
     - Granit.DataExchange.Endpoints REST endpoints for import/export operations
     - Granit.DataExchange.AI AI-powered mapping suggestions for cryptic CSV/Excel column names
@@ -36,6 +38,8 @@ integrate with Wolverine for durable outbox-backed execution when installed.
 | `Granit.DataExchange.BlobStorage` | Bridges file operations to blob storage providers | `Granit.DataExchange`, `Granit.BlobStorage` |
 | `Granit.DataExchange.Csv` | Sep-based CSV parser, semicolon CSV writer | `Granit.DataExchange` |
 | `Granit.DataExchange.Excel` | Sylvan streaming Excel reader, ClosedXML writer | `Granit.DataExchange` |
+| `Granit.DataExchange.Json` | Export-only writer over `System.Text.Json` — hierarchical/complex fields, enum-as-string, per-row streaming. Format key `json` (`application/json`) | `Granit.DataExchange` |
+| `Granit.DataExchange.Xml` | Export-only writer over `System.Xml` — `<Export>` root, `XmlSerializer` caching. Format key `xml` (`application/xml`) | `Granit.DataExchange` |
 | `Granit.DataExchange.EntityFrameworkCore` | `DataExchangeDbContext`, EF executor, identity resolvers | `Granit.DataExchange`, `Granit.Persistence` |
 | `Granit.DataExchange.Endpoints` | 19 REST endpoints (import + export + metadata) | `Granit.DataExchange`, `Granit.Authorization` |
 | `Granit.DataExchange.AI` | `ISemanticMappingService` — LLM-powered "Nom_Clt_V2_Final → CustomerName" mapping inside the import wizard | `Granit.DataExchange`, `Granit.AI` |
@@ -52,6 +56,8 @@ graph TD
     BS --> B[Granit.BlobStorage]
     CSV[Granit.DataExchange.Csv] --> DX
     XLS[Granit.DataExchange.Excel] --> DX
+    JSON[Granit.DataExchange.Json] --> DX
+    XML[Granit.DataExchange.Xml] --> DX
     EF[Granit.DataExchange.EntityFrameworkCore] --> DX
     EF --> P[Granit.Persistence]
     EP[Granit.DataExchange.Endpoints] --> DX
@@ -541,6 +547,13 @@ the user's active filters are applied to the export.
 |--------|-----------------|-----------------|---------|
 | CSV | [Sep](https://github.com/nietras/Sep) (SIMD-accelerated) | Semicolon separator (EU locale) | `Granit.DataExchange.Csv` |
 | Excel (.xlsx, .xls) | [Sylvan.Data.Excel](https://github.com/MarkPflug/Sylvan.Data.Excel) (streaming) | [ClosedXML](https://github.com/ClosedXML/ClosedXML) | `Granit.DataExchange.Excel` |
+| JSON (.json) | — | `System.Text.Json` (hierarchical fields, enum-as-string) | `Granit.DataExchange.Json` |
+| XML (.xml) | — | `System.Xml` (`<Export>` root, `XmlSerializer`) | `Granit.DataExchange.Xml` |
+
+:::note[JSON and XML are export-only]
+Both ship a writer but no parser — they serialize query results out, they do not
+import. CSV and Excel remain the round-trip (import **and** export) formats.
+:::
 
 :::note[Macro-enabled Excel files not supported]
 `.xlsb` (macro-enabled binary workbooks) are rejected at upload. This prevents

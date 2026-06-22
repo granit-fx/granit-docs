@@ -449,6 +449,7 @@ export default defineConfig({
                     { label: "Workflow", link: "/dotnet/building-blocks/workflow/" },
                     { label: "QueryEngine", link: "/dotnet/building-blocks/query-engine/" },
                     { label: "Data Lookup", link: "/dotnet/building-blocks/data-lookup/" },
+                    { label: "Mentions", link: "/dotnet/building-blocks/mentions/" },
                     { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
                     { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
                     {
@@ -530,6 +531,9 @@ export default defineConfig({
                     { label: "Overview", link: "/dotnet/ai/" },
                     { label: "Setup & Configuration", link: "/dotnet/ai/setup/" },
                     { label: "Structured Completion", link: "/dotnet/ai/structured-completion/" },
+                    { label: "Agentic Chat", link: "/dotnet/ai/agentic-chat/" },
+                    { label: "AI Tools", link: "/dotnet/ai/tools/" },
+                    { label: "AI Prompts", link: "/dotnet/ai/prompts/" },
                     { label: "API Endpoints", link: "/dotnet/ai/endpoints/" },
                     {
                       label: "User Experience",
@@ -587,6 +591,20 @@ export default defineConfig({
                     { label: "Tool Visibility", link: "/dotnet/mcp/visibility/" },
                     { label: "Client (External Servers)", link: "/dotnet/mcp/client/" },
                     { label: "AI Integration", link: "/dotnet/mcp/ai-integration/" },
+                  ],
+                  collapsed: true,
+                },
+                {
+                  label: "CMS",
+                  items: [
+                    { label: "Overview", link: "/dotnet/cms/" },
+                    { label: "Sites & Pages", link: "/dotnet/cms/sites-and-pages/" },
+                    { label: "Blocks", link: "/dotnet/cms/blocks/" },
+                    { label: "Releases", link: "/dotnet/cms/releases/" },
+                    { label: "SEO", link: "/dotnet/cms/seo/" },
+                    { label: "Redirects", link: "/dotnet/cms/redirects/" },
+                    { label: "Custom Domains", link: "/dotnet/cms/hostnames/" },
+                    { label: "Media References", link: "/dotnet/cms/documents/" },
                   ],
                   collapsed: true,
                 },
