@@ -48,8 +48,8 @@ builder.AddGranitWorkflowAI();
 <TabItem label="appsettings.json">
 ```json
 {
-  "AI": {
-    "Workflow": {
+  "Workflow": {
+    "AI": {
       "WorkspaceName": "default",
       "TimeoutSeconds": 10,
       "AutoApprovalThreshold": 0.3
@@ -67,7 +67,8 @@ Set to `0.0` to disable auto-approval entirely.
 ## Transition advisor
 
 `IAITransitionAdvisor.RecommendAsync` suggests the most appropriate next transition
-given the current entity state and recent history:
+given the current entity state and a serialized context (entity fields plus the
+currently allowed transitions):
 
 ```csharp
 public class InvoiceApprovalService(
@@ -83,26 +84,20 @@ public class InvoiceApprovalService(
             await workflow.GetAllowedTransitionsAsync(invoice.State, ct)
                 .ConfigureAwait(false);
 
-        string entityJson = JsonSerializer.Serialize(new
+        string entityContext = JsonSerializer.Serialize(new
         {
             invoice.Id,
             invoice.Amount,
             invoice.DueDate,
             invoice.SupplierName,
             invoice.LineItemCount,
+            AllowedTransitions = allowed.Select(t => t.ToState.ToString()),
         });
-
-        IReadOnlyList<string> recentTransitions =
-        [
-            "Draft → PendingReview",
-            "PendingReview → Approved",
-        ];
 
         return await advisor.RecommendAsync(
             entityType: "Invoice",
             currentState: invoice.State.ToString(),
-            entityJson: entityJson,
-            recentTransitions: recentTransitions,
+            entityContext: entityContext,
             ct).ConfigureAwait(false);
     }
 }
@@ -134,12 +129,12 @@ public class WorkflowApprovalHandler(
 {
     public async Task HandleAsync(ApprovalRequestedEvent evt, CancellationToken ct)
     {
-        string entityJson = JsonSerializer.Serialize(evt.InvoiceSnapshot);
+        string entityContext = JsonSerializer.Serialize(evt.InvoiceSnapshot);
 
         RiskAssessment risk = await evaluator.EvaluateRiskAsync(
             entityType: "Invoice",
             transition: $"{evt.FromState} → {evt.ToState}",
-            entityJson: entityJson,
+            entityContext: entityContext,
             ct).ConfigureAwait(false);
 
         if (risk.RiskScore < options.Value.AutoApprovalThreshold)

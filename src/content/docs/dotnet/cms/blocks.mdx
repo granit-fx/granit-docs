@@ -1,0 +1,95 @@
+---
+title: "Blocks — the self-describing block catalog"
+description: CMS pages are trees of blocks. The backend registry declares each block's name, version, schema, render side, and optional data binding — and serves a catalog the Puck editor and the SSR renderer both consume.
+sidebar:
+  label: Blocks
+  order: 3
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+A page's content is a tree of **blocks** — hero, rich text, card grid, a data-bound list of
+articles. The backend never parses that tree (it is opaque Puck JSON in `jsonb`); instead it
+keeps a **registry** of block *definitions* and serves a **catalog** that both the Puck
+editor (to render fields) and the SSR renderer (to render output) consume. Blocks are matched
+to their React components by name.
+
+## A block definition
+
+Every block is described by a `BlockDefinition` — name, SemVer version, the schema type, an
+editorial category, where it renders, and whether it is data-bound.
+
+```csharp
+public sealed record BlockDefinition(
+    string Name,                       // kebab-case, unique (e.g. "hero")
+    string Version,                    // SemVer ("1.0.0")
+    Type SchemaType,                   // an IBlockSchema implementation
+    string Category = BlockCategories.General,
+    BlockRenderSide RenderSide = BlockRenderSide.Server,
+    string? DataSourceKey = null);     // set ⇒ data-bound (must be Server)
+```
+
+The schema type drives the editor's field model; `SourceModule` (the schema's assembly) tells
+you which package a block came from (`Granit.Cms` for the core defaults, a vertical package
+otherwise). The core ships a set of default blocks at startup; verticals add their own by
+registering `BlockDefinition` services.
+
+<Aside type="note" title="Server by default">
+`RenderSide` is `Server` unless a block declares `Client`. A **data-bound** block (one with a
+`DataSourceKey`) *must* be server-rendered — its live data is resolved on the server at render
+time, never shipped as a client secret.
+</Aside>
+
+## The registry
+
+`IBlockRegistry` is an in-memory, thread-safe singleton seeded at startup. Registration is
+idempotent on identical metadata and rejects conflicting redefinitions of the same name.
+
+```csharp
+public interface IBlockRegistry
+{
+    void Register(BlockDefinition definition);   // idempotent
+    BlockDefinition? Find(string name);
+    bool IsRegistered(string name);
+    IReadOnlyList<BlockDefinition> GetAll();      // registration order
+}
+```
+
+A malformed name (not kebab-case), a bad SemVer, a non-`IBlockSchema` schema, or a data-bound
+client block is refused at registration — the catalog can never advertise an invalid block.
+
+## Data-bound blocks
+
+A block with a `DataSourceKey` renders live data — "latest 3 articles", "upcoming events".
+The value is produced by an `IBlockDataSource` keyed by that string; the registry of sources
+(`IBlockDataSourceRegistry`) is composed from whatever verticals register (the core ships
+none). At render time the server resolves the data and the renderer receives a ready value;
+the editor shows a placeholder.
+
+## The catalog API
+
+`MapGranitCms()` (and `MapGranitCmsBlocks()`) expose the catalog three ways:
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `GET /api/cms/blocks` | `Cms.Pages.Manage` | Admin catalog — full field model + schema for the editor |
+| `GET /api/cms/blocks/public` | anonymous | Trimmed catalog for the SSR renderer |
+| `POST /api/cms/blocks/data` | anonymous | Resolve a data-bound block's live data |
+
+The admin catalog returns `BlockCatalogResponse` grouped by `BlockCategoryGroup` into
+`BlockCatalogEntry` rows. The front caches it via ISR (tagged `cms-catalog`) and invalidates
+on change — no module-level cache that would bypass tag invalidation.
+
+## Adding a block
+
+1. Add the React component to `@granit/react-cms` and register it in the front's
+   `BLOCK_COMPONENTS` registry.
+2. Register a matching `BlockDefinition` on the backend (a DI service) — the
+   `BlockCatalogEntry.Name` must match the component key **exactly**.
+3. Invalidate the `cms-catalog` tag (or restart dev) so the front picks up the new entry.
+
+## See also
+
+- [Sites & Pages](/dotnet/cms/sites-and-pages/) — where the block tree is stored and versioned
+- [Media References](/dotnet/cms/documents/) — how `DocumentReference` block fields resolve to asset URLs
+- [Overview](/dotnet/cms/) — the editor/renderer split

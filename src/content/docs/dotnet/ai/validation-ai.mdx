@@ -56,8 +56,8 @@ builder.AddGranitValidationAI();
 <TabItem label="appsettings.json">
 ```json
 {
-  "AI": {
-    "Validation": {
+  "Validation": {
+    "AI": {
       "WorkspaceName": "moderation",
       "TimeoutSeconds": 2,
       "SeverityThreshold": 0.5
@@ -227,8 +227,10 @@ For moderation, fast and cheap models are preferable. Configure a dedicated work
         "SystemPrompt": "You are a content moderation assistant. Analyze text for policy violations. Be precise — flag only clear violations, not ambiguous edge cases.",
         "Temperature": 0.0
       }
-    ],
-    "Validation": {
+    ]
+  },
+  "Validation": {
+    "AI": {
       "WorkspaceName": "moderation",
       "TimeoutSeconds": 2,
       "SeverityThreshold": 0.6

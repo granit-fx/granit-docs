@@ -1,0 +1,186 @@
+---
+title: "External Login — Google, Microsoft, Apple, GitHub, Facebook, OIDC"
+description: Config-driven social sign-in for Granit. Add a provider by dropping a block in Authentication:External:Providers — no code — with a startup guard that fails fast when a scheme has no handler.
+sidebar:
+  order: 3
+  label: External Login
+---
+
+import { Tabs, TabItem, FileTree, Aside } from "@astrojs/starlight/components";
+
+[Authentication](/dotnet/security/authentication/) validates the **API tokens** your app
+receives. **External Login** is the other side: the interactive *"Sign in with Google"*
+button that gets a user a session in the first place. `Granit.Authentication.External`
+wires ASP.NET Core's social authentication handlers from configuration — you add a
+provider by editing `appsettings`, not code, and a startup guard refuses to boot if a
+configured provider has no handler package.
+
+<Aside type="note" title="Two different concerns">
+This page is about **interactive sign-in** (OAuth/OIDC login flows). Validating bearer
+tokens on your API (Keycloak, Entra ID, Cognito) is
+[Authentication](/dotnet/security/authentication/). They compose — a user signs in here,
+your API validates the resulting token there.
+</Aside>
+
+## Package structure
+
+The core module owns the config binding and the startup guard; each provider ships as its
+own package so you reference only the handlers you use.
+
+<FileTree>
+
+- Granit.Authentication.External/ **core — config binding, registry, startup guard**
+  - Granit.Authentication.External.Google Microsoft.AspNetCore.Authentication.Google
+  - Granit.Authentication.External.Microsoft Microsoft Account
+  - Granit.Authentication.External.Apple AspNet.Security.OAuth.Apple
+  - Granit.Authentication.External.GitHub AspNet.Security.OAuth.GitHub
+  - Granit.Authentication.External.Facebook Microsoft.AspNetCore.Authentication.Facebook
+  - Granit.Authentication.External.Oidc generic OpenID Connect (Okta, Auth0, …)
+
+</FileTree>
+
+| Provider `Type` | Package / module | ASP.NET Core handler |
+|-----------------|------------------|----------------------|
+| `Google` | `Granit.Authentication.External.Google` | `Microsoft.AspNetCore.Authentication.Google` |
+| `Microsoft` | `…External.Microsoft` | `Microsoft.AspNetCore.Authentication.MicrosoftAccount` |
+| `Apple` | `…External.Apple` | `AspNet.Security.OAuth.Apple` |
+| `GitHub` | `…External.GitHub` | `AspNet.Security.OAuth.GitHub` |
+| `Facebook` | `…External.Facebook` | `Microsoft.AspNetCore.Authentication.Facebook` |
+| `Oidc` | `…External.Oidc` | `Microsoft.AspNetCore.Authentication.OpenIdConnect` |
+
+## Setup
+
+Reference the provider packages you need and depend on their modules — the core module is
+pulled in transitively.
+
+```csharp
+[DependsOn(
+    typeof(GranitAuthenticationExternalGoogleModule),
+    typeof(GranitAuthenticationExternalMicrosoftModule))]
+public class AppModule : GranitModule { }
+```
+
+Then declare the providers in configuration. A provider is registered **only** when it
+appears here with a non-empty `ClientId`:
+
+```json title="appsettings.json"
+{
+  "Authentication": {
+    "External": {
+      "AutoRegisterExternalUsers": true,
+      "Providers": [
+        {
+          "Type": "Google",
+          "ClientId": "your-client-id",
+          "ClientSecret": "your-client-secret",
+          "DisplayName": "Google",
+          "Scopes": ["email", "profile"]
+        },
+        {
+          "Type": "Microsoft",
+          "ClientId": "your-client-id",
+          "ClientSecret": "your-client-secret"
+        }
+      ]
+    }
+  }
+}
+```
+
+| Field | Role |
+|-------|------|
+| `Type` | Provider kind — `Google`, `Microsoft`, `Apple`, `GitHub`, `Facebook`, `Oidc` |
+| `Name` | Scheme name; defaults to `Type`. Set it to run **two instances** of one kind (e.g. two `Oidc`) |
+| `ClientId` / `ClientSecret` | OAuth credentials — inject via user-secrets, env vars, or [Vault](/dotnet/data/vault/secrets/), never hardcode |
+| `Scopes` | Extra scopes; the handler default applies when omitted |
+| `Authority` | OIDC issuer URL — **required** for `Type: Oidc` |
+| `CallbackPath` | Overrides the handler's default callback (e.g. `/signin-google`) |
+| `DisplayName` | Human label for your login UI |
+| `Properties` | Provider-specific extras (Apple keys, GitHub Enterprise URL) |
+
+`AutoRegisterExternalUsers` (default `true`) provisions a local account on a user's first
+external sign-in, so external identities flow straight into
+[Identity](/dotnet/security/identity/) and authorization.
+
+<Aside type="caution" title="Secrets never go in appsettings">
+`ClientSecret` (and Apple's `PrivateKey`) are credentials. Keep them in user-secrets, env
+vars, or Vault. A blank `ClientId` is the supported "configure later" placeholder — the
+provider is skipped, not half-registered.
+</Aside>
+
+## The sign-in flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant App as Granit app
+    participant P as Provider (Google…)
+    U->>App: GET /login → click "Sign in with Google"
+    App->>P: challenge (redirect, PKCE)
+    P->>U: provider consent screen
+    U->>P: approve
+    P->>App: callback ?code=…  (CallbackPath)
+    App->>P: exchange code → tokens
+    App->>App: AutoRegisterExternalUsers → local account
+    App->>U: session established
+```
+
+To render the buttons, inject `IExternalProviderRegistry` — it lists the configured
+providers as `ExternalProviderInfo(Name, Type, DisplayName)` so the UI only ever offers
+what is actually wired.
+
+## Startup guard — fail fast, not at first login
+
+The core module validates, at boot, that every provider configured with a non-empty
+`ClientId` has a registered handler. Configure `Apple` but forget to reference
+`Granit.Authentication.External.Apple`, and the app throws immediately with a message
+naming the offending scheme and the package to add — instead of a confusing `404` the
+first time a user clicks the button.
+
+## Provider-specific notes
+
+<Tabs>
+<TabItem label="Apple">
+
+Apple does not accept a static client secret — it requires a short-lived JWT signed with a
+P8 key. Granit sets `GenerateClientSecret = true` and builds it for you; supply the inputs
+through `Properties`:
+
+```json
+{
+  "Type": "Apple",
+  "ClientId": "com.yourcompany.app",   // the Apple *Services ID*, not the bundle id
+  "Properties": {
+    "TeamId": "ABCDE12345",
+    "KeyId": "KEY1234567",
+    "PrivateKey": "-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="GitHub">
+
+Defaults to the `user:email` scope so you reliably get an email back. For GitHub
+Enterprise, point the handler at your instance with a `BaseUrl` in `Properties`.
+
+</TabItem>
+<TabItem label="Generic OIDC">
+
+Any compliant provider (Okta, Auth0, a second Keycloak realm) via `Type: Oidc`. Set
+`Authority`; Granit uses the authorization-code flow with PKCE and persists tokens. Run
+several by giving each a distinct `Name`:
+
+```json
+{ "Type": "Oidc", "Name": "Okta",  "Authority": "https://example.okta.com",  "ClientId": "…", "ClientSecret": "…" }
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [Authentication](/dotnet/security/authentication/) — validating the resulting bearer tokens on your API
+- [Identity](/dotnet/security/identity/) — where auto-registered external users land
+- [OIDC Client Primitives](/dotnet/security/authentication-oidc/) — low-level discovery, PKCE, DPoP
+- [Vault Secrets](/dotnet/data/vault/secrets/) — keeping client secrets out of config
