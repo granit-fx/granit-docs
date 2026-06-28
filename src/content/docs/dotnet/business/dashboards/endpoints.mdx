@@ -358,7 +358,19 @@ Per-column currency: a single table can mix `AmountEur` and `AmountUsd` on diffe
 }
 ```
 
-LatLng path (`double` / `decimal` lat-lng columns) works on any database. PostGIS path (`geography(Point)`) is opt-in via the `Granit.Analytics.PostGIS` package; without it the renderer surfaces `Widget:Unavailable.MapGeographyNotImplemented`.
+Points come from one of three sources, resolved per widget:
+
+- **LatLng** — `double` / `decimal` lat-lng columns. Works on any database, zero extra packages.
+- **PostGIS** — a `geography(Point)` column. Opt-in via the `Granit.Analytics.PostGIS` package; without it the renderer surfaces `Widget:Unavailable.MapGeographyNotImplemented`.
+- **`address`** — a **postal-address** column with no stored coordinates. Requires a registered [`IGeocodingService`](/dotnet/building-blocks/geocoding/) — add `Granit.Geocoding` plus a provider (`Granit.Geocoding.Nominatim` or `Granit.Geocoding.Photon`). The renderer geocodes each row's address through that service (cache included) and emits the same `points` shape. Rows that don't resolve are **dropped** from the marker set, not failed — one bad street name never aborts the widget. With no `IGeocodingService` registered, an `address`-sourced widget surfaces `Widget:Unavailable.GeocodingNotConfigured`.
+
+<Aside type="caution" title="The `address` source geocodes personal data">
+A postal address is personal data. The `address` source sends each row to the
+configured geocoder, so deploy [Granit.Geocoding](/dotnet/building-blocks/geocoding/)
+against a **self-hosted** Nominatim to keep PII in your boundary, and never log
+the resolved addresses. A third-party geocoder needs a lawful basis, a DPA, and a
+Article 30 register entry — see [Privacy and GDPR](/dotnet/building-blocks/geocoding/#privacy-and-gdpr).
+</Aside>
 
 `defaultLayerKind` (B7-3) is a per-widget preference — `Plan`, `Satellite`, `Hybrid`, `Topo`, or `Custom`, PascalCase on the wire. The frontend resolves it against the active `MapTileProvider`: matching layer wins, otherwise the provider's first layer is used. Useful when a single host registers multiple providers (OSM + SPW Wallonia + ArcGIS) and wants delivery-tracking widgets to default to satellite while parcel maps default to plan.
 

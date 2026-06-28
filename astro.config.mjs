@@ -452,6 +452,7 @@ export default defineConfig({
                     { label: "Mentions", link: "/dotnet/building-blocks/mentions/" },
                     { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
                     { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
+                    { label: "Geocoding", link: "/dotnet/building-blocks/geocoding/" },
                     {
                       label: "Indexing",
                       collapsed: true,
