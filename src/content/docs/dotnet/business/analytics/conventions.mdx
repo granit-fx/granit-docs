@@ -245,6 +245,12 @@ Key rules:
   the user can permission-check. Widgets that point at a missing metric/query
   render as a *widget unavailable* placeholder card — the dashboard itself stays
   usable.
+- **Map point source is declarative**: a `Map` widget sources its markers from
+  lat/lng columns, a PostGIS `geography(Point)` column, or an `address` column
+  geocoded through a registered [Granit.Geocoding](/dotnet/building-blocks/geocoding/)
+  `IGeocodingService` (Nominatim or Photon provider). The `address` source sends
+  personal data to a geocoder, so prefer a self-hosted instance and never log the
+  addresses — see [Dashboards endpoints — Map](/dotnet/business/dashboards/endpoints/#map--geocoded-markers).
 
 Migration story for module upgrades that remove a `DashboardDefinition`:
 
