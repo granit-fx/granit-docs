@@ -12,6 +12,8 @@ topic: backend
 > **Authors:** Jean-Francois Meyers
 > **Scope:** NEW modules `Granit.Taxonomy`, `Granit.Taxonomy.EntityFrameworkCore`, `Granit.Taxonomy.Endpoints`. Replaces the per-module `*Tag` join tables originally specced by ADR-052 (Documents) and the inline tag fields used by other modules.
 > **Status:** Accepted
+>
+> **Update (2026-06-26):** `Granit.Taxonomy.EntityFrameworkCore` is now a **dual-scope** module (the single-DbContext baseline of [ADR-063](/dotnet/architecture/adr/063-tenant-host-data-storage-modes/)), not tenant-only. `AddGranitTaxonomyEntityFrameworkCore` registers `TaxonomyDbContext` via `AddGranitDbContext<T>` (host schema + row-level `IMultiTenant` filter), so host-scoped tags/categories (`TenantId == null`) and tenant-scoped ones coexist in one table — the tag picker works in the host administration surface *and* inside a tenant. Previously the module was wired via `AddGranitIsolatedDbContext` (schema-per-tenant), which made any tenantless (host) tag/category request fail closed with *"No active tenant context"* (HTTP 500). The domain was already dual-scope-ready (`IMultiTenant`, nullable `TenantId`, uniqueness keyed on `(TenantId, …)`); only the registration changed. The extension signature is now a single `Action<DbContextOptionsBuilder>` (**breaking change**), and `ConfigureTaxonomyModule()` must be folded into a host-scoped DbContext — a startup `TaxonomyDualScopeIntegrationValidator` fails fast otherwise.
 
 ## Context
 
@@ -85,7 +87,7 @@ Introduce three NEW packages:
 | Package | Role |
 | ------- | ---- |
 | `Granit.Taxonomy` | Abstractions: `Tag` aggregate, `Category` aggregate, `TagAssignment` entity, `CategoryAssignment` entity, `ITagService`, `ICategoryService`, options, DI registration, diagnostics. |
-| `Granit.Taxonomy.EntityFrameworkCore` | Isolated `TaxonomyDbContext`, EF Core configurations, EF Core implementations of `ITagService` / `ICategoryService`, archi-test-required interceptors. |
+| `Granit.Taxonomy.EntityFrameworkCore` | Dual-scope `TaxonomyDbContext` (host schema + row-level tenant filter; see the 2026-06-26 update above), EF Core configurations, EF Core implementations of `ITagService` / `ICategoryService`, archi-test-required interceptors. |
 | `Granit.Taxonomy.Endpoints` | Tag & category CRUD, assignment endpoints (`POST /tags/{tagId}/assign`, `DELETE /tags/{tagId}/assign/{targetType}/{targetId}`), per-scope autocomplete, cross-entity search. |
 
 ### Tag aggregate shape
