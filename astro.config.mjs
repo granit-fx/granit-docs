@@ -452,7 +452,18 @@ export default defineConfig({
                     { label: "Mentions", link: "/dotnet/building-blocks/mentions/" },
                     { label: "TextExtraction", link: "/dotnet/building-blocks/text-extraction/" },
                     { label: "LanguageDetection", link: "/dotnet/building-blocks/language-detection/" },
-                    { label: "Geocoding", link: "/dotnet/building-blocks/geocoding/" },
+                    {
+                      label: "Address Platform",
+                      collapsed: true,
+                      items: [
+                        { label: "Overview", link: "/dotnet/building-blocks/address-platform/" },
+                        { label: "Value Objects", link: "/dotnet/building-blocks/address-value-objects/" },
+                        { label: "Geocoding", link: "/dotnet/building-blocks/geocoding/" },
+                        { label: "Geocoding Endpoints", link: "/dotnet/building-blocks/geocoding-endpoints/" },
+                        { label: "Address Enrichment", link: "/dotnet/building-blocks/address-enrichment/" },
+                        { label: "Address Deliverability", link: "/dotnet/building-blocks/address-deliverability/" },
+                      ],
+                    },
                     {
                       label: "Indexing",
                       collapsed: true,

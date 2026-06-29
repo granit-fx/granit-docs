@@ -1,0 +1,120 @@
+---
+title: "Address deliverability — the tier-1 verification contract"
+description: "Granit.AddressDeliverability.Abstractions is the contract for checking an address against an authoritative source (Smarty, Loqate, Google Address Validation). No provider ships in the baseline — modules depend on the contract, a host opts in by registering one. Named 'Deliverability' so it never collides with the AddressVerification verdict it feeds."
+sidebar:
+  label: Address Deliverability
+  order: 15
+  badge:
+    text: New
+    variant: tip
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Geocoding tells you an address **plausibly exists** — there's a building there on
+the map. It does not tell you the address is **deliverable** — that a courier or
+the postal service will actually get a parcel to it. That stronger answer comes
+from an authoritative address-verification provider (Smarty, Loqate, Google
+Address Validation), each backed by postal-authority data (DPV / RDI and the
+like).
+
+`Granit.AddressDeliverability.Abstractions` is the **contract** for that check —
+[tier 1](/dotnet/building-blocks/address-platform/#three-evidence-tiers) of the
+address platform. It ships **abstractions only**. No concrete provider is in the
+framework baseline; a host opts in by registering a provider package, and until
+then the [enrichment orchestrator](/dotnet/building-blocks/address-enrichment/)
+simply skips the tier. This lets modules and the orchestrator depend on
+deliverability **without** taking a hard dependency on any vendor.
+
+## The contract
+
+```csharp
+public interface IAddressDeliverabilityService
+{
+    Task<AddressDeliverabilityResult> CheckAsync(Address address, CancellationToken ct = default);
+}
+
+public sealed record AddressDeliverabilityResult(
+    AddressDeliverabilityOutcome Outcome,
+    Address? Standardized = null,            // the corrected address, when the provider fixed it
+    IReadOnlyList<string>? Flags = null,     // provider classification flags (DPV, residential, vacant…)
+    string? ProviderMatchCode = null);       // the provider's raw match code
+
+public enum AddressDeliverabilityOutcome
+{
+    Verified,       // deliverable as submitted
+    Corrected,      // deliverable after the provider standardized it
+    Unverifiable,   // no authoritative match — neither valid nor invalid
+    Invalid,        // not deliverable
+}
+```
+
+`Standardized` lets a provider hand back a cleaned-up address (canonical casing,
+expanded abbreviations, corrected postcode) that the caller can choose to adopt;
+`Flags` surface provider-specific classifications; `ProviderMatchCode` is the raw
+code, carried into the verification verdict's `Evidence` for provenance.
+
+<Aside type="note" title="Provider outcome ≠ stored verdict">
+`AddressDeliverabilityOutcome` is the provider's *raw answer*. The
+[enrichment orchestrator](/dotnet/building-blocks/address-enrichment/#two-tiers-one-of-them-optional)
+maps it onto the persisted
+[`AddressVerificationStatus`](/dotnet/building-blocks/address-value-objects/#addressverification--the-deliverability-verdict)
+(`Verified` → `ProviderVerified`, `Corrected` → `Corrected`, `Invalid` →
+`Invalid`, `Unverifiable` → `Unverified`). Two distinct types on purpose — one is
+the wire answer, the other the durable record.
+</Aside>
+
+## Why "Deliverability", not "Verification"
+
+The name is deliberate, and avoids two collisions:
+
+- The **persisted verdict** value object is
+  [`AddressVerification`](/dotnet/building-blocks/address-value-objects/#addressverification--the-deliverability-verdict).
+  Naming this package `Granit.AddressVerification` would put a *namespace* on top
+  of that type, shadowing it in every consumer that uses both.
+- The framework's **input-validation** family is `Granit.Validation*`
+  (FluentValidation-based, syntactic). Deliverability is a different thing — an
+  authoritative real-world check, not a format rule.
+
+"Deliverability" names the *provider check* (a delivery-point validation),
+cleanly distinct from the *verification verdict* it contributes to and from
+format validation.
+
+## Implementing a provider
+
+A provider package implements `IAddressDeliverabilityService`, maps its vendor's
+response onto `AddressDeliverabilityResult`, and registers the service. Once
+registered, [`Granit.AddressEnrichment`](/dotnet/building-blocks/address-enrichment/)
+picks it up automatically as its tier-1 step — no other wiring.
+
+```csharp
+public sealed class AcmeDeliverabilityService(/* vendor client */) : IAddressDeliverabilityService
+{
+    public async Task<AddressDeliverabilityResult> CheckAsync(Address address, CancellationToken ct)
+    {
+        var vendor = await /* call the vendor */;
+        return new AddressDeliverabilityResult(
+            Outcome: Map(vendor.Status),
+            Standardized: vendor.Corrected is { } c ? Address.Create(/* … */) : null,
+            Flags: vendor.Flags,
+            ProviderMatchCode: vendor.Code);
+    }
+}
+```
+
+<Aside type="caution" title="A provider is a sub-processor">
+A deliverability provider receives the full address — it is a third-party
+**processor** of personal data. The same GDPR posture as third-party
+[geocoding](/dotnet/building-blocks/geocoding/#privacy-and-gdpr) applies: lawful
+basis, an Article 28 DPA, a valid transfer mechanism for non-EU vendors, and the
+provider listed on your Article 30 register.
+</Aside>
+
+## See also
+
+- [Address enrichment](/dotnet/building-blocks/address-enrichment/) — the
+  orchestrator that calls this contract as its optional tier-1 step.
+- [Address value objects](/dotnet/building-blocks/address-value-objects/) — the
+  `AddressVerification` verdict the outcome maps onto.
+- [Address platform overview](/dotnet/building-blocks/address-platform/) — the
+  three evidence tiers.

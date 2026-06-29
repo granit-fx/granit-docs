@@ -1,258 +1,285 @@
 ---
-title: "Geocoding — One address-to-coordinate contract, self-hostable by default"
-description: "Turn a PostalAddress into a GeoPoint through one pluggable IGeocodingService. Two self-hostable providers — Nominatim and Photon — with rate limiting and a success/failure cache, so postal addresses never leave your boundary."
+title: "Geocoding — forward, reverse, and autocomplete behind one privacy-first contract"
+description: "Resolve a PostalAddress to a coordinate, a coordinate to an address, or a partial query to suggestions — through segmented capability interfaces, a per-provider rate-limit throttle, and a hashed-key cache. Two OpenStreetMap providers (Nominatim, Photon), self-hostable, and a no-op default that never leaks an address."
 sidebar:
   label: Geocoding
-  order: 20
+  order: 12
   badge:
-    text: New
+    text: Updated
     variant: tip
 ---
 
 import { FileTree, Aside } from "@astrojs/starlight/components";
 
-Plenty of features end up needing the same answer: *where is this address on a
-map?* A dashboard Map widget plots customers. A logistics module clusters
-delivery stops. A field-service planner sorts work orders by distance. Each one
-reaches for an address-to-coordinate lookup, and the naive shape is one HTTP
-call to a hosted geocoder per consumer — each with its own API key, its own rate
-limit, and its own habit of logging the full address it just sent over the wire.
+Plenty of features end up needing the same handful of answers about an address:
+*where is it on a map?* (a dashboard Map widget plotting customers), *what
+address is at this pin?* (a field worker dropping a marker), *what is the user
+half-way through typing?* (an address autocomplete on a form). The naive shape is
+one HTTP call to a hosted geocoder per consumer — each with its own key, its own
+rate limit, and its own habit of logging the full address it just sent over the
+wire.
 
 That last part matters more than it looks. **A postal address is personal data.**
 Shipping one to a third-party geocoder is a cross-border transfer of PII, and
 echoing it into structured logs is a second disclosure most teams never notice.
 
-**`Granit.Geocoding`** is the single contract — `IGeocodingService` turning a
-`PostalAddress` into a `GeoPoint` — resolved by the DI container so every
-consumer geocodes the same way. Two provider packages implement it, both **built
-to run self-hosted** so addresses never leave your boundary:
-**`Granit.Geocoding.Nominatim`** against [Nominatim](https://nominatim.org/) for
-precise structured lookups, and **`Granit.Geocoding.Photon`** against
-[Photon](https://photon.komoot.io/) for typo-tolerant, type-as-you-go search —
-both built on OpenStreetMap data. Register the one that fits your query style.
+**`Granit.Geocoding`** is the single seam — three small capability contracts,
+resolved by DI, so every consumer geocodes the same way and the privacy posture
+is set once. Two provider packages implement it against OpenStreetMap data, both
+**built to run self-hosted**:
+**`Granit.Geocoding.Nominatim`** ([Nominatim](https://nominatim.org/)) for precise
+structured lookups, and **`Granit.Geocoding.Photon`** ([Photon](https://photon.komoot.io/))
+for typo-tolerant, type-as-you-go search and reverse lookups. Register whichever
+fits, in whatever order.
 
 | Pain | This module's answer |
 |------|----------------------|
-| Each consumer wires its own hosted-geocoder client with a different key, retry, and rate limit | One `IGeocodingService` resolved by DI — every consumer geocodes identically |
-| Geocoding a personal address ships PII to a third country with no DPA on file | Both providers target a **self-hosted** instance — no PII egress, no sub-processor |
-| The geocoder client logs the full address it just resolved | The contract never logs address fields; provider exceptions are logged by type only |
-| Hammering the public Nominatim endpoint trips its 1 req/s usage policy and gets you blocked | Built-in token-bucket `RateLimitPerSecond`, defaulting to the public-instance limit |
-| Re-geocoding the same address on every dashboard render | Success **and** failure cache with independent TTLs — a bad address isn't re-queried every paint |
+| Each consumer wires its own geocoder client with a different key, retry, and rate limit | Three DI-resolved contracts — `IGeocodingService`, `IReverseGeocodingService`, `IAddressAutocompleteService` — every consumer uses the same seam |
+| Geocoding a personal address ships PII to a third country with no DPA on file | Both providers can target a **self-hosted** instance; the default contract is a **no-op** that resolves to `null` until you deliberately register a provider |
+| The geocoder client logs the full address it just resolved | The contract never logs address or coordinate fields; the HTTP loggers are stripped and a redaction handler scrubs the request URI from trace spans |
+| Hammering the public Nominatim endpoint trips its 1 req/s policy and gets you blocked | A per-provider token-bucket throttle, shared across forward / reverse / autocomplete, defaulting to 1 req/s |
+| Re-geocoding the same address on every dashboard render | A FusionCache layer keyed on a **hashed** address — successes and failures cached on separate clocks, raw address never in the key |
 
 ## Package structure
 
 <FileTree>
 
-- Granit.Geocoding/ Contract: `IGeocodingService`, `PostalAddress`, `GeoPoint`, `GeocodingResult`, caching decorator
-  - Granit.Geocoding.Nominatim/ Provider — Nominatim / OpenStreetMap, structured search + reverse
-  - Granit.Geocoding.Photon/ Provider — Photon (Komoot), typo-tolerant autocomplete search
+- Granit.Geocoding.Abstractions/ Contracts: the three `I*Service` seams, the three `I*Provider` capability interfaces, `PostalAddress`, `GeocodingResult`, `GeocodingCapabilities`
+  - Granit.Geocoding/ Engine: no-op default services, the hashed-key FusionCache layer, `ProviderOrder` fallback, capability aggregation
+    - Granit.Geocoding.Nominatim/ Provider — Nominatim / OSM: forward + reverse
+    - Granit.Geocoding.Photon/ Provider — Photon (Komoot): forward + reverse + autocomplete
+  - Granit.Geocoding.Endpoints/ Capability-gated HTTP endpoints (`/geocoding/autocomplete`, `/geocoding/reverse`)
 
 </FileTree>
 
-| Package | Role | Depends on |
-|---------|------|------------|
-| `Granit.Geocoding` | `IGeocodingService`, `PostalAddress`, `GeoPoint`, `GeocodingResult`, the caching decorator, `AddGranitGeocoding()`. No `[DependsOn]` — the contract root every provider attaches to. | `Granit` |
-| `Granit.Geocoding.Nominatim` | `NominatimGeocodingProvider`, `NominatimOptions` (`BaseAddress`, `UserAgent`, `RateLimitPerSecond`). Typed `HttpClient` + token-bucket limiter. Structured field search; precise. | `Granit.Geocoding` |
-| `Granit.Geocoding.Photon` | `PhotonGeocodingProvider`, `PhotonOptions` (`BaseAddress`, `Language`, `Limit`, `RateLimitPerSecond`). Typed `HttpClient`; typo-tolerant free-text search tuned for type-as-you-go input. | `Granit.Geocoding` |
-
 <Aside type="note" title="Pure contract, no host plumbing">
-`Granit.Geocoding` ships with **zero** ASP.NET Core or EF Core references. CLI
-tools, background workers, and import pipelines pull in geocoding without
-dragging in the web stack. Only the provider packages add a typed `HttpClient`.
+`Granit.Geocoding.Abstractions` and `Granit.Geocoding` ship with **zero** ASP.NET
+Core references. CLI tools, background workers, and import pipelines geocode
+without dragging in the web stack. Only the provider packages add a typed
+`HttpClient`, and only [`Granit.Geocoding.Endpoints`](/dotnet/building-blocks/geocoding-endpoints/)
+adds the HTTP surface.
 </Aside>
 
-## Contract
+## Three contracts, one privacy guarantee
+
+The engine is split into three capabilities so a consumer depends only on what it
+uses, and so a host maps only the endpoints its provider can actually serve.
 
 ```csharp
-public interface IGeocodingService
-{
-    Task<GeocodingResult> GeocodeAsync(
-        PostalAddress address,
-        CancellationToken cancellationToken = default);
-}
+// Forward — address → coordinate
+Task<GeocodingResult?> GeocodeAsync(PostalAddress address, CancellationToken ct = default);
 
-public sealed record PostalAddress(
-    string? Line1,
-    string? Line2,
-    string? PostalCode,
-    string? City,
-    string? Region,
-    string? CountryCode);   // ISO 3166-1 alpha-2, e.g. "BE"
+// Reverse — coordinate → address
+Task<ReverseGeocodingResult?> ReverseAsync(GeoCoordinate coordinate, CancellationToken ct = default);
 
-public readonly record struct GeoPoint(double Latitude, double Longitude);
-
-public sealed record GeocodingResult(
-    GeoPoint? Point,
-    GeocodingConfidence Confidence)   // None, Low, Medium, High
-{
-    public bool Found => Point is not null;
-}
+// Autocomplete — partial text → suggestions
+Task<IReadOnlyList<AddressSuggestion>> SuggestAsync(string query, int limit = 5, CancellationToken ct = default);
 ```
 
-One method, one input, one output. `GeocodeAsync` returns:
+Every one is **null-safe and exception-free**. A forward or reverse lookup that
+finds nothing returns `null`; autocomplete returns an empty list. An
+unresolvable address is a normal outcome, not an error — a Map widget over 10 000
+rows never aborts on one bad street name. And with **no provider registered**, all
+three are no-ops (`null` / empty), so a host that hasn't opted into geocoding
+never accidentally calls out to a third party.
 
-| Result | Meaning | Caller action |
-|--------|---------|---------------|
-| `Found == true`, `Confidence` ≥ `Medium` | The provider matched the address to a coordinate | Use `Point` |
-| `Found == true`, `Confidence == Low` | A coarse match (postcode centroid, city fallback) | Use with a caveat, or treat as unresolved per your tolerance |
-| `Found == false` (`Point is null`, `Confidence == None`) | No usable match | Fall back — skip the marker, queue for manual review, don't throw |
+### The wire types
 
-Implementations are safe to call concurrently. A failed lookup is a `None`
-result, **not** an exception — an unresolvable address is a normal outcome, not
-an error, so a Map widget over 10 000 rows never aborts on one bad street name.
+```csharp
+public sealed record PostalAddress(
+    string? Street,        // number + name, or null
+    string? PostalCode,    // or null
+    string  Locality,      // city / town — required
+    string  Country);      // name or ISO 3166-1 alpha-2 — required
 
-## Providers
+public sealed record GeocodingResult(
+    GeoCoordinate Coordinate,
+    GeocodeMatchPrecision Precision,   // Rooftop | Street | Locality
+    string? HouseNumber = null,
+    string? PostalCode = null,
+    string? CountryCode = null);
 
-Both providers implement `IGeocodingService`, sit behind the same cache and
-rate-limiter seam, and are **self-hostable** — either one keeps PII in your
-boundary. Register exactly one provider module per host; they differ in query
-style, not in contract.
+public sealed record ReverseGeocodingResult(PostalAddress Address, GeocodeMatchPrecision Precision);
+
+public sealed record AddressSuggestion(
+    string Label, PostalAddress Address, GeoCoordinate? Coordinate, GeocodeMatchPrecision? Precision);
+```
+
+<Aside type="note" title="PostalAddress is not the domain Address">
+`PostalAddress` is deliberately **looser** than the domain
+[`Address`](/dotnet/building-blocks/address-value-objects/#address--the-postal-fact)
+value object. A geocoder can resolve from just a locality and country with no
+street, so only `Locality` and `Country` are required here — whereas the domain
+`Address` enforces mailing-address invariants. Convert with `address.ToPostalAddress()`.
+The returned `Coordinate` is a [`GeoCoordinate`](/dotnet/building-blocks/address-value-objects/#geocoordinate--a-validated-wgs-84-point),
+a WGS 84 point that cannot hold an out-of-range value.
+</Aside>
+
+The parsed `HouseNumber` / `PostalCode` / `CountryCode` on a forward result are
+best-effort enrichment: a host stores `HouseNumber` on the geocoding value object,
+and cross-checks the returned `PostalCode` / `CountryCode` against the submitted
+address to flag a likely typo. A provider that returns only a coordinate leaves
+them `null`.
+
+## Providers and the capability matrix
+
+Providers don't implement the consumer services directly. Each implements one or
+more **capability interfaces**, and the engine aggregates them. A provider that
+can reverse-geocode also implements `IReverseGeocodingProvider`; one built for
+typeahead also implements `IAddressAutocompleteProvider`.
+
+| Capability interface | Nominatim | Photon |
+|----------------------|:---------:|:------:|
+| `IGeocodingProvider` (forward) | ✓ | ✓ |
+| `IReverseGeocodingProvider` (reverse) | ✓ | ✓ |
+| `IAddressAutocompleteProvider` (autocomplete) | ✗ | ✓ |
+
+Nominatim's usage policy discourages per-keystroke queries, so it deliberately
+omits autocomplete; Photon is built for search-as-you-type and offers all three.
+Register one provider, or both — when both are registered, `ProviderOrder` sets
+the fallback chain. A single provider instance serves every capability it
+implements, so forward, reverse, and autocomplete calls all pace through the
+**same** rate-limit throttle.
 
 ```mermaid
 flowchart LR
-    caller["Consumer<br/>(Map widget, logistics, …)"] -->|"PostalAddress"| svc["IGeocodingService"]
-    svc -->|"cache hit"| cache[("Success / failure cache")]
-    svc -->|"cache miss"| limiter["Token bucket<br/>RateLimitPerSecond"]
-    limiter --> prov["Provider<br/>(Nominatim or Photon)"]
-    prov -->|"search query"| inst["Self-hosted instance<br/>(OpenStreetMap data)"]
-    inst -->|"GeocodingResult"| svc
-    svc -->|"writes result"| cache
+    caller["Consumer<br/>(Map widget, form, …)"] --> svc["I*Service<br/>(forward / reverse / autocomplete)"]
+    svc -->|"cache hit (hashed key)"| cache[("FusionCache<br/>success 90d / failure 1d")]
+    svc -->|"cache miss"| order["ProviderOrder<br/>fallback chain"]
+    order --> throttle["Per-provider throttle<br/>RateLimitPerSecond"]
+    throttle --> prov["Provider<br/>(Nominatim / Photon)"]
+    prov -->|"query"| inst["OSM instance<br/>(self-hosted or public)"]
 ```
 
-| | `Granit.Geocoding.Nominatim` | `Granit.Geocoding.Photon` |
-|--|------------------------------|---------------------------|
-| Engine | Nominatim (OSM) | Photon / Elasticsearch (Komoot, OSM data) |
-| Best at | Precise lookups on clean, stored addresses; reverse geocoding | Typo-tolerant, partial, user-typed input (autocomplete) |
-| Query shape | Structured fields (street / city / postalcode / country) | Free-text, optional lat/lon bias |
-| Public-instance policy | 1 req/s, mandatory `User-Agent` | Demo instance discourages bulk; no hard rate cap |
-| Self-host | Geofabrik extract + `mediagis/nominatim` image | Prebuilt index download + Java service — no import step |
+The engine exposes a `GeocodingCapabilities(bool Forward, bool Autocomplete, bool
+Reverse)` record, computed once from the registered provider set. The
+[HTTP endpoints](/dotnet/building-blocks/geocoding-endpoints/) read it to map
+`/autocomplete` and `/reverse` **only** when a capable provider is installed.
 
-Use **Nominatim** for the stored `PostalAddress` of import pipelines and dashboard
-Map widgets, where the data is already validated and precision matters. Use
-**Photon** when the address is being typed by a user and you want forgiving,
-type-as-you-go matching.
+## Configuration
 
-### Nominatim — `Geocoding:Nominatim`
+Geocoding binds three option sections under `Geocoding`.
 
-`Granit.Geocoding.Nominatim` wraps the OpenStreetMap
-[Nominatim](https://nominatim.org/) search API behind a typed `HttpClient` and a
-token-bucket rate limiter, using the structured-search query shape (street /
-city / postalcode / country fields, not a free-text blob).
+### `Geocoding` — the engine
 
 | Option | Default | Role |
 |--------|---------|------|
-| `BaseAddress` | *(none — required)* | Root URL of the Nominatim instance. Point it at **your** instance; the public `nominatim.openstreetmap.org` is rate-capped and prohibits heavy or commercial use. |
-| `UserAgent` | *(none — required)* | Sent on every request. Nominatim's usage policy **mandates** a real identifying `User-Agent` (app name + contact); requests without one are rejected. |
-| `RateLimitPerSecond` | `1` | Token-bucket ceiling. `1` matches the public instance's absolute limit; raise it only against an instance you control. |
-| `TimeoutSeconds` | `10` | Per-request timeout; on expiry the lookup returns a `None` result. |
-| `Language` | `null` | Optional `Accept-Language` for localised place names; `null` uses the instance default. |
+| `ProviderOrder` | `[]` | Ordered list of `ProviderName`s — the fallback chain, tried in turn until one matches. **Empty** = all registered providers in registration order. **Non-empty** = an allow-list; a registered provider absent from it is excluded. |
+| `SuccessCacheDuration` | `90d` | TTL for a cached **successful** geocode. Coordinates for a real address are stable, so this is long to slash provider traffic. |
+| `FailureCacheDuration` | `1d` | TTL for a cached **miss**. Short, so a transient failure (provider cold, address mid-correction) retries soon without pinning a marker as missing for months. |
 
-`BaseAddress` and `UserAgent` have no safe default, so omitting either fails fast
-at startup (`ValidateDataAnnotations().ValidateOnStart()`) rather than silently
-degrading every lookup to `None`.
-
-<Aside type="tip" title="Self-host Nominatim">
-A full planet import is heavy, but a single-country extract from
-[Geofabrik](https://download.geofabrik.de/) imports in minutes and runs in a
-container. The official
-[`mediagis/nominatim`](https://github.com/mediagis/nominatim-docker) image takes
-a `PBF_URL` and serves the same search API. Self-hosting is the difference
-between *processing* personal data in-house and *transferring* it to a third
-party — see [Privacy and GDPR](#privacy-and-gdpr).
-</Aside>
-
-### Photon — `Geocoding:Photon`
-
-`Granit.Geocoding.Photon` wraps [Photon](https://photon.komoot.io/) — Komoot's
-OSM-backed geocoder built for search-as-you-type. It sends free-text queries and
-tolerates typos and partial input, the better fit when the address comes from a
-user typing rather than a validated column.
+### `Geocoding:Nominatim`
 
 | Option | Default | Role |
 |--------|---------|------|
-| `BaseAddress` | *(none — required)* | Root URL of your Photon instance. The demo `photon.komoot.io` is fine for trials but discourages bulk and production use. |
-| `Language` | `null` | `lang` parameter (`en`, `de`, `fr`, …) for localised place names; `null` uses the instance default. |
-| `Limit` | `1` | Candidates fetched per query; the provider keeps the top match and maps Photon's result rank to `GeocodingConfidence`. |
-| `RateLimitPerSecond` | `null` | Optional token-bucket courtesy throttle; `null` runs unthrottled against an instance you control. |
-| `UserAgent` | `null` | Optional identifying header — recommended even self-hosted so requests are attributable in your own access logs. |
-| `TimeoutSeconds` | `10` | Per-request timeout; on expiry the lookup returns a `None` result. |
+| `BaseAddress` | `https://nominatim.openstreetmap.org` | Root URL. **Point it at your own instance** for any non-trivial volume — the public one is rate-capped and prohibits heavy/commercial use. |
+| `UserAgent` | *(empty — required)* | Sent on every request. Nominatim's policy **mandates** a real identifying agent; startup validation fails until it is set. |
+| `RateLimitPerSecond` | `1` | Token-bucket ceiling. `1` matches the public instance's hard limit; raise it only against an instance you control. |
+| `Timeout` | `5s` | Per-request timeout; on expiry the lookup returns `null`. |
+| `MaxResponseSizeBytes` | `262144` | Upper bound on the buffered response body — hardening against oversized OSM fields. |
+| `ProviderName` | `Nominatim` | Identifier used in `ProviderOrder`. |
 
-Unlike Nominatim, Photon imposes no mandatory `User-Agent` and no fixed rate
-policy on your own instance, so `RateLimitPerSecond` defaults to unset. Only
-`BaseAddress` is required and has no safe default, so omitting it fails fast at
-startup.
+### `Geocoding:Photon`
 
-<Aside type="tip" title="Self-host Photon">
-Photon ships a **prebuilt search index** — download it from
-[the Photon project](https://github.com/komoot/photon#installation) and run the
-Java service in a container; there is no separate OSM import step like Nominatim's.
-A country-scoped index keeps the footprint small. As with Nominatim, self-hosting
-is what keeps personal data in-house — see [Privacy and GDPR](#privacy-and-gdpr).
+| Option | Default | Role |
+|--------|---------|------|
+| `BaseAddress` | `https://photon.komoot.io` | Root URL of your Photon instance. The demo is fine for trials but discourages bulk and production use. |
+| `Language` | `null` | Optional `lang` parameter (`en`, `de`, `fr`, …) for localised place names; affects text only, never the coordinate. |
+| `UserAgent` | `null` | Optional identifying header — Photon doesn't mandate one, but it makes your own access logs attributable. |
+| `RateLimitPerSecond` | `1` | Token-bucket ceiling; the public komoot endpoint is free but fair-use. |
+| `Timeout` | `5s` | Per-request timeout; on expiry the lookup returns `null`. |
+| `MaxResponseSizeBytes` | `262144` | Upper bound on the buffered response body. |
+| `ProviderName` | `Photon` | Identifier used in `ProviderOrder`. |
+
+<Aside type="caution" title="The default BaseAddress is the public instance">
+Both providers default `BaseAddress` to the **public** OSM endpoint, so the
+deliberate act is *registering the provider at all* — see [Setup](#setup). For
+any real workload, and to keep PII in-house, set `BaseAddress` to a self-hosted
+instance. A single-country [Geofabrik](https://download.geofabrik.de/) extract
+imports in minutes into the official
+[`mediagis/nominatim`](https://github.com/mediagis/nominatim-docker) image;
+Photon ships a [prebuilt index](https://github.com/komoot/photon#installation)
+with no import step.
 </Aside>
 
 ## Caching
 
 Geocoding the same address twice is wasted work and wasted rate-limit budget, so
-`Granit.Geocoding` wraps every provider in a caching decorator keyed on the
-normalised address. **Successes and failures cache independently**, because they
-expire on different clocks:
+the engine wraps every provider in a FusionCache layer. **Successes and failures
+cache on independent clocks** (90 days / 1 day by default), and the cache uses
+stampede protection — concurrent lookups of the same uncached address coalesce
+onto a single provider call.
 
-| Outcome | Option | Default | Rationale |
-|---------|--------|---------|-----------|
-| Found | `SuccessTtl` | `30d` | Coordinates for a real address are stable for weeks; a long TTL slashes provider traffic. |
-| Not found | `FailureTtl` | `1h` | A `None` is often transient (instance cold, address mid-correction). A short TTL stops one bad lookup pinning a marker as missing for a month, without re-querying on every render. |
+The cache key is a **SHA-256 hash** of the normalised address (or, for reverse,
+the coordinate rounded to ~1 m); the raw address or coordinate **never** lands in
+the key:
 
-Caching the failure is the point that's easy to miss: without it, every
-unresolvable address re-hits the rate-limited provider on **every** dashboard
-paint, and a handful of bad rows can starve the token bucket for the good ones.
+```text
+granit:geocoding:<sha256(street|postalcode|locality|country)>
+granit:geocoding:reverse:<sha256(lat,lon rounded to 5 dp)>
+```
+
+Autocomplete is **not** cached — typeahead has a low cache-hit rate and is
+expected to be debounced by the caller — so a partial query (itself fragmentary
+personal data) is never persisted to a distributed cache.
+
+<Aside type="caution" title="Why hash the key">
+A distributed cache is shared infrastructure that often has its own logging,
+eviction tooling, and operators. A plaintext address as a cache key would leak
+PII into all of it. Hashing keeps the cache fully functional — same address,
+same key, same hit — while the key itself reveals nothing.
+</Aside>
+
+## Setup
+
+Register a provider on the host builder. The `AddGranitGeocoding*` extension
+wires a typed `HttpClient`, binds and validates the options on start, **removes
+the default HTTP-client loggers** (their request-URI logging would leak the
+address), adds a telemetry redaction handler, and disables auto-redirects (an
+SSRF hardening). It is the single, deliberate opt-in to an outbound data flow.
 
 ```csharp
+builder.AddGranitGeocodingNominatim();   // forward + reverse
+builder.AddGranitGeocodingPhoton();      // + autocomplete
+```
+
+```jsonc
 // appsettings.json
 {
   "Geocoding": {
-    "Cache": { "SuccessTtl": "30.00:00:00", "FailureTtl": "01:00:00" },
+    "ProviderOrder": ["Nominatim", "Photon"],
+    "SuccessCacheDuration": "90.00:00:00",
+    "FailureCacheDuration": "1.00:00:00",
     "Nominatim": {
       "BaseAddress": "https://nominatim.internal.example.com/",
-      "UserAgent": "AcmeLogistics/1.4 (ops@acme.example)",
-      "RateLimitPerSecond": 1
-    }
+      "UserAgent": "AcmeLogistics/1.4 (ops@acme.example)"
+    },
+    "Photon": { "BaseAddress": "https://photon.internal.example.com/" }
   }
 }
 ```
 
-The decorator uses the same `FusionCache` instance as the rest of the framework,
-so the cache key namespace is tenant-scoped automatically — one tenant's
-geocodes never serve another's.
-
-## Setup
-
-```csharp
-[DependsOn(typeof(GranitGeocodingNominatimModule))]
-public sealed class LogisticsModule : GranitModule { }
-```
-
-`GranitGeocodingNominatimModule` depends on `GranitGeocodingModule`, so the
-caching decorator and `IGeocodingService` are registered transitively. Swap it
-for `GranitGeocodingPhotonModule` to run on Photon — the consumer code below is
-identical, only the configuration section changes. After startup:
+Then inject whichever contract you need — all three are singletons, safe anywhere:
 
 ```csharp
 public sealed class DeliveryPlanner(IGeocodingService geocoding)
 {
-    public async Task<GeoPoint?> LocateAsync(Order order, CancellationToken ct)
+    public async Task<GeoCoordinate?> LocateAsync(Address address, CancellationToken ct)
     {
-        var address = new PostalAddress(
-            Line1: order.Street, Line2: null,
-            PostalCode: order.PostalCode, City: order.City,
-            Region: null, CountryCode: order.CountryCode);
-
-        GeocodingResult result = await geocoding.GeocodeAsync(address, ct);
-        return result.Confidence >= GeocodingConfidence.Medium ? result.Point : null;
+        GeocodingResult? result = await geocoding.GeocodeAsync(address.ToPostalAddress(), ct);
+        return result?.Coordinate;   // null when unresolved — a normal outcome
     }
 }
 ```
 
-`IGeocodingService` is a singleton; safe to inject anywhere.
+<Aside type="tip" title="One step up: enrich both axes at once">
+Most consumers don't want a bare coordinate — they want the
+[`AddressGeocoding`](/dotnet/building-blocks/address-value-objects/#addressgeocoding--the-spatial-outcome)
+and [`AddressVerification`](/dotnet/building-blocks/address-value-objects/#addressverification--the-deliverability-verdict)
+value objects to persist on an entity. [`Granit.AddressEnrichment`](/dotnet/building-blocks/address-enrichment/)
+orchestrates exactly that from one `Address`. Reach for `IGeocodingService`
+directly only when you need just the coordinate.
+</Aside>
 
 ## Map widget — the `address` point source
 
@@ -260,57 +287,57 @@ The analytics [Map widget](/dotnet/business/dashboards/endpoints/#map--geocoded-
 plots `points` with explicit `latitude` / `longitude`. When a dataset stores a
 **postal address** rather than coordinates, the widget's `address` source resolves
 each row through the registered `IGeocodingService` (cache included) and emits the
-same `points` shape — so adding `Granit.Geocoding` plus either provider is all the
-Map renderer needs; no analytics-side package. Rows that don't resolve are dropped
-from the marker set, not failed, and without a registered `IGeocodingService` the
-widget surfaces `Widget:Unavailable.GeocodingNotConfigured`. See
-[Dashboards endpoints — Map](/dotnet/business/dashboards/endpoints/#map--geocoded-markers)
-for the wire contract and the `address` source declaration.
+same `points` shape — so adding `Granit.Geocoding` plus a provider is all the Map
+renderer needs. Rows that don't resolve are dropped from the marker set, not
+failed, and without a registered provider the widget surfaces
+`Widget:Unavailable.GeocodingNotConfigured`.
 
 ## Privacy and GDPR
 
 A postal address that identifies a person is **personal data** under GDPR. The
-module's defaults are chosen so the safe path is the default path, but the
-host owns the legal posture.
+module's defaults make the safe path the default path, but the host owns the
+legal posture.
 
 <Aside type="caution" title="A self-hosted instance keeps PII in-house">
 Running Nominatim or Photon on infrastructure you control means geocoding
 **processes** personal data internally — no transfer, no sub-processor, no DPA
-required for the geocoding step. This is the recommended deployment for both
-providers, and why neither has a default `BaseAddress`: pointing at a geocoder
-must be a deliberate choice, not an accidental call to a public third party.
+for the geocoding step. This is the recommended deployment, and why the no-op
+default geocodes nothing: reaching out to a geocoder must be a deliberate call to
+`AddGranitGeocoding*`, never an accident.
 </Aside>
 
 If you point `BaseAddress` at a **third-party** geocoder (the public Nominatim or
-Photon demo instance, Google, Mapbox, …), you are transferring personal data to a
+Photon demo, Google, Mapbox, …), you are transferring personal data to a
 processor, and the host must put the full chain in place:
 
-- **Lawful basis** — identify and record the Article 6 basis for the transfer
-  (legitimate interest, contract performance, …) before the first call.
-- **Data Processing Agreement** — execute an Article 28 DPA with the geocoding
-  provider; for non-EU providers, confirm a valid transfer mechanism (adequacy
-  decision or SCCs).
-- **Minimisation** — send only the fields the lookup needs. Don't pass a name,
-  order ID, or customer reference through `PostalAddress`; the contract carries
-  address fields only, by design.
-- **Records of processing** — list the geocoder as a recipient on your Article 30
-  register of processing activities.
+- **Lawful basis** — record the Article 6 basis for the transfer before the first call.
+- **Data Processing Agreement** — an Article 28 DPA with the provider; for non-EU
+  providers, a valid transfer mechanism (adequacy decision or SCCs).
+- **Minimisation** — `PostalAddress` carries address fields only, by design. Never
+  pass a name, order id, or customer reference through it.
+- **Records of processing** — list the geocoder as a recipient on your Article 30 register.
 
-<Aside type="caution" title="Never log addresses">
-The contract and the Nominatim provider **never** write address fields to logs;
-provider exceptions are logged by type only, because some HTTP clients echo the
-request URL — which contains the address query string — into 4xx/5xx error
-messages. If you add a custom provider or a logging wrapper, hold this line:
-log the `Confidence`, the cache key hash, or a row id — never the address.
+<Aside type="caution" title="Never log addresses or coordinates">
+The contracts, the providers, and the cache **never** write address or coordinate
+fields anywhere a human reads them. The default HTTP-client loggers are removed
+(some echo the request URI — which contains the address query — into 4xx/5xx
+messages), a redaction handler scrubs the address from outbound trace spans, the
+no-op service logs the *reason* a lookup was skipped and never the address, and
+cache keys are hashed. If you add a custom provider or a logging wrapper, hold
+this line: log the precision, a cache-key hash, or a row id — never the address.
 </Aside>
 
 ## See also
 
+- [Address platform overview](/dotnet/building-blocks/address-platform/) — the
+  three axes and three evidence tiers geocoding sits inside.
+- [Address value objects](/dotnet/building-blocks/address-value-objects/) — where
+  a geocoding result is persisted (`AddressGeocoding`).
+- [Address enrichment](/dotnet/building-blocks/address-enrichment/) — the
+  orchestrator that turns one `Address` into both derived value objects.
+- [Geocoding endpoints](/dotnet/building-blocks/geocoding-endpoints/) — the
+  capability-gated `/geocoding/autocomplete` and `/geocoding/reverse` HTTP surface.
 - [Dashboards endpoints — Map widget](/dotnet/business/dashboards/endpoints/#map--geocoded-markers)
-  — the `points` wire contract and the `address` point source backed by this module.
-- [Analytics conventions](/dotnet/business/analytics/conventions/) — where the
-  Map widget sits in the BI stack and the address-sourcing convention.
-- [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — the tenant scoping the
-  geocode cache inherits from `FusionCache`.
+  — the `points` contract and the `address` point source backed by this module.
 - [Application settings](/dotnet/infrastructure/application-settings/) — how the
-  `Geocoding:Nominatim` options bind and validate on start.
+  `Geocoding` options bind and validate on start.

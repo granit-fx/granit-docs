@@ -1,0 +1,151 @@
+---
+title: "Geocoding endpoints — capability-gated autocomplete & reverse"
+description: "Granit.Geocoding.Endpoints maps GET /geocoding/autocomplete and GET /geocoding/reverse — but only when a capable provider is registered. Authenticated by default, and the host must apply a per-principal rate-limit policy because the upstream quota is a shared, billable resource."
+sidebar:
+  label: Geocoding Endpoints
+  order: 13
+  badge:
+    text: New
+    variant: tip
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+[`Granit.Geocoding`](/dotnet/building-blocks/geocoding/) is a server-side
+contract. Two of its capabilities, though, are things a **browser** needs to call
+directly: an address autocomplete that fires as the user types, and a reverse
+lookup when someone drops a pin on a map. `Granit.Geocoding.Endpoints` exposes
+exactly those two — and nothing else — as HTTP endpoints.
+
+There is deliberately **no forward-geocoding endpoint**. Resolving a full stored
+address to a coordinate is back-office enrichment (see
+[`Granit.AddressEnrichment`](/dotnet/building-blocks/address-enrichment/)), not
+something a client should drive. Autocomplete and reverse are the only two that
+belong on the wire, because only they answer an interactive, per-user question.
+
+## What gets mapped
+
+The host maps the group with one call, which returns a `RouteGroupBuilder` for
+further chaining:
+
+```csharp
+app.MapGranitGeocoding();
+```
+
+| Method & route | Query | Mapped when | Response |
+|----------------|-------|-------------|----------|
+| `GET /geocoding/autocomplete` | `q` (required), `limit` (default 5) | an **autocomplete-capable** provider is registered | `200` `GeocodingAutocompleteResponse` |
+| `GET /geocoding/reverse` | `lat`, `lon` (required) | a **reverse-capable** provider is registered | `200` `GeocodingReverseResponse`, else `400` / `404` problem |
+
+The route prefix (`geocoding`), OpenAPI tag, and authorization policy are
+configurable via `GeocodingEndpointsOptions` (section `Geocoding:Endpoints`).
+
+### Capability gating
+
+Each endpoint is mapped **only when the registered provider can serve it** — the
+group reads the [`GeocodingCapabilities`](/dotnet/building-blocks/geocoding/#providers-and-the-capability-matrix)
+aggregate at map time:
+
+```csharp
+if (capabilities.Autocomplete)
+    group.MapGet("/autocomplete", HandleAutocompleteAsync) /* … */;
+
+if (capabilities.Reverse)
+    group.MapGet("/reverse", HandleReverseAsync) /* … */;
+```
+
+So a host running **Nominatim only** (forward + reverse, no autocomplete) exposes
+`/reverse` but **not** `/autocomplete` — the endpoint simply doesn't exist, rather
+than returning a runtime "not supported" error. Add Photon and the `/autocomplete`
+route appears. The OpenAPI document reflects exactly what the deployment can do.
+
+### Response shapes
+
+```csharp
+public sealed record GeocodingAutocompleteResponse(IReadOnlyList<GeocodingSuggestionResponse> Suggestions);
+
+public sealed record GeocodingSuggestionResponse(
+    string Label, string? Street, string? PostalCode, string Locality, string Country,
+    double? Latitude, double? Longitude);
+
+public sealed record GeocodingReverseResponse(
+    string? Street, string? PostalCode, string Locality, string Country, string Precision);
+```
+
+The DTOs are flattened for the wire — a suggestion carries both a human-readable
+`Label` for the typeahead list and the structured components a form fills in when
+the user picks it. `Precision` is the match granularity (`Rooftop`, `Street`, or
+`Locality`).
+
+## Security
+
+### Authenticated by default
+
+Geocoding proxies an external, rate-limited, **billable** provider, so the group
+is **never anonymous**. By default `MapGranitGeocoding()` requires any
+authenticated user; set `GeocodingEndpointsOptions.AuthorizationPolicy` to demand
+a specific policy instead.
+
+### The host must rate-limit — denial-of-wallet
+
+The package does **not** apply a rate-limit policy itself, and this is the one
+thing a host must add. Autocomplete fires **per keystroke**, and the upstream
+provider quota is a **shared** resource: one principal hammering the endpoint can
+exhaust the quota — or run up the bill — for **every** tenant. That's a
+denial-of-wallet, not just a denial-of-service.
+
+<Aside type="danger" title="Chain a per-principal rate-limit policy">
+Chain [`RequireGranitRateLimiting`](/dotnet/api/rate-limiting/) on the returned
+group with a policy **partitioned by user / tenant** — a global limit doesn't
+help, because the whole point is to stop *one* principal starving the rest.
+
+```csharp
+app.MapGranitGeocoding()
+   .RequireGranitRateLimiting("geocoding");
+```
+
+```jsonc
+{
+  "RateLimiting": { "Policies": { "geocoding": {
+    "PermitLimit": 60, "Window": "00:01:00",
+    "Algorithm": "SlidingWindow", "PartitionBy": "TenantAndUser" } } }
+}
+```
+
+</Aside>
+
+## Setup
+
+Pull in the module and map the group:
+
+```csharp
+[DependsOn(typeof(GranitGeocodingEndpointsModule))]
+public sealed class StorefrontModule : GranitModule { }
+```
+
+```csharp
+// in the host's endpoint wiring
+app.MapGranitGeocoding()
+   .RequireGranitRateLimiting("geocoding");
+```
+
+`GranitGeocodingEndpointsModule` depends on `GranitGeocodingModule`, so the
+geocoding services and the `GeocodingCapabilities` aggregate are already
+registered — register a provider ([Nominatim](/dotnet/building-blocks/geocoding/#geocodingnominatim)
+or [Photon](/dotnet/building-blocks/geocoding/#geocodingphoton)) and the matching
+endpoints light up.
+
+<Aside type="note" title="No provider, no endpoints">
+With only the no-op default geocoding service (no provider package), both
+capabilities are `false`, so **neither** endpoint is mapped. The module adds the
+HTTP surface; the provider decides which routes it carries.
+</Aside>
+
+## See also
+
+- [Geocoding](/dotnet/building-blocks/geocoding/) — the contracts, providers, and
+  the capability matrix these endpoints gate on.
+- [Rate limiting](/dotnet/api/rate-limiting/) — `RequireGranitRateLimiting` and
+  per-principal partitioning.
+- [Address platform overview](/dotnet/building-blocks/address-platform/) — where
+  the endpoints sit in the wider platform.
