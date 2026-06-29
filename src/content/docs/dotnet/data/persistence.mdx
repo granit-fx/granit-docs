@@ -378,6 +378,75 @@ retain the previous tenant's schema — failing to reset is a data isolation
 breach (ISO 27001).
 :::
 
+## Cross-package model extensions
+
+Sometimes a **separate** package needs to augment a module's EF Core model without
+the module taking a dependency on that package's technology. The canonical case is
+spatial: a PostGIS package adds a generated `geography(Point)` column and a GiST
+index to a module's address table, while `NetTopologySuite` stays entirely out of
+the base module. This is the mechanism behind the address platform's
+[planned spatial opt-in](/dotnet/building-blocks/address-platform/#how-the-parties-module-consumes-it).
+
+`IGranitModelExtension` is the hook:
+
+```csharp
+namespace Granit.Persistence.EntityFrameworkCore;
+
+public interface IGranitModelExtension
+{
+    void Apply(ModelBuilder modelBuilder, DbContext context);
+}
+```
+
+### How it applies
+
+Register implementations as **singletons** in DI. `GranitDbContext` resolves the
+registered set from the application service provider and applies it at the **very
+end** of model building — after the module's own `OnGranitModelCreating` *and*
+after [`ApplyGranitConventions`](#isolated-dbcontext-pattern) — so an extension
+gets the final say over the model surface.
+
+Because the same registered set is applied to **every** Granit `DbContext` in the
+application, each implementation sees a model it may not target. So an extension
+**must self-guard** on both the provider and the entity type before touching the
+builder:
+
+```csharp
+public sealed class AddressGeographyModelExtension : IGranitModelExtension
+{
+    public void Apply(ModelBuilder modelBuilder, DbContext context)
+    {
+        if (!context.Database.IsNpgsql()) return;                          // provider-gate
+        if (modelBuilder.Model.FindEntityType(typeof(PartyAddress)) is null) return; // entity-gate
+
+        modelBuilder.Entity<PartyAddress>()
+            .Property<Point>("Location")
+            .HasComputedColumnSql("...", stored: true);
+        // + a GiST index on "Location"
+    }
+}
+```
+
+```csharp
+// registration — singleton, read once when the model is built
+services.AddSingleton<IGranitModelExtension, AddressGeographyModelExtension>();
+```
+
+> The hook only **shapes the model**. The host still owns any migration: generating
+> and applying the DDL for the new column and index is part of
+> [host-owned migrations](#host-owned-migrations), exactly like every other schema
+> change.
+
+### Distinct extension sets, distinct cached models
+
+EF Core caches one built model per context type. Two contexts of the same type
+configured with *different* extension sets — a multi-provider host, or independent
+tests in one process — would otherwise share whichever model was built first.
+`GranitModelCacheKeyFactory` folds the registered extension signature into the
+model cache key so each configuration keeps its own cached model; it is
+**auto-wired by `UseGranitInterceptors()`** (via `ReplaceService<IModelCacheKeyFactory>`)
+and is equivalent to EF's default key when no extensions are registered.
+
 ## Public API summary
 
 | Category | Key types | Package |
@@ -393,6 +462,7 @@ breach (ISO 27001).
 | Host migrations | `Configure{Module}Module()`, `Granit{Module}DbProperties` | Each `*.EntityFrameworkCore` package |
 | Migrations | `MigrationPhase`, `MigrationCycleAttribute`, `IMigrationCycleRegistry`, `BatchMigrationDelegate` | `Granit.Persistence.EntityFrameworkCore.Migrations` |
 | Wolverine dispatch | `GranitPersistenceMigrationsWolverineModule` | `Granit.Persistence.Migrations.Wolverine` |
+| Model extensions | `IGranitModelExtension`, `GranitModelCacheKeyFactory` | `Granit.Persistence.EntityFrameworkCore` |
 
 ## Testing persistence
 
@@ -429,6 +499,7 @@ For integration tests with real PostgreSQL, use Testcontainers to get full fidel
 
 - [Interceptors](/dotnet/data/interceptors/) — audit, soft delete, concurrency, domain events, versioning
 - [Query filters](/dotnet/data/query-filters/) — named filters, runtime bypass, translations
+- [Address platform](/dotnet/building-blocks/address-platform/) — the spatial PostGIS opt-in that `IGranitModelExtension` powers
 - [Zero-downtime migrations](/dotnet/data/migrations/) — Expand & Contract pattern
 - [Adding Persistence guide](/dotnet/getting-started/adding-persistence/) — step-by-step tutorial
 - [Core module](/dotnet/core/module-system/) — domain base types, filter interfaces, `IDataFilter`
