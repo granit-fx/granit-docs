@@ -1,0 +1,247 @@
+---
+title: "Address value objects — three independent axes, one entity"
+description: "An address carries three orthogonal facts: the postal text, where it geocodes, and whether it is real. Granit ships them as three mutualized value objects — Address, AddressGeocoding, AddressVerification — persisted as flat, queryable columns. A rural address can be geocoding-Failed yet DeliveryConfirmed."
+sidebar:
+  label: Value Objects
+  order: 11
+  badge:
+    text: New
+    variant: tip
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+An address looks like one thing — a few lines of text — but a system that
+*acts* on addresses needs three separate answers, and they don't move together:
+
+1. **What did the user type?** The postal address: street, city, postal code,
+   country. The input fact.
+2. **Where is it on a map?** The geocoding outcome: a coordinate and how precise
+   the match was — or that no coordinate could be found.
+3. **Is it real and deliverable?** The verification verdict: did an authoritative
+   source, a human, or an actual delivery confirm it — or reject it.
+
+These are **orthogonal**. A brand-new rural address can fail to geocode (no
+OpenStreetMap node for the lane) yet be `DeliveryConfirmed` because a courier
+physically dropped a parcel there last week. A typo-perfect city-centre address
+geocodes to a crisp rooftop coordinate yet stays `Unverified` because nothing has
+ever confirmed a person receives mail at it. Collapsing the three into one
+"is the address good?" boolean throws away exactly the distinctions that drive
+real decisions — whether to plot a marker, whether to ship, whether to ask the
+user to re-check.
+
+Granit models them as **three mutualized value objects** in the base `Granit`
+package (`Granit.Domain.ValueObjects`), so every address-holding entity across the
+framework and the business modules stores the same shapes the same way:
+
+| Axis | Value object | Answers |
+|------|--------------|---------|
+| Postal | `Address` | The typed address + its delivery-point kind |
+| Geocoding | `AddressGeocoding` | Coordinate, match precision, freshness |
+| Verification | `AddressVerification` | Verdict + the evidence behind it |
+
+<Aside type="note" title="One platform, several packages">
+These value objects are the shared vocabulary. The engine that *fills them in*
+lives in separate packages — see [Geocoding](/dotnet/building-blocks/geocoding/)
+(the tier-0 coordinate lookup), [Address enrichment](/dotnet/building-blocks/address-enrichment/)
+(the orchestrator that produces both VOs from one `Address`), and
+[Address deliverability](/dotnet/building-blocks/address-deliverability/) (the
+tier-1 verification contract). The [Address platform overview](/dotnet/building-blocks/address-platform/)
+ties the whole picture together.
+</Aside>
+
+## `Address` — the postal fact
+
+`Address` is a `ValueObject` built through a validating factory; its `Country` is
+normalised to upper-case ISO 3166-1 alpha-2 on construction.
+
+```csharp
+public static Address Create(
+    string street1,
+    string city,
+    string postalCode,
+    string country,
+    string? street2 = null,
+    string? state = null,
+    AddressDeliveryPointType? deliveryPointType = null);
+```
+
+| Member | Type | Notes |
+|--------|------|-------|
+| `Street1` | `string` | Primary line. Personal data. |
+| `Street2` | `string?` | Optional second line. Personal data. |
+| `City` | `string` | Locality. |
+| `PostalCode` | `string` | Personal data. |
+| `State` | `string?` | Region / province, optional. |
+| `Country` | `string` | ISO 3166-1 alpha-2, upper-cased. |
+| `DeliveryPointType` | `AddressDeliveryPointType?` | Street, PO box, or other. |
+
+`AddressDeliveryPointType` distinguishes a delivery point a courier can reach
+from one that only takes mail — a distinction geocoding alone can't make:
+
+| Value | Meaning |
+|-------|---------|
+| `Street` | A regular street address. |
+| `PoBox` | A post-office box — postal mail only, no courier delivery. |
+| `Other` | Any other delivery point (military, poste restante, …). |
+
+## `AddressGeocoding` — the spatial outcome
+
+`AddressGeocoding` records the result of placing the address on a map. Its
+`Status` is the headline; the coordinate and precision fill in the detail.
+
+```csharp
+public static AddressGeocoding Pending { get; }                 // never attempted
+public static AddressGeocoding Resolved(GeoCoordinate coordinate,
+    GeocodeMatchPrecision precision, DateTimeOffset geocodedAt,
+    string? houseNumber = null, string? poBox = null);          // matched
+public static AddressGeocoding Failed(DateTimeOffset attemptedAt); // no match
+public AddressGeocoding AsStale();                              // address changed since
+```
+
+`AddressGeocodingStatus` is a small, deliberate state machine:
+
+| Status | Meaning |
+|--------|---------|
+| `Pending` | Address attached, never geocoded — awaiting a first attempt. |
+| `Resolved` | Resolved to a precise coordinate (rooftop or street-level match). |
+| `Approximate` | Resolved, but only to a locality / postcode centroid — coarse. |
+| `Failed` | No match found (a typo, or a gap in the provider's coverage). **Not** the same as invalid. |
+| `Stale` | The address changed since the last successful geocoding — to be re-resolved. |
+
+When `Resolved`, `MatchPrecision` says *how* precise the hit was:
+
+| `GeocodeMatchPrecision` | Meaning |
+|-------------------------|---------|
+| `Rooftop` | Matched to an exact building / house number. |
+| `Street` | Matched to a street (interpolated along the road). |
+| `Locality` | Matched only to a locality / postcode centroid. |
+
+`Coordinate` is exposed as a computed `GeoCoordinate?` (the persisted source of
+truth is the scalar `Latitude` / `Longitude` pair; the `GeoCoordinate` projection
+is `[JsonIgnore]` and not stored). `Failed` is a *normal* outcome, not an
+exception — an unresolvable address is data, not an error.
+
+<Aside type="caution" title="Failed ≠ Invalid">
+A `Failed` geocoding means "we couldn't find a coordinate", **not** "the address
+is fake". That judgement is the verification axis' job. The two routinely
+disagree: a remote address geocodes `Failed` yet verifies `DeliveryConfirmed`;
+a well-mapped address geocodes `Rooftop` yet verifies `Invalid` because the
+building was demolished.
+</Aside>
+
+## `AddressVerification` — the deliverability verdict
+
+`AddressVerification` records whether the address is real and reachable, and —
+crucially — *on what evidence*. The verdict and its source are stored together so
+a `DeliveryConfirmed` from a real courier run is never confused with a weak
+geocoding-plausibility guess.
+
+```csharp
+public static AddressVerification Unverified { get; }
+public static AddressVerification Create(
+    AddressVerificationStatus status,
+    AddressVerificationSource source,
+    DateTimeOffset verifiedAt,
+    string? verifiedBy = null,
+    string? evidence = null);
+```
+
+| `AddressVerificationStatus` | Meaning |
+|-----------------------------|---------|
+| `Unverified` | No verification evidence yet. |
+| `ProviderVerified` | Confirmed by an authoritative verification provider (DPV / RDI). |
+| `Corrected` | Confirmed by a provider, which standardised / corrected the input. |
+| `ManuallyConfirmed` | Confirmed manually by an operator. |
+| `DeliveryConfirmed` | Confirmed by a real-world positive outcome (successful courier delivery or postal mail). |
+| `Invalid` | Known bad — a provider rejected it, or a delivery / mailing came back undeliverable. |
+
+The `AddressVerificationSource` records the provenance that produced the verdict,
+ordered roughly by strength:
+
+| `AddressVerificationSource` | Meaning |
+|-----------------------------|---------|
+| `None` | No source (the default for `Unverified`). |
+| `Geocoding` | Inferred from geocoding plausibility — weak (existence, not deliverability). |
+| `VerificationProvider` | An authoritative address-verification provider. |
+| `Manual` | A human operator confirmed it. |
+| `Delivery` | A successful courier delivery to the address. |
+| `PostalMail` | A successful postal mailing (non-returned mail). |
+
+These three sources map onto the platform's [three evidence tiers](/dotnet/building-blocks/address-platform/#three-evidence-tiers):
+`Geocoding` is tier 0, `VerificationProvider` is tier 1, and `Manual` /
+`Delivery` / `PostalMail` are the tier-2 real-world evidence recorded by a
+consuming module.
+
+## `GeoCoordinate` — a validated WGS 84 point
+
+Both axes lean on `GeoCoordinate`, a value object that *cannot* hold an invalid
+point — the constructor throws on out-of-range latitude/longitude, and
+`TryCreate` offers an allocation-free, exception-free alternative.
+
+```csharp
+public GeoCoordinate(double latitude, double longitude);          // throws if out of range
+public static bool IsValid(double latitude, double longitude);
+public static GeoCoordinate? TryCreate(double latitude, double longitude);
+```
+
+`Latitude` is constrained to `[-90, 90]`, `Longitude` to `[-180, 180]`.
+
+## Persistence — flat, queryable columns
+
+Geocoding and verification are only useful if you can **filter and group by**
+them: "show every customer whose address is `Failed`", "count parties
+`DeliveryConfirmed` this quarter", "find the `Approximate`-only addresses a human
+should re-check". A JSON blob would bury those columns; an opaque value-converter
+would make them un-queryable (see [ADR-070](/dotnet/architecture/adr/070-value-object-persistence-and-querying/)).
+
+So the EF helpers in `Granit.Persistence.EntityFrameworkCore` map each VO as an
+EF **`ComplexProperty`** — flattened to real, indexable scalar columns, with
+enums stored as their PascalCase **string** names ([ADR-059](/dotnet/architecture/adr/059-enum-persistence-strategy/)):
+
+```csharp
+modelBuilder.Entity<Customer>()
+    .MapAddressGeocoding(c => c.Geocoding)
+    .MapAddressVerification(c => c.Verification);
+```
+
+| Helper | Produces (flat columns) |
+|--------|-------------------------|
+| `MapAddressGeocoding` | `Latitude`, `Longitude`, `Status` (string), `MatchPrecision` (string), `GeocodedAt`, `HouseNumber`, `PoBox`. The computed `Coordinate` is ignored. |
+| `MapAddressVerification` | `Status` (string), `Source` (string), `VerifiedAt`, `VerifiedBy`, `Evidence`. |
+
+Because the status and precision land in their own string columns, a dashboard
+query group-by'ing on `Status` or a filter for `MatchPrecision = 'Locality'`
+translates straight to SQL — no JSON path, no projection step. This is exactly
+the `ComplexProperty` opt-in strategy [ADR-070](/dotnet/architecture/adr/070-value-object-persistence-and-querying/)
+prescribes for VO columns you need to query.
+
+## Privacy — the coordinate is referential PII
+
+A coordinate that pins where a named person lives is **personal data**, and the
+sensitive fields are marked as such: `Latitude`, `Longitude`, `HouseNumber`,
+`PoBox` on `AddressGeocoding`, and `VerifiedBy` / `Evidence` on
+`AddressVerification`, all carry `[SensitiveData(Level = Sensitivity.Confidential)]`
+(as do `Address.Street1` / `Street2` / `PostalCode`).
+
+<Aside type="caution" title="Two geo-data regimes, deliberately different">
+The address-coordinate persisted on a business entity is **referential PII** —
+it is stored on purpose, erased through the entity's
+[`IPrivacyDataProvider`](/dotnet/compliance/privacy/) on a subject-erasure
+request. The **IP-derived** geolocation of a session is a *different* regime: it
+is deliberately **not** persisted. Don't reach for one to populate the other —
+they answer different questions and live under different retention rules.
+</Aside>
+
+## See also
+
+- [Address platform overview](/dotnet/building-blocks/address-platform/) — the
+  three axes, the three evidence tiers, and the capability model in one place.
+- [Geocoding](/dotnet/building-blocks/geocoding/) — the engine that fills the
+  geocoding axis (Nominatim / Photon, self-hostable, privacy-first).
+- [Address enrichment](/dotnet/building-blocks/address-enrichment/) — the
+  orchestrator that turns one `Address` into both VOs.
+- [ADR-070 — Value-object persistence & querying](/dotnet/architecture/adr/070-value-object-persistence-and-querying/)
+  — why `ComplexProperty`, not a converter or JSON, for queryable VO columns.
+- [Privacy & GDPR](/dotnet/compliance/privacy/) — subject erasure via
+  `IPrivacyDataProvider`.
