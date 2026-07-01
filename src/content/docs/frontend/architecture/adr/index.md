@@ -27,3 +27,4 @@ Conditions.
 | [007](/frontend/architecture/adr/007-vitest/) | Vitest as Test Runner | Accepted | 2026-02-27 | granit-front |
 | [008](/frontend/architecture/adr/008-opentelemetry/) | OpenTelemetry for Distributed Tracing | Accepted | 2026-03-04 | @granit/tracing |
 | [009](/frontend/architecture/adr/009-branded-types/) | Branded Types for Dates, IDs, and Currencies | Accepted | 2026-04-06 | All `@granit/*` packages |
+| [010](/frontend/architecture/adr/010-ui-tier-layering/) | Strict UI-Tier Layering — No @granit/react-ui Below the UI Tier | Accepted | 2026-07-01 | All `@granit/react-*` packages |
