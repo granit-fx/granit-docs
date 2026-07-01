@@ -1,0 +1,307 @@
+---
+title: "Impossible Travel Detection & Session Risk Scoring in .NET"
+date: 2026-06-23
+authors:
+  - jfmeyers
+tags:
+  - security
+  - ai
+  - deep-dive
+description: "Detect session hijacking in .NET with impossible travel, new-device, and new-country heuristics, an optional AI layer, and EF Core risk persistence."
+excerpt: >
+  A stolen session cookie passes every auth check you have. The signal that
+  something is wrong isn't in the token — it's in the pattern: a login from
+  Brussels, then São Paulo, eight minutes later. Here's how to catch it in .NET.
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+A login from Brussels at 14:02. A login from São Paulo at 14:10. Same user, same
+valid session cookie, same passing signature check — and 9,300 kilometers apart in
+eight minutes. That's **impossible travel**, and your JWT bearer token validation
+has no idea it just happened, because it only checks one thing: was this
+credential issued by a trusted party? It says nothing about *who is holding it
+right now*.
+
+A stolen session cookie, a phished login, or a hijacked refresh token all present a
+perfectly valid session. The token was never forged — it was stolen. If your
+authentication layer stops at "is the signature valid", you have no way to tell
+the difference between the real user and whoever just pasted their cookie into a
+second browser. This article walks through how to build that second layer:
+deterministic heuristics first, an AI escalation path second, and how to keep both
+from becoming an unbounded LLM bill or a prompt-injection vector.
+
+## The bad way: trusting the token and nothing else
+
+Most teams that reach for session anomaly detection start by hand-rolling
+something like this:
+
+```csharp title="NaiveSessionCheck.cs"
+public class NaiveSessionCheck
+{
+    public bool LooksSuspicious(string userId, string currentIp)
+    {
+        var lastIp = _cache.Get<string>($"last-ip:{userId}");
+        _cache.Set($"last-ip:{userId}", currentIp);
+
+        // "Different IP than last time" — that's it. That's the whole check.
+        return lastIp is not null && lastIp != currentIp;
+    }
+}
+```
+
+This fires on every mobile user who switches from Wi-Fi to LTE, ignores travel
+time entirely, and has no concept of risk level — it's a boolean. Scale it up to
+"real" anomaly detection and you hit the actual hard problems: geocoding an IP
+without shipping raw addresses to a third party, computing whether a travel
+pattern is *physically possible*, deciding when a second opinion from an LLM is
+worth the latency and the cost, and making sure nothing you feed that LLM can be
+turned into a prompt-injection payload by an attacker who controls their own
+`User-Agent` header.
+
+Granit's **Identity** session-risk packages (`Granit.Identity.AnomalyDetection`,
+`Granit.Identity.EntityFrameworkCore`) solve all four, on top of the
+[IP Geolocation](/dotnet/security/ip-geolocation/) module for the location resolution.
+
+## Three heuristics, zero external calls
+
+The detector reasons over a `UserSessionDescriptor` — the candidate session plus
+the user's recent history:
+
+```csharp title="UserSessionDescriptor.cs"
+public sealed record UserSessionDescriptor
+{
+    public required string SessionId { get; init; }
+    public string? UserId { get; init; }
+    public bool IsCurrent { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset? LastAccessedAt { get; init; }
+    public string? UserAgent { get; init; }
+    public string? IpAddress { get; init; }       // raw IP — server-side only, never log in clear
+    public GeoLocation? Location { get; init; }   // derived via Granit.IpGeolocation
+}
+```
+
+Three cheap, deterministic checks run before anything touches an AI model:
+
+| Heuristic | Signal | Contribution |
+|-----------|--------|--------------|
+| **Impossible travel** | Great-circle (Haversine) distance between consecutive session locations vs. elapsed time exceeds `MaxTravelKilometersPerHour` (default **1000 km/h**) | High |
+| **New country** | Candidate `Location.CountryCode` not seen in any prior session | Low |
+| **New device** | `UserAgent` device family never seen before | Low |
+
+```csharp title="IUserSessionAnomalyDetector.cs"
+public interface IUserSessionAnomalyDetector
+{
+    Task<UserSessionRiskAssessment> AssessAsync(
+        UserSessionDescriptor candidate,
+        IReadOnlyList<UserSessionDescriptor> history,
+        CancellationToken cancellationToken = default);
+}
+```
+
+1000 km/h is faster than a commercial flight's average cruising speed once you
+account for boarding and taxi time, so a real traveler almost never trips it —
+but Brussels-to-São-Paulo in eight minutes does, by three orders of magnitude.
+That single heuristic, computed in-process with no network call, is often enough
+to flag the scenario that opened this article before an AI model ever gets
+involved.
+
+## Escalating to AI — without leaking data into the prompt
+
+Heuristics catch the obvious cases. They miss the subtler ones: a new device *and*
+a new country that individually look like "Low" but together tell a different
+story, or a travel pattern that's geographically possible but statistically
+bizarre for that specific user. That's where the optional AI layer comes in,
+built on [`IStructuredCompletion`](/dotnet/ai/structured-completion/) from
+`Granit.AI` — the same typed-output primitive that turns any prompt into a
+strongly-typed C# object instead of hand-parsed JSON.
+
+```csharp title="UserSessionRiskAssessment.cs"
+public sealed record UserSessionRiskAssessment
+{
+    public UserSessionRiskLevel Level { get; init; }      // None | Low | Medium | High
+    public double Score { get; init; }                    // normalized [0, 1]
+    public IReadOnlyList<string> Reasons { get; init; }    // machine-readable reason codes
+    public string? Explanation { get; init; }              // untrusted model output
+}
+```
+
+The result combines the heuristic verdict and the AI verdict by taking the
+**higher** risk level and the **maximum** score. That ordering is deliberate: the
+AI can escalate a session the heuristics under-scored, but it can never silently
+downgrade one that a deterministic rule already flagged. A model having a bad day
+should never be the reason a real hijack slips through.
+
+<Aside type="caution" title="The country and city in your prompt are attacker-influenceable">
+A crafted `User-Agent` or a spoofable header can steer what location string
+ends up in the model's context — and that string gets fed straight into a
+prompt. The detector sanitizes every value before it reaches the prompt: trimmed,
+capped at 64 characters, anything outside `[A-Za-z0-9 .,'-]` collapsed to `_`.
+That strips the newlines and structural characters a prompt-injection payload
+needs to work. If you build custom descriptors on top of this, keep the same
+discipline — never hand a model un-sanitized free text.
+</Aside>
+
+<Aside type="danger" title="Explanation is convenience text, not a source of truth">
+`Explanation` is untrusted model output. The model is instructed to keep it
+PII-safe and benign, but that instruction is not an enforcement mechanism.
+Before you render it, log it, or persist it: HTML-encode it on display, strip
+control characters, cap its length — treat it exactly like user-supplied input.
+The machine-readable `Reasons` codes are the trustworthy signal; `Explanation` is
+not.
+</Aside>
+
+## Budgeting the AI calls so one bad actor can't drain everyone's quota
+
+AI calls cost money and latency, so they're rate-limited on two axes — and the
+**per-user** budget is checked before the per-tenant one:
+
+```json title="appsettings.json"
+{
+  "Identity": {
+    "AnomalyDetection": {
+      "MaxAiCallsPerHourPerUser": 50,
+      "MaxAiCallsPerHourPerTenant": 500,
+      "MaxTravelKilometersPerHour": 1000
+    }
+  }
+}
+```
+
+Checking per-user first means a single noisy subject — a credential-stuffing bot,
+a misbehaving client retrying in a loop — cannot drain the shared tenant budget
+and silently downgrade every *other* user in the tenant to heuristics-only
+detection. The blast radius of one abusive account stays contained to that
+account. When a budget is exhausted, the detector doesn't fail the request; it
+falls back to the heuristic verdict and moves on.
+
+## Wiring it up
+
+The abstractions package alone (`Granit.Identity.Abstractions`) registers a
+**no-op** detector and an in-memory risk store — development and single-node
+setups work with zero configuration. Production behavior switches on by adding
+two package references: `Granit.Identity.AnomalyDetection` for the heuristic + AI
+detector, and `Granit.Identity.EntityFrameworkCore` for durable persistence.
+
+```csharp title="Program.cs"
+builder.AddGranitIdentityEntityFrameworkCore<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Identity")));
+```
+
+The risk store lands in the **same Identity DbContext** as the rest of your user
+data — `identity_user_session_risks`, `identity_device_trusts` — so there's no
+separate database to provision, no second connection string to rotate, and no
+extra migration pipeline.
+
+To react when a session is flagged, subscribe to the integration event the
+evaluator raises for `Medium`/`High` risk:
+
+```csharp title="SuspiciousSessionHandler.cs"
+public sealed class SuspiciousSessionHandler
+    : IDistributedEventHandler<SuspiciousUserSessionDetectedEto>
+{
+    public async Task HandleAsync(
+        SuspiciousUserSessionDetectedEto integrationEvent, CancellationToken ct = default)
+    {
+        // Step up authentication, or fan out a security alert across every
+        // channel the user has configured — email, push, SMS. See:
+        // /blog/multi-channel-notifications-dotnet/
+    }
+}
+```
+
+## Trusted devices dampen the noise, not the risk
+
+Nothing kills adoption of an anomaly system faster than paging the user every
+time they log in from a new laptop. `IUserSessionRiskEvaluator.EvaluateAsync`
+takes the resolved `deviceId` and consults an `IDeviceTrustStore` to dampen
+noise without masking real threats:
+
+| Detected level | On an actively-trusted device |
+|-----------------|-------------------------------|
+| `High` | **Preserved** — a trusted device can still be compromised |
+| `Medium` | **Downgraded to `Low`**, `trusted_device` reason appended, alert suppressed |
+| `Low` / `None` | Unchanged |
+
+A `High` verdict always survives, because "this device is trusted" and "this
+device is currently compromised" are not mutually exclusive facts.
+
+## The end-to-end flow
+
+```mermaid
+sequenceDiagram
+    participant App as Login / session pipeline
+    participant Eval as IUserSessionRiskEvaluator
+    participant Det as IUserSessionAnomalyDetector
+    participant RL as AI rate limiter
+    participant AI as Granit.AI
+    participant Store as IUserSessionRiskStore
+    participant Bus as IDistributedEventBus
+
+    App->>Eval: EvaluateAsync(candidate, history)
+    Eval->>Det: AssessAsync
+    Det->>Det: heuristics (impossible travel, new country/device)
+    Det->>RL: per-user budget? then per-tenant budget?
+    alt budget available
+        RL-->>Det: ok
+        Det->>AI: structured completion (sanitized features)
+        AI-->>Det: level / score / reasons / explanation
+    else exhausted
+        RL-->>Det: rate-limited, heuristic verdict only
+    end
+    Det-->>Eval: max(heuristic, AI)
+    Eval->>Store: persist verdict (Level, Reasons, AssessedAt)
+    opt Medium / High
+        Eval->>Bus: SuspiciousUserSessionDetectedEto
+    end
+
+    style App fill:#e3f2fd,color:#0d47a1
+    style Eval fill:#e8f5e9,color:#1b5e20
+    style Det fill:#e8f5e9,color:#1b5e20
+    style AI fill:#f3e5f5,color:#4a148c
+    style Store fill:#fff3e0,color:#e65100
+    style Bus fill:#fce4ec,color:#880e4f
+```
+
+Note what's *not* persisted: only `Level`, `Reasons`, and `AssessedAt` reach the
+database. The free-text `Explanation` never gets written to a row you'd have to
+account for in a GDPR export or a breach disclosure.
+
+## Why this matters beyond the individual login
+
+Session anomaly detection is a technical control, not a compliance checkbox, but
+it maps cleanly onto two obligations auditors will ask about directly: GDPR
+Art. 32's "appropriate technical measures" against unauthorized access, and
+ISO 27001 A.8.16's monitoring-activities control. If you're already working
+through a [SOC 2 Type 2](/blog/soc2-type2-ready-saas-granit/) or
+[NIS 2](/blog/nis2-ready-dotnet-applications/) checklist, this is one of the
+line items that stops being "we'll build this eventually" and becomes "here's
+the table, here's the event, here's the handler."
+
+## Takeaways
+
+- **A valid token proves the credential, not the holder.** Session risk scoring
+  is the layer that catches the gap — a stolen cookie passes every signature
+  check there is.
+- **Deterministic heuristics come first.** Impossible travel, new country, new
+  device cost nothing and catch the loudest cases before an AI model is ever
+  called.
+- **AI can escalate, never downgrade.** Combining verdicts by taking the maximum
+  score keeps a model's uncertainty from overriding a heuristic that already
+  fired.
+- **Rate-limit per user before per tenant.** It's the difference between one
+  noisy account losing AI coverage and an entire tenant silently degrading to
+  heuristics-only.
+- **Sanitize before the prompt, and don't persist free text.** Attacker-controlled
+  fields (`User-Agent`, spoofable location headers) reach the model — treat them
+  like any other untrusted input, and keep the model's prose out of your
+  database and your logs.
+
+## Further reading
+
+- [User Sessions — Anomaly Detection & Risk Scoring](/dotnet/security/user-sessions/) — full reference
+- [IP Geolocation](/dotnet/security/ip-geolocation/) — the `GeoLocation` read-model driving the travel and country heuristics
+- [Structured Completion](/dotnet/ai/structured-completion/) — the typed AI primitive the risk evaluator builds on
+- [Identity — User Claims & Tenant Context](/dotnet/security/identity/#user-sessions--devices) — the canonical session list this module enriches
+- [Multi-Channel Notifications in .NET](/blog/multi-channel-notifications-dotnet/) — fan out the suspicious-session alert once it fires
