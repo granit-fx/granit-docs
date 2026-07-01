@@ -8,7 +8,7 @@ sidebar:
 
 import { FileTree } from "@astrojs/starlight/components";
 
-Granit provides a complete SaaS & Commerce ecosystem through five interdependent modules.
+Granit provides a complete SaaS & Commerce ecosystem through seven interdependent modules.
 Together they cover the full monetization lifecycle: **plans → subscriptions → usage tracking →
 invoicing → credit balance → payment collection**, with sovereignty-first design (SEPA transfer
 works without any external dependency).
@@ -79,6 +79,7 @@ listened to `PaymentSucceededEto`, it would never renew in this scenario.
 
 | Module | Purpose | Phase |
 |--------|---------|-------|
+| [Catalog](/dotnet/saas/catalog/) | Shared `Product` aggregate joining Metering, Subscriptions, and Invoicing — Draft/Published/Archived lifecycle | 1 |
 | [Subscriptions](/dotnet/saas/subscriptions/) | Plans, subscriptions, seats, entitlements, billing cycle orchestration | 1 |
 | [Invoicing](/dotnet/saas/invoicing/) | Invoices, credit notes, partial payments, tax, external accounting sync | 1 |
 | [Payments](/dotnet/saas/payments/) | Provider-agnostic payment processing, webhooks, refunds, disputes | 1 |
