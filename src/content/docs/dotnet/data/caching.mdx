@@ -74,8 +74,9 @@ public class AppModule : GranitModule { }
 ```
 
 `GranitCachingStackExchangeRedisModule` upgrades the FusionCache instance registered by `GranitCachingModule`
-with L2 Redis and a Redis pub/sub backplane. It also enables AES-256 encryption when
-`EncryptValues` is `true`.
+with L2 Redis and a Redis pub/sub backplane. It registers the AES-256 encryptor as soon as a
+256-bit `Cache:Encryption:Key` resolves — setting `EncryptValues` is no longer required to protect
+`[CacheEncrypted]` values (see [Encryption](#encryption)). Provide the key from Vault.
 
 </TabItem>
 </Tabs>
@@ -143,14 +144,14 @@ as stale but keeps it available as a fail-safe fallback if the next factory call
 |----------|---------|-------------|
 | `KeyPrefix` | `"dd"` | Global key prefix. FusionCache keys become `{KeyPrefix}:{userKey}` |
 | `DefaultAbsoluteExpirationRelativeToNow` | `01:00:00` | Default TTL (mapped to FusionCache `Duration`) |
-| `EncryptValues` | `false` | Enable AES-256 encryption on L2 (Redis) serialization |
+| `EncryptValues` | `false` | Force AES-256 encryption for **all** L2 (Redis) values. Independent of this flag, `[CacheEncrypted]` types are always encrypted once an encryption key resolves |
 | `JsonOptions` | `null` | Custom `System.Text.Json` serializer options |
 
 ### CacheEncryptionOptions (`Cache:Encryption` section)
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `Key` | -- | AES-256 encryption key (base64-encoded, 32 bytes) |
+| `Key` | -- | AES-256 encryption key (base64-encoded, 32 bytes). A resolvable 256-bit key here is sufficient to arm the encryptor — `EncryptValues` need not be set |
 
 ### FusionCachingOptions (`Cache:FusionCache` section)
 
@@ -305,13 +306,47 @@ stores plain .NET objects — same threat model as `IMemoryCache`.
 | L1 | In-memory (per pod) | No (plain .NET objects) |
 | L2 | Redis (shared) | Yes (when `EncryptValues = true`) |
 
-Encryption is activated by setting `CachingOptions.EncryptValues = true` and providing
-an AES-256 key in `CacheEncryptionOptions.Key`. The `GranitCachingStackExchangeRedisModule` replaces
-the no-op `NullCacheValueEncryptor` with `AesCacheValueEncryptor` at startup.
+Encryption is **key-driven**. `GranitCachingStackExchangeRedisModule` replaces the no-op
+`NullCacheValueEncryptor` with `AesCacheValueEncryptor` as soon as a 256-bit
+`Cache:Encryption:Key` resolves — you no longer have to flip `EncryptValues` for the
+encryptor to exist. The flag and the key play two distinct roles:
+
+| Trigger | Effect |
+|---------|--------|
+| `Cache:Encryption:Key` resolves (32 bytes) | Arms the encryptor. `[CacheEncrypted]` values are encrypted on L2 |
+| `Cache:EncryptValues = true` | Encrypts **every** L2 value, not just the `[CacheEncrypted]` ones |
 
 Each encryption operation generates a random 12-byte nonce and produces a 16-byte
 authentication tag. Ciphertext format: `[12B nonce][16B tag][NB ciphertext]`.
 Tampered values are detected and rejected via the GCM tag.
+
+### `[CacheEncrypted]` — per-type encryption
+
+Mark a cached record with `[CacheEncrypted]` (`CacheEncryptedAttribute`, from `Granit.Caching`)
+to force AES-256-GCM encryption of that type on the L2 path regardless of the global
+`EncryptValues` flag. It is a no-op on the L1 in-memory store, which holds live .NET object
+graphs rather than serialized bytes — the same threat model as `IMemoryCache`.
+
+The framework marks `BffTokenSet` (BFF session tokens) and `IdempotencyEntry` (captured
+response status, headers, and body — any of which may carry PII or bearer tokens). The
+attribute only encrypts once an encryptor key is present: before this was enforced, a
+`[CacheEncrypted]` type on a keyless host silently fell through to the no-op encryptor and
+landed in Redis as **plaintext**. The startup validator below closes that gap.
+
+### Fail-closed startup validator
+
+`RedisCacheEncryptionStartupValidator` (an `IValidateOptions<CachingOptions>` wired with
+`ValidateOnStart`, armed only once an L2 Redis provider is registered) refuses to boot a
+non-`Development` host that would persist cache values in plaintext — i.e. no
+`Cache:Encryption:Key` resolves **and** `EncryptValues` is off. `Development` stays
+permissive so local Redis needs no key.
+
+```text
+Redis L2 cache is active but no encryption key is configured and EncryptValues is off.
+Cached values (including [CacheEncrypted] BFF tokens and idempotency entries) would be
+written to Redis in plaintext. Set Cache:Encryption:Key (256-bit, from Vault) or, to
+encrypt all values, Cache:EncryptValues=true. This check is relaxed in Development only.
+```
 
 :::caution
 The encryption key must be exactly 32 bytes (256 bits) when base64-decoded. In production,
@@ -402,7 +437,8 @@ Tagged `["readiness", "startup"]` — integrates with Kubernetes readiness probe
 |----------|-----------|---------|
 | Modules | `GranitCachingModule`, `GranitCachingStackExchangeRedisModule` | -- |
 | Cache interface | `IFusionCache` (from ZiggyCreatures.FusionCache) | `Granit.Caching` |
-| Encryption | `ICacheValueEncryptor`, `AesCacheValueEncryptor`, `EncryptingFusionCacheSerializer` | `Granit.Caching` |
+| Encryption | `ICacheValueEncryptor`, `AesCacheValueEncryptor`, `EncryptingFusionCacheSerializer`, `[CacheEncrypted]` | `Granit.Caching` |
+| Encryption guard | `RedisCacheEncryptionStartupValidator` | `Granit.Caching.StackExchangeRedis` |
 | Options | `CachingOptions`, `CacheEncryptionOptions`, `FusionCachingOptions`, `RedisCachingOptions` | -- |
 | Extensions | `AddGranitCaching()`, `AddGranitCachingRedis()`, `AddGranitRedisHealthCheck()` | -- |
 | Health check | `RedisHealthCheck` | `Granit.Caching.StackExchangeRedis` |
@@ -450,5 +486,7 @@ must use different prefixes to avoid key collisions.
 - [ADR-002: Redis](/dotnet/architecture/adr/002-redis/) -- Why Redis was chosen as the distributed cache backend
 - [FusionCache documentation](https://github.com/ZiggyCreatures/FusionCache/blob/main/docs/README.md) -- Official FusionCache docs
 - [Persistence module](/dotnet/data/persistence/) -- EF Core interceptors, query filters
+- [Field-level encryption](/dotnet/data/encryption/) -- the same Vault key-provider story for data at rest
+- [BFF token security](/dotnet/security/bff/token-security/) -- `BffTokenSet`, a `[CacheEncrypted]` type stored in Redis
 - [API Reference](/api/Granit.Caching.html) (auto-generated from XML docs)
 - [Blog: HybridCache + Redis: distributed invalidation done right](/blog/hybrid-cache-redis-distributed-invalidation/) -- L1/L2 cache coherence patterns the caching module relies on

@@ -16,20 +16,27 @@ cooling-off period:
 ```mermaid
 flowchart TD
     A["POST /privacy/deletions"] --> B{defer?}
-    B -->|false| C[PersonalDataDeletionRequestedEto]
-    C --> D[Providers delete immediately]
-    D --> E[DeletionExecutedEto]
-    E --> F["Confirmation email"]
     B -->|true| G[DeletionDeferredEto]
     G --> H["PersonalDataDeletionSaga starts"]
-    H --> I["Schedule reminder"]
+    H --> I["Schedule reminder → Reminder email"]
     H --> J["Schedule deadline"]
-    I --> K["Reminder email"]
     J --> L{Cancelled?}
-    L -->|No| M[PersonalDataDeletionRequestedEto]
-    M --> N["Confirmation email"]
     L -->|Yes| O["Saga completed, data preserved"]
+    L -->|No| DL[Deadline reached]
+    B -->|false| DL
+    DL --> Q{"registered<br/>providers?"}
+    Q -->|none| E
+    Q -->|"one or more"| X["Mark Executing<br/>+ DeletionExecutedEto (grace ended)<br/>+ Confirmation email"]
+    X --> Y["Fan out PersonalDataDeletionRequestedEto<br/>schedule ack timeout"]
+    Y --> Z{"all providers<br/>acknowledged?<br/>(PersonalDataDeletedEto)"}
+    Z -->|yes| E["Mark Executed<br/>(GDPR Art. 17 proof)"]
+    Z -->|"timeout elapses"| P["Mark PartiallyExecuted<br/>persist MissingProviders<br/>emit stuck metric + warning"]
 ```
+
+The user-facing `DeletionExecutedEto` still fires the moment the grace period ends — it
+confirms the cooling-off window closed, **not** that every provider has finished. The
+tracker only reaches the terminal `Executed` state once the provider acknowledgement
+fan-in completes (see [Provider acknowledgement fan-in](#provider-acknowledgement-fan-in)).
 
 ## Cooling-off period
 
@@ -63,6 +70,7 @@ Grace periods default from the regulation profile. Override globally or per-regu
     "DefaultGracePeriodDays": 30,
     "MaxGracePeriodDays": 90,
     "ReminderDaysBefore": 3,
+    "DeletionAcknowledgementTimeoutMinutes": 720,
     "RegulationOverrides": {
       "BR_LGPD": { "DefaultGracePeriodDays": 15 },
       "US_CCPA": { "DefaultGracePeriodDays": 45, "MaxGracePeriodDays": 90 }
@@ -70,6 +78,11 @@ Grace periods default from the regulation profile. Override globally or per-regu
   }
 }
 ```
+
+`DeletionAcknowledgementTimeoutMinutes` (default 720) bounds how long the saga waits for
+provider acknowledgements after fan-out before marking the request `PartiallyExecuted` — see
+[Provider acknowledgement fan-in](#provider-acknowledgement-fan-in). The grace-period keys are
+independent of it.
 
 Deferred deletion state needs a request tracker. The EF Core default registers
 both the export **and** deletion trackers against `PrivacyDbContext` in one call:
@@ -131,11 +144,14 @@ public class DocumentsPersonalDataDeletionHandler
     public const string ProviderName = "documents";
 
     // Wolverine discovers the static HandleAsync and wires DI for the parameters.
-    public static async Task HandleAsync(
+    // Returning a PersonalDataDeletedEto lets Wolverine cascade the acknowledgement
+    // back to the saga — [SagaIdentity] on RequestId routes it. Build the ack only
+    // after the erasure succeeds: if a call throws, the return is never reached, no
+    // ack is published, and Wolverine retries / dead-letters instead.
+    public static async Task<PersonalDataDeletedEto> HandleAsync(
         PersonalDataDeletionRequestedEto request,
         IDocumentService documents,
         IFolderService folders,
-        IDistributedEventBus bus,
         CancellationToken cancellationToken)
     {
         // 1. Enumerate by OwnerId at the service contract — system anchors (here:
@@ -148,15 +164,15 @@ public class DocumentsPersonalDataDeletionHandler
             .ListActiveIdsByOwnerAsync(request.UserId, cancellationToken);
 
         // 2. Idempotency — re-delivery yields 0 active rows once the cascade ran.
+        //    Still acknowledge (Retained / 0) so the saga's fan-in drains this provider.
         if (folderIds.Count == 0 && documentIds.Count == 0)
         {
-            await bus.PublishAsync(new PersonalDataDeletedEto(
+            return new PersonalDataDeletedEto(
                 request.RequestId,
                 ProviderName,
                 DeletionAction.Retained,
                 AffectedRecords: 0,
-                Details: "no active documents or folders owned by user"), cancellationToken);
-            return;
+                Details: "no active documents or folders owned by user");
         }
 
         // 3. Apply the policy — Documents picks SoftDelete (trash); the F9.2
@@ -179,15 +195,15 @@ public class DocumentsPersonalDataDeletionHandler
             }
         }
 
-        // 4. Audit ack — DeletionAction.SoftDelete + the count keep the privacy
-        //    saga's per-provider receipt ledger accurate.
-        await bus.PublishAsync(new PersonalDataDeletedEto(
+        // 4. Acknowledge — this return is the fan-in signal that lets the saga count
+        //    "documents" as done. DeletionAction.SoftDelete + the count also feed the
+        //    per-provider audit ledger. Until it arrives, the request stays Executing.
+        return new PersonalDataDeletedEto(
             request.RequestId,
             ProviderName,
             DeletionAction.SoftDelete,
             AffectedRecords: trashedFolders + trashedDocuments,
-            Details: $"trashed {trashedFolders} folder(s) and {trashedDocuments} document(s); tenant root preserved"),
-            cancellationToken);
+            Details: $"trashed {trashedFolders} folder(s) and {trashedDocuments} document(s); tenant root preserved");
     }
 }
 ```
@@ -227,14 +243,77 @@ public class MyAppModule : GranitModule { }
 Multiple modules registering their own privacy handlers compose naturally — each
 subscribes to `PersonalDataDeletionRequestedEto` independently.
 
-<Aside type="note" title="DeletionExecutedEto is not an ack barrier">
-The deletion saga publishes `PersonalDataDeletionRequestedEto` and
-`DeletionExecutedEto` **together** — `DeletionExecutedEto` marks "the erasure was
-*requested* of every provider", not "every provider has *finished*". The
-`PersonalDataDeletedEto` fragments each provider emits are an audit ledger (per-provider
-action + count), not a completion gate; nothing blocks `DeletionExecutedEto` on them.
-Providers that need durable, retried erasure should rely on Wolverine's delivery
-guarantees on `PersonalDataDeletionRequestedEto`, not on saga aggregation.
+## Provider acknowledgement fan-in
+
+The saga proves completion the same way the [export saga](/dotnet/compliance/privacy/data-export/)
+proves assembly — a scatter-gather fan-in over provider acknowledgements. This is what makes a
+deletion **provable** for GDPR Art. 17, rather than optimistically "requested".
+
+At the deadline (or immediately, for a non-deferred request) the saga:
+
+1. Snapshots the registered providers from `IDataProviderRegistry`, marks the request
+   `Executing`, and fans out `PersonalDataDeletionRequestedEto`.
+2. Publishes the user-facing `DeletionExecutedEto` **immediately** — it only confirms the
+   grace period ended, not that erasure finished — and schedules an acknowledgement timeout.
+3. Waits for every expected provider to acknowledge by returning a `PersonalDataDeletedEto`.
+   The eto carries `[SagaIdentity]` so Wolverine cascades it back to the saga, routed by
+   `RequestId`. Only when the **last** expected provider acknowledges does the request reach
+   the terminal `Executed` state.
+
+The fan-in is idempotent: duplicate or unregistered acknowledgements are counted for
+observability but never double-complete the saga. A request with **zero** registered
+providers keeps the immediate-`Executed` fast path.
+
+<Aside type="note" title="Build the ack after erasure, never before">
+A provider handler must build its `PersonalDataDeletedEto` return value **after** the
+erasure succeeds. If the eraser throws, the return is never reached, so no ack is published
+and Wolverine retries or dead-letters the message — and the saga correctly leaves the request
+pending, timing out to `PartiallyExecuted`. Acking eagerly (before the delete) would falsely
+prove completion.
+</Aside>
+
+### When a provider never acknowledges
+
+If the acknowledgement window (`DeletionAcknowledgementTimeoutMinutes`, default **720** = 12 h)
+elapses before every provider confirms, the saga marks the request `PartiallyExecuted`,
+persists the names of the providers that never acknowledged, and fires a per-provider
+stuck-deletion metric plus a warning log so DLQ monitoring can alert. The request is **not**
+provably complete — an operator reconciles the missing providers before the erasure can be
+attested for Art. 17.
+
+| State | Meaning |
+| ----- | ------- |
+| `Deferred` | Grace period active; user may still cancel. |
+| `Cancelled` | User cancelled during the grace period; data retained. |
+| `Executing` | Deadline reached, fan-out started, awaiting provider acknowledgements. |
+| `Executed` | Every registered provider acknowledged erasure — the only state that proves Art. 17 completion. |
+| `PartiallyExecuted` | Acknowledgement window elapsed with at least one provider missing (permanent failure, dead-letter, or unregistered handler). |
+
+`GetPrivacyDeletionStatus` surfaces the current state and, for `PartiallyExecuted`, a
+`MissingProviders` list. The `DeletionDeadlineEnforcerJob` safety-net remains a direct-`Executed`
+fallback for the case where the saga timer never fires at all.
+
+<Aside type="caution" title="Retained is a valid acknowledgement">
+Not every provider erases. `Granit.Auditing` registers a provider (its trail backs Art. 15
+export) but its erasure contract is **retention** — the audit trail is deliberately preserved
+under Art. 17(3)(b) / ISO 27001 A.12.4. Its handler acknowledges with `DeletionAction.Retained`
+and `0` rows: a truthful "nothing erased, on purpose" ack that drains the saga instead of
+leaving it stuck forever on a provider that will never delete.
+</Aside>
+
+### Observability
+
+| Metric | Description |
+| ------ | ----------- |
+| `granit.privacy.deletion.executed` | Deletions executed (immediate or after the grace period). |
+| `granit.privacy.deletion.acknowledged` | Per-provider deletion acknowledgements received by the saga. |
+| `granit.privacy.deletion.stuck` | Requests that timed out with a provider never acknowledging (`PartiallyExecuted`). Tagged by `provider_name` so DLQ monitoring can alert on the specific stuck provider. |
+
+<Aside type="caution" title="Host migration for MissingProviders">
+The fan-in adds a `MissingProviders` column to the `deletion_requests` table (populated only
+for `PartiallyExecuted` requests). The column is part of the framework `PrivacyDbContext`
+model, but the schema change is host-owned — run `dotnet ef migrations add AddMissingProviders`
+against the registered `PrivacyDbContext` and apply it before deploying.
 </Aside>
 
 ## See also

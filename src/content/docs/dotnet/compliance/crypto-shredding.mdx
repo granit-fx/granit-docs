@@ -180,6 +180,15 @@ to work. Only the PII is gone.
    as `IEntityEncryptionKeyStore`. `GranitEncryptionEntityFrameworkCoreModule` registers
    the isolation interceptors.
 
+   :::danger[No in-memory key store in production]
+   The DI default, `InMemoryEntityEncryptionKeyStore`, is **Development-only**. Its keys are
+   volatile — a restart loses them, which corrupts existing ciphertext and defeats durable
+   crypto-shredding. Outside `Development` it now **throws at resolution** with a message
+   pointing at a Vault-backed store (mirroring the AES provider guard). Production hosts must
+   register a durable `IEntityEncryptionKeyStore` — load `GranitVaultHashiCorpModule` (as
+   above) or supply your own KMS-backed implementation.
+   :::
+
 3. **Configure Vault KV**
 
    ```json
@@ -410,8 +419,22 @@ public sealed class PatientDataProvider(ICryptoShredder shredder)
 
 Every crypto-shredding operation should be recorded in an immutable audit trail
 (ISO 27001 A.10.1.2 — key destruction traceability). `DefaultCryptoShredder`
-automatically calls all registered `ICryptoShreddingAuditRecorder` implementations
-after each successful key deletion.
+calls all registered `ICryptoShreddingAuditRecorder` implementations **twice** per key.
+
+### Two-phase erasure (GDPR Art. 5(2))
+
+Key destruction is irreversible, so the audit trail must survive it. `DefaultCryptoShredder`
+records the intent **before** destroying the key and the outcome **after**:
+
+1. `RecordAsync(..., CryptoShreddingPhase.Requested, ...)` — written durably *before* the
+   Vault key is deleted. From this point a trail exists even if the process crashes between
+   phases.
+2. The per-entity key is destroyed (`IEntityEncryptionKeyStore.DeleteKeyAsync`).
+3. `RecordAsync(..., CryptoShreddingPhase.Confirmed, ...)` — written *after* destruction.
+
+The audit fan-out no longer aborts on the first failing recorder: failures across all
+registered recorders are aggregated so every recorder is still notified and the caller sees
+every error. `ShredBatchAsync` follows the same ordering per entity.
 
 To record shredding events in the Timeline module:
 
@@ -426,13 +449,19 @@ public sealed class TimelineCryptoShreddingRecorder(
     public async Task RecordAsync(
         string entityType,
         string entityId,
-        DateTimeOffset shreddedAt,
+        CryptoShreddingPhase phase,
+        DateTimeOffset occurredAt,
         CancellationToken cancellationToken = default)
     {
+        string headline = phase == CryptoShreddingPhase.Requested
+            ? "**Encryption key destruction requested** (crypto-shredding)"
+            : "**Encryption key destroyed** (crypto-shredding)";
+
         string body = $"""
-            **Encryption key destroyed** (crypto-shredding)
+            {headline}
             - Entity: `{entityType}/{entityId}`
-            - Timestamp: {shreddedAt:O}
+            - Phase: {phase}
+            - Timestamp: {occurredAt:O}
             - Action: Per-entity AES-256 key permanently deleted from Vault KV
             - Effect: All `[Encrypted(KeyIsolation = true)]` fields are permanently unreadable
             """;
@@ -528,13 +557,33 @@ to `IEntityEncryptionKeyStore.DeleteKeyAsync` and calls all registered
 ```csharp
 public interface ICryptoShreddingAuditRecorder
 {
-    Task RecordAsync(string entityType, string entityId, DateTimeOffset shreddedAt, CancellationToken ct = default);
+    Task RecordAsync(
+        string entityType,
+        string entityId,
+        CryptoShreddingPhase phase,
+        DateTimeOffset occurredAt,
+        CancellationToken ct = default);
 }
 ```
 
 Extension point for recording shredding events. Register implementations via DI.
-`DefaultCryptoShredder` iterates all registered recorders after each successful
-key deletion.
+`DefaultCryptoShredder` invokes every registered recorder twice per key — once with
+`CryptoShreddingPhase.Requested` before destruction, once with `Confirmed` after —
+aggregating any recorder failures rather than aborting on the first.
+
+### `CryptoShreddingPhase`
+
+```csharp
+public enum CryptoShreddingPhase
+{
+    Requested,  // intent recorded durably BEFORE the key is destroyed
+    Confirmed   // recorded AFTER destruction completes
+}
+```
+
+Identifies which phase of the two-phase erasure a given audit record captures. The
+`Requested` record guarantees a durable trail exists even if the process crashes before
+`Confirmed` is written (GDPR Art. 5(2)).
 
 ### `UseGranitEncryptionInterceptors`
 

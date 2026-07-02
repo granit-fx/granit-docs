@@ -255,14 +255,17 @@ behind a hardware-token wall can disable it via
 
 ## Archive layout
 
-The assembler produces **one or more ZIP64 shards** plus a **separate signed
+The assembler produces **one or more ZIP64 shards** plus a **separate signed, encrypted
 manifest sidecar** (the manifest is its own blob, not an entry inside the ZIP):
 
 ```text
-personal-data-export/{requestId}-000.zip      ← shard 0
-personal-data-export/{requestId}-001.zip      ← shard 1 (rollover at ExportShardMaxSizeMb)
-personal-data-export-{requestId}-manifest.json ← signed manifest sidecar
+personal-data-export/{requestId}-000.zip           ← shard 0
+personal-data-export/{requestId}-001.zip           ← shard 1 (rollover at ExportShardMaxSizeMb)
+personal-data-export-{requestId}-manifest.json.enc ← signed + AES-256-GCM-encrypted manifest sidecar
 ```
+
+The sidecar carries the `.enc` extension and `application/octet-stream` content type because
+it is stored as ciphertext (see [Signed manifest](#signed-manifest)), not as readable JSON.
 
 Each shard rolls over at `ExportShardMaxSizeMb` (default 2 GB). A single entry
 larger than the cap lands alone in its own shard (ZIP64 covers it) rather than
@@ -304,11 +307,39 @@ blob the subject does not own cannot be assembled without a valid signature.
 `sha256` is empty for shards that were resumed after a crash (recomputing the
 digest would require re-streaming the committed shard).
 
-<Aside type="caution" title="Production needs a vault-backed signer">
-The default signer generates a per-process key and is **development-only** —
-Staging and Production refuse to boot with it. Install `Granit.Privacy.Vault` to
-sign fragments and manifests with a key that lives in your vault and survives
-restarts and scale-out. See [Export Signing](/dotnet/compliance/privacy/export-signing/).
+### Encrypted at rest (GDPR Art. 32)
+
+The completed manifest is a full copy of the subject's personal-data index, so the
+signed envelope shown above is **not** stored as plaintext JSON. Before upload the
+assembler wraps it with `IExportContentEncryptor` — AES-256-GCM in the framework default
+— and stores the ciphertext as `…-manifest.json.enc` (`application/octet-stream`). The
+ciphertext is self-describing: `[12-byte nonce][16-byte GCM tag][ciphertext]`, so no
+external nonce store is needed.
+
+GCM's authenticated tag makes the sidecar tamper-evident: a flipped byte fails on decrypt
+*before* any plaintext is exposed, and the HMAC `integrityTag` stays sealed inside the
+ciphertext for defence in depth. The download endpoint decrypts server-side behind the
+existing subject-identity + [step-up gate](#step-up-authentication-on-download) and streams
+plaintext to the subject over the authenticated BFF channel — the export key never reaches
+the client.
+
+`IExportContentEncryptor` is the confidentiality companion to the `IExportContentSigner`
+integrity primitive and shares its key lifecycle: the in-memory default generates an
+ephemeral per-process key and is fail-closed outside `Development`; production hosts
+register a Vault-backed implementation.
+
+<Aside type="caution" title="Production needs a durable signer AND encryptor">
+Both the default `IExportContentSigner` and the default `IExportContentEncryptor`
+generate a per-process key and are **development-only** — Staging and Production refuse
+to boot with either, via two independent startup guards
+(`EphemeralExportHmacSignerStartupGuard` and `EphemeralExportContentEncryptorStartupGuard`).
+An ephemeral encryptor key would make a SAR package undecryptable after a restart or on
+another replica.
+
+`Granit.Privacy.Vault` supplies the Vault-backed **signer** (`VaultExportHmacSigner`) — see
+[Export Signing](/dotnet/compliance/privacy/export-signing/). It does **not** yet ship a
+Vault-backed **encryptor**: register your own `IExportContentEncryptor` whose key lives in
+your vault (mirror the signer's key lifecycle) so both guards accept the boot.
 </Aside>
 
 ## Configuration

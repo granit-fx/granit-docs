@@ -62,6 +62,16 @@ You cannot accidentally ship the per-process key — Staging and Production refu
 to boot until a shared-state signer is registered.
 </Aside>
 
+<Aside type="note" title="A parallel guard protects the export encryptor">
+Signing is integrity; the SAR manifest is also **encrypted** at rest with
+`IExportContentEncryptor` (AES-256-GCM) for confidentiality — see
+[Data Export → Encrypted at rest](/dotnet/compliance/privacy/data-export/#encrypted-at-rest-gdpr-art-32).
+Its ephemeral default has its own fail-closed guard
+(`EphemeralExportContentEncryptorStartupGuard`). `Granit.Privacy.Vault` supplies the
+Vault-backed signer below but does **not** yet ship a Vault-backed encryptor, so production
+hosts must register their own `IExportContentEncryptor` with a durable key.
+</Aside>
+
 ## `Granit.Privacy.Vault` — the production signer
 
 `Granit.Privacy.Vault` provides `VaultExportHmacSigner`, which implements both
