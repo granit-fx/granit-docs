@@ -1,6 +1,6 @@
 ---
 title: "Circuit Breaker & Retry — HTTP Resilience"
-description: "Resilience for HTTP clients and async messaging with exponential backoff and automatic recovery"
+description: "Stop a flaky dependency from cascading into an outage — retries with exponential backoff ride out blips, and the circuit breaker trips fast then recovers on its own."
 sidebar:
   label: Circuit Breaker and Retry
   order: 15

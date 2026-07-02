@@ -1,6 +1,6 @@
 ---
 title: "Module System Pattern — DependsOn Graph"
-description: "DependsOn-based module system with topological sorting for deterministic startup ordering"
+description: "Never debug a module that started before its dependencies — declare [DependsOn] and Granit topologically sorts startup so prerequisites always initialize first."
 sidebar:
   label: Module System
   order: 1

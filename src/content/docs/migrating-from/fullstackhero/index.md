@@ -1,6 +1,6 @@
 ---
 title: Migrating from FullStackHero to Granit
-description: Step-by-step guide to port a FullStackHero (.NET Starter Kit) solution to Granit — module system, Mediator handlers, ASP.NET Identity, Finbuckle multi-tenancy, RabbitMQ outbox, and background jobs. With a strangler-fig cutover, a before/after of a CQRS module, and the maintenance argument that usually drives the decision.
+description: Cut long-term maintenance by moving off a forked starter kit — migrate FullStackHero to Granit with a safe, incremental strangler-fig cutover.
 sidebar:
   label: From FullStackHero
   order: 2

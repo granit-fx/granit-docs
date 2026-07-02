@@ -1,6 +1,6 @@
 ---
 title: "Event-Driven Architecture"
-description: "Decoupled communication through domain events and integration events with transactional guarantees"
+description: "Let modules react to each other without direct dependencies — domain and integration events keep boundaries clean while transactional delivery guarantees nothing is lost."
 sidebar:
   order: 3
 topic: backend

@@ -1,6 +1,6 @@
 ---
 title: Migrating from the Clean Architecture Template (Ardalis) to Granit
-description: Step-by-step guide to port a Steve Smith / Ardalis Clean Architecture solution to Granit — domain layer, MediatR handlers, Ardalis.Specification, Ardalis.Result, and the cross-cutting concerns (multi-tenancy, identity, audit, background jobs) you currently write yourself.
+description: Stop hand-writing cross-cutting concerns — Granit gives you identity, audit, and multi-tenancy. Port your Ardalis Clean Architecture solution step by step.
 sidebar:
   label: From Clean Architecture
   order: 3

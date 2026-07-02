@@ -1,6 +1,6 @@
 ---
 title: "CQRS — Command Query Responsibility Segregation"
-description: "Command Query Responsibility Segregation with enforced Reader/Writer interface separation"
+description: "Keep reads fast and writes safe by splitting them — enforced Reader/Writer interfaces give each handler least-privilege data access and a compliance-friendly audit trail."
 sidebar:
   label: CQRS
   order: 2

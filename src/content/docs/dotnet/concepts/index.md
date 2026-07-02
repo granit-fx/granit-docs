@@ -1,6 +1,6 @@
 ---
 title: "Core Concepts — Modules, DI & Architecture"
-description: Core design principles behind Granit — module system, EF Core persistence, Wolverine messaging, multi-tenancy, GDPR compliance, and the security model.
+description: Stop worrying about missed WHERE clauses, audit boilerplate, and cross-tenant leaks — the design principles that make Granit's guarantees structural, not manual.
 sidebar:
   label: Overview
   order: 0
@@ -13,6 +13,9 @@ is structural rather than bolted on.
 
 Understanding these concepts gives you the mental model to use Granit effectively
 and extend it without surprises.
+
+Prefer to write code first? Start with [Getting Started](/dotnet/getting-started/).
+Prefer theory first? Begin here.
 
 ## How concepts connect
 

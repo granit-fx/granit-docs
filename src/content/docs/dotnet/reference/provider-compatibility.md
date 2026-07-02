@@ -1,6 +1,6 @@
 ---
 title: Provider Compatibility Matrix
-description: Database, cache, storage, and infrastructure provider support matrix for Granit modules
+description: Which databases, caches, and storage/infra providers work with Granit, which are CI-tested, and their known limitations — decide before you build.
 sidebar:
   label: Provider Compatibility
   order: 33

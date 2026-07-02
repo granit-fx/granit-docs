@@ -32,22 +32,34 @@ an Invoicing sub-package.
 
 ## Invoice lifecycle
 
+The lifecycle is driven by a `Granit.Workflow` finite-state machine
+(`IWorkflowManager<InvoiceStatus>`), which enforces transition validity,
+permissions, and the ISO 27001 audit trail on every state change.
+
 ```mermaid
 stateDiagram-v2
     [*] --> Draft: Create()
     Draft --> Open: Finalize()
     Open --> Paid: RecordPayment() / ApplyCreditNote()
-    Open --> Void: VoidInvoice()
+    Open --> Cancelled: Cancel()
     Open --> Uncollectible: MarkUncollectible()
     Uncollectible --> Paid: RecordPayment() (recovery)
-    Uncollectible --> Void: VoidInvoice()
+    Uncollectible --> Cancelled: Cancel()
 ```
 
 - **Draft**: mutable — add line items, set billing address, adjust tax
 - **Open**: finalized, immutable financial fields, awaiting payment
 - **Paid**: payment received (terminal)
-- **Void**: cancelled with paper trail (terminal)
+- **Cancelled**: annulled before payment, invoice number preserved (terminal)
 - **Uncollectible**: bad debt write-off, can still recover
+
+:::caution[Cancel before payment only]
+`Cancel()` is allowed only while the invoice is unpaid (Open or Uncollectible).
+Cancelling an invoice that has recorded payments is **forbidden** — `Cancel()`
+throws `InvalidOperationException` ("Issue a credit note instead."). To reverse
+a paid invoice, issue a **credit note** instead. The invoice number is always
+preserved so the fiscal sequence stays gap-free.
+:::
 
 :::caution[Immutability after Finalize]
 Once an invoice transitions past Draft, all financial fields (Subtotal, TaxTotal,
@@ -225,7 +237,16 @@ Both services are registered automatically by `AddGranitInvoicing()`.
 | GET | `/api/{version}/invoicing/invoices` | `Invoicing.Invoices.Read` |
 | GET | `/api/{version}/invoicing/invoices/{id}` | `Invoicing.Invoices.Read` |
 | GET | `/api/{version}/invoicing/invoices/{id}/pdf` | `Invoicing.Invoices.Download` |
-| POST | `/api/{version}/invoicing/credit-notes` | `Invoicing.CreditNotes.Manage` |
+| POST | `/api/{version}/invoicing/invoices` | `Invoicing.Invoices.Create` |
+| POST | `/api/{version}/invoicing/invoices/{id}/finalize` | `Invoicing.Invoices.Finalize` |
+| POST | `/api/{version}/invoicing/invoices/{id}/cancel` | `Invoicing.Invoices.Cancel` |
+| POST | `/api/{version}/invoicing/invoices/{id}/mark-uncollectible` | `Invoicing.Invoices.MarkUncollectible` |
+
+The transition endpoints (`finalize`, `cancel`, `mark-uncollectible`) delegate
+to `IWorkflowManager<InvoiceStatus>` before applying the domain method, so they
+return `409 Conflict` when the target state is unreachable from the current one.
+`POST /invoices/{id}/cancel` takes an optional `CancelInvoiceRequest { Reason }`
+that is persisted on the workflow transition record for the audit trail.
 
 ## Notifications
 

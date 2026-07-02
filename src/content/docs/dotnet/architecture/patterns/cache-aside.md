@@ -1,6 +1,6 @@
 ---
 title: "Cache-Aside Pattern — FusionCache L1/L2"
-description: "Lazy-loading cache with FusionCache (L1 in-process + L2 Redis) with native stampede protection, fail-safe, and backplane"
+description: "Cut database load without stale reads — FusionCache lazy-loads through an L1 in-process and L2 Redis tier, with built-in stampede protection, fail-safe, and backplane."
 sidebar:
   label: Cache-Aside
   order: 14

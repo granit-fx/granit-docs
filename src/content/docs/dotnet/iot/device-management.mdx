@@ -154,7 +154,7 @@ bulk update — **no `SELECT` round-trip**. At 100k devices publishing every
 | `GET` | `/iot/devices` | `IoT.Devices.Read` | `200 Ok` — `IReadOnlyList<DeviceResponse>` |
 | `GET` | `/iot/devices/{id}` | `IoT.Devices.Read` | `200 Ok` / `404 Not Found` |
 | `POST` | `/iot/devices` | `IoT.Devices.Manage` | `201 Created` — `DeviceResponse` |
-| `PUT` | `/iot/devices/{id}` | `IoT.Devices.Manage` | `200 Ok` |
+| `PUT` | `/iot/devices/{id}` | `IoT.Devices.Manage` | `200 Ok` / `409` on `ConcurrencyStamp` mismatch |
 | `DELETE` | `/iot/devices/{id}` | `IoT.Devices.Manage` | `204 No Content` / `409` when still `Active` |
 
 ### Request / response shapes
@@ -177,12 +177,53 @@ public sealed record DeviceResponse(
     string? Label,
     DateTimeOffset? LastHeartbeatAt,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? ModifiedAt);
+    DateTimeOffset? ModifiedAt,
+    string ConcurrencyStamp);
+
+public sealed record DeviceUpdateRequest : IConcurrencyStampRequest
+{
+    [Required(AllowEmptyStrings = false)]
+    public string ConcurrencyStamp { get; init; } = null!;
+
+    public string? FirmwareVersion { get; init; }
+    public string? Label { get; init; }
+}
 ```
 
 FluentValidation rejects malformed requests with `422 Unprocessable Entity`
 **before** your handler runs. `DeviceCredential.ProtectedSecret` is never
 serialised back to the client.
+
+### Optimistic concurrency
+
+`GET /iot/devices/{id}` returns a `ConcurrencyStamp` — an opaque token that
+tracks the aggregate version. To update a device, echo that stamp back in the
+`DeviceUpdateRequest`. Its other fields are optional: `null` leaves a value
+unchanged; an empty `Label` clears it.
+
+The server compares the submitted stamp against the current stored value. If
+another writer modified the device in the meantime, the stamps differ and the
+`PUT` returns `409 Conflict`. Re-read the device, reapply your change on top of
+the fresh stamp, and retry.
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant API as /iot/devices/{id}
+  Client->>API: GET
+  API-->>Client: 200 DeviceResponse { ConcurrencyStamp: "v3" }
+  Note over Client: another writer updates the device (stamp → "v4")
+  Client->>API: PUT { ConcurrencyStamp: "v3", ... }
+  API-->>Client: 409 Conflict
+  Client->>API: GET
+  API-->>Client: 200 DeviceResponse { ConcurrencyStamp: "v4" }
+  Client->>API: PUT { ConcurrencyStamp: "v4", ... }
+  API-->>Client: 200 Ok
+```
+
+`DeviceUpdateRequest` implements `IConcurrencyStampRequest`, so the stamp is
+`[Required]` — a missing or empty value fails validation with
+`422 Unprocessable Entity`.
 
 ## Telemetry query endpoints — `/iot/telemetry`
 

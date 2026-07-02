@@ -1,6 +1,6 @@
 ---
 title: "Graceful AI Fallback"
-description: "Timeout + deterministic baseline ensuring AI-enhanced features degrade gracefully when the LLM is unavailable"
+description: "When the LLM times out or goes down, don't fail the request — a deterministic baseline keeps AI-enhanced features working so users never hit a dead end."
 sidebar:
   order: 58
 topic: backend

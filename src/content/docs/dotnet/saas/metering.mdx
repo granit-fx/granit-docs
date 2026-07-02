@@ -57,10 +57,10 @@ directions.
 `Granit.Catalog.Product` (no SQL FK across modules). When set, downstream invoice
 lines surface the product id automatically (see ADR-036).
 
-The legacy `Activated` boolean is retained one release as a computed alias
-(`Activated => LifecycleStatus == Published`) and marked `[Obsolete]`. The
-`POST /meters/{id}/deactivate` endpoint stays one release as an alias for
-`POST /meters/{id}/archive`.
+Lifecycle transitions are one-directional: `Publish()` moves `Draft → Published`,
+`Archive()` moves `Published → Archived`. Only `Published` meters aggregate
+production events; `Archived` meters preserve history but reject new events. Both
+methods throw `InvalidOperationException` from any other source status.
 
 ### MeterEvent (Entity — append-only)
 
@@ -302,14 +302,10 @@ Table prefix: `metering_` (configurable via `GranitMeteringDbProperties.DbTableP
 | `Name` | varchar(200) | Meter display name |
 | `Unit` | varchar(50) | Unit of measure |
 | `AggregationType` | int | Sum / Max / Count / Last / CountDistinct |
-| `LifecycleStatus` | int | Draft / Published / Archived (ADR-033) |
+| `LifecycleStatus` | int | `WorkflowLifecycleStatus`: Draft / Published / Archived (ADR-033) |
 | `DistinctProperty` | varchar(256)? | JSON path inside `MeterEvent.Metadata` (`CountDistinct` only) |
 | `ProductId` | GUID? | Soft reference to `Granit.Catalog.Product` (no FK) |
 | `TenantId` | GUID? | Multi-tenant isolation |
-
-The legacy `Activated` column is dropped by the
-`MeterDefinition_StatusFromActivated` migration (`Activated => true` ⇒
-`LifecycleStatus = Published`, `Activated => false` ⇒ `Archived`).
 
 ### metering_meter_events
 

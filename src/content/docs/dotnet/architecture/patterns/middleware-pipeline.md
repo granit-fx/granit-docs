@@ -1,6 +1,6 @@
 ---
 title: "Middleware Pipeline — ASP.NET Request Flow"
-description: "Dual ASP.NET Core and Wolverine middleware pipeline for cross-cutting context propagation"
+description: "Handle cross-cutting concerns once, not in every handler — a dual ASP.NET Core and Wolverine pipeline propagates tenant, user, and trace context across HTTP and messages."
 sidebar:
   label: Middleware Pipeline
   order: 6

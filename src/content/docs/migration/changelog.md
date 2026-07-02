@@ -1,5 +1,5 @@
 ---
-title: Changelog
+title: "Changelog — Granit Version History & Breaking Changes"
 description: Changelog format, conventions, and how to read Granit version history
 sidebar:
   order: 1
