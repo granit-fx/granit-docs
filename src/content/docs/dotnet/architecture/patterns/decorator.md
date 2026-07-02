@@ -1,6 +1,6 @@
 ---
 title: "Decorator Pattern — Cross-Cutting Concerns"
-description: "Layered services with encryption, caching, and cross-cutting concerns in Granit"
+description: "Add encryption, caching, or logging to a service without touching its class — Granit wraps components in decorators so concerns stack cleanly and stay independently testable."
 sidebar:
   label: Decorator
   order: 33

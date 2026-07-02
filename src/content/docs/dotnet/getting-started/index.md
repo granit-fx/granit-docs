@@ -32,3 +32,5 @@ Each step builds on the previous one. By the end, you will have a production-rea
 3. [Adding Authentication](/dotnet/getting-started/adding-authentication/) — Secure endpoints with JWT Bearer tokens and Keycloak.
 4. [Project Templates](/dotnet/getting-started/project-templates/) — Use `dotnet new` templates to scaffold new Granit projects.
 5. [Next Steps](/dotnet/getting-started/next-steps/) — Explore advanced modules: notifications, workflows, blob storage, and more.
+
+Ready to lock in quality? See [Testing](/dotnet/guides/testing/) for integration tests, tenant-aware fixtures, and the Granit test harness.

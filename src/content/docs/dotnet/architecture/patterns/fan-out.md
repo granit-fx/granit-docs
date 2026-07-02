@@ -1,6 +1,6 @@
 ---
 title: "Fan-Out Pattern — Parallel Event Processing"
-description: "One trigger to N independent commands via Wolverine cascading messages and Outbox"
+description: "Turn one event into many independent tasks — Wolverine cascading messages fan out to N handlers, and the outbox guarantees each one runs even after a crash."
 sidebar:
   label: Fan-Out
   order: 10

@@ -1,6 +1,6 @@
 ---
 title: "Idempotency Pattern — Duplicate Request Safety"
-description: "Stripe-style HTTP idempotency with state machine, SHA-256 payload hashing, and Redis store"
+description: "Safe retries without double-charges or duplicate records — Stripe-style idempotency keys, SHA-256 payload hashing, and a Redis store dedupe repeated HTTP requests."
 sidebar:
   label: Idempotency
   order: 12

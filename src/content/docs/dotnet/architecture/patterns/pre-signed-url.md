@@ -1,6 +1,6 @@
 ---
 title: "Pre-Signed URL — Secure Direct File Upload"
-description: "Direct-to-cloud file upload/download bypassing the application server with GDPR crypto-shredding"
+description: "Keep large file transfers off your servers — clients upload and download straight to cloud storage via time-limited pre-signed URLs, with GDPR crypto-shredding built in."
 sidebar:
   label: Pre-Signed URL
   order: 18

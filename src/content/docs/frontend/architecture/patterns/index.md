@@ -1,6 +1,6 @@
 ---
-title: Frontend Pattern Library
-description: Catalogue of 8 design patterns in @granit/* TypeScript and React — Factory, Module Singleton, Adapter, Interceptor, Strategy, Observer, Provider, Hooks.
+title: "Frontend Pattern Library — React & TypeScript @granit/*"
+description: Battle-tested React and TypeScript patterns for @granit/* — solve auth, data fetching, module wiring, and reactivity with Factory, Adapter, Provider, Hooks, and more.
 sidebar:
   order: 0
   badge:

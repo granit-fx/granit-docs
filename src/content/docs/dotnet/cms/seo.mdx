@@ -113,8 +113,47 @@ Sites that opt in via `EnableAutomaticSeoGeneration` are swept nightly
 (`cms-seo-ai-nightly-sweep`), enqueuing one bulk run each — suggestions land in the inbox for
 review, never auto-applied.
 
+## OG images from the media library
+
+`Granit.Cms.Seo.Documents` is an optional glue package that lets an OG image live in the
+[Documents](/dotnet/cms/documents/) media library instead of a hand-typed URL. Add it when
+editors pick social cards from uploaded assets and you want stable, CDN-frontable links plus
+correct dimensions and MIME type on every crawl — without denormalising URLs by hand.
+
+The SEO base module ships an `IOgImageProvider` seam with a no-op default: an author-supplied
+`OgImage.Url` passes through, and a media-library reference (`OgImage.DocumentId`) stays inert.
+This package replaces that default with `DocumentRenditionsOgImageProvider`, which resolves the
+reference through the Documents library's `IDocumentRenderResolver`:
+
+- When `OgImage.DocumentId` is set, it requests a `RenditionType.Web` rendition and fills the
+  denormalised `Url`, `Dimensions`, and `MimeType` that social platforms cache, pinning the
+  `VersionId` the resolver actually served.
+- An author-supplied URL — or a reference whose document is missing, deleted, or not yet
+  rendered — is preserved untouched, so a previously denormalised URL survives.
+
+```mermaid
+flowchart LR
+    O["OgImage<br/>(DocumentId set)"] --> P["DocumentRenditionsOgImageProvider"]
+    P --> R["IDocumentRenderResolver<br/>(RenditionType.Web)"]
+    R --> E["OgImage<br/>Url · Dimensions · MimeType · VersionId"]
+```
+
+Register the module — it declares `[DependsOn]` on the SEO base module (the seam) and the
+Documents resolution module (the resolver), and `Replace`s the no-op provider:
+
+```csharp
+[DependsOn(typeof(GranitCmsSeoDocumentsModule))]
+public sealed class WebsiteModule : GranitModule;
+```
+
+<Aside type="note" title="Optional, and cache-agnostic">
+Reference this package only when the host wires `Granit.Documents`; the SEO base module stays
+free of any media-library coupling. The adapter is indifferent to which implementation backs
+`IDocumentRenderResolver` — layer `Granit.Documents.Resolution.Caching` on top to decorate it.
+</Aside>
+
 ## See also
 
 - [Structured Completion](/dotnet/ai/structured-completion/) — the typed-output primitive Seo.AI builds on
 - [Sites & Pages](/dotnet/cms/sites-and-pages/) — the content SEO describes
-- [Media References](/dotnet/cms/documents/) — how the OG image resolves to a stable URL
+- [Documents](/dotnet/cms/documents/) — the media library that backs `DocumentId`-based OG images

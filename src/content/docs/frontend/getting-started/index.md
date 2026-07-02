@@ -1,6 +1,6 @@
 ---
 title: Getting Started with Granit Frontend SDK
-description: Start with the Granit frontend SDK — headless TypeScript packages and React 19 bindings for auth, query engine, multi-tenancy, and observability.
+description: Wire up Keycloak auth, the query engine, and multi-tenancy in minutes — the Granit TypeScript SDK plus React 19 hooks get your frontend production-ready fast.
 sidebar:
   label: Getting Started
   order: 1

@@ -1,6 +1,6 @@
 ---
 title: "Query Engine — Declarative filters for API + grid"
-description: "QueryDefinition<TEntity> drives API $filter/$sort/$page, grid column metadata, and OpenAPI schema from one declaration. EF Core, injection-safe, OData."
+description: "Define a QueryDefinition once and get a filterable API, grid metadata endpoints, and OpenAPI schema for free — no hand-rolled $filter parsing to keep in sync."
 sidebar:
   label: QueryEngine
   order: 16
@@ -187,3 +187,4 @@ prompt structure, sanitization, and per-tenant cost ceiling.
 - [OData feed (BI)](/dotnet/api/odata-exposure/) — `QueryDefinition<T>` → Power BI / Excel / Tableau
 - [AI: Natural Language Query](/dotnet/ai/natural-language-query/) — phrase → `QueryRequest`
 - [ADR-047](/dotnet/architecture/adr/047-entity-view/) — why SavedView was removed in favour of `EntityView`
+- [Mentions](/dotnet/building-blocks/mentions/) — the `@mention` picker shares the same lookup sources as QueryEngine filters

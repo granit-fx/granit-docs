@@ -1,6 +1,6 @@
 ---
 title: "Composite Pattern — Tree Structures in .NET"
-description: "Progressive entity hierarchy with composable audit and compliance interfaces in Granit"
+description: "Treat single entities and hierarchies the same way — Granit's progressive base classes layer audit and compliance capabilities without duplicating boilerplate per entity."
 sidebar:
   label: Composite
   order: 32

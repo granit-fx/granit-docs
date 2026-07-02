@@ -1,6 +1,6 @@
 ---
-title: Glossary
-description: Definitions of the Granit-specific terms, marker interfaces, design patterns and external technologies that appear throughout the documentation.
+title: "Glossary — Granit Terminology, Marker Interfaces & Design Patterns"
+description: Quick-reference definitions of Granit terms — marker interfaces, DDD concepts, design patterns, and the external tech you meet across the docs.
 sidebar:
   label: Glossary
   order: 99

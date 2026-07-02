@@ -1,6 +1,6 @@
 ---
 title: "Configuration Keys \u2014 All Settings Reference"
-description: Complete reference of all appsettings sections and Options classes across Granit packages
+description: Centralized lookup for every appsettings key and Options class across Granit — find the right setting without hunting through module docs.
 sidebar:
   label: Configuration Keys
   order: 30

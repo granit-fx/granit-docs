@@ -53,4 +53,4 @@ from scratch, begin with [Getting Started](/dotnet/getting-started/).
 
 ## AI and tooling
 
-- [Use with AI Assistants](/dotnet/guides/use-with-ai-assistants/) -- ingest Granit docs into ChatGPT, Claude, Copilot
+- [Use with AI Assistants](/tools/ai-assistants/) -- ingest Granit docs into ChatGPT, Claude, Copilot
