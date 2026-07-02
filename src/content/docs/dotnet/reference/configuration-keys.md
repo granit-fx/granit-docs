@@ -262,6 +262,10 @@ Wolverine__RetryDelays__1=00:00:30
 | **Package** | -- | `Granit.Privacy` | |
 | `ExportTimeoutMinutes` | `int` | `5` | GDPR export saga timeout. |
 | `ExportMaxSizeMb` | `int` | `100` | Maximum export archive size (MB). |
+| `DefaultGracePeriodDays` | `int` | `30` | Deferred-deletion cooling-off window. |
+| `MaxGracePeriodDays` | `int` | `90` | Upper bound on a requested cooling-off window. |
+| `ReminderDaysBefore` | `int` | `3` | Days before the deadline to send the deletion reminder. |
+| `DeletionAcknowledgementTimeoutMinutes` | `int` | `720` | Max wait for provider erasure acknowledgements after fan-out before a deletion is marked `PartiallyExecuted`. |
 
 ### IP geolocation -- `GranitIpGeolocationOptions`
 
@@ -393,7 +397,7 @@ Wolverine__RetryDelays__1=00:00:30
 | **Package** | -- | `Granit.Caching` | |
 | `KeyPrefix` | `string` | `"dd"` | Prefix for all cache keys. |
 | `DefaultAbsoluteExpirationRelativeToNow` | `TimeSpan?` | `01:00:00` | Default absolute expiration. |
-| `EncryptValues` | `bool` | `false` | Enable AES-256 encryption for all cached values. |
+| `EncryptValues` | `bool` | `false` | Force AES-256 encryption for **all** L2 values. `[CacheEncrypted]` types (BFF tokens, idempotency entries) are encrypted regardless once a key resolves. Non-`Development` hosts with Redis L2 fail startup if neither a key nor this flag is set. |
 
 ### Cache encryption -- `CacheEncryptionOptions`
 
@@ -401,7 +405,7 @@ Wolverine__RetryDelays__1=00:00:30
 |---|---|---|---|
 | **Section** | -- | `Cache:Encryption` | |
 | **Package** | -- | `Granit.Caching` | |
-| `Key` | `string?` | `null` | AES-256 key (base64, 32 bytes). From Vault in production. |
+| `Key` | `string?` | `null` | AES-256 key (base64, 32 bytes). From Vault in production. A resolvable key alone arms the encryptor — `EncryptValues` need not be set. |
 
 ### FusionCache -- `FusionCacheOptions`
 
