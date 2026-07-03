@@ -167,14 +167,41 @@ interface PaginationMeta {
 interface ColumnDefinition {
   readonly name: string;
   readonly label: string;
-  readonly type: string;
+  readonly type: string;             // CLR type name — "String", "Int32", "Decimal", …
   readonly order: number;
   readonly isSortable: boolean;
   readonly isFilterable: boolean;
   readonly isVisible: boolean;
-  readonly format?: string;
+  readonly format?: string;          // display format hint — "dd/MM/yyyy", "N2", …
+  readonly valueKind?: string;       // semantic display type — "Currency", "Url", … (absent ⇒ use type)
+  readonly currencyCode?: string;    // ISO 4217, only present when valueKind === "Currency"
 }
+```
 
+:::tip[Picking a cell renderer: `valueKind` first, `type` second]
+`valueKind` is the **highest-priority** signal for choosing a cell renderer — it says
+what a value *means* (`"Currency"`, `"Percentage"`, `"Url"`, `"Email"`, `"Bytes"`,
+`"RelativeTime"`, …), which a raw CLR `type` cannot. When it is **absent**, degrade to
+`type` (the pre-existing behaviour). Read `currencyCode` alongside `valueKind === "Currency"`
+to format with the right symbol and locale. Both are metadata-only PascalCase enum names on
+the wire; the backend sets them via the [`ColumnBuilder` value-kind helpers](/dotnet/building-blocks/query-engine/#column-display-metadata).
+
+```ts
+function pickRenderer(col: ColumnDefinition) {
+  switch (col.valueKind) {                 // 1. semantic hint wins
+    case 'Currency':   return currencyCell(col.currencyCode ?? 'EUR');
+    case 'Percentage': return percentCell;
+    case 'Url':        return linkCell;
+    case 'Email':      return mailtoCell;
+    case 'Bytes':      return byteSizeCell;
+  }
+  return rendererForClrType(col.type);      // 2. fall back to the CLR type
+}
+```
+
+:::
+
+```ts
 interface FilterableField {
   readonly name: string;
   readonly type: string;
@@ -475,6 +502,6 @@ Key constraints enforced server-side:
 
 ## See also
 
-- [Granit.QueryEngine module](/dotnet/building-blocks/query-engine/) — .NET whitelist-first query engine with expression trees
+- [Granit.QueryEngine module](/dotnet/building-blocks/query-engine/) — .NET whitelist-first query engine with expression trees; source of the `valueKind` / `currencyCode` column metadata this grid renders
 - [Notifications](/frontend/infrastructure/notifications/) — Uses `useInfiniteScroll` from this package for the notification inbox
 - [Data Exchange](/frontend/business/data-exchange/) — Uses `@granit/utils` for shared formatting
