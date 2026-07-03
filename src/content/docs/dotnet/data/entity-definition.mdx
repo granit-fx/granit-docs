@@ -86,6 +86,28 @@ payload when the user does not hold the permission ([ADR-040 §6](/dotnet/archit
 and story #1549) — never just hidden, always absent. Same rule applies to sections,
 side panels, relations, and actions.
 
+### Field value-kind hints
+
+A form field can carry a semantic **value-kind** — the same display-type vocabulary a
+query column uses ([`ValueKind`](/dotnet/building-blocks/query-engine/#column-display-metadata),
+namespace `Granit.QueryEngine`). On the write side it lets the frontend pick a better
+default *edit* input when the field's `Component` was left at its CLR-type default:
+
+```csharp
+.Form("default", f => f
+    .Section("billing", s => s
+        .Field(p => p.Website, x => x.ValueKind(ValueKind.Url))       // → url input
+        .Field(p => p.Total, x => x.ValueKind(ValueKind.Currency))   // → money input
+        .Field(p => p.PayTerms, x => x.Component("custom:invoicing-terms")))) // explicit wins
+```
+
+The hint is advisory and orthogonal to validation, which keeps flowing from the request
+validators / OpenAPI schema. Precedence on the frontend is unambiguous: an **explicit
+`Component(...)` always wins**; value-kind only steers the default when no component was
+declared. It surfaces on the form manifest as `FieldDescriptor.valueKind` (`null` when no
+hint is set). See [ADR-041](/dotnet/architecture/adr/041-component-catalog/) for the
+closed component catalog value-kind steers within.
+
 ## Cross-module contributions
 
 Other modules graft relations and actions onto an entity they don't own through the
@@ -290,6 +312,7 @@ Two architecture tests keep the contract honest at boot time:
 
 ## See also
 
+- [Query Engine](/dotnet/building-blocks/query-engine/) — the read-side twin: `ColumnBuilder` value-kind helpers steer grid cell renderers the same way `FieldBuilder.ValueKind()` steers form inputs
 - [Entity View](/dotnet/data/entity-view/) — user-saved view configurations (filters, sort, columns, kanban overlays)
 - [Workspace](/dotnet/data/workspace/) — navigation tree that hosts entities
 - [ADR-040](/dotnet/architecture/adr/040-three-tier-metadata-architecture/) — three-tier metadata architecture

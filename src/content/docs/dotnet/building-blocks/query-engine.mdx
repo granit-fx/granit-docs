@@ -75,6 +75,67 @@ target group:
 passing a serialized `QueryRequest` in `?q=` (the `BindableQueryRequest` binder
 accepts both query-string and form-encoded shapes for large request payloads).
 
+## Column display metadata
+
+A column carries two independent display hints, both surfaced on `GET /meta` so the
+grid renders a value without a per-app lookup table.
+
+- **`.ValueKind(...)` — *what the value means*.** A semantic display type
+  (`Currency`, `Percentage`, `Url`, `Email`, `Bytes`, …) the frontend maps to a cell
+  renderer: `mailto:` links, humanized byte sizes, currency symbols, percent suffixes.
+- **`.Format(string)` — *how precise it is rendered*.** A raw format hint
+  (`"dd/MM/yyyy"`, `"N2"`) that refines the chosen renderer. Orthogonal to value-kind:
+  a `Currency` column can still carry `.Format("N0")` to drop the decimals.
+
+```csharp
+public sealed class InvoiceQueryDefinition : QueryDefinition<Invoice>
+{
+    protected override void Configure(QueryDefinitionBuilder<Invoice> builder) =>
+        builder
+            .Column(i => i.Total, c => c.Currency("EUR").Sortable())   // ValueKind.Currency + CurrencyCode
+            .Column(i => i.TaxRate, c => c.Percentage())              // ratio in [0,1] → "20 %"
+            .Column(i => i.PublicUrl, c => c.Url())                   // clickable link
+            .Column(i => i.ContactEmail, c => c.Email())             // mailto: link
+            .Column(i => i.AttachmentSize, c => c.Bytes())           // "1.4 MB"
+            .Column(i => i.IssuedOn, c => c.ValueKind(ValueKind.Date).Format("dd/MM/yyyy"));
+}
+```
+
+### `ColumnBuilder` helpers
+
+`.Currency(isoCode)` sets both `ValueKind.Currency` and the ISO 4217 `CurrencyCode`
+(per-column, so `AmountEur` / `AmountUsd` can differ on the same entity). The other
+one-liners — `.Percentage()`, `.Url()`, `.Email()`, `.Phone()`, `.Bytes()` — are thin
+wrappers over `.ValueKind(...)`. For any kind without a dedicated helper, call the
+general form `.ValueKind(ValueKind.X)`.
+
+The `ValueKind` enum (in `Granit.QueryEngine.Abstractions`, namespace
+`Granit.QueryEngine`) ships in three tiers:
+
+| Tier | Members |
+|------|---------|
+| **1 — core** (shared with the [Analytics](/dotnet/business/analytics/) `MetricValueKind` vocabulary) | `Count`, `Number`, `Currency`, `Percentage`, `Duration`, `Date` |
+| **2 — high-value** | `Url`, `Email`, `Phone`, `Bytes`, `DateTime`, `Boolean`, `Enum` |
+| **3 — rich renderers** | `RelativeTime`, `Time`, `Color`, `Image`, `Json`, `Markdown`, `Tags`, `Rating`, `Identifier` |
+
+### `/meta` wire shape
+
+`ColumnDefinition` on the metadata endpoint gained two optional fields, both PascalCase
+enum names on the wire (`JsonStringEnumConverter`), both metadata-only — never persisted:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `valueKind` | enum name or `null` | Semantic display type. `null` ⇒ **fall back to the CLR `type`**, preserving pre-existing behaviour. |
+| `currencyCode` | ISO 4217 string or `null` | Companion to `valueKind: "Currency"`; `null` for every other kind. |
+
+<Aside type="note" title="Value-kind is a hint, not a contract">
+Value-kind never changes what the API returns or how filters validate — it only tells a
+renderer *what a value means*. A frontend that ignores it degrades gracefully to the CLR
+`type`. See the [React QueryEngine `ColumnDefinition`](/frontend/data/query-engine/#query-metadata)
+for how the grid consumes it, and [ADR-041](/dotnet/architecture/adr/041-component-catalog/)
+for the parallel write-side field component catalog.
+</Aside>
+
 ## Security hardening
 
 The query engine applies defence in depth across multiple layers — each one is the
@@ -180,6 +241,8 @@ prompt structure, sanitization, and per-tenant cost ceiling.
 ## See also
 
 - [Persistence](/dotnet/data/persistence/) — EF Core interceptors, query filters, `IQueryableSource<T>`
+- [Entity Definition](/dotnet/data/entity-definition/) — the write-side twin: `FieldBuilder.ValueKind()` steers form edit inputs the same way column value-kind steers cell renderers
+- [ADR-041](/dotnet/architecture/adr/041-component-catalog/) — the form-field component catalog value-kind hints into
 - [API Documentation](/dotnet/api/api-documentation/) — `$ref` schema emission, OpenAPI transformers
 - [Data Exchange](/dotnet/building-blocks/data-exchange/) — peer building block: CSV / Excel import / export
 - [TextExtraction](/dotnet/building-blocks/text-extraction/) — peer building block: bytes → plain text for indexing / RAG
