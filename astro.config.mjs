@@ -612,6 +612,7 @@ export default defineConfig({
                     { label: "Overview", link: "/dotnet/cms/" },
                     { label: "Sites & Pages", link: "/dotnet/cms/sites-and-pages/" },
                     { label: "Blocks", link: "/dotnet/cms/blocks/" },
+                    { label: "Blog", link: "/dotnet/cms/blog/" },
                     { label: "Releases", link: "/dotnet/cms/releases/" },
                     { label: "SEO", link: "/dotnet/cms/seo/" },
                     { label: "Redirects", link: "/dotnet/cms/redirects/" },
