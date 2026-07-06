@@ -149,11 +149,14 @@ On first startup the module runs:
    detection. If absent, log a warning and stop (the table stays plain
    PostgreSQL; the app starts normally).
 2. `SELECT create_hypertable('iot_telemetry_points', 'RecordedAt',
-   chunk_time_interval => INTERVAL '7 days', migrate_data => TRUE)` —
-   safe on empty and populated tables.
+   chunk_time_interval => INTERVAL '7 days', if_not_exists => TRUE,
+   migrate_data => TRUE)` — safe on empty and populated tables, and a no-op
+   if the table is already a hypertable.
 3. `CREATE MATERIALIZED VIEW iot_telemetry_hourly WITH
    (timescaledb.continuous) AS …` — expand the JSONB `Metrics` column via
-   `LATERAL jsonb_each`, one row per metric per hour bucket.
+   `LATERAL jsonb_each`, one row per metric per hour bucket, filtered to
+   `WHERE jsonb_typeof(metric.value) = 'number'` so only numeric metrics are
+   aggregated.
 4. Same for `iot_telemetry_daily`.
 5. `add_continuous_aggregate_policy` on both views — refresh hourly view
    every 30 min, daily view every 6 h. Wrapped in

@@ -42,7 +42,7 @@ flowchart TB
 
   subgraph "AWS bridge family (Ring 3)"
     AWS["Granit.IoT.Aws<br/>companion AwsThingBinding,<br/>ThingName VO, IAwsIoTCredentialProvider"]
-    EF["Granit.IoT.Aws.EntityFrameworkCore<br/>isolated AwsBindingDbContext (iotaws_*)"]
+    EF["Granit.IoT.Aws.EntityFrameworkCore<br/>isolated AwsBindingDbContext (iot_aws_* tables)"]
     P["Granit.IoT.Aws.Provisioning<br/>IAmazonIoT + Secrets Manager,<br/>idempotent saga handler"]
     S["Granit.IoT.Aws.Shadow<br/>reported push + delta polling →<br/>DeviceDesiredStateChangedEvent"]
     J["Granit.IoT.Aws.Jobs<br/>IDeviceCommandDispatcher backed by IoT Jobs"]
@@ -64,7 +64,7 @@ Hosts targeting AWS pull it once; sister bundles for other providers
 | Package | Role |
 | --- | --- |
 | `Granit.IoT.Aws` | Companion `AwsThingBinding`, `ThingName` VO, `IAwsIoTCredentialProvider` |
-| `Granit.IoT.Aws.EntityFrameworkCore` | Isolated `AwsBindingDbContext` (`iotaws_*` schema) |
+| `Granit.IoT.Aws.EntityFrameworkCore` | Isolated `AwsBindingDbContext` (`iot_aws_` table prefix) |
 | `Granit.IoT.Aws.Provisioning` | `IAmazonIoT` + `IAmazonSecretsManager`, idempotent saga handler |
 | `Granit.IoT.Aws.Shadow` | `IAmazonIotData`, reported-state push + delta polling |
 | `Granit.IoT.Aws.Jobs` | `IDeviceCommandDispatcher` backed by AWS IoT Jobs |
@@ -146,12 +146,12 @@ sequenceDiagram
   participant G as Granit Device
   participant H as DeviceLifecycleShadowHandler
   participant AWS as AWS Device Shadow
-  participant S as ShadowDeltaPollingService
+  participant S as ShadowDeltaSweepJob → ShadowDeltaPollingService
   participant E as ILocalEventBus
 
   G->>H: DeviceActivatedEvent
   H->>AWS: UpdateThingShadow(reported = {status:"Active",...})
-  Note over S,AWS: Every 30s (default)
+  Note over S,AWS: iot-aws-shadow-sync cron — every 30s, single-leader
   S->>AWS: GetThingShadow(active bindings)
   AWS-->>S: state.delta = {firmware:"1.5.0"}
   S->>E: DeviceDesiredStateChangedEvent
@@ -161,9 +161,11 @@ sequenceDiagram
   `Device{Activated,Suspended,Reactivated}Event` and pushes
   `{"status":"…","updatedAt":"…"}` (`IClock` injected for deterministic
   timestamps).
-- **AWS → Granit**: `ShadowDeltaPollingService` walks active bindings
-  every `PollIntervalSeconds` (default 30), parses `state.delta`, and
-  publishes `DeviceDesiredStateChangedEvent` on `ILocalEventBus`.
+- **AWS → Granit**: the `iot-aws-shadow-sync` recurring job (`ShadowDeltaSweepJob`,
+  cron `*/30 * * * * *`) fires once cluster-wide via the Granit scheduler, and its
+  sweep body `ShadowDeltaPollingService` walks up to `PollBatchSize` (default 100)
+  active bindings per run, parses `state.delta`, and publishes
+  `DeviceDesiredStateChangedEvent` on `ILocalEventBus`.
 
 `Granit.IoT.Aws.Jobs` consumes that event and turns each delta key into
 an AWS IoT Job dispatched against the originating Thing. The
@@ -181,7 +183,7 @@ sequenceDiagram
   participant AWS as AWS IoT
   participant L as Customer Lambda
   participant G as Granit FleetProvisioningEndpoints
-  participant DB as iotaws_*
+  participant DB as iot_aws_* tables
 
   D->>AWS: CONNECT with claim cert
   AWS->>L: Trigger pre-provisioning hook
@@ -196,9 +198,11 @@ sequenceDiagram
 The standard saga handler short-circuits on `ProvisionedViaJitp == true`
 to avoid attempting to recreate a Thing that AWS already created.
 
-`ClaimCertificateRotationCheckService` runs daily and surfaces expiring
-claim certificates as `ClaimCertificateExpiringEvent` so operators rotate
-them before fleet enrolments break.
+The `iot-aws-claim-cert-rotation-check` recurring job (`ClaimCertificateRotationJob`,
+hardcoded cron `0 2 * * *`) fires once cluster-wide via the Granit scheduler; its
+sweep body `ClaimCertificateRotationCheckService` surfaces expiring claim
+certificates as `ClaimCertificateExpiringEvent` so operators rotate them before
+fleet enrolments break.
 
 ## Wiring
 
@@ -211,13 +215,21 @@ builder.Services.AddGranitIoTAwsShadow();
 builder.Services.AddGranitIoTAwsJobs();
 builder.Services.AddGranitIoTAwsFleetProvisioning();
 
-app.MapGranitIoTAwsFleetProvisioningEndpoints();
+app.MapGranitIoTAwsFleetProvisioningEndpoints("iot-fleet-provisioning");
 ```
 
-Or, with the meta-bundle:
+`authorizationPolicyName` is **required**. It authenticates the customer's AWS
+Lambda and drives the cross-check between the JITP payload's `TenantId` and the
+authenticated principal — the only line of defence against a compromised Lambda
+enrolling Things into another tenant. A null or whitespace policy name throws at
+startup (during `ValidateOnStart`), not at first request.
+
+Or, with the meta-bundle — an extension on `GranitBuilder`, wired in one call
+(the isolated EF Core context takes its connection string from the shared Granit
+persistence configuration, so there is no per-call options delegate):
 
 ```csharp
-builder.Services.AddGranitBundleIoTAws(o => o.UseNpgsql(connectionString));
+builder.AddIoTAws();
 ```
 
 ## Configuration
@@ -229,9 +241,15 @@ production-sane; override per environment.
 | --- | --- |
 | `IoT:Aws:Credentials` | `FleetCredentialSecretArn`, `RotationCheckIntervalMinutes`, `InitialFetchTimeoutSeconds` |
 | `IoT:Aws:Provisioning` | `DevicePolicyName` (required), `SecretNameTemplate`, `SecretKmsKeyId` |
-| `IoT:Aws:Shadow` | `PollIntervalSeconds`, `PollBatchSize`, `AutoPushLifecycleStatus` |
-| `IoT:Aws:Jobs` | `JobIdPrefix`, `JobTrackingTtlHours`, `StatusPollIntervalSeconds`, `StatusPollBatchSize` |
-| `IoT:Aws:FleetProvisioning` | `ExpiryWarningWindowDays`, `RotationCheckIntervalHours`, `RotationCheckBatchSize` |
+| `IoT:Aws:Shadow` | `PollBatchSize` (default 100), `AutoPushLifecycleStatus` (default true) |
+| `IoT:Aws:Jobs` | `JobIdPrefix`, `JobTrackingTtlHours`, `StatusPollBatchSize` |
+| `IoT:Aws:FleetProvisioning` | `ExpiryWarningWindowDays` (default 30), `RotationCheckBatchSize` (default 1000) |
+
+Sweep cadences are **not** options. The Shadow, Jobs and rotation sweeps run as
+recurring cron jobs on the Granit scheduler — `iot-aws-shadow-sync` (every 30s),
+`iot-aws-jobs-status-poll` (every 5 min) and `iot-aws-claim-cert-rotation-check`
+(daily at 02:00) — so the `*BatchSize` knobs above bound how much each single-leader
+run scans, not how often it fires.
 
 ## Observability
 
@@ -248,11 +266,12 @@ tests enforce that every `Internal` namespace stays internal-only.
   the jobs initiated on the current node.
 </Aside>
 
-<Aside type="note" title="Polling vs IoT Rule">
-  The Shadow and Jobs polling services are fine up to a few thousand
-  devices per host. Larger fleets should switch to AWS IoT Rule → SNS /
-  SQS — the bridge is wired through `ILocalEventBus.PublishAsync`, so
-  dropping in an event-driven consumer is mechanical.
+<Aside type="note" title="Sweep jobs vs IoT Rule">
+  The Shadow and Jobs sweeps run as single-leader recurring jobs — one
+  scheduled run scans the whole cluster's active bindings, so they hold up to
+  a few thousand devices comfortably. Larger fleets should switch to AWS IoT
+  Rule → SNS / SQS — the bridge is wired through `ILocalEventBus.PublishAsync`,
+  so dropping in an event-driven consumer is mechanical.
 </Aside>
 
 <Aside type="caution" title="Certificate leak window">

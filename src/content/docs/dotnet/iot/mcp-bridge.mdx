@@ -38,29 +38,32 @@ flowchart LR
   AI["AI assistant<br/>(Claude, Copilot)"]
   MCP["Granit MCP server<br/>(HTTP / SSE)"]
   TOOLS["Granit.IoT.Mcp tools<br/>(static classes)"]
-  R1["IDeviceReader"]
-  R2["ITelemetryReader"]
+  QE["IQueryEngine + IQueryableSource<br/>(list · query)"]
+  RD["IDeviceReader · ITelemetryReader<br/>(get · latest)"]
   DB[("IoTDbContext<br/>(tenant-scoped)")]
 
   AI -->|natural language| MCP
   MCP -->|tool call| TOOLS
-  TOOLS --> R1
-  TOOLS --> R2
-  R1 --> DB
-  R2 --> DB
+  TOOLS --> QE
+  TOOLS --> RD
+  QE --> DB
+  RD --> DB
 ```
 
-| Tool | Backing reader | Returns |
+| Tool | Backing service | Returns |
 | --- | --- | --- |
-| `iot_list_devices(statusFilter?, page, pageSize)` | `IDeviceReader.ListAsync` | Paginated `DeviceMcpResponse[]` |
+| `iot_list_devices(statusFilter?, page, pageSize)` | `IQueryEngine<Device>` + `IQueryableSource<Device>` | Paginated `DeviceMcpResponse[]` |
 | `iot_get_device(deviceId)` | `IDeviceReader.FindAsync` | `DeviceMcpResponse?` (null if not found) |
-| `iot_query_telemetry(deviceId, metricName, from, to, maxPoints)` | `ITelemetryReader.QueryAsync` | `TelemetryReadingMcpResponse[]` filtered by metric |
+| `iot_query_telemetry(deviceId, metricName, from, to, maxPoints)` | `IQueryEngine<TelemetryPoint>` + `IQueryableSource<TelemetryPoint>` | `TelemetryReadingMcpResponse[]` filtered by metric |
 | `iot_get_latest_readings(deviceId)` | `ITelemetryReader.GetLatestAsync` | One `TelemetryReadingMcpResponse` per metric in the latest point |
 
-Each tool is a `[McpServerTool]` static method with the reader injected as
-its first parameter. The MCP SDK resolves the reader from DI and passes
-it in — there is no constructor injection, no tool-class lifetime to worry
-about.
+Each tool is a `[McpServerTool]` static method whose leading parameters are
+its backing services: an `IQueryEngine` + `IQueryableSource` pair for the
+list and query tools (the same pipeline that backs `GET /iot/devices`), or a
+single `IDeviceReader` / `ITelemetryReader` for the point lookups. The MCP
+SDK resolves them from DI and passes them in ahead of the AI-facing
+arguments — there is no constructor injection, no tool-class lifetime to
+worry about.
 
 ## Tenant isolation — two layers
 
@@ -135,8 +138,10 @@ Then in the HTTP pipeline, expose the MCP server endpoints (from
 app.MapGranitMcpServer();
 ```
 
-The IoT tools are auto-discovered by `GranitMcpModule` via assembly
-scanning on startup. No manual `WithTools<T>()` call is needed.
+The IoT tools are auto-discovered via the `[McpServerToolType]` /
+`[McpExposed]` attributes on `DeviceMcpTools` and `TelemetryMcpTools`.
+`GranitIoTMcpModule` depends on `GranitMcpServerModule`, which scans for
+those attributes on startup — no manual `WithTools<T>()` call is needed.
 
 ## Example conversations
 

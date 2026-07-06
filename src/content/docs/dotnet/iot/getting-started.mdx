@@ -252,7 +252,7 @@ sequenceDiagram
    <Tabs>
      <TabItem label="Time range">
        ```bash
-       curl "https://your-app/iot/telemetry/$DEVICE_ID?from=2026-05-20T00:00:00Z&to=2026-05-20T23:59:59Z&maxPoints=500" \
+       curl "https://your-app/iot/telemetry?filter[deviceId.eq]=$DEVICE_ID&filter[recordedAt.gte]=2026-05-20T00:00:00Z&filter[recordedAt.lte]=2026-05-20T23:59:59Z&sort=-recordedAt" \
          -H "Authorization: Bearer $TOKEN"
        ```
      </TabItem>

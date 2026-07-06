@@ -109,7 +109,7 @@ delete never overlaps the next run.
 **Schedule**: `*/5 * * * *` (every 5 minutes). **Purpose**: flag devices
 whose last heartbeat is older than the tenant's timeout, publish
 `DeviceOfflineDetectedEto`, and **suppress re-alerts** on flaky links via
-an in-memory tracker cache.
+a distributed tracker cache.
 
 ### Flow
 
@@ -123,7 +123,7 @@ sequenceDiagram
   J->>R: FindStaleAsync(tenantBucket, cutoff, 5000)
   R-->>J: Device[] (LastHeartbeatAt null or &lt; cutoff)
   loop per stale device
-    J->>C: TryAdd(deviceId, ttl)
+    J->>C: TryAddAsync(deviceId, ttl)
     alt newly added
       C-->>J: true
       J->>B: Publish DeviceOfflineDetectedEto
@@ -138,12 +138,16 @@ sequenceDiagram
 
 A device on a flaky cellular link can drop and reconnect multiple times
 per hour. Publishing an alert on every 5-minute cycle is spam.
-`DeviceOfflineTrackerCache` uses `IMemoryCache` keyed by device ID with
-TTL = `IoT:HeartbeatOfflineNotificationCacheMinutes` (default 60 min).
-The **first** offline detection publishes; subsequent detections within
-the TTL silently skip. When telemetry resumes, the
-`TelemetryIngestedHandler` calls `Forget(deviceId)` so future
-disappearances are re-eligible.
+`DeviceOfflineTrackerCache` uses `IDistributedCache` — Redis in production,
+with an in-process distributed-memory fallback for standalone hosts —
+keyed by device ID with TTL =
+`IoT:HeartbeatOfflineNotificationCacheMinutes` (default 60 min). A
+distributed store is deliberate: the single-leader heartbeat job sets the
+flag on one node while any replica's recovery handler clears it, so both
+paths must observe the same cluster-wide store. The **first** offline
+detection publishes; subsequent detections within the TTL silently skip.
+When telemetry resumes, a separate `TelemetryRecoveredHandler` calls
+`ForgetAsync(deviceId)` so future disappearances are re-eligible.
 
 ### Bucketed per-tenant timeout
 
@@ -202,7 +206,9 @@ builder.Services.AddGranit(builder.Configuration).AddIoT();
 Or register individually (e.g. when not using the bundle):
 
 ```csharp
-builder.Services.AddGranitIoTBackgroundJobs();
+builder.Services
+    .AddGranit(builder.Configuration)
+    .AddModule<GranitIoTBackgroundJobsModule>();
 ```
 
 `GranitIoTBackgroundJobsModule` depends on `GranitIoTModule`,
