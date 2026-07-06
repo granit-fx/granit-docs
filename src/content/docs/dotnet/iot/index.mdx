@@ -184,7 +184,7 @@ MQTT (`Granit.IoT.Mqtt[.Mqttnet]`), TimescaleDB
 | **ISO 27001 A.8.1.1 — asset inventory** | `Device` is `FullAuditedAggregateRoot` with full provenance trail |
 | **ISO 27001 A.12.4.1 — event logging** | Timeline entries are tenant-scoped, tamper-resistant, durable past log rotation |
 | **Data residency** | No telemetry ever leaves the host's database; webhooks terminate locally |
-| **Secrets at rest** | `DeviceCredential.ProtectedSecret` is encrypted via `Granit.Encryption` and stripped from logs, OpenAPI, and validation errors |
+| **Secrets at rest** | `DeviceCredential.ProtectedSecret` stores caller-supplied ciphertext and is stripped from logs, OpenAPI, and validation errors by `[SensitiveData]` (`Granit.DataProtection`) |
 | **Multi-tenant isolation** | Named query filter on `TenantId`, enforced by EF Core + arch tests |
 
 ## Where to go next

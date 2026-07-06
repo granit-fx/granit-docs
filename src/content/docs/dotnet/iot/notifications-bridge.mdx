@@ -98,7 +98,7 @@ override any key without code changes.
 | `IoT:HeartbeatTimeoutMinutes` | `15` | T → G | Offline detection threshold |
 | `IoT:HeartbeatOfflineNotificationCacheMinutes` | `60` | T → G | TTL of the offline tracker, preventing alert spam |
 | `IoT:NotificationThrottleMinutes` | `15` | T → G | Same-alert throttle window |
-| `IoT:IngestRateLimit` | *(set in rate-limit policy)* | T → G | Per-tenant ingest rate (used by `Granit.RateLimiting`) |
+| `IoT:IngestRateLimit` | `1000` | T → G | Per-tenant ingest rate in requests/minute (used by `Granit.Http.RateLimiting`) |
 | `IoT:Threshold:{metricName}` | *(unset)* | T → G | Per-metric threshold (e.g. `IoT:Threshold:temperature = 28.5`) |
 
 All keys are read through `ISettingProvider.GetOrNullAsync()` — lookup
@@ -115,11 +115,14 @@ builder.Services.AddGranit(builder.Configuration).AddIoT();
 Or standalone:
 
 ```csharp
-builder.Services.AddGranitIoTNotifications();
+builder.Services
+    .AddGranit(builder.Configuration)
+    .AddModule<GranitIoTNotificationsModule>();
 ```
 
-`GranitIoTNotificationsModule` depends on `GranitIoTModule` and
-`GranitNotificationsModule`. No further setup is required — the Wolverine
+`GranitIoTNotificationsModule` depends on `GranitIoTModule`,
+`GranitNotificationsAbstractionsModule`, `GranitSettingsModule`, and
+`GranitCachingModule`. No further setup is required — the Wolverine
 handlers are auto-discovered.
 
 ## Wiring your own alert sources

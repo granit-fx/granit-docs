@@ -129,9 +129,16 @@ DI extension is public:
 
 ```csharp
 builder.Services
-    .AddGranitIoT()                       // domain only
-    .AddGranitIoTEntityFrameworkCore()    // persistence
-    .AddGranitIoTEndpoints();             // CRUD API
+    .AddGranitIoT()                                  // domain only
+    .AddGranitIoTEntityFrameworkCore(                // persistence
+        configureShared: o => o.UseNpgsql(connectionString));
+
+// The Endpoints layer ships as a module — register it, then map its routes:
+builder.Services
+    .AddGranit(builder.Configuration)
+    .AddModule<GranitIoTEndpointsModule>();          // CRUD API
+
+app.MapGranitIoTEndpoints();
 // skip ingestion / wolverine / jobs / bridges
 ```
 
@@ -149,7 +156,7 @@ of** `Granit.Bundle.IoT` — the core stack stays cloud-agnostic.
 | # | Package | Role |
 | --- | --- | --- |
 | 1 | `Granit.IoT.Aws` | Companion `AwsThingBinding`, `ThingName` VO, `IAwsIoTCredentialProvider` |
-| 2 | `Granit.IoT.Aws.EntityFrameworkCore` | Isolated `AwsBindingDbContext` (`iotaws_*` schema) |
+| 2 | `Granit.IoT.Aws.EntityFrameworkCore` | Isolated `AwsBindingDbContext` (`iot_aws_*` table prefix) |
 | 3 | `Granit.IoT.Aws.Provisioning` | `IAmazonIoT` + Secrets Manager, idempotent provisioning saga |
 | 4 | `Granit.IoT.Aws.Shadow` | Device Shadow sync (reported push + delta polling) |
 | 5 | `Granit.IoT.Aws.Jobs` | `IDeviceCommandDispatcher` backed by AWS IoT Jobs |
@@ -166,8 +173,8 @@ dotnet add package Granit.Bundle.IoT.Aws
 ```csharp
 builder.Services
     .AddGranit(builder.Configuration)
-    .AddIoT()                                       // cloud-agnostic core
-    .AddGranitBundleIoTAws(o => o.UseNpgsql(connectionString)); // AWS bridge family
+    .AddIoT()        // cloud-agnostic core
+    .AddIoTAws();    // AWS bridge family
 ```
 
 Full deep dive: [AWS IoT Core bridge](/dotnet/iot/aws/).

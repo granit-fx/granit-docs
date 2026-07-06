@@ -46,8 +46,10 @@ indexes (BRIN + GIN + partitioning) as first-class migration helpers.
 ## Device — the central aggregate
 
 `Device` is a `FullAuditedAggregateRoot` implementing `IMultiTenant`,
-`IWorkflowStateful`, and `ITimelined`. Every property has a `private set` —
-all mutations go through methods enforced by architecture tests.
+`IWorkflowStateful`, `ITimelined`, and `IConcurrencyAware`. Every property has
+a `private set` — all mutations go through methods enforced by architecture
+tests, and `IConcurrencyAware` backs the optimistic-concurrency stamp used by
+the update endpoint.
 
 ### Lifecycle state machine
 
@@ -57,10 +59,15 @@ stateDiagram-v2
   Provisioning --> Active : Activate()
   Active --> Suspended : Suspend(reason)
   Suspended --> Active : Reactivate()
-  Active --> Decommissioned : Decommission()
+  Provisioning --> Decommissioned : Decommission()
   Suspended --> Decommissioned : Decommission()
   Decommissioned --> [*]
 ```
+
+There is **no direct `Active → Decommissioned` edge**: `Decommission()` throws
+on an `Active` device, forcing operators to `Suspend(reason)` first so the audit
+log always carries a reason. Decommissioning is legal from `Provisioning` or
+`Suspended`.
 
 Each transition raises a domain event (`DeviceProvisionedEvent`,
 `DeviceActivatedEvent`, `DeviceSuspendedEvent`, `DeviceReactivatedEvent`,
@@ -94,15 +101,18 @@ public void RecordHeartbeat(DateTimeOffset timestamp);
 
 | Type | Base | Validation |
 | --- | --- | --- |
-| `DeviceSerialNumber` | `SingleValueObject<string>` | Uppercase alphanumeric + dash, length-bounded |
+| `DeviceSerialNumber` | `SingleValueObject<string>` | `^[A-Za-z0-9][A-Za-z0-9\-_]{0,127}$` — leading alphanumeric, then mixed-case alphanumeric, dash, or underscore; max 128 chars |
 | `HardwareModel` | `SingleValueObject<string>` | Non-empty, length-bounded |
 | `FirmwareVersion` | `SingleValueObject<string>` | Semver-like, length-bounded |
 | `DeviceCredential` | `ValueObject` | `CredentialType` + `ProtectedSecret` (`[SensitiveData]`) |
 | `MetricName` | `SingleValueObject<string>` | Dot-notation, lowercase, max 10 segments |
 
-`DeviceCredential.ProtectedSecret` carries the `[SensitiveData]` attribute —
-`Granit.Http.Sanitization` strips it from logs, OpenAPI schemas, and
-validation-error payloads.
+`DeviceCredential.ProtectedSecret` carries
+`[SensitiveData(Level = Sensitivity.Restricted, Mode = SensitiveDataMode.Omit)]`
+from the `Granit.DataProtection` namespace — the data-protection pipeline omits
+it from logs, serialization, OpenAPI schemas, and validation-error payloads. The
+stored value is caller-supplied ciphertext; see
+[Secrets at rest](/dotnet/iot/data-model/#secrets-at-rest).
 
 ## CQRS — reader/writer split
 
@@ -115,8 +125,6 @@ public interface IDeviceReader
 {
     Task<Device?> FindAsync(Guid id, CancellationToken ct = default);
     Task<Device?> FindBySerialNumberAsync(string serialNumber, CancellationToken ct = default);
-    Task<IReadOnlyList<Device>> ListAsync(DeviceStatus? status, int skip, int take, CancellationToken ct = default);
-    Task<int> CountAsync(DeviceStatus? status, CancellationToken ct = default);
     Task<bool> ExistsAsync(string serialNumber, CancellationToken ct = default);
     Task<IReadOnlyList<Guid?>> GetDistinctTenantIdsAsync(CancellationToken ct = default);
     Task<IReadOnlyList<Device>> FindStaleAsync(
@@ -130,10 +138,23 @@ public interface IDeviceWriter
 {
     Task AddAsync(Device device, CancellationToken ct = default);
     Task UpdateAsync(Device device, CancellationToken ct = default);
+    Task UpdateAsync(Device device, string originalConcurrencyStamp, CancellationToken ct = default);
     Task DeleteAsync(Device device, CancellationToken ct = default);
     Task UpdateHeartbeatAsync(Guid deviceId, DateTimeOffset timestamp, CancellationToken ct = default);
 }
 ```
+
+The reader intentionally has **no `ListAsync` / `CountAsync`**: paging, filtering,
+sorting, and search all go through the `MapGranitQuery<Device>()` list endpoint
+(`GET /iot/devices`), not the CQRS reader — see
+[Reporting & query surface](#reporting--query-surface). The reader keeps only the
+targeted lookups (`FindAsync`, `FindBySerialNumberAsync`, `ExistsAsync`) plus the
+two cross-tenant batch queries (`GetDistinctTenantIdsAsync`, `FindStaleAsync`)
+that the background jobs depend on.
+
+The second `UpdateAsync` overload takes the client's `originalConcurrencyStamp`
+and raises a `409 Conflict` when it no longer matches the stored value — it is
+the write path behind the [optimistic-concurrency flow](#optimistic-concurrency).
 
 `UpdateHeartbeatAsync` emits one
 `UPDATE iot_devices SET last_heartbeat_at = $1 WHERE id = $2` via EF Core's
@@ -151,11 +172,16 @@ bulk update — **no `SELECT` round-trip**. At 100k devices publishing every
 
 | Method | Route | Permission | Returns |
 | --- | --- | --- | --- |
-| `GET` | `/iot/devices` | `IoT.Devices.Read` | `200 Ok` — `IReadOnlyList<DeviceResponse>` |
-| `GET` | `/iot/devices/{id}` | `IoT.Devices.Read` | `200 Ok` / `404 Not Found` |
+| `GET` | `/iot/devices` | `IoT.Devices.Read` | `200 Ok` — paged `PagedResult` (filter / sort / search / cursor) — see [Reporting & query surface](#reporting--query-surface) |
+| `GET` | `/iot/devices/meta` | `IoT.Devices.Read` | `200 Ok` — column schema the React grid binds to |
+| `GET` | `/iot/devices/{id}` | `IoT.Devices.Read` | `200 Ok` — `DeviceResponse` / `404 Not Found` |
 | `POST` | `/iot/devices` | `IoT.Devices.Manage` | `201 Created` — `DeviceResponse` |
 | `PUT` | `/iot/devices/{id}` | `IoT.Devices.Manage` | `200 Ok` / `409` on `ConcurrencyStamp` mismatch |
 | `DELETE` | `/iot/devices/{id}` | `IoT.Devices.Manage` | `204 No Content` / `409` when still `Active` |
+
+The `GET /iot/devices` list and `GET /iot/devices/meta` schema routes are mounted
+by `MapGranitQuery<Device>()`; the item CRUD routes above them are the module's own
+handlers.
 
 ### Request / response shapes
 
@@ -229,15 +255,77 @@ sequenceDiagram
 
 | Method | Route | Permission | Notes |
 | --- | --- | --- | --- |
-| `GET` | `/iot/telemetry/{deviceId}` | `IoT.Telemetry.Read` | Time-range query, `maxPoints` 1–10000 |
-| `GET` | `/iot/telemetry/{deviceId}/latest` | `IoT.Telemetry.Read` | Most recent value per metric key |
-| `GET` | `/iot/telemetry/{deviceId}/aggregate` | `IoT.Telemetry.Read` | Server-side `Avg` / `Min` / `Max` / `Count` |
+| `GET` | `/iot/telemetry` | `IoT.Telemetry.Read` | Paged list via `MapGranitQuery<TelemetryPoint>()`; cursor-only (see below) |
+| `GET` | `/iot/telemetry/meta` | `IoT.Telemetry.Read` | Column schema the React grid binds to |
+| `GET` | `/iot/telemetry/{deviceId}/latest` | `IoT.Telemetry.Read` | Most recent telemetry point for the device |
+| `GET` | `/iot/telemetry/{deviceId}/aggregate` | `IoT.Telemetry.Read` | Server-side `Avg` / `Min` / `Max` / `Count` for one metric |
 
-All three delegate to `ITelemetryReader`; aggregates are computed in
-PostgreSQL via `(metrics->>'<key>')::float`, never loaded into memory.
+The legacy path-based `GET /iot/telemetry/{deviceId}` (with a `maxPoints`
+parameter) is **retired**. Time-range reads are now expressed against the
+QueryEngine list endpoint:
+
+```text
+GET /iot/telemetry?filter[deviceId.eq]={id}&filter[recordedAt.gte]=2026-07-01T00:00:00Z&sort=-recordedAt
+```
+
+Only `/latest` and `/aggregate` delegate to `ITelemetryReader`
+(`GetLatestAsync` / `GetAggregateAsync`); aggregates are computed in PostgreSQL
+via `(metrics->>'<key>')::float`, never loaded into memory. The list path runs
+entirely through `Granit.QueryEngine`, not the reader. The telemetry group forces
+`skipTotalCount=true` (cursor-only navigation — `COUNT(*)` across time-series
+partitions is prohibitively expensive) and sets `Cache-Control: private, no-store`
+so shared proxies never cache device-attributable data.
 
 Cross-tenant access returns `404 Not Found` — the existence of another
 tenant's device is never leaked.
+
+## Reporting & query surface
+
+Both device and telemetry groups expose a `Granit.QueryEngine` list + `/meta`
+pair, mounted by `MapGranitQuery<Device>()` and `MapGranitQuery<TelemetryPoint>()`.
+This is the read surface the admin grids and dashboards bind to — you never hand-roll
+a `ListAsync`.
+
+- **`GET /` (the list)** returns a paged/cursor result and accepts the standard
+  [`filter[field.op]=value`](/dotnet/building-blocks/query-engine/) syntax for
+  filtering, `sort=-field`, `search=…`, and `groupBy=…`. Example:
+  `GET /iot/devices?filter[status.eq]=Active&sort=-createdAt&search=warehouse`.
+- **`GET /meta`** returns the column schema — labels, allowed operators, sort
+  options, defaults, and the semantic display hints below — so the React grid
+  renders each cell without an app-side lookup table.
+
+The whitelisted columns are declared in `DeviceQueryDefinition` and
+`TelemetryPointQueryDefinition`. Value-object and JSONB columns are deliberately
+left off the whitelist, and the credential is never exposed.
+
+### Semantic `ValueKind` hints
+
+Columns carry [`ValueKind`](/dotnet/building-blocks/query-engine/#column-display-metadata)
+annotations — pure display hints the front-end grid uses to pick a cell renderer,
+with no effect on filtering or storage:
+
+| Definition | Column | `ValueKind` | Renders as |
+| --- | --- | --- | --- |
+| `DeviceQueryDefinition` | `Status` | `Enum` | Status badge / enum picker |
+| `DeviceQueryDefinition` | `LastHeartbeatAt` | `RelativeTime` | "5 min ago" (vs. absolute `CreatedAt` / `ModifiedAt`) |
+| `TelemetryPointQueryDefinition` | `MessageId` | `Identifier` | Monospace, copy-friendly id |
+
+### Grouping — fleet by status
+
+`DeviceQueryDefinition` calls `AllowGroupBy(d => d.Status)`, so
+`GET /iot/devices?groupBy=status` returns a grouped result — the data behind a
+"fleet grouped by device status" dashboard chart. Telemetry stays deliberately
+un-groupable (grouping a billion-row time-series is a footgun).
+
+### The `"devices"` lookup source
+
+`DeviceQueryDefinition` registers itself as a data-lookup source via
+`.AsLookup("devices", d => d.Id, d => d.Label ?? d.SerialNumber.Value, …)`, wired at
+runtime by `AddQueryDefinitionLookup<Device, IoTDbContext>()` inside
+`AddGranitIoTEntityFrameworkCore`. Any other module's grid can then declare a
+`.Lookup("devices")` column — and the `@`-mention picker resolves device references
+— against a real, tenant-scoped, permission-checked (`IoT.Devices.Read`) typeahead.
+The telemetry grid's `DeviceId` column consumes exactly this source.
 
 ## TelemetryPoint — append-only ledger
 
@@ -270,17 +358,30 @@ Granit.IoT ships its own `DbContext`. No shared context across modules —
 this keeps migrations independent and architecture tests enforceable.
 
 ```csharp
-public sealed class IoTDbContext : DbContext
+internal sealed class IoTDbContext(
+    DbContextOptions<IoTDbContext> options,
+    ICurrentTenant currentTenant,
+    IDataFilter? dataFilter = null)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Device> Devices => Set<Device>();
     public DbSet<TelemetryPoint> TelemetryPoints => Set<TelemetryPoint>();
+
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
+        => modelBuilder.ConfigureIoTModule();
 }
 ```
 
-All tables are prefixed `iot_` (`iot_devices`, `iot_telemetry_points`).
-Query filters for multi-tenancy and soft-delete are applied via
-`modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)` at the end
-of `OnModelCreating` — the same pattern used everywhere else in Granit.
+The context derives from **`GranitDbContext`**, not raw `DbContext` — the base
+class wires the multi-tenancy and soft-delete query filters, the audit
+interceptors, and the `iot_` schema conventions from the injected
+`ICurrentTenant` / `IDataFilter`. Entity configurations are applied by overriding
+`OnGranitModelCreating`, which calls `modelBuilder.ConfigureIoTModule()`
+(`ApplyConfiguration(new DeviceConfiguration())` and its telemetry sibling). The
+class is `internal` — hosts register it through `AddGranitIoTEntityFrameworkCore`
+(which delegates to `AddGranitIsolatedDbContext<IoTDbContext>`), never by
+`new`-ing it. All tables are prefixed `iot_` (`iot_devices`,
+`iot_telemetry_points`).
 
 ### Indexes (initial migration)
 

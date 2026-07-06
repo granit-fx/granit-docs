@@ -40,7 +40,7 @@ never touches your domain code.
 
 | Package | Role |
 | --- | --- |
-| `Granit.IoT.Mqtt` | Abstractions — `IIoTMqttBridge`, `IoTMqttConnectionStatus`, message parser, signature validator |
+| `Granit.IoT.Mqtt` | Abstractions — `IIoTMqttBridge` (with the `MqttBridgeStatus` lifecycle enum surfaced via `IIoTMqttBridge.Status`), message parser, signature validator |
 | `Granit.IoT.Mqtt.Mqttnet` | Implementation on top of [MQTTnet](https://github.com/dotnet/MQTTnet) — broker connection, mTLS, backoff, hosted service |
 
 Both are **opt-in** — they are not pulled in by `Granit.Bundle.IoT`. Add
@@ -91,7 +91,7 @@ connection starts when the app boots and stops on shutdown.
 | `BrokerUri` | *(required)* | Must use `mqtts://`. Plain `mqtt://` is rejected — IoT telemetry is never sent in clear |
 | `ClientId` | `granit-iot` | MQTT client identifier sent to the broker |
 | `DefaultQoS` | `1` | Default QoS for subscriptions (0 = at-most-once, 1 = at-least-once, 2 = exactly-once) |
-| `MaxPayloadBytes` | `262144` (256 KB) | Oversize messages dropped, counted on `granit.iot.ingestion.signature_rejected` |
+| `MaxPayloadBytes` | `262144` (256 KB) | Oversize messages are dropped in the bridge before the pipeline and recorded as `granit.iot.mqtt.messages_dispatched` with `outcome="oversized"` |
 | `KeepAliveSeconds` | `60` | Broker keep-alive interval |
 | `FeatureFlagCacheSeconds` | `30` | TTL for the "is the MQTT bridge enabled for tenant X" cache |
 | `MaxPendingMessages` | `1000` | In-flight message buffer; backpressure applied above this |
@@ -124,8 +124,9 @@ move it to `Faulted`.
 
 ## mTLS and Vault integration
 
-The MQTTnet bridge loads its client certificate from
-`Granit.Encryption.Vault` — **never** from disk or configuration. A
+The MQTTnet bridge loads its client certificate from `Granit.Vault` (via
+`ISecretStore`, declared with `[DependsOn(typeof(GranitVaultModule))]`) —
+**never** from disk or configuration. A
 certificate rotated in Vault is picked up automatically
 `CertificateExpiryWarningMinutes` before its `NotAfter`:
 
@@ -169,14 +170,27 @@ flowchart LR
 
 ## Observability
 
-| Metric | Meaning |
-| --- | --- |
-| `granit.iot.telemetry.ingested` (source = `mqtt`) | Message processed end-to-end |
-| `granit.iot.ingestion.signature_rejected` (source = `mqtt`) | Oversize payload, invalid topic, missing auth |
-| `granit.iot.ingestion.duplicate_skipped` (source = `mqtt`) | Redis dedup hit (duplicate packet ID) |
+The bridge emits its own OpenTelemetry meter, `Granit.IoT.Mqtt`, kept
+separate from the shared `Granit.IoT` ingestion meter so MQTT dashboards
+don't have to filter by tag:
 
-MQTT connection state is also exported as an OpenTelemetry gauge — wire it
-to Grafana to see `Reconnecting` storms before users notice.
+| Metric | Tags | Meaning |
+| --- | --- | --- |
+| `granit.iot.mqtt.messages_received` | — | Raw inbound MQTT messages observed by the bridge |
+| `granit.iot.mqtt.messages_dispatched` | `outcome` | Messages forwarded to the pipeline, tagged with the pipeline outcome (`Accepted`, `oversized`, `pipeline_failure`, …) |
+| `granit.iot.mqtt.feature_disabled` | — | Messages dropped because the MQTT-bridge feature flag was off |
+| `granit.iot.mqtt.connection_failures` | — | Connect or reconnect attempts that threw at the broker |
+| `granit.iot.mqtt.reconnect_attempts` | — | Reconnect retry callbacks fired |
+| `granit.iot.mqtt.certificate_reloads` | — | Proactive mTLS certificate reloads triggered by the expiry timer |
+
+There is no connection-state gauge. Track connection health via the
+`connection_failures` and `reconnect_attempts` counters — a rising
+`reconnect_attempts` rate surfaces `Reconnecting` storms before users
+notice — or read `IIoTMqttBridge.Status` directly for the current
+`MqttBridgeStatus`. Once a message reaches the shared pipeline, the standard
+[ingestion counters](/dotnet/iot/telemetry-ingestion/#observability--iotmetrics)
+(`granit.iot.telemetry.ingested`, `granit.iot.ingestion.duplicate_skipped`, …)
+fire downstream with `source = mqtt`.
 
 ## Broker compatibility matrix
 

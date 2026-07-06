@@ -1,6 +1,6 @@
 ---
 title: "IoT Data Model"
-description: "Database reference for Granit.IoT — ER diagram, iot_* and iotaws_* tables, JSONB metric conventions, secrets-at-rest, migration ordering, sizing guidance."
+description: "Database reference for Granit.IoT — ER diagram, iot_* and iot_aws_* tables, JSONB metric conventions, secrets-at-rest, migration ordering, sizing guidance."
 sidebar:
   label: Data Model
   order: 3
@@ -33,7 +33,7 @@ flowchart LR
 
   subgraph "Granit.IoT.Aws.EntityFrameworkCore (opt-in)"
     CTX2["AwsBindingDbContext"]
-    T3["iotaws_thing_bindings"]
+    T3["iot_aws_thing_bindings"]
     CTX2 --> T3
   end
 
@@ -41,18 +41,18 @@ flowchart LR
   T1 -. "Device.Id (FK)" .-> T2
 ```
 
-| DbContext | Schema prefix | Tables | Package |
+| DbContext | Table prefix | Tables | Package |
 | --- | --- | --- | --- |
 | `IoTDbContext` | `iot_` | `iot_devices`, `iot_telemetry_points` | `Granit.IoT.EntityFrameworkCore` |
-| `AwsBindingDbContext` | `iotaws_` | `iotaws_thing_bindings` | `Granit.IoT.Aws.EntityFrameworkCore` |
+| `AwsBindingDbContext` | `iot_aws_` | `iot_aws_thing_bindings` | `Granit.IoT.Aws.EntityFrameworkCore` |
 
 <Aside type="note" title="Why no cross-context FK?">
-  `iotaws_thing_bindings.DeviceId` references `iot_devices.Id`, but no
+  `iot_aws_thing_bindings.DeviceId` references `iot_devices.Id`, but no
   PostgreSQL FOREIGN KEY enforces the relation — the two contexts maintain
   separate migration histories and can be deployed independently. Integrity
   is maintained by the bridge handlers (`AwsThingBridgeHandler` reacts to
   `DeviceDecommissionedEvent` to tear down its row). A host that stops
-  using the AWS bridge can `DROP TABLE iotaws_thing_bindings` without
+  using the AWS bridge can `DROP TABLE iot_aws_thing_bindings` without
   affecting the core schema.
 </Aside>
 
@@ -61,20 +61,20 @@ flowchart LR
 ```mermaid
 erDiagram
   IOT_DEVICES ||--o{ IOT_TELEMETRY_POINTS : "device_id (FK)"
-  IOT_DEVICES ||--o| IOTAWS_THING_BINDINGS : "device_id (logical 1:1)"
+  IOT_DEVICES ||--o| IOT_AWS_THING_BINDINGS : "device_id (logical 1:1)"
 
   IOT_DEVICES {
     uuid Id PK
     uuid TenantId "nullable — null = host scope"
-    text SerialNumber "max 64"
-    text Model "max 128"
+    text SerialNumber "max 128"
+    text Model "max 256"
     text Firmware "max 64"
     text Status "Provisioning|Active|Suspended|Decommissioned"
     text Label "nullable, max 256"
     timestamptz LastHeartbeatAt "nullable"
     text SuspensionReason "nullable, max 1024"
-    text Credential_CredentialType "owned VO"
-    text Credential_ProtectedSecret "owned VO, encrypted at rest"
+    text Credential_CredentialType "complex property"
+    text Credential_ProtectedSecret "complex property, caller-supplied ciphertext"
     jsonb Tags "free-form key/value"
     text CreatedBy "FullAuditedAggregateRoot"
     timestamptz CreatedAt
@@ -96,7 +96,7 @@ erDiagram
     timestamptz CreatedAt
   }
 
-  IOTAWS_THING_BINDINGS {
+  IOT_AWS_THING_BINDINGS {
     uuid Id PK
     uuid DeviceId "logical 1:1 → iot_devices.Id"
     uuid TenantId "nullable"
@@ -129,15 +129,15 @@ logical device, per tenant.
 | --- | --- | --- | --- |
 | `Id` | `uuid` | `PK` | DDD aggregate identifier |
 | `TenantId` | `uuid` | nullable | `null` = host-scope; otherwise tenant-scoped |
-| `SerialNumber` | `text` | NOT NULL, max 64 | Uppercase alphanumeric + dash, enforced by `DeviceSerialNumber` VO |
-| `Model` | `text` | NOT NULL, max 128 | Hardware model identifier (`HardwareModel` VO) |
+| `SerialNumber` | `text` | NOT NULL, max 128 | `^[A-Za-z0-9][A-Za-z0-9\-_]{0,127}$` — mixed-case alphanumeric, dash, or underscore, enforced by `DeviceSerialNumber` VO |
+| `Model` | `text` | NOT NULL, max 256 | Hardware model identifier (`HardwareModel` VO) |
 | `Firmware` | `text` | NOT NULL, max 64 | Semver-like (`FirmwareVersion` VO) |
 | `Status` | `text` | NOT NULL, max 32 | Enum stored as string per the [framework convention](/dotnet/data/enum-persistence/) — forward-compatible across enum reorderings |
 | `Label` | `text` | nullable, max 256 | Operator-friendly name |
 | `LastHeartbeatAt` | `timestamptz` | nullable | Updated by `IDeviceWriter.UpdateHeartbeatAsync` (bulk SQL) |
 | `SuspensionReason` | `text` | nullable, max 1024 | Set on `Suspend(reason)` |
-| `Credential_CredentialType` | `text` | nullable | Owned VO; e.g. `mqtt-x509`, `psk`, `bearer` |
-| `Credential_ProtectedSecret` | `text` | nullable | Owned VO; **encrypted at rest** via `Granit.Encryption` |
+| `Credential_CredentialType` | `text` | nullable, max 64 | `DeviceCredential` complex property; e.g. `api-key`, `x509-thumbprint`, `aws-iot-cert-arn` |
+| `Credential_ProtectedSecret` | `text` | nullable, max 2048 | `DeviceCredential` complex property; **caller-supplied ciphertext** (see [Secrets at rest](#secrets-at-rest)) |
 | `Tags` | `jsonb` | nullable | Free-form key/value (e.g. `{"location": "WH-A"}`) |
 | `CreatedBy` / `CreatedAt` | `text` / `timestamptz` | NOT NULL | `FullAuditedAggregateRoot` |
 | `ModifiedBy` / `ModifiedAt` | `text` / `timestamptz` | nullable | `FullAuditedAggregateRoot` |
@@ -177,7 +177,7 @@ metrics co-located in a single JSONB column.
 | `ix_iot_telemetry_device_time` | `(DeviceId, RecordedAt DESC)` | btree | Covering index for the most common query |
 | `ix_iot_telemetry_tenant_time` | `(TenantId, RecordedAt)` | btree | GDPR bulk erasure + per-tenant purge |
 | `ix_iot_telemetry_brin_recorded_at` | `(RecordedAt)` | **BRIN** | 10× smaller than B-tree for append-only data |
-| `ix_iot_telemetry_metrics_gin` | `(Metrics)` | **GIN `jsonb_ops`** | Per-key filters: `WHERE Metrics @> '{"temperature": 22.5}'` |
+| `ix_iot_telemetry_gin_metrics` | `(Metrics)` | **GIN `jsonb_ops`** | Per-key filters: `WHERE Metrics @> '{"temperature": 22.5}'` |
 
 The BRIN and GIN indexes are created by the
 `Granit.IoT.EntityFrameworkCore.Postgres` migration helpers — EF Core
@@ -220,11 +220,11 @@ aggregates:
 See [Time-series storage](/dotnet/iot/time-series/) for the full decision
 tree between PostgreSQL-native and TimescaleDB.
 
-## Table — `iotaws_thing_bindings`
+## Table — `iot_aws_thing_bindings`
 
 The AWS-companion aggregate. 1:1 with `iot_devices` (logical) but lives in
-its own schema so a non-AWS deployment can drop it without touching the
-core tables.
+its own isolated context under the `iot_aws_` table prefix, so a non-AWS
+deployment can drop it without touching the core tables.
 
 ### Columns
 
@@ -248,10 +248,10 @@ core tables.
 
 | Name | Columns | Type | Purpose |
 | --- | --- | --- | --- |
-| `pk_iotaws_thing_bindings` | `(Id)` | PRIMARY KEY | Aggregate lookup |
-| `ix_iotaws_thing_bindings_tenant_device` | `(TenantId, DeviceId)` | `UNIQUE` | Enforces the 1:1 relation per tenant |
-| `ix_iotaws_thing_bindings_thing_name` | `(ThingName)` | `UNIQUE` (GLOBAL) | AWS Thing names are global; the `t{tenantId}-*` prefix doubles as tenant isolation at the DB level |
-| `ix_iotaws_thing_bindings_tenant_status` | `(TenantId, ProvisioningStatus)` | btree | Reconciliation queries (find stuck or expired bindings) |
+| `pk_iot_aws_thing_bindings` | `(Id)` | PRIMARY KEY | Aggregate lookup |
+| `ix_iot_aws_thing_bindings_tenant_device` | `(TenantId, DeviceId)` | `UNIQUE` | Enforces the 1:1 relation per tenant |
+| `ix_iot_aws_thing_bindings_thing_name` | `(ThingName)` | `UNIQUE` (GLOBAL) | AWS Thing names are global; the `t{tenantId}-*` prefix doubles as tenant isolation at the DB level |
+| `ix_iot_aws_thing_bindings_tenant_status` | `(TenantId, ProvisioningStatus)` | btree | Reconciliation queries (find stuck or expired bindings) |
 
 ## JSONB schema for `Metrics`
 
@@ -302,7 +302,8 @@ index size sane.
       AND recorded_at BETWEEN $2 AND $3
     ORDER BY recorded_at DESC;
     ```
-    Used by `ITelemetryReader.QueryAsync` and the aggregate endpoints.
+    The JSONB-extraction pattern behind the `/iot/telemetry/{deviceId}/aggregate`
+    endpoint (`ITelemetryReader.GetAggregateAsync`) and any single-metric chart.
   </TabItem>
   <TabItem label="Aggregate in SQL">
     ```sql
@@ -320,35 +321,26 @@ index size sane.
 ## Secrets at rest
 
 The only column carrying a secret is
-`iot_devices.Credential_ProtectedSecret`. It is **encrypted at rest** by
-the host's `IDeviceCredentialProtector` implementation (shipped by
-`Granit.Encryption`):
+`iot_devices.Credential_ProtectedSecret` — the `ProtectedSecret` field of the
+`DeviceCredential` complex property.
 
-```mermaid
-sequenceDiagram
-  participant API as Endpoint handler
-  participant W as IDeviceWriter
-  participant P as IDeviceCredentialProtector
-  participant V as Vault (or KMS)
-  participant DB as PostgreSQL
-  API->>P: Protect(plaintextSecret)
-  P->>V: Encrypt(plaintextSecret)
-  V-->>P: ciphertext
-  P-->>API: ProtectedSecret(ciphertext)
-  API->>W: AddAsync(device)
-  W->>DB: INSERT iot_devices (Credential_ProtectedSecret = ciphertext)
-```
+Granit does **not** encrypt this column with an EF Core value converter. The
+`DeviceCredential.Create(credentialType, protectedSecret)` factory expects an
+**already-encrypted** value: the ciphertext is produced by the caller (the
+provisioning flow or credential domain service) before the value object is
+constructed, and EF Core persists the string verbatim — the mapping is a plain
+`ComplexProperty` with `HasMaxLength(2048)`, no `HasConversion`. Store
+ciphertext, never plaintext.
 
 Mitigations carried by the framework:
 
-- `[SensitiveData]` on `DeviceCredential.ProtectedSecret` — scrubbed from
-  logs, OpenAPI schemas, and `422` validation payloads by
-  `Granit.Http.Sanitization`.
-- Read-time `Unprotect` happens inside the credential consumer (MQTT
-  bridge, ingestion validator), **never** in an API response.
-- Plaintext secrets are rejected at startup if `appsettings.json` carries
-  a credential without `__FROM_SECRET_STORE__` placeholder semantics —
-  see [security baseline](/dotnet/security/security-overview/).
+- `[SensitiveData(Level = Sensitivity.Restricted, Mode = SensitiveDataMode.Omit)]`
+  (namespace `Granit.DataProtection`) on `DeviceCredential.ProtectedSecret` — the
+  data-protection pipeline omits it from logs, serialization, OpenAPI schemas,
+  and `422` validation payloads.
+- The secret is never projected into `DeviceResponse` nor whitelisted as a
+  `GET /iot/devices` query column, so it cannot leak through the API or the
+  admin grid.
 
 <Aside type="caution" title="Don't store secrets in Tags">
   The `Tags` JSONB column is **not** sanitised. Treat it as
@@ -377,7 +369,7 @@ independently. Apply them in this order on a fresh deployment:
       --context IoTDbContext \
       --project MyApp.Host
 
-    # 2. AWS bridge schema (iotaws_thing_bindings)
+    # 2. AWS bridge schema (iot_aws_thing_bindings)
     dotnet ef database update \
       --context AwsBindingDbContext \
       --project MyApp.Host
@@ -467,9 +459,9 @@ guards against degenerate payloads that would balloon `Metrics`.
 | --- | --- | --- |
 | **Per-tenant retention** | `iot_telemetry_points` | `StaleTelemetryPurgeJob` — bucketed `ExecuteDeleteAsync` |
 | **Month rollover** (partitioned) | `iot_telemetry_points_YYYY_MM` | `DROP TABLE` of the oldest partition (O(1)) |
-| **Device decommission** | `iot_devices` (soft delete) + `iotaws_thing_bindings` (hard delete on AWS side) | `Device.Decommission()` raises events; bridges tear down |
+| **Device decommission** | `iot_devices` (soft delete) + `iot_aws_thing_bindings` (hard delete on AWS side) | `Device.Decommission()` raises events; bridges tear down |
 | **GDPR Art. 17 erasure** | `iot_telemetry_points` (full purge); `iot_devices` (soft delete + audit retention per policy) | Combination of purge job + manual aggregate flow |
-| **Tenant offboarding** | All `iot_*` and `iotaws_*` rows with matching `TenantId` | Host-driven bulk SQL inside the offboarding pipeline |
+| **Tenant offboarding** | All `iot_*` and `iot_aws_*` rows with matching `TenantId` | Host-driven bulk SQL inside the offboarding pipeline |
 
 The Timeline bridge keeps an immutable audit trail — see
 [Timeline bridge](/dotnet/iot/timeline-bridge/) — so erasure of telemetry
@@ -481,5 +473,5 @@ does not erase the record that the device existed.
 - [Telemetry ingestion](/dotnet/iot/telemetry-ingestion/) — the write path that produces telemetry rows
 - [Time-series storage](/dotnet/iot/time-series/) — PostgreSQL native vs TimescaleDB
 - [Operations](/dotnet/iot/operations/) — purge, heartbeat, partition maintenance
-- [AWS IoT Core bridge](/dotnet/iot/aws/) — the saga that owns `iotaws_thing_bindings`
+- [AWS IoT Core bridge](/dotnet/iot/aws/) — the saga that owns `iot_aws_thing_bindings`
 - [Security overview](/dotnet/security/security-overview/) — secrets-at-rest model

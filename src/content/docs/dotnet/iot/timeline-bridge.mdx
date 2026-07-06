@@ -69,7 +69,9 @@ builder.Services.AddGranit(builder.Configuration).AddIoT();
 Or standalone:
 
 ```csharp
-builder.Services.AddGranitIoTTimeline();
+builder.Services
+    .AddGranit(builder.Configuration)
+    .AddModule<GranitIoTTimelineModule>();
 ```
 
 `GranitIoTTimelineModule` depends on `GranitIoTModule` and
@@ -80,10 +82,11 @@ registration is needed.
 ## Querying the timeline
 
 `Granit.Timeline.Endpoints` exposes
-`/api/timeline/{entityType}/{entityId}` by default:
+`/timeline/{entityType}/{entityId}` by default (the route prefix is
+configurable; a host may mount it behind its own `/api` group):
 
 ```bash
-curl "https://your-app/api/timeline/Device/$DEVICE_ID" \
+curl "https://your-app/timeline/Device/$DEVICE_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

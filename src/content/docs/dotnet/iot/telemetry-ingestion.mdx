@@ -55,8 +55,10 @@ flowchart LR
   TH --> THEXC["TelemetryThresholdExceededEto<br/>→ Notifications"]
 ```
 
-Stages 1 and 2 are synchronous — they must succeed before returning `202`.
-Stage 3 and everything downstream are asynchronous via Wolverine's
+Signature validation, parsing, deduplication, device lookup, and the outbox
+publish all run synchronously — every one must complete before the endpoint
+returns `202`. Only the handler work downstream of the outbox (persist,
+heartbeat update, threshold evaluation) runs asynchronously via Wolverine's
 transactional outbox, so a slow database never blocks the HTTP response.
 
 ## Pipeline abstractions
@@ -118,16 +120,24 @@ Mapped by `MapGranitIoTIngestionEndpoints()`:
 | `202 Accepted` | Signature valid, payload parsed, dispatched to outbox (or duplicate silently accepted) |
 | `400 Bad Request` | Malformed payload (Base64 fail, missing field, invalid JSON) |
 | `401 Unauthorized` | Signature validation failed |
+| `403 Forbidden` | Request blocked by an authorization policy on the route group |
+| `413 Payload Too Large` | Request body exceeds the 256 KB cap |
 | `415 Unsupported Media Type` | Non-JSON content type |
 | `422 Unprocessable Entity` | No parser registered for the `{source}` path parameter |
+| `429 Too Many Requests` | Rate-limit policy (`iot-ingest`) exceeded |
 
 The endpoint buffers the request body up to **256 KB** (enough for even the
-chattiest MQTT payload), snapshots headers into a case-insensitive
-dictionary, and delegates to `IIngestionPipeline.ProcessAsync()`.
+chattiest MQTT payload) and rejects anything larger with `413 Payload Too
+Large` — an advertised `Content-Length` over the cap is refused before a
+single byte is read, and chunked bodies are cut off the moment they cross it.
+It then snapshots headers into a case-insensitive dictionary and delegates to
+`IIngestionPipeline.ProcessAsync()`.
 
 Rate limiting is enforced at the route group level via
-`Granit.RateLimiting` (`iot-ingest` policy by default) — configure per-tenant
-limits under `RateLimiting:Policies:iot-ingest` in `appsettings.json`.
+`Granit.Http.RateLimiting` — the route group calls
+`.RequireGranitRateLimiting("iot-ingest")` (namespace
+`Granit.Http.RateLimiting.AspNetCore`) — so configure per-tenant limits under
+`RateLimiting:Policies:iot-ingest` in `appsettings.json`.
 
 ## Provider — Scaleway IoT Hub
 
@@ -217,9 +227,10 @@ non-alphanumeric replaced with `-`), prefixed `iot-msg:`.
 <Aside type="note" title="Why fail-open?">
   If Redis is unreachable, the deduplicator returns `true` (process the
   message). Availability wins over strict idempotency — dropping a real
-  reading is worse than processing a rare duplicate. The
-  `granit.iot.ingestion.duplicate_skipped` counter still reflects what
-  Redis *did* observe.
+  reading is worse than processing a rare duplicate. Every fail-open bypass
+  increments the dedicated `granit.iot.ingestion.dedup_fail_open` counter — a
+  sustained non-zero rate signals a replay-window integrity gap, so page
+  on-call.
 </Aside>
 
 <Aside type="tip" title="Transport-level, not business-level">
@@ -296,9 +307,10 @@ standard Prometheus exporter registered by `Granit.Diagnostics`:
 | `granit.iot.telemetry.ingested` | `tenant_id`, `source` | `TelemetryPoint` persisted |
 | `granit.iot.ingestion.signature_rejected` | `tenant_id`, `source` | HMAC / SigV4 validation failed |
 | `granit.iot.ingestion.duplicate_skipped` | `tenant_id`, `source` | Redis dedup hit |
+| `granit.iot.ingestion.dedup_fail_open` | `tenant_id` | Redis unavailable — dedup bypassed (fail-open) |
 | `granit.iot.ingestion.unknown_device` | `tenant_id`, `source` | Serial not registered |
-| `granit.iot.ingestion.threshold_exceeded` | `tenant_id`, `metric_name` | Threshold breached |
-| `granit.iot.alerts.throttled` | `tenant_id`, `metric_name` | Notification suppressed by the bridge |
+| `granit.iot.ingestion.threshold_exceeded` | `tenant_id` | Threshold breached |
+| `granit.iot.alerts.throttled` | `tenant_id` | Notification suppressed by the bridge |
 | `granit.iot.device.offline_detected` | `tenant_id` | Heartbeat job flagged a device |
 | `granit.iot.background.telemetry_purged` | `tenant_id` | Purge job deleted rows |
 | `granit.iot.background.partition_created` | `partition_name` | Partition maintenance job ran |
@@ -315,8 +327,10 @@ Alert routing goes through `Granit.Notifications` — see
 
 <Aside type="caution" title="Don't skip signature validation 'just for testing'">
   A public `/iot/ingest/scaleway` endpoint without HMAC validation is an
-  insert-only database backdoor. Use a test-specific validator
-  (`NoopValidator`) behind `IsDevelopment()` if you really need it.
+  insert-only database backdoor. Granit auto-registers the permissive
+  `NullPayloadSignatureValidator` (source `development`) only when
+  `IHostEnvironment.IsDevelopment()` is true — rely on that for local work,
+  and never ship it to production.
 </Aside>
 
 <Aside type="caution" title="Don't tune the dedup TTL up to cover 'long retries'">
