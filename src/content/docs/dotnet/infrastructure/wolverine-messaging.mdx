@@ -19,12 +19,16 @@ go straight to the error queue, no retry.
 <FileTree>
 - Granit.Wolverine/ Core: routing, context propagation, FluentValidation middleware
   - Granit.Wolverine.Postgresql PostgreSQL outbox, EF Core transactions
+  - Granit.Wolverine.SqlServer SQL Server outbox, EF Core transactions
+  - Granit.Wolverine.Encryption Field-level encryption of [Encrypted] properties on the wire
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
 | `Granit.Wolverine` | Domain event routing, context propagation, validation | `Granit.Users` |
 | `Granit.Wolverine.Postgresql` | PostgreSQL transactional outbox, EF Core integration | `Granit.Wolverine`, `Granit.Persistence` |
+| `Granit.Wolverine.SqlServer` | SQL Server transactional outbox, EF Core integration | `Granit.Wolverine`, `Granit.Persistence` |
+| `Granit.Wolverine.Encryption` | Transparent encryption of `[Encrypted]` string properties in envelopes and saga state | `Granit.Wolverine`, `Granit.Encryption` |
 
 ## Dependency graph
 
@@ -33,6 +37,10 @@ graph TD
     W[Granit.Wolverine] --> S[Granit.Users]
     WP[Granit.Wolverine.Postgresql] --> W
     WP --> P[Granit.Persistence]
+    WS[Granit.Wolverine.SqlServer] --> W
+    WS --> P
+    WE[Granit.Wolverine.Encryption] --> W
+    WE --> E[Granit.Encryption]
 ```
 
 ## Setup
@@ -405,13 +413,13 @@ fallbacks when Wolverine is not installed:
 
 | Category | Key types | Package |
 |----------|-----------|---------|
-| Module | `GranitWolverineModule`, `GranitWolverinePostgresqlModule` | — |
-| Options | `WolverineMessagingOptions`, `WolverinePostgresqlOptions` | — |
+| Module | `GranitWolverineModule`, `GranitWolverinePostgresqlModule`, `GranitWolverineSqlServerModule`, `GranitWolverineEncryptionModule` | — |
+| Options | `WolverineMessagingOptions`, `WolverinePostgresqlOptions`, `WolverineSqlServerOptions` | — |
 | Context | `OutgoingContextMiddleware`, `TenantContextBehavior`, `UserContextBehavior`, `TraceContextBehavior` | `Granit.Wolverine` |
 | User service | `WolverineCurrentUserService` (internal, implements `ICurrentUserService`) | `Granit.Wolverine` |
 | Claim Check | `IClaimCheckStore`, `ClaimCheckReference` | `Granit.Wolverine` |
-| Attributes | `[WolverineHandlerModule]` | `Granit.Wolverine` |
-| Extensions | `AddGranitWolverine()`, `AddGranitWolverineWithPostgresql()`, `AddGranitWolverineWithPostgresqlPerTenant<T>()`, `AddInMemoryClaimCheckStore()` | — |
+| Attributes | `[WolverineHandlerModule]`, `[CrossTenantMessage]` | `Granit.Wolverine` |
+| Extensions | `AddGranitWolverine()`, `AddGranitWolverineWithPostgresql()`, `AddGranitWolverineWithPostgresqlPerTenant<T>()`, `AddGranitWolverineWithSqlServer()`, `AddGranitWolverineWithSqlServerPerTenant<T>()`, `AddInMemoryClaimCheckStore()` | — |
 
 ## Common pitfalls
 
