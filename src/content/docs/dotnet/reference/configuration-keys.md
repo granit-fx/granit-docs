@@ -693,6 +693,7 @@ Each entry in `Policies`:
 | **Package** | -- | `Granit.Wolverine` | |
 | `RetryDelays` | `TimeSpan[]` | `[00:00:05, 00:00:30, 00:05:00]` | Cooldown delays between retry attempts. |
 | `MaxRetryAttempts` | `int` | `3` | Maximum retry attempts. |
+| `CodeGenerationMode` | `TypeLoadMode` | `Dynamic` | Wolverine codegen mode. `Static` in production after `dotnet run -- codegen write`. |
 
 ### Wolverine PostgreSQL -- `WolverinePostgresqlOptions`
 
@@ -700,7 +701,9 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Wolverine:Postgresql` | |
 | **Package** | -- | `Granit.Wolverine.Postgresql` | |
-| `TransportConnectionString` | `string` | `""` | PostgreSQL connection string for outbox tables. |
+| `TransportConnectionString` | `string?` | `null` | PostgreSQL connection string for outbox tables. Takes priority over the name below. |
+| `TransportConnectionStringName` | `string?` | `null` | Name resolved from `ConnectionStrings:{name}` (Aspire integration). |
+| `SchemaName` | `string?` | `null` | Schema for envelope tables. Falls back to `HostDbSchema`, then Wolverine's default. |
 | `TransactionMode` | `TransactionMiddlewareMode` | `Eager` | `Eager` (ISO 27001-recommended) or `Lightweight`. |
 
 ### Wolverine SQL Server -- `WolverineSqlServerOptions`
@@ -709,7 +712,9 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `Wolverine:SqlServer` | |
 | **Package** | -- | `Granit.Wolverine.SqlServer` | |
-| `TransportConnectionString` | `string` | `""` | SQL Server connection string for outbox tables. |
+| `TransportConnectionString` | `string?` | `null` | SQL Server connection string for outbox tables. Takes priority over the name below. |
+| `TransportConnectionStringName` | `string?` | `null` | Name resolved from `ConnectionStrings:{name}` (Aspire integration). |
+| `SchemaName` | `string?` | `null` | Schema for envelope tables. Falls back to `HostDbSchema`, then Wolverine's default (`dbo`). |
 | `TransactionMode` | `TransactionMiddlewareMode` | `Eager` | `Eager` (ISO 27001-recommended) or `Lightweight`. |
 
 ### Webhooks -- `WebhooksOptions`
