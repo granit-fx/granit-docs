@@ -65,15 +65,17 @@ app.MapGranitPrivacy();                           // request + status + download
 
 <Aside type="caution" title="Do not also call MapGranitPrivacyExportDownload()">
 `MapGranitPrivacy()` now maps the download routes internally. The legacy
-`MapGranitPrivacyExportDownload()` extension still exists but registers a
-conflicting `GET /exports/{id}/download` — calling both is a duplicate-route
-error. Use `MapGranitPrivacy()` alone.
+`MapGranitPrivacyExportDownload()` extension still exists (since the layer-purity
+split it ships in the dedicated `Granit.Privacy.BlobStorage.Endpoints` package)
+but registers a conflicting `GET /exports/{id}/download` — calling both is a
+duplicate-route error. Use `MapGranitPrivacy()` alone.
 </Aside>
 
 Load modules:
 
 ```csharp
 [DependsOn(
+    typeof(GranitPrivacyWolverineModule),               // export/deletion sagas
     typeof(GranitPrivacyEntityFrameworkCoreModule),
     typeof(GranitPrivacyBlobStorageModule),
     typeof(GranitPrivacyBackgroundJobsModule),          // PrivacyExportAssemblyJob
