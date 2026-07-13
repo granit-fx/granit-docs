@@ -29,14 +29,14 @@ ever validating against manifest bytes (or vice versa).
 ```csharp
 public interface IExportHmacSigner
 {
-    string Sign(in ExportHmacParameters parameters);
-    bool   Verify(in ExportHmacParameters parameters, string tag);
+    Task<string> SignAsync(ExportHmacParameters parameters, CancellationToken cancellationToken = default);
+    Task<bool>   VerifyAsync(ExportHmacParameters parameters, string tag, CancellationToken cancellationToken = default);
 }
 
 public interface IExportContentSigner
 {
-    string SignBytes(ReadOnlySpan<byte> payload);
-    bool   VerifyBytes(ReadOnlySpan<byte> payload, string tag);
+    Task<string> SignBytesAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default);
+    Task<bool>   VerifyBytesAsync(ReadOnlyMemory<byte> payload, string tag, CancellationToken cancellationToken = default);
 }
 ```
 

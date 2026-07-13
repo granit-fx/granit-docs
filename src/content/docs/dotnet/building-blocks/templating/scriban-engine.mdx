@@ -59,11 +59,12 @@ public sealed class AcmeBrandingContext : ITemplateGlobalContext
 {
     public string ContextName => "brand";
 
-    public object Resolve() => new
-    {
-        logo_url = "https://cdn.acme.com/logo.svg",
-        primary_color = "#1A73E8",
-    };
+    public Task<object> ResolveAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<object>(new
+        {
+            logo_url = "https://cdn.acme.com/logo.svg",
+            primary_color = "#1A73E8",
+        });
 }
 
 // Registration
