@@ -64,14 +64,14 @@ for Kubernetes probes.
 | `Granit.Identity.Federated.Keycloak` | `AddGranitKeycloakHealthCheck()` | `client_credentials` token request | readiness, startup |
 | `Granit.Identity.Federated.EntraId` | `AddGranitEntraIdHealthCheck()` | `client_credentials` token request | readiness, startup |
 | `Granit.BlobStorage.S3` | `AddGranitS3HealthCheck()` | `ListObjectsV2(MaxKeys=1)` | readiness, startup |
-| `Granit.Notifications.Email.Smtp` | `AddGranitSmtpHealthCheck()` | EHLO handshake via MailKit | readiness |
-| `Granit.Notifications.Email.AwsSes` | `AddGranitAwsSesHealthCheck()` | `GetAccount()` (Degraded if sending paused) | readiness, startup |
+| `Granit.Notifications.Smtp` | `AddGranitSmtpHealthCheck()` | EHLO handshake via MailKit | readiness |
+| `Granit.Notifications.AwsSes` | `AddGranitAwsSesHealthCheck()` | `GetAccount()` (Degraded if sending paused) | readiness, startup |
 | `Granit.Notifications.Brevo` | `AddGranitBrevoHealthCheck()` | `GET /account` | readiness |
 | `Granit.Notifications.Zulip` | `AddGranitZulipHealthCheck()` | `GET /api/v1/users/me` | readiness |
 | `Granit.Vault.Azure` | `AddGranitAzureKeyVaultHealthCheck()` | GetKey probe | readiness |
-| `Granit.Notifications.Email.AzureCommunicationServices` | `AddGranitAcsEmailHealthCheck()` | Send probe | readiness |
-| `Granit.Notifications.Sms.AzureCommunicationServices` | `AddGranitAcsSmsHealthCheck()` | Send probe | readiness |
-| `Granit.Notifications.MobilePush.AzureNotificationHubs` | `AddGranitAzureNotificationHubsHealthCheck()` | Hub description | readiness |
+| `Granit.Notifications.AzureCommunicationServices` | `AddGranitAcsEmailHealthCheck()` | Non-mutating config/credential validation | readiness |
+| `Granit.Notifications.AzureCommunicationServices` | `AddGranitAcsSmsHealthCheck()` | Non-mutating config/credential validation | readiness |
+| `Granit.Notifications.AzureNotificationHubs` | `AddGranitAzureNotificationHubsHealthCheck()` | Hub description | readiness |
 
 ### Defensive timeout
 

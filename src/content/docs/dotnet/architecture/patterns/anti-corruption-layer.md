@@ -101,9 +101,9 @@ from proprietary JSON structures (`realm_access.roles`,
 | Keycloak JWT | `Granit.Authentication.JwtBearer.Keycloak` | JSON `realm_access` to `ClaimTypes.Role` |
 | Entra ID JWT | `Granit.Authentication.JwtBearer.EntraId` | JSON `roles` (v1.0/v2.0) to `ClaimTypes.Role` |
 | AWS S3 SDK | `Granit.BlobStorage.S3` | `GetPreSignedUrlRequest` from `BlobUploadRequest` |
-| MailKit SMTP | `Granit.Notifications.Email.Smtp` | `MimeMessage` from `EmailMessage` |
+| MailKit SMTP | `Granit.Notifications.Smtp` | `MimeMessage` from `EmailMessage` |
 | Brevo API | `Granit.Notifications.Brevo` | JSON payload from `EmailMessage` / `SmsMessage` / `WhatsAppMessage` |
-| Firebase FCM | `Granit.Notifications.MobilePush.GoogleFcm` | `FcmPayload` from `MobilePushMessage` |
+| Firebase FCM | `Granit.Notifications.GoogleFcm` | `FcmPayload` from `MobilePushMessage` |
 | ImageMagick | `Granit.Imaging.MagickNet` | `MagickFormat` to/from `ImageFormat` (bidirectional) |
 | Import systems | `Granit.DataExchange.EntityFrameworkCore` | External ID (Odoo `__export__`) to internal Entity ID |
 
@@ -123,9 +123,9 @@ from proprietary JSON structures (`realm_access.roles`,
 | `src/Granit.Identity.Keycloak/Internal/KeycloakUserRepresentation.cs` | Keycloak external DTO |
 | `src/Granit.Authentication.JwtBearer.Keycloak/Authentication/KeycloakClaimsTransformation.cs` | JWT claims to Role |
 | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | S3 adapter |
-| `src/Granit.Notifications.Email.Smtp/Internal/MailKitEmailSender.cs` | SMTP adapter |
+| `src/Granit.Notifications.Smtp/Internal/MailKitEmailSender.cs` | SMTP adapter |
 | `src/Granit.Notifications.Brevo/Internal/BrevoNotificationProvider.cs` | Multi-channel Brevo |
-| `src/Granit.Notifications.MobilePush.GoogleFcm/Internal/GoogleFcmMobilePushSender.cs` | FCM adapter |
+| `src/Granit.Notifications.GoogleFcm/Internal/GoogleFcmMobilePushSender.cs` | FCM adapter |
 | `src/Granit.Imaging.MagickNet/Internal/MagickFormatMapper.cs` | Image format mapping |
 
 ## Rationale

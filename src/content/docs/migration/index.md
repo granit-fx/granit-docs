@@ -23,7 +23,7 @@ This section only covers Granit → Granit version upgrades.
 ### Single version for all packages
 
 Every Granit NuGet package (`Granit`, `Granit.Persistence`,
-`Granit.Notifications.Email.Smtp`, etc.) ships under the same version number.
+`Granit.Notifications.Smtp`, etc.) ships under the same version number.
 When you upgrade one package, upgrade them all. This eliminates version matrix
 issues and guarantees that cross-package contracts remain consistent.
 

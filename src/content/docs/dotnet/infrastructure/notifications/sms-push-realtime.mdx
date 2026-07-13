@@ -14,8 +14,8 @@ Granit.Notifications supports a wide range of delivery channels beyond email. Ea
 
 | Provider | Package | Keyed Service key |
 |----------|---------|-------------------|
-| Azure Communication Services | `Granit.Notifications.Sms.AzureCommunicationServices` | `"AzureCommunicationServices"` |
-| AWS SNS | `Granit.Notifications.Sms.AwsSns` | `"AwsSns"` |
+| Azure Communication Services | `Granit.Notifications.AzureCommunicationServices` | `"AzureCommunicationServices"` |
+| AWS SNS | `Granit.Notifications.AwsSns` | `"AwsSns"` |
 | Twilio | `Granit.Notifications.Twilio` | `"Twilio"` |
 | Brevo | `Granit.Notifications.Brevo` | `"Brevo"` |
 
@@ -36,20 +36,35 @@ context.Services.AddGranitNotificationsSms(opts => opts.Provider = "Brevo");
 context.Services.AddGranitNotificationsWhatsApp(opts => opts.Provider = "Brevo");
 ```
 
+### Template language
+
+WhatsApp Business templates are pre-approved per language on Meta's side. The
+channel resolves the language per recipient through a cascade:
+`context.Culture` → `recipient.PreferredCulture` → the
+`Granit.Localization.PreferredCulture` setting (User → Tenant → Global via
+`ISettingProvider`, soft dependency — skipped when Settings is not wired) →
+`WhatsAppChannelOptions.DefaultLanguage` (default `"fr"`).
+
 ## Mobile Push
 
 ### Providers
 
 | Provider | Package | Keyed Service key |
 |----------|---------|-------------------|
-| Firebase Cloud Messaging (FCM HTTP v1) | `Granit.Notifications.MobilePush.GoogleFcm` | `"GoogleFcm"` |
-| Azure Notification Hubs | `Granit.Notifications.MobilePush.AzureNotificationHubs` | `"AzureNotificationHubs"` |
-| AWS SNS Platform Application | `Granit.Notifications.MobilePush.AwsSns` | `"AwsSns"` |
+| Firebase Cloud Messaging (FCM HTTP v1) | `Granit.Notifications.GoogleFcm` | `"GoogleFcm"` |
+| Azure Notification Hubs | `Granit.Notifications.AzureNotificationHubs` | `"AzureNotificationHubs"` |
+| AWS SNS Platform Application | `Granit.Notifications.AwsSns` | `"AwsSns"` |
 
 ```csharp
 context.Services.AddGranitNotificationsMobilePush(opts => opts.Provider = "GoogleFcm");
-context.Services.AddGranitNotificationsMobilePushGoogleFcm();
+context.Services.AddGranitNotificationsGoogleFcm();
 ```
+
+FCM authentication uses the OAuth2 bearer flow of the HTTP v1 API: the
+configured service account key (`Notifications:GoogleFcm:ServiceAccountJson`)
+mints access tokens with the `firebase.messaging` scope. Tokens are cached with
+a 5-minute refresh margin and minted single-flight; a `401` invalidates the
+cache and retries once.
 
 :::caution
 FCM push data payloads must NOT contain PII or health data. The push serves
@@ -92,6 +107,23 @@ The SSE channel requires authentication (`.RequireAuthorization()` on the route
 group) and enforces per-user connection limits to prevent resource exhaustion.
 When the limit is reached, the endpoint returns `429 Too Many Requests`.
 Message buffers use bounded channels with `DropOldest` policy.
+
+### Multi-replica deployments
+
+SSE connections live on a single pod. Add the Redis backplane so a
+notification published on any replica reaches users connected to the others:
+
+```csharp
+context.Services.AddGranitNotificationsSseRedisBackplane();
+```
+
+`Granit.Notifications.Sse.StackExchangeRedis` reuses the shared
+`IConnectionMultiplexer` (from `Granit.Caching.StackExchangeRedis`) over a
+pub/sub channel. Malformed messages are logged, counted
+(`granit.notifications.sse.backplane.message_dropped`), and skipped — they
+never kill the subscriber loop. Running multi-replica **without** a backplane
+logs a one-shot warning outside `Development`, because delivery would silently
+be partial.
 
 ## Zulip
 

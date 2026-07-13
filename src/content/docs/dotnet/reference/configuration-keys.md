@@ -26,7 +26,7 @@ Examples:
 | --- | --- |
 | `Granit.BlobStorage` | `BlobStorage` |
 | `Granit.Wolverine.Postgresql` | `Wolverine:Postgresql` |
-| `Granit.Notifications.Email.Smtp` | `Notifications:Email:Smtp` |
+| `Granit.Notifications.Smtp` | `Notifications:Smtp` |
 | `Granit.Identity.Federated.Keycloak` | `Identity:Federated:Keycloak` |
 | `Granit.Authentication.JwtBearer.Keycloak` | `Authentication:Keycloak` |
 | `Granit.Http.OutputCaching.StackExchangeRedis` | `Http:OutputCaching:Redis` |
@@ -758,8 +758,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Email:Smtp` | |
-| **Package** | -- | `Granit.Notifications.Email.Smtp` | |
+| **Section** | -- | `Notifications:Smtp` | |
+| **Package** | -- | `Granit.Notifications.Smtp` | |
 | `Host` | `string` | `"localhost"` | SMTP server hostname. |
 | `Port` | `int` | `587` | SMTP server port. |
 | `UseSsl` | `bool` | `true` | Use SSL/TLS. |
@@ -784,8 +784,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Email:Scaleway` | |
-| **Package** | -- | `Granit.Notifications.Email.Scaleway` | |
+| **Section** | -- | `Notifications:Scaleway` | |
+| **Package** | -- | `Granit.Notifications.Scaleway` | |
 | `SecretKey` | `string` | `""` | Scaleway API secret key (from Vault). |
 | `ProjectId` | `string` | `""` | Scaleway project ID. |
 | `DefaultSenderEmail` | `string` | `""` | Default sender email (must be verified in Scaleway TEM). |
@@ -798,8 +798,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Email:SendGrid` | |
-| **Package** | -- | `Granit.Notifications.Email.SendGrid` | |
+| **Section** | -- | `Notifications:SendGrid` | |
+| **Package** | -- | `Granit.Notifications.SendGrid` | |
 | `ApiKey` | `string` | `""` | SendGrid API key (from Vault). |
 | `DefaultSenderEmail` | `string` | `""` | Default sender email (must be verified in SendGrid). |
 | `DefaultSenderName` | `string` | `""` | Default sender display name. |
@@ -835,6 +835,7 @@ Each entry in `Policies`:
 | **Section** | -- | `Notifications:WhatsApp` | |
 | **Package** | -- | `Granit.Notifications.WhatsApp` | |
 | `Provider` | `string` | `""` | Keyed service provider (`"Brevo"`, `"Twilio"`). |
+| `DefaultLanguage` | `string` | `"fr"` | Terminal fallback for the template language. Resolution cascade: `context.Culture` → `recipient.PreferredCulture` → `Granit.Localization.PreferredCulture` setting (User → Tenant → Global) → this value. |
 
 ### Web Push (VAPID) -- `PushChannelOptions`
 
@@ -858,10 +859,10 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:MobilePush:GoogleFcm` | |
-| **Package** | -- | `Granit.Notifications.MobilePush.GoogleFcm` | |
+| **Section** | -- | `Notifications:GoogleFcm` | |
+| **Package** | -- | `Granit.Notifications.GoogleFcm` | |
 | `ProjectId` | `string` | `""` | Firebase project ID. |
-| `ServiceAccountJson` | `string` | `""` | Service account JSON key (from Vault). |
+| `ServiceAccountJson` | `string` | `""` | Service account JSON key (from Vault). Consumed to mint OAuth2 bearer tokens for the FCM HTTP v1 API (cached, 5-minute refresh margin, single-flight). |
 | `BaseAddress` | `string` | `"https://fcm.googleapis.com/"` | FCM API base address. |
 | `TimeoutSeconds` | `int` | `30` | Request timeout. |
 
@@ -869,8 +870,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Email:AzureCommunicationServices` | |
-| **Package** | -- | `Granit.Notifications.Email.AzureCommunicationServices` | |
+| **Section** | -- | `Notifications:AzureCommunicationServices:Email` | |
+| **Package** | -- | `Granit.Notifications.AzureCommunicationServices` | |
 | `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
 | `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
 | `SenderAddress` | `string` | `""` | Sender email address (must be verified in ACS). |
@@ -880,8 +881,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:Sms:AzureCommunicationServices` | |
-| **Package** | -- | `Granit.Notifications.Sms.AzureCommunicationServices` | |
+| **Section** | -- | `Notifications:AzureCommunicationServices:Sms` | |
+| **Package** | -- | `Granit.Notifications.AzureCommunicationServices` | |
 | `ConnectionString` | `string?` | `null` | ACS connection string. Mutually exclusive with `Endpoint`. |
 | `Endpoint` | `string?` | `null` | ACS endpoint URI (uses `DefaultAzureCredential`). |
 | `FromPhoneNumber` | `string` | `""` | Sender phone number in E.164 format (must start with `+`). |
@@ -891,8 +892,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Notifications:MobilePush:AzureNotificationHubs` | |
-| **Package** | -- | `Granit.Notifications.MobilePush.AzureNotificationHubs` | |
+| **Section** | -- | `Notifications:AzureNotificationHubs` | |
+| **Package** | -- | `Granit.Notifications.AzureNotificationHubs` | |
 | `ConnectionString` | `string` | `""` | Notification Hub connection string. |
 | `HubName` | `string` | `""` | Notification Hub name. |
 | `TimeoutSeconds` | `int` | `30` | Send operation timeout. |
@@ -912,6 +913,14 @@ Each entry in `Policies`:
 | **Section** | -- | `Notifications:Sse` | |
 | **Package** | -- | `Granit.Notifications.Sse` | |
 | `HeartbeatIntervalSeconds` | `int` | `30` | Keep-alive heartbeat interval. |
+
+### SSE Redis backplane -- `SseRedisBackplaneOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Notifications:Sse:StackExchangeRedis` | |
+| **Package** | -- | `Granit.Notifications.Sse.StackExchangeRedis` | |
+| `ChannelName` | `string` | `"granit-notifications-sse"` | Redis pub/sub channel for cross-replica SSE delivery. |
 
 ### Zulip channel -- `ZulipChannelOptions`
 

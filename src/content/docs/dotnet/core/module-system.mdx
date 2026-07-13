@@ -173,7 +173,7 @@ public class GranitNotificationsEmailSmtpModule : GranitModule
 {
     public override bool IsEnabled(ServiceConfigurationContext context)
     {
-        return context.Configuration.GetValue<bool>("Granit:Notifications:Email:Smtp:Enabled");
+        return context.Configuration.GetValue<bool>("Granit:Notifications:Smtp:Enabled");
     }
 }
 ```

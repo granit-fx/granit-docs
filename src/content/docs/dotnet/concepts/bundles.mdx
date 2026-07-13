@@ -107,10 +107,10 @@ EntraId / Cognito, use `Granit.Authentication.JwtBearer.<provider>` directly.
 | `Granit.Notifications.EntityFrameworkCore` | Delivery log + user preferences persistence |
 | `Granit.Notifications.Endpoints` | Admin / user preference API |
 | `Granit.Notifications.Email` | Channel-neutral email contract |
-| `Granit.Notifications.Email.Smtp` | SMTP provider (MailKit) |
+| `Granit.Notifications.Smtp` | SMTP provider (MailKit) |
 | `Granit.Notifications.SignalR` | Real-time browser push via SignalR + Redis backplane |
 
-Add other providers à la carte: `Granit.Notifications.Email.{SendGrid,Brevo,Scaleway,Mailgun,Postmark,AwsSes,AzureCommunication}`, `Granit.Notifications.Sms.*`, `Granit.Notifications.WebPush`, `Granit.Notifications.MobilePush.*`, `Granit.Notifications.WhatsApp`, `Granit.Notifications.Zulip`.
+Add other providers à la carte: `Granit.Notifications.{SendGrid,Brevo,Scaleway,AwsSes,AzureCommunicationServices,AwsSns,Twilio,GoogleFcm,AzureNotificationHubs}`, `Granit.Notifications.WebPush`, `Granit.Notifications.WhatsApp`, `Granit.Notifications.Zulip`.
 
 ### `Granit.Bundle.SaaS` (granit-business)
 

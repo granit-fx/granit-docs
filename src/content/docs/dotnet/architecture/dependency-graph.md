@@ -437,15 +437,15 @@ flowchart LR
     NOTIF --> NOTIF_WOL["Notifications.Wolverine"]
 
     NOTIF --> NOTIF_EMAIL["Notifications.Email"]
-    NOTIF_EMAIL --> NOTIF_SMTP["Notifications.Email.Smtp"]
-    NOTIF_EMAIL --> NOTIF_ACS_EMAIL["Notifications.Email.AzureCommunicationServices"]
-    NOTIF_EMAIL --> NOTIF_AWSSES["Notifications.Email.AwsSes"]
-    NOTIF_EMAIL --> NOTIF_SENDGRID["Notifications.Email.SendGrid"]
-    NOTIF_EMAIL --> NOTIF_SCALEWAY["Notifications.Email.Scaleway"]
+    NOTIF_EMAIL --> NOTIF_SMTP["Notifications.Smtp"]
+    NOTIF_EMAIL --> NOTIF_ACS["Notifications.AzureCommunicationServices"]
+    NOTIF_EMAIL --> NOTIF_AWSSES["Notifications.AwsSes"]
+    NOTIF_EMAIL --> NOTIF_SENDGRID["Notifications.SendGrid"]
+    NOTIF_EMAIL --> NOTIF_SCALEWAY["Notifications.Scaleway"]
 
     NOTIF --> NOTIF_SMS["Notifications.Sms"]
-    NOTIF_SMS --> NOTIF_ACS_SMS["Notifications.Sms.AzureCommunicationServices"]
-    NOTIF_SMS --> NOTIF_AWSSNS["Notifications.Sms.AwsSns"]
+    NOTIF_SMS --> NOTIF_ACS
+    NOTIF_SMS --> NOTIF_AWSSNS["Notifications.AwsSns"]
     NOTIF_SMS --> NOTIF_TWILIO["Notifications.Twilio"]
 
     NOTIF --> NOTIF_WA["Notifications.WhatsApp"]
@@ -459,9 +459,11 @@ flowchart LR
     NOTIF_WA --> NOTIF_BREVO
 
     NOTIF --> NOTIF_MP["Notifications.MobilePush"]
-    NOTIF_MP --> NOTIF_FCM["Notifications.MobilePush.GoogleFcm"]
-    NOTIF_MP --> NOTIF_ANH["Notifications.MobilePush.AzureNotificationHubs"]
-    NOTIF_MP --> NOTIF_AWSSNS_PUSH["Notifications.MobilePush.AwsSns"]
+    NOTIF_MP --> NOTIF_FCM["Notifications.GoogleFcm"]
+    NOTIF_MP --> NOTIF_ANH["Notifications.AzureNotificationHubs"]
+    NOTIF_MP --> NOTIF_AWSSNS
+
+    NOTIF_SSE --> NOTIF_SSE_REDIS["Notifications.Sse.StackExchangeRedis"]
 
     style NOTIF_EMAIL fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     style NOTIF_SMS fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
@@ -770,7 +772,7 @@ Multi-channel notification engine with default channels.
 | `Granit.Notifications.EntityFrameworkCore` |
 | `Granit.Notifications.Endpoints` |
 | `Granit.Notifications.Email` |
-| `Granit.Notifications.Email.Smtp` |
+| `Granit.Notifications.Smtp` |
 | `Granit.Notifications.SignalR` |
 
 ### Granit.Bundle.SaaS

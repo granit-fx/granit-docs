@@ -90,9 +90,8 @@ Amazon Web Services packages use the official AWS SDK for .NET.
 | `Granit.Identity.Federated.Cognito` | Identity | `IIdentityProvider` via Cognito User Pool Admin API |
 | `Granit.Vault.Aws` | Vault | `IEncryptionService` via AWS KMS + dynamic credentials via Secrets Manager |
 | `Granit.BlobStorage.S3` | Blob Storage | `IBlobStorageProvider` via S3-compatible API (also works with MinIO, Scaleway, etc.) |
-| `Granit.Notifications.Email.AwsSes` | Notifications | `IEmailSender` via Amazon Simple Email Service |
-| `Granit.Notifications.Sms.AwsSns` | Notifications | `ISmsSender` via Amazon SNS |
-| `Granit.Notifications.MobilePush.AwsSns` | Notifications | `IMobilePushSender` via Amazon SNS platform applications |
+| `Granit.Notifications.AwsSes` | Notifications | `IEmailSender` via Amazon Simple Email Service |
+| `Granit.Notifications.AwsSns` | Notifications | `ISmsSender` + `IMobilePushSender` via Amazon SNS (capabilities activated per config section) |
 
 **See also:**
 [Identity](/dotnet/security/identity/) —
@@ -113,9 +112,8 @@ Microsoft Azure packages use `DefaultAzureCredential` for authentication
 | `Granit.Identity.Federated.EntraId` | Identity | `IIdentityProvider` via Microsoft Graph API |
 | `Granit.Vault.Azure` | Vault | `IEncryptionService` via Azure Key Vault |
 | `Granit.BlobStorage.AzureBlob` | Blob Storage | `IBlobStorageProvider` via Azure Blob Storage |
-| `Granit.Notifications.Email.AzureCommunicationServices` | Notifications | `IEmailSender` via Azure Communication Services |
-| `Granit.Notifications.Sms.AzureCommunicationServices` | Notifications | `ISmsSender` via Azure Communication Services |
-| `Granit.Notifications.MobilePush.AzureNotificationHubs` | Notifications | `IMobilePushSender` via Azure Notification Hubs |
+| `Granit.Notifications.AzureCommunicationServices` | Notifications | `IEmailSender` + `ISmsSender` via Azure Communication Services (capabilities activated per config section) |
+| `Granit.Notifications.AzureNotificationHubs` | Notifications | `IMobilePushSender` via Azure Notification Hubs |
 
 :::note
 AWS and Azure both cover all three notification channels (email, SMS,
@@ -141,7 +139,7 @@ JSON keys.
 | `Granit.Identity.Federated.GoogleCloud` | Identity | `IIdentityProvider` via Firebase Admin SDK |
 | `Granit.Vault.GoogleCloud` | Vault | `IEncryptionService` via Cloud KMS + dynamic credentials via Secret Manager |
 | `Granit.BlobStorage.GoogleCloud` | Blob Storage | `IBlobStorageProvider` via Google Cloud Storage |
-| `Granit.Notifications.MobilePush.GoogleFcm` | Notifications | `IMobilePushSender` via Firebase Cloud Messaging |
+| `Granit.Notifications.GoogleFcm` | Notifications | `IMobilePushSender` via Firebase Cloud Messaging |
 
 **See also:**
 [Identity](/dotnet/security/identity/) —
@@ -181,10 +179,10 @@ cloud platform:
 | Package | Channel(s) | Service |
 | ------- | ---------- | ------- |
 | `Granit.Notifications.Brevo` | Email + SMS + WhatsApp | Brevo (formerly Sendinblue) |
-| `Granit.Notifications.Email.Scaleway` | Email | Scaleway TEM (sovereign EU) |
-| `Granit.Notifications.Email.SendGrid` | Email | SendGrid (Twilio) |
+| `Granit.Notifications.Scaleway` | Email | Scaleway TEM (sovereign EU) |
+| `Granit.Notifications.SendGrid` | Email | SendGrid (Twilio) |
 | `Granit.Notifications.Twilio` | SMS + WhatsApp | Twilio Messaging |
-| `Granit.Notifications.Email.Smtp` | Email | Any SMTP server |
+| `Granit.Notifications.Smtp` | Email | Any SMTP server |
 | `Granit.Notifications.WebPush` | Web Push | VAPID (standard) |
 | `Granit.Notifications.SignalR` | Real-time | SignalR (WebSocket) |
 
@@ -233,8 +231,8 @@ cloud platform:
 
 :::tip
 Google Cloud covers mobile push via Firebase Cloud Messaging
-(`Granit.Notifications.MobilePush.GoogleFcm`). For email and SMS, use
-the cloud-agnostic providers: `Granit.Notifications.Email.SendGrid` for email
+(`Granit.Notifications.GoogleFcm`). For email and SMS, use
+the cloud-agnostic providers: `Granit.Notifications.SendGrid` for email
 and `Granit.Notifications.Twilio` for SMS — see [Cloud-agnostic providers](#cloud-agnostic-providers).
 :::
 
