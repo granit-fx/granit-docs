@@ -293,7 +293,7 @@ in the database. Always configure encryption for production environments.
 
 ### SSRF protection
 
-Target URLs are validated through [`Granit.Http.Security`](/dotnet/api/url-safety/)
+Target URLs are validated through [`Granit.Http.UrlSafety`](/dotnet/api/url-safety/)
 — the shared SSRF primitive extracted from `Granit.Webhooks` (which previously
 shipped a private `WebhookSsrfGuard`) and `Granit.Browsing`. Two layers, same
 primitive:

@@ -145,6 +145,29 @@ Redis keys use hash tags for Cluster slot co-location.
 }
 ```
 
+<Aside type="caution" title="IP partitions behind a proxy">
+`Ip` and `TenantAndIp` partition on `HttpContext.Connection.RemoteIpAddress`.
+Behind a reverse proxy or load balancer that is the **proxy's** address — every
+client shares one bucket. Configure ASP.NET Core `ForwardedHeaders` middleware
+(trusting only your proxy) so the real client IP is restored before the limiter
+runs.
+</Aside>
+
+## Counter store: distributed by default
+
+Counters live in the registered `IRateLimitCounterStore` — Redis in any real
+deployment. **Fail-loud guard:** outside `Development`, startup fails when the
+resolved counter store is in-memory, unless you opt in explicitly:
+
+```json
+{ "RateLimiting": { "AllowInMemoryCounterStore": true } }
+```
+
+An in-memory counter store is **per-replica**: with N pods, every limit is
+effectively N × `PermitLimit` cluster-wide, and a client hopping between pods
+gets a fresh window on each. Acceptable for a single-replica host; a silent lie
+everywhere else — hence the explicit opt-in.
+
 ## Failure behavior
 
 When Redis is unavailable, the `FallbackOnCounterStoreFailure` setting controls behavior:
@@ -226,6 +249,7 @@ is `RateLimit.{PolicyName}`, overridable via `RateLimitPolicyOptions.FeatureName
 | `FallbackOnCounterStoreFailure` | `Deny` | Behavior when Redis is down |
 | `BypassRoles` | `[]` | Roles that skip rate limiting |
 | `UseFeatureBasedQuotas` | `false` | Use `Granit.Features` for dynamic quotas |
+| `AllowInMemoryCounterStore` | `false` | Allow an in-memory counter store outside Development (per-replica limits — see above) |
 | `Policies.*` | -- | Named rate limiting policies (see below) |
 
 **Policy options:**

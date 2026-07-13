@@ -1,17 +1,27 @@
 ---
 title: "URL Safety Validation"
-description: "Granit.Http.Security: SSRF-safe URL validation, private-network and reserved-TLD detection. Blocks cloud metadata, RFC 1918, loopback, DNS rebinding."
+description: "Granit.Http.UrlSafety: SSRF-safe URL validation, private-network and reserved-TLD detection. Blocks cloud metadata, RFC 1918, loopback, DNS rebinding."
 sidebar:
   label: URL Safety
   order: 10
 ---
 
-`Granit.Http.Security` is a tiny, dependency-light package that consolidates the
+import { Aside } from "@astrojs/starlight/components";
+
+`Granit.Http.UrlSafety` is a tiny, dependency-light package that consolidates the
 URL-safety primitives that used to be duplicated across `Granit.Webhooks`
 (`WebhookSsrfGuard`) and `Granit.Browsing` (private SSRF guard). Any code in the
 framework that takes a `Uri` from untrusted input — webhook subscriber URLs,
 headless browser navigation, OEmbed/Open Graph unfurling, federated identity
 discovery documents — funnels through `IUrlSafetyValidator`.
+
+<Aside type="note" title="Renamed from Granit.Http.Security">
+The package was born as `Granit.Http.Security`
+([ADR-055](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/)) — a
+name that promised far more than URL validation. It is now `Granit.Http.UrlSafety`:
+namespaces follow (`Granit.Http.UrlSafety.*`), the module class is
+`GranitHttpUrlSafetyModule`, and the configuration section is `Http:UrlSafety`.
+</Aside>
 
 ## Threat model
 
@@ -48,29 +58,42 @@ public interface IUrlSafetyValidator
     ValueTask<UrlSafetyResult> ValidateAsync(Uri uri, CancellationToken ct = default);
 }
 
-public sealed record UrlSafetyResult(
-    bool IsValid,
-    UrlSafetyViolationKind? Violation,
-    string? Reason,
-    IReadOnlyList<IPAddress> ResolvedAddresses);
+public readonly record struct UrlSafetyResult
+{
+    public bool IsValid { get; }
+    public UrlSafetyViolation? Violation { get; }
+    public IReadOnlyList<IPAddress> ResolvedAddresses { get; }
+}
+
+public sealed record UrlSafetyViolation(
+    UrlSafetyViolationKind Kind,
+    string Reason,              // English fallback — logs/telemetry
+    string LocalizationKey,     // e.g. "UrlSafety:Loopback" (18 cultures)
+    IReadOnlyList<object?> Args);
 ```
 
 A `UrlSafetyResult` is the *only* return type — there is no overload that
 throws. Callers decide whether a violation becomes a `ValidationException`, a
-`Problem(400)`, an audit log entry, or a silent drop.
+`Problem(400)`, an audit log entry, or a silent drop. The `LocalizationKey`
+resolves through Granit's `IStringLocalizer` stack, so a violation surfaced to
+an end user is localized like any other framework message.
 
 ### Violation kinds
 
 | `UrlSafetyViolationKind` | Trigger |
 | --- | --- |
 | `SchemeNotAllowed` | URL scheme not in `AllowedSchemes` (default: `https`). |
-| `MalformedUri` | Parsed `Uri` is relative, has no host, or has an embedded credential (`https://user:pass@host`). |
-| `HostNotAllowed` | Host doesn't match any pattern in `AllowedHostPatterns` (when configured). |
-| `HostExplicitlyDenied` | Host matches a pattern in `DeniedHostPatterns`. |
-| `PrivateNetwork` | Resolved address is in RFC 1918 (10/8, 172.16/12, 192.168/16), ULA (fc00::/7), or link-local (169.254/16, fe80::/10). |
-| `LoopbackAddress` | Resolved address is in 127/8 or `::1`. |
-| `MulticastOrReserved` | Resolved address is multicast (224/4, ff00::/8) or in IETF-reserved blocks (0/8, 100.64/10, 240/4, etc.). |
-| `CloudMetadataEndpoint` | Host or resolved address matches a known cloud metadata IP (`169.254.169.254`, `metadata.google.internal`, fd00:ec2::254). |
+| `MalformedUrl` | Parsed `Uri` is relative, has no host, or has an embedded credential (`https://user:pass@host`). |
+| `HostBlocked` | Host is on the built-in deny list (e.g. `metadata.google.internal`). |
+| `HostPatternNotAllowed` | Host doesn't match any pattern in `AllowedHostPatterns` (when configured). |
+| `HostPatternDenied` | Host matches a pattern in `DeniedHostPatterns`. |
+| `PrivateNetwork` | Resolved address is in RFC 1918 (10/8, 172.16/12, 192.168/16) or carrier-grade NAT (100.64/10). |
+| `Loopback` | Resolved address is in 127/8 or `::1`. |
+| `LinkLocal` | Resolved address is link-local (169.254/16, fe80::/10). |
+| `IPv6UniqueLocal` | Resolved address is an IPv6 unique-local address (fc00::/7). |
+| `IPv6EmbeddedIPv4` | Resolved address is an IPv6 transition address whose embedded IPv4 is sensitive. |
+| `MetadataEndpoint` | Host or resolved address matches a known cloud metadata IP (`169.254.169.254`, `metadata.google.internal`, fd00:ec2::254). |
+| `ReservedAddress` | Resolved address is multicast, broadcast, or in IETF-reserved blocks (0/8, 240/4, etc.). |
 | `ReservedTld` | Host TLD is reserved (`.local`, `.onion`, `.test`, `.example`, `.invalid`, `.localhost`). |
 | `DnsResolutionFailed` | DNS lookup timed out or returned `NXDOMAIN`. Fail-closed: treated as a violation, never as "OK". |
 | `UrlTooLong` | URL length exceeds `MaxUrlLength` (default: 2048). |
@@ -80,18 +103,14 @@ throws. Callers decide whether a violation becomes a `ValidationException`, a
 ```jsonc
 // appsettings.json
 {
-  "Granit": {
-    "Http": {
-      "Security": {
-        "AllowedSchemes": [ "https" ],
-        "AllowPrivateNetworks": false,
-        "AllowLoopback": false,
-        "AllowedHostPatterns": [ ],
-        "DeniedHostPatterns": [ "*.internal.example.com" ],
-        "MaxUrlLength": 2048,
-        "DnsResolveTimeout": "00:00:02"
-      }
-    }
+  "Http:UrlSafety": {
+    "AllowedSchemes": [ "https" ],
+    "AllowPrivateNetworks": false,
+    "AllowLoopback": false,
+    "AllowedHostPatterns": [ ],
+    "DeniedHostPatterns": [ "*.internal.example.com" ],
+    "MaxUrlLength": 2048,
+    "DnsResolveTimeout": "00:00:01"
   }
 }
 ```
@@ -100,13 +119,15 @@ throws. Callers decide whether a violation becomes a `ValidationException`, a
 
 | Property | Default | Notes |
 | --- | --- | --- |
-| `AllowedSchemes` | `[ "https" ]` | `http` MUST be opt-in. `file`, `data`, `ftp`, `gopher`, `dict` are *always* denied — no opt-in flag. |
+| `AllowedSchemes` | `[ "https" ]` | `http` MUST be opt-in. `data`, `ftp`, `gopher`, `dict` are *always* denied. |
 | `AllowPrivateNetworks` | `false` | Set to `true` only for on-prem deployments where reaching `10.0.0.0/8` is intended. |
 | `AllowLoopback` | `false` | Set to `true` only for integration tests against `localhost:N`. |
+| `AllowIdn` | `true` | Accept internationalized domain names (punycode-normalized before validation). |
+| `AllowFileScheme` | `false` | Escape hatch for trusted local pipelines. Leave `false` in web hosts. |
 | `AllowedHostPatterns` | `[]` | When non-empty, host MUST match at least one pattern. Glob (`*.example.com`). |
 | `DeniedHostPatterns` | `[]` | Evaluated before allow-list; explicit deny always wins. |
 | `MaxUrlLength` | `2048` | RFC 7230 §3.1.1 recommends ≥8000; 2048 matches IE-era infrastructure floor. |
-| `DnsResolveTimeout` | `2 s` | Short timeout — DNS lookups should be cache-hot. Exceeding it is a violation. |
+| `DnsResolveTimeout` | `1 s` | Short timeout — DNS lookups should be cache-hot. Exceeding it is a violation. |
 
 ## Registration
 
@@ -118,10 +139,9 @@ services.AddGranitUrlSafety(opts =>
 });
 ```
 
-`AddGranitUrlSafety` registers `IUrlSafetyValidator` as a singleton along with
-`PrivateNetworkClassifier` and `ReservedTldClassifier`. The validator is
-DNS-cache-aware — repeated calls within `DnsResolveTimeout` for the same host
-reuse the previous resolution.
+`AddGranitUrlSafety` registers `IUrlSafetyValidator` as a singleton. The
+validator is DNS-cache-aware — repeated calls within `DnsResolveTimeout` for the
+same host reuse the previous resolution.
 
 ### Custom override
 
@@ -129,6 +149,19 @@ reuse the previous resolution.
 services.AddGranitUrlSafety();
 services.Replace(ServiceDescriptor.Singleton<IUrlSafetyValidator, MyCorporateUrlSafetyValidator>());
 ```
+
+## Metrics
+
+The module emits OpenTelemetry metrics via the `Granit.Http.UrlSafety` meter:
+
+| Metric | Type | Description |
+| --- | --- | --- |
+| `granit.http.urlsafety.url.validated` | Counter | URLs passed through `IUrlSafetyValidator` |
+| `granit.http.urlsafety.url.blocked` | Counter | URLs blocked, tagged with the violation kind |
+
+Deliberately **no `tenant_id` tag**: outbound URL checks are high-frequency and a
+raw tenant dimension is an unbounded-cardinality liability on counters. Tenant
+correlation belongs to traces and logs via the Serilog enrichers (ADR-001).
 
 ## Usage patterns
 
@@ -147,7 +180,7 @@ public sealed class CreateSubscriptionRequestValidator : AbstractValidator<Creat
                 var result = await urlSafety.ValidateAsync(uri, ct).ConfigureAwait(false);
                 return result.IsValid;
             })
-            .WithErrorCodeAndMessage("Granit:Http:Security:UnsafeCallbackUrl");
+            .WithErrorCodeAndMessage("Webhooks:Validation:UnsafeCallbackUrl");
     }
 }
 ```
@@ -158,8 +191,9 @@ public sealed class CreateSubscriptionRequestValidator : AbstractValidator<Creat
 var result = await _urlSafety.ValidateAsync(target, ct).ConfigureAwait(false);
 if (!result.IsValid)
 {
-    _logger.UnsafeOutboundUrlBlocked(target.Host, result.Violation, result.Reason);
-    throw new UrlSafetyViolationException(result);
+    var violation = result.Violation!;
+    _logger.UnsafeOutboundUrlBlocked(target.Host, violation.Kind, violation.Reason);
+    throw new HttpRequestException($"Outbound URL blocked: {violation.Reason}");
 }
 
 using var response = await _http.GetAsync(target, ct).ConfigureAwait(false);
@@ -170,28 +204,24 @@ using var response = await _http.GetAsync(target, ct).ConfigureAwait(false);
 ```csharp
 services.AddHttpClient("partner")
     .ConfigurePrimaryHttpMessageHandler(sp =>
-    {
-        var classifier = sp.GetRequiredService<PrivateNetworkClassifier>();
-        return new SocketsHttpHandler
+        new SocketsHttpHandler
         {
             ConnectCallback = async (ctx, ct) =>
             {
                 var addresses = await Dns.GetHostAddressesAsync(ctx.DnsEndPoint.Host, ct);
                 foreach (var address in addresses)
                 {
-                    if (classifier.IsBlocked(address))
+                    if (PrivateNetworkClassifier.IsBlocked(address))
                     {
-                        throw new UrlSafetyViolationException(
-                            UrlSafetyViolationKind.PrivateNetwork,
-                            $"{address} is in a denied range.");
+                        throw new HttpRequestException(
+                            $"{address} is in a denied range (DNS rebinding blocked).");
                     }
                 }
                 var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(addresses, ctx.DnsEndPoint.Port, ct);
                 return new NetworkStream(socket, ownsSocket: true);
             },
-        };
-    });
+        });
 ```
 
 > **Tip — why both layers?** The up-front `ValidateAsync` resolves DNS at
@@ -205,23 +235,10 @@ services.AddHttpClient("partner")
 ### `PrivateNetworkClassifier`
 
 ```csharp
-public sealed class PrivateNetworkClassifier
+public static class PrivateNetworkClassifier
 {
-    public bool IsBlocked(IPAddress address);
-    public PrivateNetworkKind Classify(IPAddress address);
-}
-
-public enum PrivateNetworkKind
-{
-    Public,
-    Loopback,
-    LinkLocal,        // 169.254/16, fe80::/10
-    PrivateUseRfc1918,// 10/8, 172.16/12, 192.168/16
-    UniqueLocalIpv6,  // fc00::/7
-    CarrierGradeNat,  // 100.64.0.0/10
-    Multicast,
-    Reserved,
-    CloudMetadata,    // 169.254.169.254 + IPv6 variant
+    public static bool IsBlocked(IPAddress ip);
+    public static bool Classify(IPAddress ip, out UrlSafetyViolationKind kind);
 }
 ```
 
@@ -233,9 +250,9 @@ shape.
 ### `ReservedTldClassifier`
 
 ```csharp
-public sealed class ReservedTldClassifier
+public static class ReservedTldClassifier
 {
-    public bool IsReserved(string host, out string? reason);
+    public static bool IsReserved(string host, out string tld);
 }
 ```
 
@@ -267,4 +284,5 @@ check.
 - [Browsing security](/dotnet/infrastructure/browsing/security/) — pillar consumer.
 - [Webhooks](/dotnet/api/webhooks/) — pre-existing consumer, refactored to
   drop the private SSRF guard.
-- [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/).
+- [ADR-055 — Extract URL safety and temp-file primitives](/dotnet/architecture/adr/055-extract-url-safety-and-temp-files/)
+  — the original extraction (under the pre-rename package name).

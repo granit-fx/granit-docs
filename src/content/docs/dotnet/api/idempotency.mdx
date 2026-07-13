@@ -6,10 +6,17 @@ sidebar:
   order: 16
 ---
 
-Granit.Http.Idempotency provides Stripe-style HTTP idempotency middleware backed by Redis.
-Ensures that retried POST/PUT/PATCH requests produce the same response without
-re-executing side effects. Uses SHA-256 composite keys and AES-256-GCM encrypted
-entries.
+import { Aside } from "@astrojs/starlight/components";
+
+Granit.Http.Idempotency provides Stripe-style HTTP idempotency middleware backed by a
+distributed store (Redis via `IConditionalCache`). Ensures that retried POST/PUT/PATCH
+requests produce the same response without re-executing side effects. Uses SHA-256
+composite keys and AES-256-GCM encrypted entries.
+
+The `[Idempotent]` attribute and the `IIdempotencyMetadata` contract ship in a
+dedicated contracts package, **`Granit.Http.Idempotency.Abstractions`**
+(namespace `Granit.Http.Idempotency`). `*.Endpoints` packages that mark routes
+as idempotent reference the contracts only — never the middleware package.
 
 ## Setup
 
@@ -38,6 +45,27 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseGranitIdempotency(); // After auth so ICurrentUserService is populated
 ```
+
+## Store: distributed by default
+
+The middleware persists its state machine through `IConditionalCache`
+(`Granit.Caching`). The backend is whatever cache provider the host registers —
+Redis via `Granit.Caching.StackExchangeRedis` in any real deployment.
+
+**Fail-loud guard:** outside `Development`, the middleware refuses to start with
+a non-distributed (in-memory) `IConditionalCache`. An in-memory idempotency
+store is per-replica: with more than one pod, a retry landing on another pod
+re-executes the handler — double payment, double email. If a single-replica
+deployment genuinely wants the in-memory store, opt in explicitly:
+
+```json
+{ "Http:Idempotency": { "AllowInMemoryStore": true } }
+```
+
+<Aside type="caution">
+`AllowInMemoryStore = true` trades the at-most-once guarantee for zero
+infrastructure. Never combine it with more than one replica.
+</Aside>
 
 ## Marking endpoints as idempotent
 
@@ -160,15 +188,16 @@ services.Configure<IdempotencyOptions>(opts =>
 | `MaxKeyLength` | `256` | Max length of the client-supplied header value (rejected with 400 above this) |
 | `ShouldCacheStatusCode` | 2xx + {400, 404, 409, 410, 422} | Predicate controlling which status codes get cached |
 | `ExcludedResponseHeaders` | See above | Headers filtered on capture + replay |
+| `AllowInMemoryStore` | `false` | Allow a non-distributed `IConditionalCache` outside Development (per-replica store — see above) |
 
 ## Public API summary
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
 | Module | `GranitHttpIdempotencyModule` | -- |
-| Store | `IIdempotencyStore`, `IIdempotencyMetadata`, `IdempotencyEntry`, `IdempotencyState` | `Granit.Http.Idempotency` |
-| Metadata | `IdempotentAttribute` | `Granit.Http.Idempotency` |
-| Options | `IdempotencyOptions` | `Granit.Http.Idempotency` |
+| Contracts | `IdempotentAttribute`, `IIdempotencyMetadata` (namespace `Granit.Http.Idempotency`) | `Granit.Http.Idempotency.Abstractions` |
+| Store | `IIdempotencyStore`, `IdempotencyEntry`, `IdempotencyState` | `Granit.Http.Idempotency` |
+| Options | `IdempotencyOptions` (section `Http:Idempotency`) | `Granit.Http.Idempotency` |
 | Extensions | `AddGranitIdempotency()`, `UseGranitIdempotency()` | `Granit.Http.Idempotency` |
 
 ## See also

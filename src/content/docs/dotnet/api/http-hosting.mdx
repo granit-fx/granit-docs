@@ -1,0 +1,182 @@
+---
+title: "HTTP Hosting — CORS & Response Compression"
+description: Granit.Http.Hosting bundles the always-on HTTP host wiring — appsettings-driven CORS with startup validation and auto-registered middleware, plus Brotli/gzip compression with safe defaults.
+sidebar:
+  label: HTTP Hosting
+  order: 12
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+`Granit.Http.Hosting` groups the HTTP host concerns that every web host needs and
+no other host does: a standardized CORS policy driven by `appsettings.json` and
+Brotli/gzip response compression with safe defaults. It absorbs the former
+`Granit.Http.Cors` and `Granit.Http.ResponseCompression` packages — two
+single-feature packages that were always referenced together (both ship in
+`Granit.Bundle.Essentials`).
+
+<Aside type="note" title="Migrating from Granit.Http.Cors / Granit.Http.ResponseCompression">
+Both packages are deleted; reference `Granit.Http.Hosting` instead
+(`[DependsOn(typeof(GranitHttpHostingModule))]`). The configuration sections are
+**unchanged** (`Http:Cors`, `Http:ResponseCompression`) — appsettings need no edits.
+`app.UseCors()` is no longer required: the CORS middleware is auto-applied via an
+`IStartupFilter` (opt out with `Http:Cors:AutoRegisterMiddleware = false`).
+</Aside>
+
+## Setup
+
+```csharp
+[DependsOn(typeof(GranitHttpHostingModule))]
+public class AppModule : GranitModule { }
+```
+
+```json
+{
+  "Http:Cors": {
+    "AllowedOrigins": ["https://app.example.com", "https://admin.example.com"],
+    "AllowCredentials": false
+  },
+  "Http:ResponseCompression": {
+    "EnableForHttps": true
+  }
+}
+```
+
+That is the whole wiring for CORS — no `app.UseCors()` call. Compression still
+needs its middleware placed explicitly (ordering matters, see below).
+
+## CORS
+
+Wildcard origins (`*`) are rejected at startup in non-development environments to
+enforce ISO 27001 network access controls.
+
+### Auto-registered middleware
+
+The module registers an `IStartupFilter` that prepends `UseCors()` to the
+pipeline, so a host that forgets the middleware call no longer ships a CORS
+policy that is configured but never enforced. When you need to control the
+middleware position yourself (rare — e.g. CORS after a custom rewriter), opt out
+and place it manually:
+
+```json
+{ "Http:Cors": { "AutoRegisterMiddleware": false } }
+```
+
+```csharp
+app.UseCors(); // manual placement — required once auto-registration is off
+```
+
+With auto-registration disabled and no manual call, a warning is logged at
+startup: no CORS headers will be emitted.
+
+### Validation rules
+
+| Rule | Enforced at | Environment |
+| ---- | ----------- | ----------- |
+| At least one origin required | Startup | All |
+| Wildcard `*` forbidden | Startup | Non-development |
+| `AllowCredentials` + wildcard rejected | Startup | All (CORS specification) |
+
+### Configuration reference — `Http:Cors`
+
+| Property | Default | Description |
+| -------- | ------- | ----------- |
+| `AllowedOrigins` | `[]` | Allowed CORS origins (required, minimum 1) |
+| `AllowCredentials` | `false` | Include `Access-Control-Allow-Credentials: true` |
+| `AutoRegisterMiddleware` | `true` | Prepend `UseCors()` via `IStartupFilter` |
+
+The default policy applies `AllowAnyHeader()` and `AllowAnyMethod()`, which is
+standard for REST APIs. Origins are restricted to the configured list.
+
+## Response compression
+
+A typical JSON API response of 50 KB becomes **5–8 KB** after Brotli compression.
+ASP.NET Core ships a response compression middleware, but enabling it safely
+requires several decisions: which providers, which MIME types, what about HTTPS
+and the BREACH attack, should SSE streams be compressed? `Granit.Http.Hosting`
+makes those decisions for you:
+
+- **Brotli first, gzip fallback** — modern clients get the best ratio (15–25 %
+  smaller than gzip alone), older clients still get compression
+- **HTTPS compression enabled safely** — BREACH is mitigated by Granit's
+  antiforgery tokens, CORS enforcement, and SameSite cookies. For Bearer-token
+  APIs the attack is not even applicable (no secret in the response body)
+- **SSE never compressed** — `text/event-stream` is hardcoded as excluded so
+  Server-Sent Events stream in real time without buffering surprises
+- **Sensible MIME list** — JSON, HTML, CSS, JS, XML, WASM, and SVG out of the box
+- **Fast by default** — `CompressionLevel.Fastest` balances CPU cost and ratio
+  for API workloads; override per provider if you need maximum compression
+
+### Middleware placement
+
+Add the middleware **before** anything that produces a response body — otherwise
+those responses won't be compressed:
+
+```csharp
+app.UseGranitResponseCompression(); // first
+app.UseOutputCache();
+app.UseAuthorization();
+app.MapControllers();
+```
+
+### Configuration reference — `Http:ResponseCompression`
+
+Override in `appsettings.json` only when you have a specific reason:
+
+| Property | Default | When to change |
+| -------- | ------- | -------------- |
+| `EnableForHttps` | `true` | Set to `false` only if you sit behind a reverse proxy that already compresses (Cloudflare, Nginx) and want to avoid double-compression |
+| `EnableBrotli` | `true` | Disable if all clients are internal tools that don't send `Accept-Encoding: br` |
+| `EnableGzip` | `true` | Rarely — gzip is the universal fallback |
+| `BrotliLevel` | `Fastest` | `Optimal` or `SmallestSize` for batch endpoints where latency matters less than bandwidth |
+| `GzipLevel` | `Fastest` | Same reasoning as Brotli |
+
+### Security: HTTPS and BREACH
+
+Compressing responses over HTTPS can theoretically enable the BREACH attack — an
+attacker who can inject content into the same response as a secret (like a CSRF
+token) could deduce the secret by observing compressed sizes.
+
+**In practice, Granit APIs are protected by multiple layers:**
+
+- **Antiforgery tokens** are randomized per request — the compression oracle
+  cannot converge on a stable value
+- **CORS** blocks cross-origin requests by default
+- **SameSite cookies** prevent cross-site request forgery
+
+For REST or GraphQL APIs using **Bearer tokens** (JWT), BREACH does not apply at
+all — the token travels in headers, never in the response body.
+
+<Aside type="tip">
+If your application sits behind a CDN or reverse proxy (Cloudflare, AWS
+CloudFront, Nginx) that already performs edge compression, you may want to
+disable Granit compression to avoid double-encoding. Set `EnableForHttps: false`
+or skip the middleware call.
+</Aside>
+
+### Real-time streams
+
+Server-Sent Events (`text/event-stream`) are **always excluded** from compression.
+This is not configurable — it's a safety invariant. Compressing an SSE stream
+would buffer events and break the real-time contract with clients.
+
+WebSocket frames bypass HTTP response compression entirely (the protocol switches
+after the initial handshake), so no special handling is needed.
+
+## Public API summary
+
+| Category | Key types | Package |
+| -------- | --------- | ------- |
+| Module | `GranitHttpHostingModule` | -- |
+| CORS options | `GranitCorsOptions` (`Http:Cors`) | `Granit.Http.Hosting` |
+| CORS extensions | `AddGranitCors()` (`IHostApplicationBuilder`) | `Granit.Http.Hosting` |
+| Compression options | `GranitResponseCompressionOptions` (`Http:ResponseCompression`) | `Granit.Http.Hosting` |
+| Compression extensions | `AddGranitResponseCompression()`, `UseGranitResponseCompression()` | `Granit.Http.Hosting` |
+
+## See also
+
+- [API & Http overview](/dotnet/api/) -- All HTTP infrastructure packages
+- [Security Headers](/dotnet/security/security-headers/) -- CSP, HSTS, and friends
+- [Exception Handling](/dotnet/api/exception-handling/) -- RFC 7807 Problem Details
+- [Output Caching](/dotnet/api/output-caching/) -- middleware ordering companion
+- [Bundles](/dotnet/concepts/bundles/) -- ships in `Granit.Bundle.Essentials`

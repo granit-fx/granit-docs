@@ -247,12 +247,22 @@ Meter: `Granit.RateLimiting`
 | `granit.rate_limiting.requests.allowed` | Counter | `tenant_id`, `policy` | Requests allowed through rate limiter |
 | `granit.rate_limiting.requests.rejected` | Counter | `tenant_id`, `policy` | Requests rejected by rate limiter |
 
-Meter: `Granit.Http.Bulkhead`
+Meter: `Granit.Bulkhead`
 
 | Metric | Type | Tags | Description |
 | ------ | ---- | ---- | ----------- |
-| `granit.http.bulkhead.leases.active` | UpDownCounter | `tenant_id` | Currently active bulkhead leases |
-| `granit.http.bulkhead.requests.rejected` | Counter | `tenant_id` | Requests rejected by bulkhead |
+| `granit.bulkhead.leases.active` | UpDownCounter | `tenant_id`, `policy` | Currently active bulkhead leases |
+| `granit.bulkhead.requests.rejected` | Counter | `tenant_id`, `policy` | Requests rejected by bulkhead |
+
+### URL Safety
+
+Meter: `Granit.Http.UrlSafety` — deliberately no `tenant_id` tag (unbounded
+cardinality on high-frequency outbound checks).
+
+| Metric | Type | Tags | Description |
+| ------ | ---- | ---- | ----------- |
+| `granit.http.urlsafety.url.validated` | Counter | `outcome` | URLs passed through `IUrlSafetyValidator` |
+| `granit.http.urlsafety.url.blocked` | Counter | `outcome`, `violation_kind` | URLs blocked, tagged with the violation kind |
 
 ### Vault
 

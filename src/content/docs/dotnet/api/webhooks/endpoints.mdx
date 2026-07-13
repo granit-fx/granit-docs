@@ -268,7 +268,7 @@ Every request DTO is auto-validated via `FluentValidation` through `MapGranitGro
 - **SSRF protection (registration)** — blocks private IP ranges (`10.0.0.0/8`,
   `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `100.64.0.0/10`), localhost,
   link-local IPv6, and reserved TLDs (`.local`, `.internal`, `.onion`). Powered by
-  [`Granit.Http.Security`](/dotnet/api/url-safety/).
+  [`Granit.Http.UrlSafety`](/dotnet/api/url-safety/).
 - **SSRF protection (delivery)** — `SocketsHttpHandler.ConnectCallback` validates the
   **resolved IP** at connection time, defeating DNS rebinding.
 - **Event type** — non-empty, max 200 chars, **must exist in the event-type registry**.
@@ -287,7 +287,7 @@ protection.
 
 - [Webhooks (core)](/dotnet/api/webhooks/) — publisher, delivery engine, retry policy, exponential backoff
 - [Signing keys (dual-key rotation)](/dotnet/api/webhooks/signing-keys/) — full state flow, verification fallback, consumer migration
-- [Granit.Http.Security](/dotnet/api/url-safety/) — the SSRF validator behind URL checks
+- [Granit.Http.UrlSafety](/dotnet/api/url-safety/) — the SSRF validator behind URL checks
 - [QueryEngine](/dotnet/building-blocks/query-engine/) — engine powering `/subscriptions/query` and `/deliveries/query`
 - [Authorization](/dotnet/security/authorization/) — permission grant administration
 - [Idempotency](/dotnet/api/idempotency/) — replay-safe key rotation

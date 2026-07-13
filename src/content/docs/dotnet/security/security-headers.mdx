@@ -274,16 +274,22 @@ a nonce- or hash-based policy.
 
 ### Audit endpoint
 
-`Granit.Http.SecurityHeaders.Endpoints` ships a single audit endpoint so
-security auditors can introspect the effective per-route CSP from outside the
-deployment. The package is **opt-in** — reference it explicitly and map the
-endpoint in `Program.cs`:
+`Granit.Diagnostics.Endpoints` ships a single audit endpoint so security
+auditors can introspect the effective per-route CSP from outside the deployment.
+(It previously lived in a dedicated `Granit.Http.SecurityHeaders.Endpoints`
+package — that package is deleted; the endpoint moved to the diagnostics API
+surface it always belonged to.) The endpoint is **opt-in** — map it explicitly
+in `Program.cs`:
 
 ```csharp
 app.MapGranitSecurityHeadersAudit();
 // GET /security-headers/csp
 // Gated by DiagnosticsPermissions.Monitoring.Read
 ```
+
+Options live in `SecurityHeadersAuditOptions` (section
+`Diagnostics:Endpoints:SecurityHeadersAudit`) — `RoutePrefix` defaults to
+`security-headers`, the OpenAPI tag to `Security Headers`.
 
 The endpoint reuses the existing Diagnostics permission — no new permission,
 no new localisation. Returns a JSON snapshot shaped like:
