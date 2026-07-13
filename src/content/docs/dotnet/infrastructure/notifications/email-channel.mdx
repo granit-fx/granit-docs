@@ -12,10 +12,11 @@ The email channel supports multiple providers via Keyed Services. Pick the provi
 
 | Provider | Package | Keyed Service key |
 |----------|---------|-------------------|
-| SMTP (MailKit) | `Granit.Notifications.Email.Smtp` | `"Smtp"` |
-| Azure Communication Services | `Granit.Notifications.Email.AzureCommunicationServices` | `"AzureCommunicationServices"` |
-| Scaleway TEM | `Granit.Notifications.Email.Scaleway` | `"Scaleway"` |
-| SendGrid | `Granit.Notifications.Email.SendGrid` | `"SendGrid"` |
+| SMTP (MailKit) | `Granit.Notifications.Smtp` | `"Smtp"` |
+| AWS SES | `Granit.Notifications.AwsSes` | `"AwsSes"` |
+| Azure Communication Services | `Granit.Notifications.AzureCommunicationServices` | `"AzureCommunicationServices"` |
+| Scaleway TEM | `Granit.Notifications.Scaleway` | `"Scaleway"` |
+| SendGrid | `Granit.Notifications.SendGrid` | `"SendGrid"` |
 | Brevo | `Granit.Notifications.Brevo` | `"Brevo"` |
 
 Register the channel abstraction and your chosen provider:

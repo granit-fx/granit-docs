@@ -126,14 +126,14 @@ For test-only dependencies, see [Testing stack (ADR-003)](/dotnet/architecture/a
 | [MailKit](https://github.com/jstedfast/MailKit) | MIT | SMTP email delivery | — |
 | [Azure.Communication.Email](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email) | MIT | Azure Communication Services email sending | — |
 | [Azure.Communication.Sms](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/sms/send) | MIT | Azure Communication Services SMS sending | — |
-| [AWSSDK.SimpleEmailV2](https://aws.amazon.com/sdk-for-net/) | Apache-2.0 | Amazon SES v2 email delivery — used by `Granit.Notifications.Email.AwsSes` | — |
-| [AWSSDK.SimpleNotificationService](https://aws.amazon.com/sdk-for-net/) | Apache-2.0 | Amazon SNS SMS delivery — used by `Granit.Notifications.Sms.AwsSns` | — |
+| [AWSSDK.SimpleEmailV2](https://aws.amazon.com/sdk-for-net/) | Apache-2.0 | Amazon SES v2 email delivery — used by `Granit.Notifications.AwsSes` | — |
+| [AWSSDK.SimpleNotificationService](https://aws.amazon.com/sdk-for-net/) | Apache-2.0 | Amazon SNS SMS delivery — used by `Granit.Notifications.AwsSns` | — |
 | [Microsoft.Azure.NotificationHubs](https://learn.microsoft.com/en-us/azure/notification-hubs/) | MIT | Azure Notification Hubs push notifications | — |
 | [Microsoft.AspNetCore.SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/) | MIT | Real-time WebSocket notifications | — |
 | [Lib.Net.Http.WebPush](https://github.com/tpeczek/Lib.Net.Http.WebPush) | MIT | Web Push notifications (VAPID) | — |
 
 Twilio, SendGrid, and Scaleway providers (`Granit.Notifications.Twilio`,
-`Granit.Notifications.Email.SendGrid`, `Granit.Notifications.Email.Scaleway`) use the
+`Granit.Notifications.SendGrid`, `Granit.Notifications.Scaleway`) use the
 vendors' REST APIs directly via `Microsoft.Extensions.Http.Resilience` — no vendor SDK
 is required.
 

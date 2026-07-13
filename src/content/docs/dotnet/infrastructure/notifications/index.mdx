@@ -18,29 +18,39 @@ for durable outbox-backed dispatch with exponential backoff retry.
 
 ## Package structure
 
+Channel packages (`Email`, `Sms`, `MobilePush`, `WhatsApp`, …) define the
+capability contracts; provider packages sit at the top level and implement one
+or more capabilities as Keyed Services. Multi-capability providers
+(`AwsSns`, `AzureCommunicationServices`, `Brevo`, `Twilio`) register each
+capability only when its configuration section exists — an SMS-only host never
+wires the push sender.
+
 <FileTree>
 - Granit.Notifications/ Core: fan-out engine, InApp channel, definitions, entity tracking
   - Granit.Notifications.EntityFrameworkCore EF Core persistence (all stores)
   - Granit.Notifications.Endpoints Minimal API REST endpoints
   - Granit.Notifications.Wolverine Durable outbox dispatch via IMessageBus
-  - Granit.Notifications.Email/ Email channel abstraction (Keyed Services)
-    - Granit.Notifications.Email.Smtp MailKit SMTP provider
-    - Granit.Notifications.Email.AzureCommunicationServices Azure Communication Services email
-    - Granit.Notifications.Email.Scaleway Scaleway TEM email provider
-    - Granit.Notifications.Email.SendGrid SendGrid email provider
+  - Granit.Notifications.Privacy GDPR export/deletion satellite (notifications data)
+  - Granit.Notifications.Email Email channel abstraction (Keyed Services)
   - Granit.Notifications.Sms SMS channel abstraction (Keyed Services)
-    - Granit.Notifications.Sms.AzureCommunicationServices Azure Communication Services SMS
-    - Granit.Notifications.Sms.AwsSns AWS SNS SMS provider
   - Granit.Notifications.WhatsApp WhatsApp Business API channel
-  - Granit.Notifications.Brevo Unified Brevo provider (Email + SMS + WhatsApp)
   - Granit.Notifications.MobilePush/ Mobile push abstraction + token store
-    - Granit.Notifications.MobilePush.GoogleFcm Firebase Cloud Messaging provider
-    - Granit.Notifications.MobilePush.AzureNotificationHubs Azure Notification Hubs push
-    - Granit.Notifications.MobilePush.AwsSns AWS SNS Platform Application push
+    - Granit.Notifications.MobilePush.Privacy GDPR export/deletion satellite (push tokens)
   - Granit.Notifications.SignalR Real-time SignalR channel + Redis backplane
-  - Granit.Notifications.WebPush W3C Web Push (VAPID, RFC 8030)
-  - Granit.Notifications.Sse Server-Sent Events channel (.NET 10)
-  - Granit.Notifications.Twilio Twilio SMS + WhatsApp provider
+  - Granit.Notifications.WebPush/ W3C Web Push (VAPID, RFC 8030)
+    - Granit.Notifications.WebPush.Privacy GDPR export/deletion satellite (subscriptions)
+  - Granit.Notifications.Sse/ Server-Sent Events channel (.NET 10)
+    - Granit.Notifications.Sse.StackExchangeRedis Redis pub/sub backplane for multi-replica SSE
+  - Granit.Notifications.Smtp MailKit SMTP provider (Email)
+  - Granit.Notifications.AwsSes AWS SES provider (Email)
+  - Granit.Notifications.Scaleway Scaleway TEM provider (Email)
+  - Granit.Notifications.SendGrid SendGrid provider (Email)
+  - Granit.Notifications.AzureCommunicationServices Azure Communication Services (Email + SMS)
+  - Granit.Notifications.AwsSns AWS SNS (SMS + Mobile Push)
+  - Granit.Notifications.Brevo Unified Brevo provider (Email + SMS + WhatsApp)
+  - Granit.Notifications.Twilio Twilio provider (SMS + WhatsApp)
+  - Granit.Notifications.GoogleFcm Firebase Cloud Messaging provider (Mobile Push)
+  - Granit.Notifications.AzureNotificationHubs Azure Notification Hubs provider (Mobile Push)
   - Granit.Notifications.Zulip Zulip chat integration
 </FileTree>
 
@@ -50,24 +60,27 @@ for durable outbox-backed dispatch with exponential backoff retry.
 | `Granit.Notifications.EntityFrameworkCore` | EF Core stores (all entities + mobile push tokens) | `Granit.Notifications`, `Granit.Notifications.MobilePush`, `Granit.Persistence` |
 | `Granit.Notifications.Endpoints` | Minimal API endpoints (inbox, preferences, subscriptions, followers) | `Granit.Notifications`, `Granit.Notifications.MobilePush`, `Granit.Validation`, `Granit.Http.ApiDocumentation` |
 | `Granit.Notifications.Wolverine` | Durable outbox-backed dispatch via `IMessageBus` | `Granit.Notifications`, `Granit.Wolverine` |
+| `Granit.Notifications.Privacy` | GDPR export/deletion satellite for notifications data | `Granit.Notifications`, `Granit.Privacy.BlobStorage` |
 | `Granit.Notifications.Email` | Email channel abstraction, Keyed Services resolution | `Granit.Notifications` |
-| `Granit.Notifications.Email.Smtp` | MailKit SMTP provider (Keyed Service `"Smtp"`) | `Granit.Notifications.Email` |
-| `Granit.Notifications.Email.AzureCommunicationServices` | Azure Communication Services email provider (Keyed Service `"AzureCommunicationServices"`) | `Granit.Notifications.Email` |
-| `Granit.Notifications.Email.Scaleway` | Scaleway TEM email provider (Keyed Service `"Scaleway"`) | `Granit.Notifications.Email` |
-| `Granit.Notifications.Email.SendGrid` | SendGrid email provider (Keyed Service `"SendGrid"`) | `Granit.Notifications.Email` |
-| `Granit.Notifications.Brevo` | Unified Brevo provider (Email + SMS + WhatsApp) | `Granit.Notifications.Email`, `Granit.Notifications.Sms`, `Granit.Notifications.WhatsApp` |
 | `Granit.Notifications.Sms` | SMS channel abstraction, Keyed Services resolution | `Granit.Notifications` |
-| `Granit.Notifications.Sms.AzureCommunicationServices` | Azure Communication Services SMS provider (Keyed Service `"AzureCommunicationServices"`) | `Granit.Notifications.Sms` |
-| `Granit.Notifications.Sms.AwsSns` | AWS SNS SMS provider (Keyed Service `"AwsSns"`) | `Granit.Notifications.Sms` |
 | `Granit.Notifications.WhatsApp` | WhatsApp Business API channel | `Granit.Notifications` |
 | `Granit.Notifications.MobilePush` | Mobile push abstraction + device token store | `Granit.Notifications` |
-| `Granit.Notifications.MobilePush.GoogleFcm` | Firebase Cloud Messaging (FCM HTTP v1 API) | `Granit.Notifications.MobilePush` |
-| `Granit.Notifications.MobilePush.AzureNotificationHubs` | Azure Notification Hubs push provider (Keyed Service `"AzureNotificationHubs"`) | `Granit.Notifications.MobilePush` |
-| `Granit.Notifications.MobilePush.AwsSns` | AWS SNS Platform Application push provider (Keyed Service `"AwsSns"`) | `Granit.Notifications.MobilePush` |
+| `Granit.Notifications.MobilePush.Privacy` | GDPR export/deletion satellite for push device tokens (masked) | `Granit.Notifications.MobilePush`, `Granit.Privacy.BlobStorage` |
+| `Granit.Notifications.Smtp` | MailKit SMTP provider (Keyed Service `"Smtp"`) | `Granit.Notifications.Email` |
+| `Granit.Notifications.AwsSes` | AWS SES email provider (Keyed Service `"AwsSes"`) | `Granit.Notifications.Email` |
+| `Granit.Notifications.Scaleway` | Scaleway TEM email provider (Keyed Service `"Scaleway"`) | `Granit.Notifications.Email` |
+| `Granit.Notifications.SendGrid` | SendGrid email provider (Keyed Service `"SendGrid"`) | `Granit.Notifications.Email` |
+| `Granit.Notifications.AzureCommunicationServices` | Azure Communication Services provider — Email + SMS, each capability activated by its config section (Keyed Service `"AzureCommunicationServices"`) | `Granit.Notifications.Email`, `Granit.Notifications.Sms` |
+| `Granit.Notifications.AwsSns` | AWS SNS provider — SMS + Platform Application push, each capability activated by its config section (Keyed Service `"AwsSns"`) | `Granit.Notifications.Sms`, `Granit.Notifications.MobilePush` |
+| `Granit.Notifications.Brevo` | Unified Brevo provider (Email + SMS + WhatsApp) | `Granit.Notifications.Email`, `Granit.Notifications.Sms`, `Granit.Notifications.WhatsApp` |
+| `Granit.Notifications.Twilio` | Twilio SMS + WhatsApp provider (Keyed Service `"Twilio"`) | `Granit.Notifications.Sms`, `Granit.Notifications.WhatsApp` |
+| `Granit.Notifications.GoogleFcm` | Firebase Cloud Messaging (FCM HTTP v1 API, OAuth2 bearer via service account) | `Granit.Notifications.MobilePush` |
+| `Granit.Notifications.AzureNotificationHubs` | Azure Notification Hubs push provider (Keyed Service `"AzureNotificationHubs"`) | `Granit.Notifications.MobilePush` |
 | `Granit.Notifications.SignalR` | Real-time SignalR channel + Redis backplane | `Granit.Notifications` |
 | `Granit.Notifications.WebPush` | W3C Web Push (VAPID, RFC 8030/8291/8292) | `Granit.Notifications` |
+| `Granit.Notifications.WebPush.Privacy` | GDPR export/deletion satellite for Web Push subscriptions (masked) | `Granit.Notifications.WebPush`, `Granit.Privacy.BlobStorage` |
 | `Granit.Notifications.Sse` | Server-Sent Events channel (.NET 10 native SSE) | `Granit.Notifications` |
-| `Granit.Notifications.Twilio` | Twilio SMS + WhatsApp provider (Keyed Service `"Twilio"`) | `Granit.Notifications.Sms`, `Granit.Notifications.WhatsApp` |
+| `Granit.Notifications.Sse.StackExchangeRedis` | Redis pub/sub backplane for multi-replica SSE delivery (shared `IConnectionMultiplexer`) | `Granit.Notifications.Sse` |
 | `Granit.Notifications.Zulip` | Zulip Bot API chat integration | `Granit.Notifications` |
 
 ## Dependency graph
@@ -91,28 +104,34 @@ graph TD
     NW --> W[Granit.Wolverine]
 
     EM[Granit.Notifications.Email] --> N
-    SMTP[Granit.Notifications.Email.Smtp] --> EM
-    ACSEM[Granit.Notifications.Email.AzureCommunicationServices] --> EM
-    SCW[Granit.Notifications.Email.Scaleway] --> EM
-    SG[Granit.Notifications.Email.SendGrid] --> EM
+    SMTP[Granit.Notifications.Smtp] --> EM
+    SES[Granit.Notifications.AwsSes] --> EM
+    SCW[Granit.Notifications.Scaleway] --> EM
+    SG[Granit.Notifications.SendGrid] --> EM
+    ACS[Granit.Notifications.AzureCommunicationServices] --> EM
+    ACS --> SMS[Granit.Notifications.Sms]
     BR[Granit.Notifications.Brevo] --> EM
-    BR --> SMS[Granit.Notifications.Sms]
+    BR --> SMS
     BR --> WA[Granit.Notifications.WhatsApp]
 
     SMS --> N
-    ACSSMS[Granit.Notifications.Sms.AzureCommunicationServices] --> SMS
-    SNSSMS[Granit.Notifications.Sms.AwsSns] --> SMS
+    SNS[Granit.Notifications.AwsSns] --> SMS
+    SNS --> MP
     TW[Granit.Notifications.Twilio] --> SMS
     TW --> WA
     WA --> N
     MP --> N
-    FCM[Granit.Notifications.MobilePush.GoogleFcm] --> MP
-    ANH[Granit.Notifications.MobilePush.AzureNotificationHubs] --> MP
-    SNSMP[Granit.Notifications.MobilePush.AwsSns] --> MP
+    FCM[Granit.Notifications.GoogleFcm] --> MP
+    ANH[Granit.Notifications.AzureNotificationHubs] --> MP
     SR[Granit.Notifications.SignalR] --> N
     WP[Granit.Notifications.WebPush] --> N
     SSE[Granit.Notifications.Sse] --> N
+    SSER[Granit.Notifications.Sse.StackExchangeRedis] --> SSE
     ZU[Granit.Notifications.Zulip] --> N
+
+    PRV[Granit.Notifications.Privacy] --> N
+    MPPRV[Granit.Notifications.MobilePush.Privacy] --> MP
+    WPPRV[Granit.Notifications.WebPush.Privacy] --> WP
 ```
 
 ## Setup

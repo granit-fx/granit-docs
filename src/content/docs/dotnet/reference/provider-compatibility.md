@@ -182,22 +182,21 @@ The following modules integrate with Wolverine for asynchronous processing:
 
 | Package | Channel | External dependency |
 |---------|---------|---------------------|
-| Granit.Notifications.Email.Smtp | Email (SMTP) | Any SMTP server (MailKit) |
-| Granit.Notifications.Email.AwsSes | Email (AWS) | Amazon Simple Email Service |
-| Granit.Notifications.Email.AzureCommunicationServices | Email (Azure) | Azure Communication Services |
+| Granit.Notifications.Smtp | Email (SMTP) | Any SMTP server (MailKit) |
+| Granit.Notifications.AwsSes | Email (AWS) | Amazon Simple Email Service |
+| Granit.Notifications.AzureCommunicationServices | Email, SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.Brevo | Email, SMS, WhatsApp | Brevo Transactional API |
-| Granit.Notifications.Email.SendGrid | Email (SendGrid) | SendGrid API (Twilio) |
-| Granit.Notifications.Email.Scaleway | Email (Scaleway) | Scaleway Transactional Email |
+| Granit.Notifications.SendGrid | Email (SendGrid) | SendGrid API (Twilio) |
+| Granit.Notifications.Scaleway | Email (Scaleway) | Scaleway Transactional Email |
 | Granit.Notifications.Sms | SMS (abstractions) | Requires a provider (Brevo) |
-| Granit.Notifications.Sms.AzureCommunicationServices | SMS (Azure) | Azure Communication Services |
 | Granit.Notifications.WhatsApp | WhatsApp (abstractions) | Requires a provider (Brevo) |
 | Granit.Notifications.WebPush | Web Push | VAPID keys (Lib.Net.Http.WebPush) |
-| Granit.Notifications.MobilePush.GoogleFcm | Mobile Push (FCM) | Firebase Cloud Messaging |
-| Granit.Notifications.MobilePush.AzureNotificationHubs | Mobile Push (Azure) | Azure Notification Hubs |
-| Granit.Notifications.Sms.AwsSns | SMS (AWS) | Amazon SNS |
-| Granit.Notifications.MobilePush.AwsSns | Mobile Push (AWS) | Amazon SNS platform applications |
+| Granit.Notifications.GoogleFcm | Mobile Push (FCM) | Firebase Cloud Messaging |
+| Granit.Notifications.AzureNotificationHubs | Mobile Push (Azure) | Azure Notification Hubs |
+| Granit.Notifications.AwsSns | SMS, Mobile Push (AWS) | Amazon SNS (+ platform applications) |
 | Granit.Notifications.Twilio | SMS, WhatsApp (Twilio) | Twilio Messaging API |
 | Granit.Notifications.SignalR | Real-time (WebSocket) | Redis backplane for multi-pod |
+| Granit.Notifications.Sse.StackExchangeRedis | Real-time (SSE backplane) | Redis pub/sub for multi-pod SSE |
 
 ### Provider coverage
 

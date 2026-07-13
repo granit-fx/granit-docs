@@ -57,7 +57,7 @@ classDiagram
 | Adapter | File | Target interface | Adapted class |
 |---------|------|------------------|---------------|
 | `S3BlobClient` | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | `IBlobStorageClient` | `AmazonS3Client` (AWS SDK) |
-| `MailKitSmtpTransport` | `src/Granit.Notifications.Email.Smtp/MailKitSmtpTransport.cs` | `ISmtpTransport` | `SmtpClient` (MailKit, sealed) |
+| `MailKitSmtpTransport` | `src/Granit.Notifications.Smtp/MailKitSmtpTransport.cs` | `ISmtpTransport` | `SmtpClient` (MailKit, sealed) |
 
 ## Rationale
 

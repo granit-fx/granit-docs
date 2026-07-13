@@ -64,7 +64,7 @@ standard resilience handler:
 | Microsoft Graph (Entra ID) | `src/Granit.Identity.EntraId/Extensions/IdentityEntraIdServiceCollectionExtensions.cs` |
 | Brevo (email/SMS/WhatsApp) | `src/Granit.Notifications.Brevo/Extensions/BrevoNotificationsServiceCollectionExtensions.cs` |
 | Zulip (chat) | `src/Granit.Notifications.Zulip/Extensions/ZulipNotificationsServiceCollectionExtensions.cs` |
-| Firebase FCM (push) | `src/Granit.Notifications.MobilePush.GoogleFcm/Extensions/GoogleFcmMobilePushServiceCollectionExtensions.cs` |
+| Firebase FCM (push) | `src/Granit.Notifications.GoogleFcm/Extensions/GoogleFcmMobilePushServiceCollectionExtensions.cs` |
 
 ```csharp
 services.AddHttpClient("Identity:Federated:Keycloak", client =>
