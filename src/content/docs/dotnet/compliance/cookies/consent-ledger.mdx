@@ -1,0 +1,141 @@
+---
+title: "Consent Ledger"
+description: Append-only server-side proof of cookie consent decisions — CookieConsentRecord entity, POST /cookies/consent endpoint, EF Core persistence, GDPR erasure.
+sidebar:
+  order: 5
+  label: Consent Ledger
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+## Why a server-side ledger?
+
+A CMP banner stores the user's decision in a cookie — which proves nothing once
+the cookie is gone. GDPR Art. 7(1) puts the burden of demonstrating consent on
+the controller: *"the controller shall be able to demonstrate that the data
+subject has consented."* The consent ledger is that demonstration — an
+**append-only** server-side record of every consent decision, written at the
+moment the banner is answered.
+
+## `CookieConsentRecord`
+
+An append-only entity (`CreationAuditedEntity`, `IMultiTenant`, all setters
+private, `Create(...)` factory — no update path exists):
+
+| Property | Notes |
+| -------- | ----- |
+| `GrantedCategories` / `DeniedCategories` | Category names (snake_case) |
+| `Mode` | `CookieConsentMode` (OptIn / OptOut / ...) |
+| `CmpSource` | Which CMP produced the decision (e.g. `"cookieconsent"`) |
+| `AnonymizedIp` | Pre-masked by the endpoint — IPv4 /24, IPv6 /48 |
+| `UserAgent` | Truncated to 256 chars |
+| `CorrelationId` | `Activity.Current?.Id` for trace correlation |
+| `DecidedAt` | Decision timestamp |
+| `TenantId` | Stamped by the multi-tenancy interceptor |
+
+The entity is marked `[AuditIgnore]` — the ledger *is* its own audit trail;
+double-writing it into the generic audit log would only duplicate data.
+
+## Recording decisions
+
+`Granit.Http.Cookies.Endpoints` maps **`POST /cookies/consent`**:
+
+- **204 No Content** on success, anonymous (`.AllowAnonymous()`) — consent is
+  decided *before* login.
+- **Idempotent** — carries `IdempotentAttribute { Required = false }`; an
+  `Idempotency-Key` header is honored when sent (banner retry on flaky mobile
+  networks), never required.
+- **Rate-limited** by the `cookie-consent` policy
+  (`RateLimiting:Policies:cookie-consent`, recommended FixedWindow partitioned
+  per IP) — an anonymous write endpoint is otherwise a flooding target.
+
+Request shape (`ConsentDecisionRequest`): `GrantedCategories`,
+`DeniedCategories` (at least one entry across the two, enforced by validator),
+optional `Mode` (defaults to `OptIn`), `CmpSource` (defaults to
+`"cookieconsent"`).
+
+## `IConsentLedger` and persistence
+
+The base package defines the single-method contract:
+
+```csharp
+public interface IConsentLedger
+{
+    Task RecordAsync(CookieConsentRecord record, CancellationToken cancellationToken = default);
+}
+```
+
+By default `NullConsentLedger` is registered — decisions are accepted but not
+persisted (logged at Debug). To persist, add the new
+**`Granit.Http.Cookies.EntityFrameworkCore`** package:
+
+```csharp
+builder.AddGranitCookiesEntityFrameworkCore(options =>
+    options.UseNpgsql(connectionString));
+```
+
+This registers the isolated `CookiesDbContext` (table
+`cookie_consent_records`), swaps in `EfCoreConsentLedger`, and wires the GDPR
+eraser and query source. After a successful save the ledger publishes
+**`ConsentRecordedEto`** (`IIntegrationEvent`: record id, tenant, granted/denied
+categories, mode, decided-at) over the distributed bus — never for a failed row.
+
+<Aside type="caution" title="The application owns the migrations">
+The framework ships **no** EF Core migrations for this DbContext. Add the
+entity to your host's migration pipeline (`ConfigureCookiesModule` supports
+`excludeFromMigrations` so exactly one context owns the DDL). Table naming is
+controlled by the static `GranitHttpCookiesDbProperties`
+(`DbTablePrefix` default `cookie_consent_`, `DbSchema`).
+</Aside>
+
+## GDPR erasure — `ICookieConsentEraser`
+
+Consent records written by an **authenticated** user carry a subject link
+(`CreatedBy`) and fall under GDPR Art. 17. The erasure primitive hard-deletes
+them:
+
+```csharp
+public interface ICookieConsentEraser
+{
+    // Returns the number of physically deleted rows
+    Task<int> EraseUserDataAsync(string userId, Guid? tenantId, CancellationToken cancellationToken = default);
+}
+```
+
+Anonymous records (empty `CreatedBy`, masked IP, truncated UA) identify nobody
+and are **retained** — they remain valid Art. 7 proof without being personal
+data. The framework ships no automatic wiring into the privacy saga: hosts call
+the eraser from their own `PersonalDataDeletedEto` / deletion-request handler.
+
+## Consent statistics
+
+The base module registers a Query/Export definition pair for admin review and
+compliance reporting:
+
+| Definition | Name |
+| ---------- | ---- |
+| `CookieConsentRecordQueryDefinition` | `Granit.Http.Cookies.CookieConsentRecordQuery` |
+| `CookieConsentRecordExportDefinition` | `Granit.Http.Cookies.CookieConsentRecordExport` |
+
+Columns: tenant, decided-at, mode, CMP source, correlation id; group-by mode;
+default sort `-decidedAt`. The EF Core package supplies the
+`IQueryableSource<CookieConsentRecord>` used by host-admin cross-tenant review.
+
+## Public API summary
+
+| Category | Key types | Package |
+| -------- | --------- | ------- |
+| Entity | `CookieConsentRecord`, `CookieConsentMode` | `Granit.Http.Cookies` |
+| Ledger | `IConsentLedger`, `NullConsentLedger`, `ConsentRecordedEto` | `Granit.Http.Cookies` |
+| Erasure | `ICookieConsentEraser` | `Granit.Http.Cookies` |
+| Endpoint | `POST /cookies/consent`, `ConsentDecisionRequest` | `Granit.Http.Cookies.Endpoints` |
+| Persistence | `CookiesDbContext`, `EfCoreConsentLedger`, `AddGranitCookiesEntityFrameworkCore()` | `Granit.Http.Cookies.EntityFrameworkCore` |
+| Module | `GranitHttpCookiesEntityFrameworkCoreModule` | `Granit.Http.Cookies.EntityFrameworkCore` |
+
+## See also
+
+- [Cookies overview](/dotnet/compliance/cookies/) — registry, categories, CMP integration
+- [Consent & GPC](/dotnet/compliance/cookies/consent/) — consent models, Global Privacy Control
+- [Idempotency](/dotnet/api/idempotency/) — the optional `Idempotency-Key` handling on the consent endpoint
+- [Rate Limiting](/dotnet/api/rate-limiting/) — the `cookie-consent` policy
+- [Privacy module](/dotnet/compliance/privacy/) — data export, erasure, legal agreements

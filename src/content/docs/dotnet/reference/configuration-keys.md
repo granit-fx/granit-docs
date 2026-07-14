@@ -267,6 +267,15 @@ Wolverine__RetryDelays__1=00:00:30
 | `ReminderDaysBefore` | `int` | `3` | Days before the deadline to send the deletion reminder. |
 | `DeletionAcknowledgementTimeoutMinutes` | `int` | `720` | Max wait for provider erasure acknowledgements after fan-out before a deletion is marked `PartiallyExecuted`. |
 
+### Privacy export download endpoints -- `PrivacyBlobStorageEndpointsOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Privacy:BlobStorage:Endpoints` | |
+| **Package** | -- | `Granit.Privacy.BlobStorage.Endpoints` | |
+| `RoutePrefix` | `string` | `"privacy"` | Route prefix for the export download endpoint. |
+| `TagName` | `string` | `"Privacy"` | OpenAPI tag. |
+
 ### IP geolocation -- `GranitIpGeolocationOptions`
 
 | Key | Type | Default | Description |
@@ -536,36 +545,41 @@ Wolverine__RetryDelays__1=00:00:30
 
 ## API and web
 
-### API versioning -- `GranitApiVersioningOptions`
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| **Section** | -- | `Http:ApiVersioning` | |
-| **Package** | -- | `Granit.Http.ApiVersioning` | |
-| `DefaultMajorVersion` | `int` | `1` | Default API version when client omits it. |
-| `ReportApiVersions` | `bool` | `true` | Include version headers in responses. |
-
 ### API documentation -- `ApiDocumentationOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
 | **Section** | -- | `Http:ApiDocumentation` | |
 | **Package** | -- | `Granit.Http.ApiDocumentation` | |
-| `MajorVersions` | `int[]` | `[1]` | API versions to generate OpenAPI docs for. |
-| `Title` | `string` | `"API"` | API title in Scalar UI. |
+| `MajorVersions` | `int[]` | `[1]` | Major versions to route (URL segment) **and** document — single source of truth. |
+| `DefaultMajorVersion` | `int` | `1` | Default API version when client omits it. Must be in `MajorVersions` (validated at startup). |
+| `ReportApiVersions` | `bool` | `true` | Include `api-supported-versions` / `api-deprecated-versions` headers. |
+| `Title` | `string` | `"API"` | OpenAPI document title. |
 | `Description` | `string?` | `null` | Markdown description in OpenAPI info. |
-| `PartyEmail` | `string?` | `null` | Party email in OpenAPI info. |
-| `LogoUrl` | `string?` | `null` | Logo image URL for Scalar UI. |
-| `FaviconUrl` | `string?` | `null` | Favicon URL for Scalar page. |
-| `EnableInProduction` | `bool` | `false` | Expose docs in Production. |
+| `ContactEmail` | `string?` | `null` | Contact email in OpenAPI info. |
+| `LogoUrl` | `string?` | `null` | Logo image URL (`x-logo` extension). |
 | `EnableTenantHeader` | `bool` | `false` | Document tenant header on endpoints. |
 | `TenantHeaderName` | `string` | `"X-Tenant-Id"` | Tenant header name. |
-| `AuthorizationPolicy` | `string?` | `null` | Policy for doc endpoints. `""` = anonymous. |
 | `OAuth2:AuthorizationUrl` | `string?` | `null` | OAuth2 authorization endpoint. |
 | `OAuth2:TokenUrl` | `string?` | `null` | OAuth2 token endpoint. |
-| `OAuth2:ClientId` | `string?` | `null` | Public OAuth2 client ID (PKCE). |
-| `OAuth2:EnablePkce` | `bool` | `true` | Enable PKCE with S256. |
 | `OAuth2:Scopes` | `string[]` | `["openid"]` | OAuth2 scopes to request. |
+
+The former `Granit.Http.ApiVersioning` package (section `Http:ApiVersioning`) was
+merged into `Granit.Http.ApiDocumentation` — `DefaultMajorVersion` and
+`ReportApiVersions` moved here.
+
+### API documentation -- Scalar UI -- `ScalarOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Http:ApiDocumentation:Scalar` | |
+| **Package** | -- | `Granit.Http.ApiDocumentation.Scalar` | |
+| `FaviconUrl` | `string?` | `null` | Favicon URL for the Scalar page. |
+| `EnableInProduction` | `bool` | `false` | Expose the UI in Production. |
+| `AuthorizationPolicy` | `string?` | `null` | Policy for doc/UI endpoints. `null` = inherit, `""` = anonymous. |
+| `OAuth2:ClientId` | `string?` | `null` | Public OAuth2 client ID (PKCE-capable, browser client). |
+| `OAuth2:EnablePkce` | `bool` | `true` | Enable PKCE with S256. |
+| `OAuth2:RedirectUri` | `string?` | `null` | Override the OAuth2 redirect URI. |
 
 ### Exception handling -- `ExceptionHandlingOptions`
 
@@ -633,8 +647,15 @@ Each entry in `ThirdPartyServices`:
 |---|---|---|---|
 | **Section** | -- | `Http:Cookies:Endpoints` | |
 | **Package** | -- | `Granit.Http.Cookies.Endpoints` | |
-| `RoutePrefix` | `string` | `"cookies"` | Route prefix. |
+| `RoutePrefix` | `string` | `"cookies"` | Route prefix (cookie config + `POST /cookies/consent`). |
 | `TagName` | `string` | `"Cookies"` | OpenAPI tag. |
+
+The consent endpoint (`POST /cookies/consent`) is anonymous, idempotent
+(optional `Idempotency-Key`), and gated by the `cookie-consent` rate-limit
+policy — configure it under `RateLimiting:Policies:cookie-consent`. Ledger
+persistence lives in `Granit.Http.Cookies.EntityFrameworkCore`; table naming is
+set by the static `GranitHttpCookiesDbProperties` (`DbTablePrefix` default
+`cookie_consent_`, `DbSchema`), not a bound options section.
 
 ### Idempotency -- `IdempotencyOptions`
 
@@ -648,7 +669,22 @@ Each entry in `ThirdPartyServices`:
 | `InProgressTtl` | `TimeSpan` | `00:00:30` | TTL for in-progress lock. |
 | `ExecutionTimeout` | `TimeSpan` | `00:00:25` | Max downstream handler execution time. |
 | `MaxBodySizeBytes` | `int` | `1048576` | Max request body size to hash (1 MiB). |
-| `AllowInMemoryStore` | `bool` | `false` | Allow a non-distributed `IConditionalCache` outside Development (fail-loud guard). |
+| `AllowInMemoryStore` | `bool` | `false` | Allow a non-distributed `IIdempotencyStore` outside Development (fail-loud guard). |
+
+### Idempotency -- Redis store -- `RedisIdempotencyOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Http:Idempotency:Redis` | |
+| **Package** | -- | `Granit.Http.Idempotency.StackExchangeRedis` | |
+| `IsEnabled` | `bool` | `true` | Toggle the Redis store module. |
+| `Configuration` | `string` | `"localhost:6379"` | StackExchange.Redis configuration string. |
+| `InstanceName` | `string` | `"dd:"` | Application-scoped Redis key prefix. |
+| `RequireTls` | `bool` | `true` | Force `Ssl = true` on the connection. |
+
+The Redis store encrypts every entry at rest with AES-256-GCM (unconditional).
+Outside `Development`, startup fails closed unless a base64 256-bit
+`Cache:Encryption:Key` is configured — the same key `Granit.Caching` uses.
 
 ### Rate limiting -- `GranitRateLimitingOptions`
 

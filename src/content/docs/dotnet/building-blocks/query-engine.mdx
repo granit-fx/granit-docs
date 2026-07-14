@@ -206,6 +206,70 @@ Filter values, cursor payloads, and natural language inputs are never written to
 log messages. Only field names, target types, and input lengths are logged. The
 contract is enforced by an architecture test on every CI run.
 
+## Structured predicates — `QueryPredicate`
+
+`QueryRequest` filters are a flat AND list — the right shape for a grid, the
+wrong shape for programmatic adapters (OData `$filter`, saved segments, rule
+engines) that need boolean composition. `QueryPredicate` (in
+`Granit.QueryEngine.Filtering`) is a closed predicate tree over the same
+`FilterCriteria` leaves:
+
+```csharp
+using static Granit.QueryEngine.Filtering.QueryPredicate;
+
+var predicate = And(
+    Criterion("status", FilterOperator.Eq, "Open"),
+    Or(
+        Criterion("total", FilterOperator.Gt, "1000"),
+        Not(Criterion("customerName", FilterOperator.Contains, "internal"))),
+    Criterion("closedAt", FilterOperator.IsNull));
+```
+
+- Factories: `Criterion(field, op, value)`, a valueless `Criterion(field, op)`
+  overload for `IsNull` / `IsNotNull`, `And(...)`, `Or(...)`, `Not(...)`.
+- The tree is a closed hierarchy (`FilterPredicate`, `AndPredicate`,
+  `OrPredicate`, `NotPredicate`) — deliberately not wire-bindable; adapters
+  build it in code.
+- Structural caps: depth ≤ `QueryPredicate.MaxDepth` (32), leaves ≤
+  `QueryPredicate.MaxLeafCount` (128).
+
+`FilterOperator` gained three members for predicate composition: **`Ne`**,
+**`IsNull`**, **`IsNotNull`** (joining `Eq`, `Contains`, `StartsWith`,
+`EndsWith`, `Gt`, `Gte`, `Lt`, `Lte`, `In`, `Between`).
+
+### Strict evaluation
+
+`IQueryEngine<TEntity>` gained a strict overload:
+
+```csharp
+IQueryable<TEntity> BuildFilteredQuery(
+    IQueryable<TEntity> source, QueryRequest request, QueryPredicate? predicate);
+```
+
+Unlike the lenient `QueryRequest` path (which silently drops invalid filters to
+avoid leaking schema details to end users), the strict path collects **every**
+violation and throws `QueryPredicateValidationException` with structured
+`QueryPredicateError` entries: `UnknownField`, `FieldNotFilterable`,
+`OperatorNotAllowed`, `ValueNotConvertible`, `NullCheckOnNonNullable`,
+`TreeTooDeep`, `TooManyCriteria`. Programmatic callers get a precise contract;
+adapters (like the [OData feed](/dotnet/api/odata-exposure/)) translate the
+errors into a single 400 listing every offending field.
+
+### NULL semantics — two-valued, not SQL three-valued
+
+Predicate evaluation follows C#/EF lifted semantics, pinned by tests:
+
+- **`Ne` matches NULL rows** — a NULL column is "not equal" to any non-null
+  constant.
+- **`Not(...)` matches NULL rows** — `Not(Contains(...))` returns rows whose
+  column is NULL.
+- Callers that need SQL three-valued behavior must say so explicitly with
+  `IsNull` / `IsNotNull`.
+
+This is consistent in-memory and under EF Core's relational null-semantics
+compensation — the same predicate returns the same rows against SQLite tests
+and PostgreSQL production.
+
 ## OpenAPI integration
 
 Each `MapGranitQuery<TEntity>` registration plays well with the

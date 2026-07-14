@@ -17,9 +17,10 @@ startup with a consent category. Writing an undeclared cookie throws
 
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
-| `Granit.Http.Cookies` | Cookie registry, consent enforcement, GPC signal | `Granit` |
+| `Granit.Http.Cookies` | Cookie registry, consent enforcement, GPC signal, consent ledger contracts | `Granit` |
 | `Granit.Http.Cookies.CookieConsent` | CookieConsent CMP consent resolver | `Granit.Http.Cookies` |
-| `Granit.Http.Cookies.Endpoints` | Cookie configuration API endpoint | `Granit.Http.Cookies` |
+| `Granit.Http.Cookies.Endpoints` | Cookie configuration + consent recording endpoints | `Granit.Http.Cookies` |
+| `Granit.Http.Cookies.EntityFrameworkCore` | Consent ledger persistence (isolated DbContext) | `Granit.Http.Cookies`, `Granit.Persistence.EntityFrameworkCore` |
 | `Granit.Privacy.Regulations.Cookies` | Regulation-aware consent model bridge | `Granit.Http.Cookies`, `Granit.Privacy.Regulations` |
 
 ## Setup
@@ -157,10 +158,13 @@ public class SessionService(IGranitCookieManager cookieManager)
 | Manager | `IGranitCookieManager`, `IConsentResolver` | `Granit.Http.Cookies` |
 | GPC | `IGlobalPrivacyControlSignal`, `ICookieConsentModelProvider`, `ConsentModelInfo` | `Granit.Http.Cookies` |
 | CMP | `UseCookieConsent()`, `CookieConsentOptions` | `Granit.Http.Cookies.CookieConsent` |
+| Ledger | `CookieConsentRecord`, `IConsentLedger`, `ICookieConsentEraser`, `ConsentRecordedEto` | `Granit.Http.Cookies` |
+| Ledger persistence | `AddGranitCookiesEntityFrameworkCore()`, `CookiesDbContext` | `Granit.Http.Cookies.EntityFrameworkCore` |
 
 ## See also
 
 - [Consent & GPC](/dotnet/compliance/cookies/consent/) -- Consent models, Global Privacy Control
+- [Consent Ledger](/dotnet/compliance/cookies/consent-ledger/) -- append-only server-side proof of consent, GDPR erasure
 - [Klaro CMP (removed)](/dotnet/compliance/cookies/klaro/) -- migration to CookieConsent
 - [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) -- Privacy.Regulations bridge
 - [Privacy module](/dotnet/compliance/privacy/) -- Data export, erasure, legal agreements

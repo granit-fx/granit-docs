@@ -381,11 +381,12 @@ flowchart TD
 
 | Package | Depends on |
 |---------|------------|
-| `Granit.Http.ApiVersioning` | `Core` |
-| `Granit.Http.ApiDocumentation` | `ApiVersioning`, `Security` |
+| `Granit.Http.ApiDocumentation` | `Security` |
+| `Granit.Http.ApiDocumentation.Scalar` | `ApiDocumentation` |
 | `Granit.Http.Cookies` | `Timing` |
 | `Granit.Http.Cookies.CookieConsent` | `Cookies` |
 | `Granit.Http.Cookies.Endpoints` | `Cookies`, `Core` |
+| `Granit.Http.Cookies.EntityFrameworkCore` | `Cookies`, `Persistence.EntityFrameworkCore` |
 | `Granit.Http.Idempotency.Abstractions` | `Core` |
 | `Granit.Http.Idempotency` | `Idempotency.Abstractions`, `Caching`, `Security` |
 | `Granit.Http.OutputCaching` | `Core` |
@@ -743,7 +744,6 @@ Complete REST API. Includes everything in `Bundle.Essentials` plus:
 
 | Included package |
 |------------------|
-| `Granit.Http.ApiVersioning` |
 | `Granit.Http.ApiDocumentation` |
 | `Granit.Http.Idempotency` |
 | `Granit.Localization` |

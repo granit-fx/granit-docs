@@ -1,12 +1,12 @@
 ---
-title: "API Documentation — Scalar & OpenAPI 3.1"
-description: OpenAPI document generation and Scalar interactive UI. Supports JWT Bearer and OAuth2 Authorization Code with PKCE. One document per API major version.
+title: "API Documentation — OpenAPI 3.1, Versioning & Scalar"
+description: Versioned OpenAPI 3.1 documents, URL-segment API versioning, RFC 8594 deprecation, and the optional Scalar interactive UI with OAuth2/PKCE.
 sidebar:
   label: API Documentation
   order: 14
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components";
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
 
 ## Why interactive API documentation?
 
@@ -15,12 +15,35 @@ source code, QA teams guess request shapes, and onboarding new team members take
 days instead of minutes. Static Swagger pages help, but they lack real authentication
 flows — testers still reach for Postman or curl.
 
-Granit.Http.ApiDocumentation generates versioned OpenAPI 3.1 documents and serves
-[Scalar](https://scalar.com), a modern interactive UI where developers can authenticate
-with OAuth2/PKCE and execute requests directly in the browser. One document is generated
-per API major version, so consumers always find the spec that matches their integration.
-The result: self-service API exploration from day one, fewer support requests, and
-documentation that stays in sync with the code automatically.
+**Granit.Http.ApiDocumentation** generates one OpenAPI 3.1 document per API major
+version and configures URL-segment API versioning from the same declaration —
+`ApiDocumentation:MajorVersions` is the single source of truth for both the
+`/api/v{n}/` route constraint and the `/openapi/v{n}.json` documents. The optional
+companion package **Granit.Http.ApiDocumentation.Scalar** serves
+[Scalar](https://scalar.com), a modern interactive UI where developers authenticate
+with OAuth2/PKCE and execute requests directly in the browser.
+
+<Aside type="note" title="Granit.Http.ApiVersioning was merged into this package">
+The former `Granit.Http.ApiVersioning` package no longer exists. Its
+`DefaultMajorVersion` / `ReportApiVersions` options moved onto
+`ApiDocumentationOptions`, and the `Http:ApiVersioning` configuration section is
+gone — everything lives under `Http:ApiDocumentation`. Versioning and
+documentation were always two views of the same contract; keeping them in one
+package removes an entire class of drift (a version routed but not documented,
+or documented but not routable).
+</Aside>
+
+## Package structure
+
+| Package | Role | Depends on |
+| ------- | ---- | ---------- |
+| `Granit.Http.ApiDocumentation` | OpenAPI generation, `Asp.Versioning` wiring, RFC 8594 deprecation, transformers | `Granit` |
+| `Granit.Http.ApiDocumentation.Scalar` | Scalar interactive UI, scoped CSP relaxation, OAuth2 popup | `Granit.Http.ApiDocumentation` |
+
+Headless hosts (pure APIs, microservices consumed by generated clients) reference
+only the generation package and call `MapGranitOpenApiDocuments()`. Hosts that want
+the interactive UI add the Scalar package and call `UseGranitApiDocumentation()`
+instead — it maps the documents *and* the UI.
 
 ## Setup
 
@@ -28,7 +51,7 @@ documentation that stays in sync with the code automatically.
 <TabItem label="JWT Bearer (default)">
 
 ```csharp
-[DependsOn(typeof(GranitHttpApiDocumentationModule))]
+[DependsOn(typeof(GranitHttpApiDocumentationScalarModule))]
 public class AppModule : GranitModule { }
 ```
 
@@ -37,6 +60,7 @@ public class AppModule : GranitModule { }
   "Http:ApiDocumentation": {
     "Title": "Clinic API",
     "MajorVersions": [1, 2],
+    "DefaultMajorVersion": 1,
     "Description": "Patient and appointment management API"
   }
 }
@@ -53,17 +77,22 @@ public class AppModule : GranitModule { }
     "OAuth2": {
       "AuthorizationUrl": "https://keycloak.example.com/realms/clinic/protocol/openid-connect/auth",
       "TokenUrl": "https://keycloak.example.com/realms/clinic/protocol/openid-connect/token",
-      "ClientId": "clinic-scalar",
-      "EnablePkce": true,
       "Scopes": ["openid", "profile"]
+    },
+    "Scalar": {
+      "OAuth2": {
+        "ClientId": "clinic-scalar",
+        "EnablePkce": true
+      }
     }
   }
 }
 ```
 
-When `OAuth2` is fully configured, the Bearer scheme is replaced with an OAuth2
-Authorization Code flow in the OpenAPI document, and Scalar enables interactive
-PKCE-based authentication.
+The document-level `OAuth2` section (endpoints + scopes) describes the flow in the
+OpenAPI document; the `Scalar:OAuth2` section holds the browser-client bits
+(`ClientId`, PKCE) the UI needs to actually run it. When both are configured,
+Scalar enables interactive Authorization Code + PKCE authentication.
 
 </TabItem>
 </Tabs>
@@ -71,20 +100,91 @@ PKCE-based authentication.
 In `Program.cs`:
 
 ```csharp
-app.UseGranitApiDocumentation(); // Maps /openapi/v1.json, /openapi/v2.json, /scalar
+// With the Scalar package — documents + UI
+app.UseGranitApiDocumentation(); // /openapi/v1.json, /openapi/v2.json, /scalar
+
+// Headless host — documents only (generation package)
+app.MapGranitOpenApiDocuments();
 ```
+
+## API versioning
+
+The module registers [Asp.Versioning](https://github.com/dotnet/aspnet-api-versioning)
+with a URL segment primary reader (`/api/v{version:apiVersion}/resource`) and a
+query string fallback (`?api-version=1.0`). Every version listed in
+`MajorVersions` gets a routable segment and its own OpenAPI document;
+`DefaultMajorVersion` (validated at startup to be a member of `MajorVersions`)
+applies when the client omits the version.
+
+```csharp
+var v1 = app.NewVersionedApi("Appointments").MapGroup("/api/v{version:apiVersion}");
+
+var v1Group = v1.MapGroup("/appointments").HasApiVersion(1);
+v1Group.MapGet("/", GetAppointments);
+
+var v2Group = v1.MapGroup("/appointments").HasApiVersion(2);
+v2Group.MapGet("/", GetAppointmentsV2);
+```
+
+With `ReportApiVersions` enabled (the default), responses carry
+`api-supported-versions` and `api-deprecated-versions` headers.
+
+<Aside type="note">
+Granit intentionally does not support the `X-Api-Version` header. Headers are
+often omitted from access logs, which makes ISO 27001 audit trail analysis
+unreliable. URL segments and query strings are always visible in logs.
+</Aside>
+
+## Deprecation (RFC 8594)
+
+Attaching `DeprecatedAttribute` metadata is all it takes — the response middleware
+is auto-registered by the module (an `IStartupFilter` prepends it), and the
+document transformer marks the operation `deprecated: true` so generated clients
+see the deprecation too:
+
+```csharp
+v1Group.MapGet("/legacy-patients", GetLegacyPatients)
+    .WithMetadata(new DeprecatedAttribute
+    {
+        SunsetDate = new DateOnly(2026, 6, 1),
+        Link = "https://docs.example.com/migration/v2",
+    });
+
+// Equivalent sugar — only attaches the same metadata
+v1Group.MapGet("/legacy-visits", GetLegacyVisits)
+    .Deprecated(sunsetDate: new DateOnly(2026, 6, 1),
+                link: "https://docs.example.com/migration/v2");
+```
+
+**Response headers:**
+
+```http
+Deprecation: true
+Sunset: Mon, 01 Jun 2026 00:00:00 GMT
+Link: <https://docs.example.com/migration/v2>; rel="sunset"
+```
+
+Each call to a deprecated endpoint is logged at Warning level.
+
+## Scalar UI
+
+`UseGranitApiDocumentation()` (in `Granit.Http.ApiDocumentation.Scalar`) maps the
+OpenAPI documents and the Scalar UI at `/scalar`. The UI is enabled in Development
+always; in Production only when `Scalar:EnableInProduction` is `true` — and the
+module warns when the UI is exposed in Production without an
+`AuthorizationPolicy`.
 
 ### CSP relaxation for Scalar
 
-`UseGranitApiDocumentation` automatically registers a `ScalarCspContributor`
-that relaxes the strict default CSP on the `/scalar` route only —
+`UseGranitApiDocumentation` registers a `ScalarCspContributor` that relaxes the
+strict default CSP on the `/scalar` route only —
 `script-src`/`style-src 'self' 'unsafe-inline'`, `font-src 'self' data:
 https://fonts.scalar.com`, and the few other sources Scalar needs to render.
 The relaxation is scoped to the Scalar endpoint via an internal metadata
-marker, so no other route inherits it. See
+marker, so no other route inherits it. When the OAuth2 popup is active, COOP is
+relaxed to `unsafe-none` on `/scalar` as well. See
 [Security Headers — CSP contributors](/dotnet/security/security-headers/#csp-contributors)
-for the underlying pattern and the configuration switch to disable the Scalar
-contributor when an internal policy is stricter than the framework default.
+for the underlying pattern.
 
 ## Schema examples
 
@@ -128,12 +228,25 @@ The module registers these OpenAPI transformers automatically:
 | `SecurityRequirementOperationTransformer` | Anonymous endpoints override global security |
 | `ProblemDetailsSchemaDocumentTransformer` | Adds RFC 7807 ProblemDetails schema |
 | `ProblemDetailsResponseOperationTransformer` | Documents 4xx/5xx Problem Details responses |
+| `DeprecationOperationTransformer` | Marks operations carrying `DeprecatedAttribute` as `deprecated: true` |
+| `ParameterDescriptionOperationTransformer` | Adds human-readable descriptions to well-known path/query parameters |
+| `SingleValueObjectSchemaTransformer` | Renders `SingleValueObject<T>` schemas as their underlying primitive |
+| `SortedTagsDocumentTransformer` | Emits an alphabetically sorted `document.Tags` array |
 | `TenantHeaderOperationTransformer` | Documents `X-Tenant-Id` header when enabled |
 | `InternalApiDocumentTransformer` | Removes `[InternalApi]` endpoints |
 | `WolverineOpenApiOperationTransformer` | Enhances Wolverine HTTP endpoint documentation |
 | `SchemaExampleSchemaTransformer` | Applies `ISchemaExampleProvider` examples |
 | `Int32SchemaTransformer` | Strips the spurious `["integer", "string"]` fallback ASP.NET Core emits on `int32` properties (only matters for `int64` / JS Number precision) |
 | `QueryEngineOperationTransformer` | Emits `$ref` for `PagedResult<T>` / `GroupedResult<T>` 200 responses |
+
+### Single Value Objects render as primitives
+
+Domain types deriving from `SingleValueObject<T>` serialize on the wire as their
+inner primitive (via `SingleValueObjectJsonConverterFactory`), but the default
+schema generator would describe them as an object with a `value` property — a
+phantom shape no payload ever has. `SingleValueObjectSchemaTransformer` rewrites
+these schemas to the underlying primitive type and format, so generated clients
+type an `Iban` property as `string`, not `{ value: string }`.
 
 ### QueryEngine schema references
 
@@ -169,37 +282,51 @@ help code generators (`openapi-typescript`, `NSwag`, Kiota) produce tighter clie
 
 ## Configuration reference
 
+Generation package — section `Http:ApiDocumentation`:
+
 | Property | Default | Description |
 | -------- | ------- | ----------- |
-| `Title` | `"API"` | OpenAPI document and Scalar UI title |
-| `MajorVersions` | `[1]` | Major version numbers to document |
+| `Title` | `"API"` | OpenAPI document title |
+| `MajorVersions` | `[1]` | Major versions to route **and** document |
+| `DefaultMajorVersion` | `1` | Version assumed when the client omits it (must be in `MajorVersions`) |
+| `ReportApiVersions` | `true` | Include `api-supported-versions` / `api-deprecated-versions` headers |
 | `Description` | `null` | OpenAPI description (Markdown supported) |
-| `PartyEmail` | `null` | Party email in OpenAPI info |
-| `LogoUrl` | `null` | Logo URL for Scalar sidebar |
-| `FaviconUrl` | `null` | Favicon for Scalar page |
-| `EnableInProduction` | `false` | Expose docs in Production |
+| `ContactEmail` | `null` | Contact email in OpenAPI info |
+| `LogoUrl` | `null` | Logo URL (`x-logo` extension) |
 | `EnableTenantHeader` | `false` | Document required tenant header |
 | `TenantHeaderName` | `"X-Tenant-Id"` | Tenant header name |
-| `AuthorizationPolicy` | `null` | Policy for doc endpoints (`null` = inherit, `""` = anonymous) |
 | `OAuth2.AuthorizationUrl` | `null` | OAuth2 authorization endpoint |
 | `OAuth2.TokenUrl` | `null` | OAuth2 token endpoint |
-| `OAuth2.ClientId` | `null` | Public OAuth2 client ID (PKCE-capable) |
-| `OAuth2.EnablePkce` | `true` | Enable PKCE with S256 |
 | `OAuth2.Scopes` | `["openid"]` | OAuth2 scopes to request |
+
+Scalar package — section `Http:ApiDocumentation:Scalar`:
+
+| Property | Default | Description |
+| -------- | ------- | ----------- |
+| `FaviconUrl` | `null` | Favicon for the Scalar page |
+| `EnableInProduction` | `false` | Expose the UI in Production |
+| `AuthorizationPolicy` | `null` | Policy for doc/UI endpoints (`null` = inherit, `""` = anonymous) |
+| `OAuth2.ClientId` | `null` | Public OAuth2 client ID (PKCE-capable, browser client) |
+| `OAuth2.EnablePkce` | `true` | Enable PKCE with S256 |
+| `OAuth2.RedirectUri` | `null` | Override the OAuth2 redirect URI |
 
 ## Public API summary
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
-| Module | `GranitHttpApiDocumentationModule` | -- |
+| Modules | `GranitHttpApiDocumentationModule`, `GranitHttpApiDocumentationScalarModule` | -- |
 | Options | `ApiDocumentationOptions`, `OAuth2Options` | `Granit.Http.ApiDocumentation` |
+| Options (UI) | `ScalarOptions`, `ScalarOAuth2Options` | `Granit.Http.ApiDocumentation.Scalar` |
+| Deprecation | `DeprecatedAttribute`, `.Deprecated()` | `Granit.Http.ApiDocumentation` |
 | Extension points | `ISchemaExampleProvider`, `InternalApiAttribute` | `Granit.Http.ApiDocumentation` |
-| Extensions | `AddGranitApiDocumentation()`, `UseGranitApiDocumentation()` | `Granit.Http.ApiDocumentation` |
+| Extensions | `AddGranitApiDocumentation()`, `MapGranitOpenApiDocuments()` | `Granit.Http.ApiDocumentation` |
+| Extensions (UI) | `UseGranitApiDocumentation()` | `Granit.Http.ApiDocumentation.Scalar` |
 
 ## See also
 
 - [ADR-009: Scalar](/dotnet/architecture/adr/009-scalar-api-documentation/) -- Why Scalar was chosen over Swagger UI
-- [API Versioning](/dotnet/api/api-versioning/) -- URL versioning, RFC 8594 deprecation
+- [ADR-004: Asp.Versioning](/dotnet/architecture/adr/004-asp-versioning/) -- Why Asp.Versioning was chosen
+- [Add API Versioning guide](/dotnet/guides/add-api-versioning/) -- step-by-step versioned route groups
 - [Authentication module](/dotnet/security/authentication/) -- JWT Bearer, Keycloak
 - [API & Http overview](/dotnet/api/) -- All HTTP infrastructure packages
 - [Blog: Scalar is the new Swagger UI](/blog/scalar-is-the-new-swagger-ui/) -- a hands-on comparison and why Granit ships Scalar by default

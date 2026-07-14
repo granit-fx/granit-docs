@@ -43,6 +43,9 @@ export default defineConfig({
     "/dotnet/api/cors-cross-origin/": "/dotnet/api/http-hosting/",
     "/dotnet/api/response-compression/": "/dotnet/api/http-hosting/",
 
+    // Granit.Http.ApiVersioning merged into Granit.Http.ApiDocumentation.
+    "/dotnet/api/api-versioning/": "/dotnet/api/api-documentation/",
+
     // Pages renamed within /dotnet/.
     "/dotnet/glossary/": "/dotnet/reference/glossary/",
     "/dotnet/infrastructure/settings/": "/dotnet/infrastructure/application-settings/",
@@ -414,7 +417,6 @@ export default defineConfig({
                     { label: "Overview", link: "/dotnet/api/" },
                     { label: "HTTP Hosting", link: "/dotnet/api/http-hosting/" },
                     { label: "Blob Storage Endpoints", link: "/dotnet/api/blob-storage-endpoints/" },
-                    { label: "API Versioning", link: "/dotnet/api/api-versioning/" },
                     { label: "API Documentation", link: "/dotnet/api/api-documentation/" },
                     { label: "Exception Handling", link: "/dotnet/api/exception-handling/" },
                     { label: "Idempotency", link: "/dotnet/api/idempotency/" },

@@ -505,6 +505,8 @@ Cached status codes: 2xx + 400, 404, 409, 410, 422. Authentication errors
 ## API versioning
 
 URL-segment versioning with query string fallback, powered by `Asp.Versioning`.
+Owned by `Granit.Http.ApiDocumentation` (the former `Granit.Http.ApiVersioning`
+package was merged in — see [API Documentation](/dotnet/api/api-documentation/)).
 
 ### Version readers (priority order)
 
@@ -513,9 +515,13 @@ URL-segment versioning with query string fallback, powered by `Asp.Versioning`.
 
 ### Configuration
 
+`ApiDocumentation:MajorVersions` is the single source for both route segments
+and per-version OpenAPI documents:
+
 ```json
 {
-  "Http:ApiVersioning": {
+  "Http:ApiDocumentation": {
+    "MajorVersions": [1],
     "DefaultMajorVersion": 1,
     "ReportApiVersions": true
   }
@@ -527,13 +533,15 @@ When `ReportApiVersions` is `true`, every response includes
 
 ### Deprecation headers
 
-When an endpoint or API version is deprecated:
+Attaching `DeprecatedAttribute` metadata to an endpoint emits RFC 8594 headers
+(the middleware is auto-registered) and marks the OpenAPI operation
+`deprecated: true`:
 
 | Header | Format | Description |
 |--------|--------|-------------|
 | `Deprecation` | `true` | Endpoint is deprecated |
 | `Sunset` | HTTP-date (RFC 7231) | Date after which endpoint will be removed |
-| `Link` | `<url>; rel="deprecation"` | Link to migration documentation |
+| `Link` | `<url>; rel="sunset"` | Link to migration documentation |
 
 ## CORS
 

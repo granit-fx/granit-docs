@@ -8,9 +8,10 @@ sidebar:
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Granit.Http.ApiVersioning integrates `Asp.Versioning.Mvc` to provide URL-segment
-versioning for all API endpoints. Combined with Granit.Http.ApiDocumentation, it
-generates per-version OpenAPI documents and exposes them through Scalar UI.
+Granit.Http.ApiDocumentation integrates `Asp.Versioning.Mvc` to provide URL-segment
+versioning for all API endpoints and generates one OpenAPI document per declared
+major version. Add the optional `Granit.Http.ApiDocumentation.Scalar` companion to
+expose them through the Scalar UI.
 
 ## Prerequisites
 
@@ -20,43 +21,45 @@ generates per-version OpenAPI documents and exposes them through Scalar UI.
 ## Step 1 -- Install the packages
 
 ```bash
-dotnet add package Granit.Http.ApiVersioning
 dotnet add package Granit.Http.ApiDocumentation
+dotnet add package Granit.Http.ApiDocumentation.Scalar   # optional: interactive UI
 ```
 
-Add the module dependencies:
+Add the module dependency:
 
 ```csharp
 using Granit.Modularity;
-using Granit.Http.ApiDocumentation;
+using Granit.Http.ApiDocumentation.Scalar;
 
-[DependsOn(typeof(GranitHttpApiDocumentationModule))]
+[DependsOn(typeof(GranitHttpApiDocumentationScalarModule))]
 public sealed class MyAppHostModule : GranitModule { }
 ```
 
-`GranitHttpApiDocumentationModule` depends on `GranitHttpApiVersioningModule` transitively,
-so you do not need to declare both.
+`GranitHttpApiDocumentationScalarModule` depends on
+`GranitHttpApiDocumentationModule`, so a host that wants the UI declares only the
+Scalar module. Headless hosts depend on `GranitHttpApiDocumentationModule` directly.
 
 ## Step 2 -- Configure versioning
 
-Add the configuration to `appsettings.json`:
+Versioning and documentation share a single configuration section —
+`ApiDocumentation:MajorVersions` drives both the route constraint and the
+per-version documents:
 
 ```json
 {
-  "Http:ApiVersioning": {
-    "DefaultMajorVersion": 1,
-    "ReportApiVersions": true
-  },
   "Http:ApiDocumentation": {
     "Title": "My API",
-    "MajorVersions": [1]
+    "MajorVersions": [1],
+    "DefaultMajorVersion": 1,
+    "ReportApiVersions": true
   }
 }
 ```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `DefaultMajorVersion` | `int` | `1` | Version assumed when client omits it |
+| `MajorVersions` | `int[]` | `[1]` | Major versions to route and document |
+| `DefaultMajorVersion` | `int` | `1` | Version assumed when client omits it (must be in `MajorVersions`) |
 | `ReportApiVersions` | `bool` | `true` | Adds `api-supported-versions` and `api-deprecated-versions` response headers |
 
 ## Step 3 -- Set up versioned route groups
@@ -87,7 +90,8 @@ var api = app.MapGroup("api/v{version:apiVersion}")
 api.MapInventoryItemEndpoints();
 api.MapPatientEndpoints();
 
-// Enable Scalar UI at /scalar/v1
+// Scalar package: maps /openapi/v1.json + the Scalar UI.
+// Headless hosts call app.MapGranitOpenApiDocuments() instead.
 app.UseGranitApiDocumentation();
 
 app.Run();
@@ -166,21 +170,31 @@ v1 request, signaling that migration to v2 is expected.
 
 ### Deprecate individual endpoints
 
-For finer control, deprecate specific endpoints with RFC 8594 headers:
+For finer control, deprecate specific endpoints with RFC 8594 headers. Attaching
+the metadata is all it takes — the response middleware is auto-registered by the
+module, and the OpenAPI operation is marked `deprecated: true`:
 
 ```csharp
 api.MapGet("/patients/legacy", GetLegacyPatients)
     .Deprecated(
-        sunsetDate: "2026-11-01",
+        sunsetDate: new DateOnly(2026, 11, 1),
         link: "https://docs.example.com/migration/v1-to-v2");
+
+// Equivalent — .Deprecated() only attaches this metadata
+api.MapGet("/patients/legacy-export", ExportLegacyPatients)
+    .WithMetadata(new DeprecatedAttribute
+    {
+        SunsetDate = new DateOnly(2026, 11, 1),
+        Link = "https://docs.example.com/migration/v1-to-v2",
+    });
 ```
 
-Each response from this endpoint includes:
+Each response from these endpoints includes:
 
 ```http
 Deprecation: true
 Sunset: Sat, 01 Nov 2026 00:00:00 GMT
-Link: <https://docs.example.com/migration/v1-to-v2>; rel="deprecation"
+Link: <https://docs.example.com/migration/v1-to-v2>; rel="sunset"
 ```
 
 A warning is also logged for every call to a deprecated endpoint using

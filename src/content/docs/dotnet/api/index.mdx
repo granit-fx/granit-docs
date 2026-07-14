@@ -19,15 +19,15 @@ Start with the problem you need to solve:
 | One slow tenant blocks requests for others | [Bulkhead](/dotnet/api/bulkhead/) | Multi-tenant SaaS where tenants share compute resources |
 | API responses are large (JSON lists, reports) | [HTTP Hosting](/dotnet/api/http-hosting/) | Any API with responses > 1 KB, especially over mobile networks |
 | You need to push events to external systems | [Webhooks](/dotnet/api/webhooks/) | Integration partners expect real-time notifications |
-| You are introducing breaking API changes | [API Versioning](/dotnet/api/api-versioning/) | Any API with external consumers that cannot upgrade simultaneously |
+| You are introducing breaking API changes | [API Documentation](/dotnet/api/api-documentation/#api-versioning) | Any API with external consumers that cannot upgrade simultaneously |
 | Frontend devs need to explore your API | [API Documentation](/dotnet/api/api-documentation/) | Always — self-service API exploration reduces support requests |
 | Your API returns inconsistent error shapes | [Exception Handling](/dotnet/api/exception-handling/) | Always — standardizes all errors to RFC 7807 Problem Details |
 | Browser clients call your API cross-origin | [HTTP Hosting](/dotnet/api/http-hosting/) | Any API consumed by SPAs or third-party frontends |
 
-:::tip[Most applications need these four from day one]
-**Exception Handling** + **HTTP Hosting** (CORS + compression) + **API Documentation** +
-**API Versioning** — these are foundational. Add Idempotency, Rate Limiting, and
-Bulkhead as your traffic and integration patterns demand.
+:::tip[Most applications need these three from day one]
+**Exception Handling** + **HTTP Hosting** (CORS + compression) + **API Documentation**
+(OpenAPI + versioning + Scalar UI) — these are foundational. Add Idempotency, Rate
+Limiting, and Bulkhead as your traffic and integration patterns demand.
 :::
 
 ## All packages
@@ -35,10 +35,9 @@ Bulkhead as your traffic and integration patterns demand.
 | Package | Purpose |
 | ------- | ------- |
 | [HTTP Hosting](/dotnet/api/http-hosting/) | Auto-registered CORS with ISO 27001 wildcard rejection, Brotli + gzip compression |
-| [API Versioning](/dotnet/api/api-versioning/) | URL segment versioning, RFC 8594 deprecation headers |
-| [API Documentation](/dotnet/api/api-documentation/) | Scalar OpenAPI UI, OAuth2/PKCE, multi-version docs |
+| [API Documentation](/dotnet/api/api-documentation/) | OpenAPI 3.1, URL-segment versioning, RFC 8594 deprecation, Scalar UI (`.Scalar` companion), OAuth2/PKCE |
 | [Exception Handling](/dotnet/api/exception-handling/) | RFC 7807 Problem Details, chain of responsibility mapper |
-| [Idempotency](/dotnet/api/idempotency/) | Stripe-style middleware, Redis state machine, AES-256 entries |
+| [Idempotency](/dotnet/api/idempotency/) | Stripe-style middleware, `IIdempotencyStore` contract, Redis provider with AES-256-GCM entries |
 | [Rate Limiting](/dotnet/api/rate-limiting/) | SlidingWindow, FixedWindow, TokenBucket, Concurrency algorithms |
 | [Webhooks](/dotnet/api/webhooks/) | HMAC-signed outbound webhooks, retry, subscription management |
 | [Bulkhead](/dotnet/api/bulkhead/) | Per-tenant concurrency isolation, feature-based quotas, Wolverine middleware |
@@ -49,14 +48,13 @@ Bulkhead as your traffic and integration patterns demand.
 ```mermaid
 graph TD
     HOST[Granit.Http.Hosting] --> CO[Granit]
-    AV[Granit.Http.ApiVersioning] --> CO
-    AD[Granit.Http.ApiDocumentation] --> AV
-    AD --> SEC[Granit.Users]
+    AD[Granit.Http.ApiDocumentation] --> SEC[Granit.Users]
+    ADS[Granit.Http.ApiDocumentation.Scalar] --> AD
     EH[Granit.Http.ExceptionHandling] --> CO
     IDA[Granit.Http.Idempotency.Abstractions] --> CO
     ID[Granit.Http.Idempotency] --> IDA
-    ID --> CA[Granit.Caching]
     ID --> SEC
+    IDR[Granit.Http.Idempotency.StackExchangeRedis] --> ID
     RL[Granit.RateLimiting] --> CO
     RL --> FT[Granit.Features]
     HRL[Granit.Http.RateLimiting] --> RL
