@@ -1,62 +1,55 @@
 ---
-title: "Klaro CMP"
-description: Klaro consent management platform integration — EU-sovereign, open-source CMP for GDPR cookie consent.
+title: "Klaro CMP (removed)"
+description: Granit.Http.Cookies.Klaro has been removed — migrate to the CookieConsent CMP integration via UseCookieConsent() on GranitCookiesBuilder.
 sidebar:
   order: 3
-  label: Klaro CMP
+  label: Klaro CMP (removed)
 ---
 
-## What is Klaro?
+`Granit.Http.Cookies.Klaro` was deprecated and has been **removed**. The
+supported CMP integration is
+[`Granit.Http.Cookies.CookieConsent`](https://github.com/orestbida/cookieconsent)
+(the `@cookieconsent/core` adapter), and `UseCookieConsent()` on
+`GranitCookiesBuilder` is the single public CMP entry point. The
+`Granit.Http.Cookies` core abstraction (`IConsentResolver`, cookie categories,
+registry) is unchanged — only the adapter differs.
 
-[Klaro](https://klaro.org/) is a self-hosted, EU-sovereign consent management platform.
-`Granit.Http.Cookies.Klaro` provides `KlaroConsentResolver` which reads the Klaro consent
-cookie and maps service-level consent to Granit cookie categories.
-
-## Setup
+## Migration
 
 ```csharp
 context.Services.AddGranitCookies(cookies =>
 {
     // ... register cookies ...
-    cookies.UseKlaro();
+    cookies.UseCookieConsent();   // was: cookies.UseKlaro();
 });
 ```
 
-## Configuration
+Configuration moves from `Http:Cookies:Klaro` to `Http:Cookies:CookieConsent`
+(`CookieConsentOptions`):
 
 ```json
 {
-  "Http:Cookies:Klaro": {
-    "CookieName": "klaro"
-  },
-  "Http:Cookies": {
-    "ThirdPartyServices": [
-      {
-        "Name": "matomo",
-        "Category": "Analytics",
-        "CookiePatterns": ["^_pk_"]
-      },
-      {
-        "Name": "hubspot",
-        "Category": "Marketing",
-        "CookiePatterns": ["^__hs"]
-      }
-    ]
+  "Http:Cookies:CookieConsent": {
+    "CookieName": "cc_cookie",
+    "FunctionalCategoryName": "functional",
+    "AnalyticsCategoryName": "analytics",
+    "MarketingCategoryName": "marketing",
+    "SaleOrSharingCategoryName": "sale_or_sharing"
   }
 }
 ```
 
-## Resolution logic
+`CookieConsentConsentResolver` reads the `cc_cookie` consent cookie and maps its
+`categories` array to Granit `CookieCategory` values — the CMP category names
+are configurable per deployment. `ThirdPartyServices` mappings in `Http:Cookies`
+keep working as before.
 
-1. Read the Klaro cookie from the request (name from `KlaroOptions.CookieName`)
-2. Parse as JSON: `{"serviceName": true/false, ...}`
-3. Find all service names mapped to the requested `CookieCategory` via `IThirdPartyServiceRegistry`
-4. Return `true` only if **all** mapped services have consent granted
-5. If no services are mapped for the category → return `false` (fail-safe)
+The category names must match those configured in the front-end
+`@granit/cookies-cookieconsent` adapter — the defaults align with the
+`@cookieconsent/core` built-in category identifiers.
 
 ## See also
 
 - [Cookies overview](/dotnet/compliance/cookies/) — module setup and cookie categories
 - [Consent & GPC](/dotnet/compliance/cookies/consent/) — `IConsentResolver`, opt-in/opt-out models
-- [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) — wiring Klaro to regulation profiles
-- [Legal Agreements](/dotnet/compliance/privacy/legal-agreements/) — surface terms/privacy notices alongside the CMP banner
+- [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) — wiring a CMP to regulation profiles

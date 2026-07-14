@@ -1,6 +1,6 @@
 ---
 title: "Cookies — Secure Cookie Management"
-description: Strict cookie registry with consent category enforcement, GPC signal support, and Klaro CMP integration. Every cookie must be declared at startup.
+description: Strict cookie registry with consent category enforcement, GPC signal support, and CookieConsent CMP integration. Every cookie must be declared at startup.
 sidebar:
   order: 4
   label: Overview
@@ -18,7 +18,7 @@ startup with a consent category. Writing an undeclared cookie throws
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
 | `Granit.Http.Cookies` | Cookie registry, consent enforcement, GPC signal | `Granit` |
-| `Granit.Http.Cookies.Klaro` | Klaro CMP consent resolver | `Granit.Http.Cookies` |
+| `Granit.Http.Cookies.CookieConsent` | CookieConsent CMP consent resolver | `Granit.Http.Cookies` |
 | `Granit.Http.Cookies.Endpoints` | Cookie configuration API endpoint | `Granit.Http.Cookies` |
 | `Granit.Privacy.Regulations.Cookies` | Regulation-aware consent model bridge | `Granit.Http.Cookies`, `Granit.Privacy.Regulations` |
 
@@ -40,7 +40,7 @@ public class AppModule : GranitModule
                 "analytics_consent", CookieCategory.Analytics,
                 365, false, "Analytics tracking preference"));
 
-            cookies.UseKlaro();
+            cookies.UseCookieConsent();
         });
     }
 }
@@ -56,7 +56,7 @@ needed for framework cookies.
 | ------ | ----------------------- | ----------- |
 | `Granit.Http.Cookies` | `__Host-xsrf` / `.xsrf` (dev) | `AntiforgeryCookieDefinitionContributor` |
 | `Granit.OpenIddict.EntityFrameworkCore` | `__Host-id` / `.id` (dev), `__Host-id-2fa` / `.id-2fa`, `__Host-id-ext` / `.id-ext` | `IdentityCookieDefinitionContributor` |
-| `Granit.Http.Cookies.Klaro` | `klaro` (configurable) | `KlaroCookieDefinitionContributor` |
+| `Granit.Http.Cookies.CookieConsent` | `cc_cookie` (configurable) | `CookieConsentCookieDefinitionContributor` |
 | `Granit.Bff.Endpoints` | `__Host-bff-{name}` / `.bff-{name}` (dev) | Runtime registration in `MapGranitBff()` |
 | `Granit.Privacy.Endpoints` | `_optout_id` | Runtime registration in `MapGranitPrivacy()` |
 
@@ -151,16 +151,16 @@ public class SessionService(IGranitCookieManager cookieManager)
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
-| Modules | `GranitHttpCookiesModule`, `GranitHttpCookiesKlaroModule` | -- |
+| Modules | `GranitHttpCookiesModule`, `GranitHttpCookiesCookieConsentModule` | -- |
 | Registry | `ICookieRegistry`, `CookieDefinition`, `CookieCategory`, `GranitCookiesBuilder` | `Granit.Http.Cookies` |
 | Contributors | `ICookieDefinitionContributor` | `Granit.Http.Cookies` |
 | Manager | `IGranitCookieManager`, `IConsentResolver` | `Granit.Http.Cookies` |
 | GPC | `IGlobalPrivacyControlSignal`, `ICookieConsentModelProvider`, `ConsentModelInfo` | `Granit.Http.Cookies` |
-| Klaro | `KlaroConsentResolver`, `KlaroOptions` | `Granit.Http.Cookies.Klaro` |
+| CMP | `UseCookieConsent()`, `CookieConsentOptions` | `Granit.Http.Cookies.CookieConsent` |
 
 ## See also
 
 - [Consent & GPC](/dotnet/compliance/cookies/consent/) -- Consent models, Global Privacy Control
-- [Klaro CMP](/dotnet/compliance/cookies/klaro/) -- Klaro integration
+- [Klaro CMP (removed)](/dotnet/compliance/cookies/klaro/) -- migration to CookieConsent
 - [Regulation Bridge](/dotnet/compliance/cookies/regulation-bridge/) -- Privacy.Regulations bridge
 - [Privacy module](/dotnet/compliance/privacy/) -- Data export, erasure, legal agreements

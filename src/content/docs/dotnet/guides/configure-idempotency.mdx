@@ -83,6 +83,14 @@ key is scoped to `tenantId + userId` for security isolation.
 | `MaxResponseSizeBytes` | 262,144 (256 KiB) | Responses larger than this are tombstoned — replays receive `413 Payload Too Large` |
 | `TombstoneTtl` | 24 hours | How long a tombstone is retained before the key can be reused |
 | `ExcludedResponseHeaders` | `Set-Cookie`, `Authorization`, … | Per-replay header allow-list applied on top of the captured response |
+| `AllowInMemoryStore` | `false` | Allow a non-distributed store outside Development — see below |
+
+:::caution[Distributed store required outside Development]
+Outside `Development`, startup fails when the resolved `IConditionalCache` is
+in-memory: a per-replica idempotency store means a retry landing on another pod
+re-executes the handler. Register a distributed cache (Redis) or — for a
+single-replica host only — set `Http:Idempotency:AllowInMemoryStore` to `true`.
+:::
 
 :::note[Good to know]
 `ExecutionTimeout` must be strictly less than `InProgressTtl`. This gap ensures

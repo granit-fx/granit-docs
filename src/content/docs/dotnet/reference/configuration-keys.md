@@ -580,9 +580,22 @@ Wolverine__RetryDelays__1=00:00:30
 | Key | Type | Default | Description |
 |---|---|---|---|
 | **Section** | -- | `Http:Cors` | |
-| **Package** | -- | `Granit.Http.Cors` | |
+| **Package** | -- | `Granit.Http.Hosting` | |
 | `AllowedOrigins` | `string[]` | `[]` | Allowed CORS origins. Wildcard `*` forbidden outside Development (ISO 27001). |
 | `AllowCredentials` | `bool` | `false` | Include `Access-Control-Allow-Credentials`. |
+| `AutoRegisterMiddleware` | `bool` | `true` | Prepend `UseCors()` automatically via `IStartupFilter`. |
+
+### Response compression -- `GranitResponseCompressionOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `Http:ResponseCompression` | |
+| **Package** | -- | `Granit.Http.Hosting` | |
+| `EnableForHttps` | `bool` | `true` | Compress HTTPS responses (BREACH mitigated by antiforgery + CORS + SameSite). |
+| `EnableBrotli` | `bool` | `true` | Enable the Brotli provider. |
+| `EnableGzip` | `bool` | `true` | Enable the gzip fallback provider. |
+| `BrotliLevel` | `CompressionLevel` | `Fastest` | Brotli compression level. |
+| `GzipLevel` | `CompressionLevel` | `Fastest` | Gzip compression level. |
 
 ### Cookies -- `GranitCookiesOptions`
 
@@ -602,13 +615,17 @@ Each entry in `ThirdPartyServices`:
 | `Category` | `CookieCategory` | GDPR consent category. |
 | `CookiePatterns` | `string[]` | Regex patterns matching service cookies. |
 
-### Cookies -- Klaro CMP -- `KlaroOptions`
+### Cookies -- CookieConsent CMP -- `CookieConsentOptions`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Http:Cookies:Klaro` | |
-| **Package** | -- | `Granit.Http.Cookies.Klaro` | |
-| `CookieName` | `string` | `"klaro"` | Klaro consent cookie name. |
+| **Section** | -- | `Http:Cookies:CookieConsent` | |
+| **Package** | -- | `Granit.Http.Cookies.CookieConsent` | |
+| `CookieName` | `string` | `"cc_cookie"` | CookieConsent cookie name. |
+| `FunctionalCategoryName` | `string` | `"functional"` | CMP category mapped to `CookieCategory.Preferences`. |
+| `AnalyticsCategoryName` | `string` | `"analytics"` | CMP category mapped to `CookieCategory.Analytics`. |
+| `MarketingCategoryName` | `string` | `"marketing"` | CMP category mapped to `CookieCategory.Marketing`. |
+| `SaleOrSharingCategoryName` | `string` | `"sale_or_sharing"` | CMP category mapped to `CookieCategory.SaleOrSharing`. |
 
 ### Cookie consent endpoints -- `CookieConsentEndpointsOptions`
 
@@ -631,6 +648,7 @@ Each entry in `ThirdPartyServices`:
 | `InProgressTtl` | `TimeSpan` | `00:00:30` | TTL for in-progress lock. |
 | `ExecutionTimeout` | `TimeSpan` | `00:00:25` | Max downstream handler execution time. |
 | `MaxBodySizeBytes` | `int` | `1048576` | Max request body size to hash (1 MiB). |
+| `AllowInMemoryStore` | `bool` | `false` | Allow a non-distributed `IConditionalCache` outside Development (fail-loud guard). |
 
 ### Rate limiting -- `GranitRateLimitingOptions`
 
@@ -643,6 +661,7 @@ Each entry in `ThirdPartyServices`:
 | `FallbackOnCounterStoreFailure` | `CounterStoreFailureBehavior` | `Deny` | Behavior when Redis is unavailable. |
 | `BypassRoles` | `string[]` | `[]` | Roles exempt from rate limiting. |
 | `UseFeatureBasedQuotas` | `bool` | `false` | Use `Granit.Features` for plan-based quotas. |
+| `AllowInMemoryCounterStore` | `bool` | `false` | Allow an in-memory counter store outside Development (per-replica limits; fail-loud guard). |
 | `Policies` | `Dictionary` | `{}` | Named rate limit policies (see below). |
 
 Each entry in `Policies`:
@@ -663,8 +682,8 @@ Each entry in `Policies`:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **Section** | -- | `Http:Bulkhead` | |
-| **Package** | -- | `Granit.Http.Bulkhead` | |
+| **Section** | -- | `Bulkhead` | |
+| **Package** | -- | `Granit.Bulkhead` | |
 | `Enabled` | `bool` | `true` | Enable bulkhead isolation. |
 | `BypassRoles` | `string[]` | `[]` | Roles exempt from bulkhead checks. |
 | `UseFeatureBasedQuotas` | `bool` | `false` | Use `Granit.Features` for dynamic limits. |

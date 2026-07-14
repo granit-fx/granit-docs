@@ -58,16 +58,15 @@ The foundation. Every Granit project starts here.
 | `Granit.Validation` | FluentValidation wiring |
 | `Granit.Persistence.EntityFrameworkCore` | `AddGranitDbContext<T>`, `UseGranitInterceptors`, auto-discovered interceptors |
 | `Granit.Observability` | Serilog + OpenTelemetry tracing/metrics, OTLP export |
-| `Granit.Http.Cors` | Standardized CORS with startup validation |
+| `Granit.Http.Hosting` | Standardized CORS (auto-registered middleware, startup validation) + gzip / brotli compression |
 | `Granit.Http.ExceptionHandling` | RFC 7807 Problem Details, 4xx/5xx message masking |
-| `Granit.Http.ResponseCompression` | gzip / brotli by default |
 | `Granit.Http.SecurityHeaders` | Per-endpoint CSP composition, HSTS, X-Content-Type-Options |
 | `Granit.Http.SecurityHeaders.Abstractions` | Contracts for the `ICspContributor` pattern — referenced by packages that declare their own CSP relaxations (transitive via `Granit.Http.SecurityHeaders`) |
 | `Granit.Diagnostics` | Activity sources registry, health-check primitives |
 
-`Granit.Http.SecurityHeaders.Endpoints` ships separately (not bundled) and adds
-a `/security-headers/csp` audit endpoint gated by `Diagnostics.Monitoring.Read`
-for security auditors. Reference it explicitly when you need it.
+The `/security-headers/csp` audit endpoint (gated by `Diagnostics.Monitoring.Read`
+for security auditors) ships in `Granit.Diagnostics.Endpoints` — not bundled.
+Reference it explicitly and call `MapGranitSecurityHeadersAudit()` when you need it.
 
 ### `Granit.Bundle.Api`
 
@@ -122,7 +121,7 @@ Focused multi-tenant infrastructure. Layer it on top of `Granit.Bundle.Api`.
 | `Granit.Features` | Multi-level feature flags (Tenant > Plan > Default) |
 | `Granit.Features.EntityFrameworkCore` | Persistent flag overrides |
 | `Granit.RateLimiting` | Per-tenant rate limiting (sliding/fixed window, token bucket, concurrency) |
-| `Granit.Http.Bulkhead` | Per-tenant concurrency isolation |
+| `Granit.Http.Bulkhead` | Per-tenant concurrency isolation (HTTP binding — pulls in the framework-pure `Granit.Bulkhead` core) |
 
 <Aside type="note">
 The historic "SaaS bundle = Api + everything else" pattern was deprecated when

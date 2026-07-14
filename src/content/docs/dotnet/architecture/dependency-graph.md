@@ -103,7 +103,7 @@ flowchart TD
         BROWSING["Browsing (3)"]:::business
         ODATA["Http.ODataExposure"]:::business
         MERGE["EntityMerge (2)"]:::business
-        IO_PKG["IO + Http.Security (2)"]:::core
+        IO_PKG["IO + Http.UrlSafety (2)"]:::core
     end
 
     AI["AI (21)"]:::ai
@@ -178,7 +178,7 @@ flowchart TD
 
 | Domain | Packages |
 |--------|----------|
-| Utilities | Timing, Guids, Diagnostics, Diagnostics.Endpoints, Validation (4), Http.ExceptionHandling, Observability, MultiTenancy, Privacy (4), Cors, Bulkhead, RateLimiting, Testing (2) |
+| Utilities | Timing, Guids, Diagnostics, Diagnostics.Endpoints, Validation (4), Http.ExceptionHandling, Observability, MultiTenancy, Privacy (4), Http.Hosting, Bulkhead (3), RateLimiting, Testing (2) |
 | Events | Events, Events.Wolverine |
 | Identity | Identity (incl. canonical `User` aggregate — ADR-051), Identity.Endpoints, Identity.Federated (5 incl. Keycloak, EntraId, Cognito, GoogleCloud, EntityFrameworkCore), Identity.Local, Identity.Local.AspNetIdentity |
 | Security | Encryption (3), Vault (5), Authentication.JwtBearer (5 incl. Keycloak, EntraId, Cognito, GoogleCloud), Authentication.ApiKeys (3), Authentication.DPoP, Authentication.OpenIddict, Authorization (3) |
@@ -186,7 +186,7 @@ flowchart TD
 | OIDC | Oidc, Oidc.TokenManagement |
 | BFF | Bff, Bff.BackgroundJobs, Bff.Endpoints, Bff.EntityFrameworkCore, Bff.Yarp |
 | Configuration | Settings (3), Features (3), ReferenceData (3) |
-| Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies (3 incl. Klaro + Endpoints), Http.Idempotency, Http.OutputCaching (2), Http.Resilience, Http.ResponseCompression, Http.Security (URL safety / SSRF), Http.SecurityHeaders, Http.ODataExposure (BI feed for Power BI / Excel / Tableau), Webhooks (5 incl. BackgroundJobs + Notifications), RateLimiting (AspNetCore + Wolverine adapters) |
+| Web, API, and Webhooks | ApiVersioning, ApiDocumentation, Cookies (3 incl. CookieConsent + Endpoints), Http.Idempotency (2 incl. Abstractions), Http.OutputCaching (2), Http.Resilience, Http.Hosting (CORS + response compression), Http.UrlSafety (URL safety / SSRF), Http.SecurityHeaders (2 incl. Abstractions), Http.ODataExposure (BI feed for Power BI / Excel / Tableau), Webhooks (5 incl. BackgroundJobs + Notifications), RateLimiting (AspNetCore + Wolverine adapters) |
 | Cross-cutting primitives | IO (temp files), EntityMerge (entity merge framework), Scheduling, Browsing (headless web scraping) |
 | Storage | BlobStorage (11 incl. AI, BackgroundJobs, Database, Endpoints), Imaging (3) — Documents runtime moved to `granit-business` |
 | Persistence | Persistence, Persistence.Hosting, Persistence.Migrations (2), Persistence.Postgres, Persistence.SqlServer |
@@ -316,7 +316,7 @@ flowchart TD
 | `Granit.Observability` | `Core` |
 | `Granit.MultiTenancy` | `Core` |
 | `Granit.Privacy` | `Core` |
-| `Granit.Http.Cors` | `Core` |
+| `Granit.Http.Hosting` | `Core` |
 | `Granit.Guids` | `Timing` |
 | `Granit.Diagnostics` | `Timing` |
 | `Granit.Diagnostics.Endpoints` | `Diagnostics`, `Authorization` |
@@ -327,7 +327,9 @@ flowchart TD
 | `Granit.Validation.Europe` | `Validation`, `Localization` |
 | `Granit.Validation.NorthAmerica` | `Validation`, `Localization` |
 | `Granit.Validation.UnitedKingdom` | `Validation`, `Localization` |
-| `Granit.Http.Bulkhead` | `Core`, `ExceptionHandling`, `Features`, `Security` |
+| `Granit.Bulkhead` | `Core`, `Features`, `Security` |
+| `Granit.Http.Bulkhead` | `Bulkhead`, `ExceptionHandling` |
+| `Granit.Bulkhead.Wolverine` | `Bulkhead` |
 | `Granit.RateLimiting` | `Core`, `ExceptionHandling`, `Features`, `Security` |
 
 ### Events
@@ -382,13 +384,13 @@ flowchart TD
 | `Granit.Http.ApiVersioning` | `Core` |
 | `Granit.Http.ApiDocumentation` | `ApiVersioning`, `Security` |
 | `Granit.Http.Cookies` | `Timing` |
-| `Granit.Http.Cookies.Klaro` | `Cookies` |
+| `Granit.Http.Cookies.CookieConsent` | `Cookies` |
 | `Granit.Http.Cookies.Endpoints` | `Cookies`, `Core` |
-| `Granit.Http.Idempotency` | `Caching`, `Security` |
+| `Granit.Http.Idempotency.Abstractions` | `Core` |
+| `Granit.Http.Idempotency` | `Idempotency.Abstractions`, `Caching`, `Security` |
 | `Granit.Http.OutputCaching` | `Core` |
 | `Granit.Http.OutputCaching.StackExchangeRedis` | `OutputCaching` |
 | `Granit.Http.Resilience` | `Core` |
-| `Granit.Http.ResponseCompression` | `Core` |
 | `Granit.Http.SecurityHeaders` | `Core` |
 | `Granit.Webhooks` | `Core`, `Guids`, `Http.Resilience`, `Encryption`, `Timing` |
 | `Granit.Webhooks.EntityFrameworkCore` | `Webhooks`, `Persistence` |
@@ -730,9 +732,8 @@ Minimal API foundation.
 | `Granit.Validation` |
 | `Granit.Persistence` |
 | `Granit.Observability` |
-| `Granit.Http.Cors` |
+| `Granit.Http.Hosting` |
 | `Granit.Http.ExceptionHandling` |
-| `Granit.Http.ResponseCompression` |
 | `Granit.Http.SecurityHeaders` |
 | `Granit.Diagnostics` |
 
