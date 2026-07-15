@@ -6,7 +6,7 @@ sidebar:
   order: 17
 ---
 
-import { FileTree } from "@astrojs/starlight/components";
+import { Aside, FileTree } from "@astrojs/starlight/components";
 
 Granit.Imaging provides a fluent image processing pipeline for transformations such as
 resize, crop, compress, format conversion, and watermarking. Call `StripMetadata()` in the
@@ -37,26 +37,66 @@ public class AppModule : GranitModule { }
 builder.AddGranitImagingMagickNet();
 ```
 
-Customize resource limits via the options callback:
+`MagickNetImageProcessor` is registered as a singleton — Magick.NET is thread-safe and
+initializes its native codec once per process. Resource limits are configurable — see
+[Configuration](#configuration) below.
+
+## Configuration
+
+`ImagingMagickNetOptions` binds from the **`Imaging:MagickNet`** configuration section and
+is **validated at startup** (`ValidateOnStart`) — a value outside its allowed range fails
+the host boot rather than surfacing at the first upload:
+
+```json
+{
+  "Imaging": {
+    "MagickNet": {
+      "MaxMemoryBytes": 268435456,
+      "MaxWidthPixels": 16384,
+      "MaxHeightPixels": 16384,
+      "MaxListLength": 32,
+      "MaxInputBytes": 52428800
+    }
+  }
+}
+```
+
+| Option | Type | Default | Purpose |
+| ------ | ---- | ------- | ------- |
+| `MaxMemoryBytes` | `long` | 256 MB | ImageMagick pixel-cache memory ceiling |
+| `MaxWidthPixels` | `int` | 16384 | Maximum decoded image width |
+| `MaxHeightPixels` | `int` | 16384 | Maximum decoded image height |
+| `MaxListLength` | `int` | 32 | Maximum frames (GIF animation) |
+| `MaxInputBytes` | `long` | 50 MB | Pre-decode input size check (`0` disables it) |
+
+The options callback on `AddGranitImagingMagickNet(...)` runs **after** configuration
+binding, so **code wins over `appsettings.json`** — use it for a hard floor a deployment
+cannot weaken:
 
 ```csharp
 builder.AddGranitImagingMagickNet(options =>
 {
-    options.MaxMemoryBytes = 512 * 1024 * 1024;  // 512 MB (default: 256 MB)
-    options.MaxWidthPixels = 8192;                // 8K px (default: 16384)
-    options.MaxHeightPixels = 8192;
-    options.MaxInputBytes = 25 * 1024 * 1024;     // 25 MB (default: 50 MB)
-    options.MaxListLength = 16;                   // GIF frames (default: 32)
+    options.MaxInputBytes = 25 * 1024 * 1024;  // overrides any bound value
 });
 ```
 
-`MagickNetImageProcessor` is registered as a singleton — Magick.NET is thread-safe and
-initializes its native codec once per process.
-
 ## IImageProcessor
 
-`IImageProcessor.Load()` opens an image and returns an `IImagePipeline`. The pipeline
-holds native resources and **must be disposed** after use:
+`IImageProcessor` exposes three entry points. Both `Load` overloads return an
+`IImagePipeline` that holds native resources and **must be disposed** after use;
+`Identify` is a cheap header-only probe that allocates no pipeline:
+
+| Member | Kind | Use for |
+| ------ | ---- | ------- |
+| `LoadAsync(Stream, CancellationToken)` | **async** | Decoding from a stream (HTTP upload, blob download) — non-seekable streams are buffered asynchronously before decode |
+| `Load(ReadOnlyMemory<byte>)` | sync | Decoding from bytes already in memory |
+| `Identify(ReadOnlyMemory<byte>)` | sync | Reading dimensions and format without decoding pixels |
+
+<Aside type="caution" title="Breaking change">
+`Load(Stream)` is gone — decoding from a stream is now `await LoadAsync(stream, ct)`, so
+the buffering of a non-seekable stream no longer blocks the calling thread. The
+byte-based `Load(ReadOnlyMemory<byte>)` and `Identify(...)` stay synchronous.
+</Aside>
 
 ```csharp
 public class PatientPhotoProcessor(IImageProcessor imageProcessor)
@@ -65,7 +105,9 @@ public class PatientPhotoProcessor(IImageProcessor imageProcessor)
         Stream sourceImage,
         CancellationToken cancellationToken)
     {
-        await using IImagePipeline pipeline = imageProcessor.Load(sourceImage);
+        await using IImagePipeline pipeline = await imageProcessor
+            .LoadAsync(sourceImage, cancellationToken)
+            .ConfigureAwait(false);
 
         return await pipeline
             .Resize(200, 200, ResizeMode.Crop)
@@ -75,6 +117,21 @@ public class PatientPhotoProcessor(IImageProcessor imageProcessor)
             .ToResultAsync(cancellationToken);
     }
 }
+```
+
+### Identify: header-only inspection
+
+`Identify` reads only the image header and returns an `ImageInfo` value —
+`(ImageSize Size, ImageFormat Format)` — without decoding a single pixel. That makes it
+both fast and a **pixel-bomb guard**: a crafted file that would inflate to gigabytes is
+rejected at the header stage. It runs the same magic-byte format allowlist as `Load`, and
+throws `UnsupportedImageFormatException` (namespace `Granit.Imaging.Exceptions`) for an
+unknown or unreadable format:
+
+```csharp
+ImageInfo info = imageProcessor.Identify(uploadedBytes);   // no pipeline, no decode
+if (info.Size.Width * info.Size.Height > MaxPixels)
+    return Results.BadRequest("Image too large.");
 ```
 
 ## Pipeline operations
@@ -128,7 +185,9 @@ critical for GDPR compliance: uploaded photos often contain GPS coordinates, cam
 serial numbers, timestamps, and other personally identifiable information.
 
 ```csharp
-await using IImagePipeline pipeline = imageProcessor.Load(uploadedPhoto);
+await using IImagePipeline pipeline = await imageProcessor
+    .LoadAsync(uploadedPhoto, cancellationToken)
+    .ConfigureAwait(false);
 ImageResult sanitized = await pipeline
     .StripMetadata()
     .SaveAsWebPAsync(cancellationToken);
@@ -172,39 +231,63 @@ See [Blob Storage domain events](/dotnet/data/blob-storage/#domain-events) for t
 
 ### Format allowlisting
 
-Before passing any data to the native ImageMagick decoder, `Load()` validates magic bytes
-against a safe raster format allowlist (JPEG, PNG, GIF, BMP, TIFF, WebP, AVIF). Dangerous
-formats that ImageMagick can parse — SVG (SSRF via `xlink:href`), MSL (file I/O), MVG, PDF,
-EPS — are rejected before native code executes.
+Before passing any data to the native ImageMagick decoder, `LoadAsync`, `Load`, and
+`Identify` validate magic bytes against a safe raster format allowlist (JPEG, PNG, GIF,
+BMP, TIFF, WebP, AVIF). Dangerous formats that ImageMagick can parse — SVG (SSRF via
+`xlink:href`), MSL (file I/O), MVG, PDF, EPS — are rejected before native code executes.
 
 ### Resource limits
 
-ImageMagick resource limits are configured at startup to prevent decompression bomb attacks
-(a 42 KB crafted JPEG can inflate to 4+ GB). Default limits:
+The [configured limits](#configuration) prevent decompression-bomb attacks (a 42 KB
+crafted JPEG can inflate to 4+ GB). ImageMagick's `ResourceLimits` are **process-global
+native state**, so a hosted service (`MagickNetResourceLimitsInitializer`) applies them
+**once at host startup**:
 
-| Limit | Default | Description |
-| ----- | ------- | ----------- |
-| `MaxMemoryBytes` | 256 MB | Pixel cache memory ceiling |
-| `MaxWidthPixels` | 16384 | Maximum image width |
-| `MaxHeightPixels` | 16384 | Maximum image height |
-| `MaxListLength` | 32 | Maximum frames (GIF animation) |
-| `MaxInputBytes` | 50 MB | Pre-decode input size check |
+- The limits are a property of the native ImageMagick runtime, not of a DI scope. Within a
+  process the **last writer wins**; the initializer sets them from `ImagingMagickNetOptions`
+  as the host boots.
+- Because it runs on the **host lifetime**, the process-global limits are **not applied
+  outside a host** — a bare `MagickNetImageProcessor` built from a service provider in a
+  unit test does not pick them up. The per-request guards (format allowlist, `MaxInputBytes`,
+  dimension checks) do not depend on it and always run.
 
 ### Input validation
 
 - **Resize / Crop**: negative or zero dimensions are rejected with `ArgumentOutOfRangeException`
   (prevents integer overflow from `int` → `uint` cast)
 - **Compress**: quality is validated in the 0–100 range
-- **Non-seekable streams**: automatically buffered before validation
+- **Watermark**: `opacity` is validated in the `[0, 1]` range (`ArgumentOutOfRangeException`
+  outside it)
+- **`MaxInputBytes`**: enforced per request before decode, independently of the process-global limits
+- **Non-seekable streams**: automatically buffered (asynchronously, in `LoadAsync`) before validation
+
+## Observability
+
+`Granit.Imaging.MagickNet` emits OpenTelemetry spans and metrics under the
+`Granit.Imaging.MagickNet` / `Granit.Imaging` sources — all tenant-tagged with the
+**real** ambient tenant (`ICurrentTenant`, read at the terminal operation), coalesced to
+`"global"` when no tenant is in scope.
+
+| Span | Emitted by | Tags |
+| ---- | ---------- | ---- |
+| `imaging.load` | `LoadAsync` / `Load` | `imaging.source_format`, `imaging.width`, `imaging.height`, `imaging.input_bytes` |
+| `imaging.identify` | `Identify` | `imaging.source_format`, `imaging.width`, `imaging.height`, `imaging.input_bytes` |
+| `imaging.encode` | pipeline terminal op | `imaging.output_format`, `imaging.width`, `imaging.height` |
+
+| Metric | Type | Tags |
+| ------ | ---- | ---- |
+| `granit.imaging.image.processed` | counter | `tenant_id`, `output_format` |
+| `granit.imaging.image.processing_duration` | histogram (`s`) | `tenant_id`, `output_format` |
 
 ## Public API summary
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
 | Module | `GranitImagingModule`, `GranitImagingMagickNetModule` | -- |
-| Processor | `IImageProcessor`, `IImagePipeline`, `ImageResult` | `Granit.Imaging` |
+| Processor | `IImageProcessor`, `IImagePipeline`, `ImageResult`, `ImageInfo` | `Granit.Imaging` |
 | Formats | `ImageFormat`, `ImageSize` | `Granit.Imaging` |
 | Modes | `ResizeMode`, `CropRectangle`, `WatermarkPosition` | `Granit.Imaging` |
+| Exceptions | `UnsupportedImageFormatException` | `Granit.Imaging` |
 | Options | `ImagingMagickNetOptions` | `Granit.Imaging.MagickNet` |
 | Extensions | `AddGranitImagingMagickNet()` | `Granit.Imaging.MagickNet` |
 

@@ -400,7 +400,10 @@ known capabilities. Azure OpenAI inspects configured deployments.
 ## Usage tracking and cost monitoring
 
 Every `IChatClient` call is tracked when `GranitAIOptions.EnableUsageTracking` is `true`
-(default). The `AIUsageRecord` captures:
+(default). Tracking is **automatic**: the chat-client factory wraps every client in a
+`UsageTrackingChatClient` delegating middleware, so a record is stamped for you on each
+model call — **no consumer stamps usage by hand**, and no code path can forget to. The
+`AIUsageRecord` captures:
 
 | Field | Description |
 |-------|-------------|
@@ -413,6 +416,11 @@ Every `IChatClient` call is tracked when `GranitAIOptions.EnableUsageTracking` i
 | `EstimatedCost` / `CostCurrency` | Cost estimate and ISO 4217 currency code |
 | `Duration` | Response time |
 | `Timestamp` | When the interaction occurred (UTC) |
+
+Because the middleware sits **below** `FunctionInvokingChatClient`, it stamps **one record
+per model round-trip**: an agentic turn that calls the model, runs a tool, and calls the
+model again produces **N records for N round-trips**, all sharing the run's
+`ConversationId`. Sum them for the turn's true cost.
 
 Streaming completions track usage at the end of the stream (Microsoft.Extensions.AI
 emits a `UsageContent` final chunk). Records are persisted by
@@ -432,8 +440,9 @@ on the [`GET /ai/usage`](/dotnet/ai/endpoints/) query. Three constraints apply:
 - **Not an OpenTelemetry tag.** `ConversationId` is deliberately excluded from the
   metric tags — its cardinality is unbounded. Per-conversation slicing is a relational
   query, never a metric dimension.
-- **No per-turn linkage yet.** Records attach to the conversation, not to an individual
-  message. Per-message (`MessageId`) linkage is a planned follow-up.
+- **No per-message linkage yet.** Each round-trip already stamps its own record (so a turn
+  is several records sharing one `ConversationId`), but records attach to the conversation,
+  not to an individual message. Per-message (`MessageId`) linkage is a planned follow-up.
 
 ## Quotas — fail safe before it costs you money
 

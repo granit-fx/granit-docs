@@ -72,16 +72,45 @@ controls — the framework's first line of defence against prompt injection
 | Member | Trust | Role |
 |--------|-------|------|
 | `Instruction` | **Developer** | The task prompt (e.g. a per-locale generation instruction). **Never sanitized** — appended verbatim. Supply only code- or template-controlled text. |
-| `Content` (required) | **Untrusted** | The text to analyze. Sanitized and wrapped in a `<data>` block by the primitive before it reaches the model. |
+| `Content` | **Untrusted** | The text to analyze, or `null` for an attachment-only request. Sanitized and wrapped in a `<data>` block by the primitive before it reaches the model. |
 | `ContentLabel` | Developer | Label for the `<data>` block (defaults to `"Document"`). |
 | `Context` | **Untrusted** | Additional named sections (title, locale, source culture…). Each key is a developer label; each value is sanitized and delimited. |
+| `Attachments` | **Trusted by caller** | Optional `IReadOnlyList<DataContent>` (Microsoft.Extensions.AI) of binary parts — images for a vision-capable model — appended to the user message *after* the prompt. Not routed through the `<data>` envelope, so the **caller owns size caps and provenance** (`Granit.Imaging.AI`, for example, enforces `MaxImageBytes` and a content-type allowlist). The type is pinned to `DataContent` so untrusted text can never be smuggled in as a raw message part. |
 | `WorkspaceName` | Developer | Which AI workspace to run against. `null` uses the configured default. |
+
+At least one of `Content` or `Attachments` must be supplied — a request with neither
+throws `ArgumentException`. `Content` and `Attachments` compose: a request can carry
+sanitized text *and* an image in the same call.
 
 :::caution[Never route untrusted input through `Instruction`]
 `Instruction` is appended to the prompt without sanitization. Putting user-supplied
 text there defeats the `<data>`-block isolation applied to `Content` and reopens the
 injection surface. Untrusted text always goes in `Content` (or `Context`).
 :::
+
+### Multimodal: typed output from an image
+
+Set `Content` to `null` and pass the image bytes as an attachment to get a typed
+result from a vision-capable model — the same schema-enforced path, no manual JSON.
+This is how `Granit.Imaging.AI` turns a picture into a typed `ImageAnalysis`:
+
+```csharp
+var request = new StructuredCompletionRequest
+{
+    Instruction = "Describe the image, list detected objects, and suggest alt text.",
+    Content = null,                                    // image-only — no text to analyze
+    Attachments = [new DataContent(imageBytes, contentType)],  // "image/jpeg", "image/png", …
+    WorkspaceName = "vision",
+};
+
+StructuredCompletionResult<ImageAnalysis> result = await completion
+    .CompleteAsync<ImageAnalysis>(request, ct)
+    .ConfigureAwait(false);
+```
+
+`DataContent` is trusted by the caller — enforce a size cap and a content-type
+allowlist *before* building the request. `Granit.Imaging.AI` does exactly this (see
+[Image Analysis](/dotnet/ai/imaging-ai/)).
 
 ## The result and its four-valued status
 
@@ -214,9 +243,10 @@ Every `.AI` module that produced typed output — `Localization.AI`, `Validation
 `IAIChatClientFactory` + `GetResponseAsync` + fence-strip + `Deserialize<T>` pattern onto
 `IStructuredCompletion.CompleteAsync<T>`. Behavior is preserved per module; the fragile
 plumbing (~100 LoC each) is gone. An architecture test now **forbids the bypass** so it
-cannot silently return; `Granit.AI` (the primitive's own implementation) and
-`Granit.Imaging.AI` (multimodal — the image rides as `DataContent`, which the text-only
-primitive cannot carry) are the only exemptions.
+cannot silently return; `Granit.AI` (the primitive's own implementation) is the **only**
+exemption. `Granit.Imaging.AI` — once exempt because the image rides as `DataContent` —
+now routes its typed image analysis through the primitive too, since `Attachments` lets
+the request carry binary parts (see [Multimodal](#multimodal-typed-output-from-an-image)).
 
 ### 2. Shared plumbing relocated into `Granit.AI`
 
