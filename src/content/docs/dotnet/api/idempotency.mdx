@@ -8,10 +8,11 @@ sidebar:
 
 import { Aside } from "@astrojs/starlight/components";
 
-Granit.Http.Idempotency provides Stripe-style HTTP idempotency middleware backed by a
-distributed store (Redis via `IConditionalCache`). Ensures that retried POST/PUT/PATCH
-requests produce the same response without re-executing side effects. Uses SHA-256
-composite keys and AES-256-GCM encrypted entries.
+Granit.Http.Idempotency provides Stripe-style HTTP idempotency middleware backed by
+its own first-class store contract, `IIdempotencyStore`. Ensures that retried
+POST/PUT/PATCH requests produce the same response without re-executing side effects.
+Uses SHA-256 composite keys; the Redis provider encrypts entries at rest with
+AES-256-GCM.
 
 The `[Idempotent]` attribute and the `IIdempotencyMetadata` contract ship in a
 dedicated contracts package, **`Granit.Http.Idempotency.Abstractions`**
@@ -46,14 +47,43 @@ app.UseAuthorization();
 app.UseGranitIdempotency(); // After auth so ICurrentUserService is populated
 ```
 
-## Store: distributed by default
+## The store contract
 
-The middleware persists its state machine through `IConditionalCache`
-(`Granit.Caching`). The backend is whatever cache provider the host registers —
-Redis via `Granit.Caching.StackExchangeRedis` in any real deployment.
+The middleware persists its state machine through **`IIdempotencyStore`** — a
+first-class contract with atomic transition semantics, owned by the package
+itself (the former `IConditionalCache` / `Granit.Caching` dependency is gone):
 
-**Fail-loud guard:** outside `Development`, the middleware refuses to start with
-a non-distributed (in-memory) `IConditionalCache`. An in-memory idempotency
+```csharp
+public interface IIdempotencyStore
+{
+    bool IsDistributed { get; }
+    string BackendName { get; }
+
+    // Create-if-absent — the lock acquisition (Redis SET NX PX)
+    Task<bool> TryAcquireAsync(string key, IdempotencyEntry entry, TimeSpan ttl, CancellationToken cancellationToken);
+
+    Task<IdempotencyEntry?> GetAsync(string key, CancellationToken cancellationToken);
+
+    // Set-if-present (SET XX PX) — never resurrect an expired key
+    Task<bool> CompleteAsync(string key, IdempotencyEntry entry, TimeSpan ttl, CancellationToken cancellationToken);
+    Task<bool> TombstoneAsync(string key, IdempotencyEntry entry, TimeSpan ttl, CancellationToken cancellationToken);
+
+    Task DeleteAsync(string key, CancellationToken cancellationToken);
+}
+```
+
+Two implementations ship:
+
+| Store | Package | `IsDistributed` | Use |
+| ----- | ------- | --------------- | --- |
+| `InMemoryIdempotencyStore` | `Granit.Http.Idempotency` (default) | `false` | Development, single-replica hosts |
+| `RedisIdempotencyStore` | `Granit.Http.Idempotency.StackExchangeRedis` | `true` | Production |
+
+Custom stores must **not** re-namespace keys by tenant — the middleware already
+partitions the composite key (see below).
+
+**Fail-loud guard:** outside `Development`, the middleware refuses to start when
+the registered store reports `IsDistributed = false`. An in-memory idempotency
 store is per-replica: with more than one pod, a retry landing on another pod
 re-executes the handler — double payment, double email. If a single-replica
 deployment genuinely wants the in-memory store, opt in explicitly:
@@ -66,6 +96,48 @@ deployment genuinely wants the in-memory store, opt in explicitly:
 `AllowInMemoryStore = true` trades the at-most-once guarantee for zero
 infrastructure. Never combine it with more than one replica.
 </Aside>
+
+## Redis provider
+
+`Granit.Http.Idempotency.StackExchangeRedis` replaces the default store with
+`RedisIdempotencyStore`. Transitions map to single atomic Redis commands
+(`SET NX PX` to acquire, `SET XX PX` to complete/tombstone — no Lua). It reuses
+an existing `IConnectionMultiplexer` when the host already registered one (e.g.
+via `Granit.Caching.StackExchangeRedis`).
+
+```csharp
+[DependsOn(typeof(GranitHttpIdempotencyStackExchangeRedisModule))]
+public class AppModule : GranitModule { }
+```
+
+```json
+{
+  "Http:Idempotency:Redis": {
+    "Configuration": "redis.internal:6380",
+    "InstanceName": "dd:",
+    "RequireTls": true
+  },
+  "Cache:Encryption:Key": "BASE64_ENCODED_32_BYTE_KEY"
+}
+```
+
+| Property | Default | Description |
+| -------- | ------- | ----------- |
+| `IsEnabled` | `true` | Toggle the module |
+| `Configuration` | `"localhost:6379"` | StackExchange.Redis configuration string |
+| `InstanceName` | `"dd:"` | Application-scoped key prefix |
+| `RequireTls` | `true` | Force `Ssl = true` on the connection |
+
+**Unconditional at-rest encryption.** Stored entries (status code, headers,
+response body) are always encrypted with AES-256-GCM via `ICacheValueEncryptor`.
+The base64 256-bit key comes from `Cache:Encryption:Key` — the same key
+`Granit.Caching` uses. Outside `Development`, startup **fails closed** when the
+key is missing (`RedisIdempotencyEncryptionStartupValidator`, no opt-out). In
+Development a null encryptor passes plaintext through with a warning.
+
+**Health check:** `AddGranitRedisIdempotencyHealthCheck()` registers a
+`redis-idempotency` check (PING + latency, tags `readiness`/`startup`, degraded
+above 100 ms by default).
 
 ## Marking endpoints as idempotent
 
@@ -93,8 +165,8 @@ flowchart TD
     ACQUIRE --> EXECUTE[Execute handler]
     EXECUTE -- 2xx / cacheable 4xx --> SIZE{Response &gt; MaxResponseSizeBytes?}
     EXECUTE -- 5xx / timeout --> RELEASE[DELETE key → Absent]
-    SIZE -- Yes --> TOMB[SetCompleted\nstate = Tombstoned]
-    SIZE -- No --> COMPLETE[SetCompleted\nstate = Completed]
+    SIZE -- Yes --> TOMB[Tombstone\nSET XX PX → Tombstoned]
+    SIZE -- No --> COMPLETE[Complete\nSET XX PX → Completed]
     COMPLETE --> RESPONSE[Return response]
     TOMB --> RESPONSE
     REPLAY --> RESPONSE
@@ -188,20 +260,22 @@ services.Configure<IdempotencyOptions>(opts =>
 | `MaxKeyLength` | `256` | Max length of the client-supplied header value (rejected with 400 above this) |
 | `ShouldCacheStatusCode` | 2xx + {400, 404, 409, 410, 422} | Predicate controlling which status codes get cached |
 | `ExcludedResponseHeaders` | See above | Headers filtered on capture + replay |
-| `AllowInMemoryStore` | `false` | Allow a non-distributed `IConditionalCache` outside Development (per-replica store — see above) |
+| `AllowInMemoryStore` | `false` | Allow a non-distributed `IIdempotencyStore` outside Development (per-replica store — see above) |
 
 ## Public API summary
 
 | Category | Key types | Package |
 | -------- | --------- | ------- |
-| Module | `GranitHttpIdempotencyModule` | -- |
+| Modules | `GranitHttpIdempotencyModule`, `GranitHttpIdempotencyStackExchangeRedisModule` | -- |
 | Contracts | `IdempotentAttribute`, `IIdempotencyMetadata` (namespace `Granit.Http.Idempotency`) | `Granit.Http.Idempotency.Abstractions` |
-| Store | `IIdempotencyStore`, `IdempotencyEntry`, `IdempotencyState` | `Granit.Http.Idempotency` |
+| Store | `IIdempotencyStore`, `IdempotencyEntry`, `IdempotencyState`, `IdempotencyTombstoneReason` | `Granit.Http.Idempotency` |
 | Options | `IdempotencyOptions` (section `Http:Idempotency`) | `Granit.Http.Idempotency` |
+| Options (Redis) | `RedisIdempotencyOptions` (section `Http:Idempotency:Redis`) | `Granit.Http.Idempotency.StackExchangeRedis` |
 | Extensions | `AddGranitIdempotency()`, `UseGranitIdempotency()` | `Granit.Http.Idempotency` |
+| Extensions (Redis) | `AddGranitRedisIdempotency()`, `AddGranitRedisIdempotencyHealthCheck()` | `Granit.Http.Idempotency.StackExchangeRedis` |
 
 ## See also
 
-- [Caching module](/dotnet/data/caching/) -- `ICacheValueEncryptor` used by idempotency store
+- [Caching module](/dotnet/data/caching/) -- `ICacheValueEncryptor` and the shared `Cache:Encryption:Key`
 - [API & Http overview](/dotnet/api/) -- All HTTP infrastructure packages
 - [Blog: Idempotency keys: why every POST should be retry-safe](/blog/idempotency-keys-why-every-post-should-be-retry-safe/) -- the rationale and patterns behind this module's design

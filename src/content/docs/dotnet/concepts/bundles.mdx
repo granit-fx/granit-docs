@@ -75,8 +75,8 @@ Everything in Essentials + the REST API surface.
 | Package | Role |
 |---------|------|
 | `Granit.Bundle.Essentials` (transitive) | The foundation |
-| `Granit.Http.ApiVersioning` | URL / header / query versioning |
-| `Granit.Http.ApiDocumentation` | OpenAPI 3.1 + Scalar UI, versioned per major API |
+| `Granit.Http.ApiDocumentation` | OpenAPI 3.1 + URL-segment versioning, per major API |
+| `Granit.Http.ApiDocumentation.Scalar` | Scalar interactive UI (optional companion) |
 | `Granit.Http.Idempotency` | Stripe-style replay-safe `Idempotency-Key` middleware |
 | `Granit.Localization` + `.EntityFrameworkCore` | Accept-Language resolution, runtime overrides |
 | `Granit.Caching.StackExchangeRedis` | Distributed cache backbone for output caching, idempotency, sessions |

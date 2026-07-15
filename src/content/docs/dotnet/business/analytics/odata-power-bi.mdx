@@ -99,7 +99,7 @@ and rate limiting.
    }
    ```
 
-   The path follows the framework's `Granit.Http.ApiVersioning`
+   The path follows the framework's `Granit.Http.ApiDocumentation`
    convention `/api/{version}/odata` — `{version}` resolves to `v1`,
    `v2`, etc. depending on the host's versioning configuration. The
    sample pins `v1`; bump to match your deployment.
@@ -117,7 +117,7 @@ and rate limiting.
 <Aside type="tip" title="Manual connection (no .pbids)">
   *Get Data → OData feed → Basic*, paste
   `https://your-app.example.com/api/v1/odata` (or whichever version
-  the host's `Granit.Http.ApiVersioning` exposes), then *OK → Sign in
+  the host's `Granit.Http.ApiDocumentation` exposes), then *OK → Sign in
   with Organizational account*. Same end result.
 </Aside>
 
@@ -168,8 +168,11 @@ analysts authoring reports must work within these guardrails.
 
 By default, `$expand` is **disabled** on every EntitySet — `?$expand=Customer`
 returns `400 Bad Request` unless the EntitySet's host explicitly called
-`.ExpandWhitelist("Customer")`. The whitelist is per EntitySet, not
-global; ask the application team which navigations are exposed.
+`.ExpandWhitelist("Customer")`. The whitelist is per EntitySet, not global, and
+accepts **dotted paths** for nested navigations (`.ExpandWhitelist("Lines.Product")`
+also permits `Lines`); each level counts against `MaxExpansionDepth` and every
+reachable type needs a registered `ExportDefinition`. Ask the application team
+which navigations are exposed.
 
 ### `$top` is silently capped
 
@@ -185,6 +188,24 @@ this cap automatically.
 Request`. Huge tables face a full-table-scan count on every refresh —
 the framework default-disables it. Power BI's *Edit Queries → Count
 rows* uses a separate query path that shouldn't trigger this.
+
+### `$filter` is translated, not passed through
+
+`$filter` is translated to the framework's `QueryPredicate` and enforced by the
+same engine as the application's grids — a column must be `.Filterable()` in the
+`QueryDefinition`, and `$orderby` targets must be `.Sortable()`, or the request
+returns `400`. Plain comparison and boolean logic fold cleanly; two Power BI
+edges to know about:
+
+- **Case-insensitive text filters** fold to `tolower(...)`, which is rejected.
+  Model text columns with a consistent case, or filter client-side.
+- **Date-hierarchy drill-downs** can fold to `year(...)`/`month(...)`, also
+  rejected. Use explicit date-range filters instead
+  (`IssuedOn ge 2026-01-01 and IssuedOn lt 2027-01-01`).
+
+A rejected fold does not break the report — Power BI falls back to client-side
+filtering after the `400`, transferring more rows. See the full supported /
+rejected tables in [OData Exposure](/dotnet/api/odata-exposure/#filter--translated-to-querypredicate).
 
 ### Pagination
 

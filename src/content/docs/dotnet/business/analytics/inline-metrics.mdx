@@ -124,7 +124,7 @@ under `src/Granit.{Module}/Metrics/`.
 ## What the framework does for you
 
 Once registered, the metric is exposed at `POST /api/{version}/analytics/metrics/{name}`
-(the `{version}` segment is supplied by the host's `Granit.Http.ApiVersioning`
+(the `{version}` segment is supplied by the host's `Granit.Http.ApiDocumentation`
 configuration; the route prefix defaults to `analytics` and is overridable via
 `MapGranitAnalytics(opts => opts.RoutePrefix = …)`)
 and the framework pipeline guarantees the following — none of which you write

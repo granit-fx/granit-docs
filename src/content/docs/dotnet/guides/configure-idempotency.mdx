@@ -16,27 +16,32 @@ State is managed in Redis with atomic locks and AES-256-GCM authenticated encryp
 ## Prerequisites
 
 - A working Granit application
-- Redis instance (used for idempotency state storage)
-- `Granit.Caching` configured (provides `ICacheValueEncryptor` for AES encryption)
+- A Redis instance for production deployments (the in-memory default store is
+  Development / single-replica only)
 
-## 1. Install the package
+## 1. Install the packages
 
 ```bash
 dotnet add package Granit.Http.Idempotency
+dotnet add package Granit.Http.Idempotency.StackExchangeRedis   # production store
 ```
 
-## 2. Register the module
+## 2. Register the modules
 
 ```csharp
 using Granit.Modularity;
 using Granit.Http.Idempotency;
+using Granit.Http.Idempotency.StackExchangeRedis;
 
-[DependsOn(typeof(GranitHttpIdempotencyModule))]
+[DependsOn(typeof(GranitHttpIdempotencyStackExchangeRedisModule))]
 public sealed class MyAppModule : GranitModule { }
 ```
 
-The module reads the `Idempotency` configuration section and registers all
-required services automatically.
+The Redis module depends on `GranitHttpIdempotencyModule` and replaces the
+default `InMemoryIdempotencyStore` with `RedisIdempotencyStore` — the
+`IIdempotencyStore` implementation whose transitions are single atomic Redis
+commands (`SET NX PX` / `SET XX PX`). Hosts that only need the in-memory store
+(Development, single replica) depend on `GranitHttpIdempotencyModule` alone.
 
 ## 3. Add the middleware
 
@@ -67,7 +72,13 @@ key is scoped to `tenantId + userId` for security isolation.
     "InProgressTtl": "00:00:30",
     "ExecutionTimeout": "00:00:25",
     "MaxBodySizeBytes": 1048576
-  }
+  },
+  "Http:Idempotency:Redis": {
+    "Configuration": "redis.internal:6380",
+    "InstanceName": "dd:",
+    "RequireTls": true
+  },
+  "Cache:Encryption:Key": "BASE64_ENCODED_32_BYTE_KEY"
 }
 ```
 
@@ -85,11 +96,27 @@ key is scoped to `tenantId + userId` for security isolation.
 | `ExcludedResponseHeaders` | `Set-Cookie`, `Authorization`, … | Per-replay header allow-list applied on top of the captured response |
 | `AllowInMemoryStore` | `false` | Allow a non-distributed store outside Development — see below |
 
+The Redis provider adds its own section, `Http:Idempotency:Redis`:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `IsEnabled` | `true` | Toggle the Redis store module |
+| `Configuration` | `localhost:6379` | StackExchange.Redis configuration string |
+| `InstanceName` | `dd:` | Application-scoped key prefix |
+| `RequireTls` | `true` | Force TLS on the Redis connection |
+
 :::caution[Distributed store required outside Development]
-Outside `Development`, startup fails when the resolved `IConditionalCache` is
-in-memory: a per-replica idempotency store means a retry landing on another pod
-re-executes the handler. Register a distributed cache (Redis) or — for a
-single-replica host only — set `Http:Idempotency:AllowInMemoryStore` to `true`.
+Outside `Development`, startup fails when the registered `IIdempotencyStore`
+reports `IsDistributed = false`: a per-replica idempotency store means a retry
+landing on another pod re-executes the handler. Register the Redis provider or —
+for a single-replica host only — set `Http:Idempotency:AllowInMemoryStore` to
+`true`.
+:::
+
+:::caution[Encryption key required outside Development]
+The Redis store encrypts every entry at rest with AES-256-GCM — unconditionally.
+Outside `Development`, startup fails closed when no base64 256-bit
+`Cache:Encryption:Key` is configured. There is no opt-out.
 :::
 
 :::note[Good to know]
@@ -208,9 +235,10 @@ change on every request, making the hash non-deterministic.
 
 - **Tenant isolation**: The Redis key includes `tenantId + userId`, preventing
   cross-tenant response replay even with identical idempotency keys.
-- **Encryption**: Cached responses are encrypted with AES-256-GCM via
-  `ICacheValueEncryptor` (provided by `Granit.Caching`). This is mandatory for
-  ISO 27001 compliance when response bodies contain health data.
+- **Encryption**: With the Redis provider, cached responses are encrypted with
+  AES-256-GCM via `ICacheValueEncryptor` — unconditionally, using the
+  `Cache:Encryption:Key`. This is mandatory for ISO 27001 compliance when
+  response bodies contain health data.
 - **No side-channel**: The idempotency key is hashed before storage, preventing
   Redis key enumeration attacks.
 

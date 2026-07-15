@@ -66,6 +66,8 @@ builder.Services
 // Program.cs — routes (after auth middleware)
 app.MapGranitODataEndpoints("/api/{version}/odata", opts =>
 {
+    opts.RequireMetadataPermission("OData.Invoicing.Metadata.Read"); // or AllowAnonymousMetadata()
+
     opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices")
         .RequirePermission("OData.Invoicing.Invoices.Read")
         .ExpandWhitelist("Customer");
@@ -112,7 +114,8 @@ The EDM `EntityType` is built by:
    for v1; navigation paths land in a follow-up driven by
    `EntityDefinition.Relations`).
 4. Allowing the navigation properties listed in `.ExpandWhitelist(...)` on the
-   EntitySet builder.
+   EntitySet builder — including nested dotted paths (see
+   [`$expand` — recursive whitelist](#expand--recursive-whitelist)).
 
 Everything else is removed from the EDM via
 `EntityTypeConfiguration.RemoveProperty(...)` **before** convention discovery — notably
@@ -136,39 +139,132 @@ flowchart LR
     RT --> RL[Rate limit<br/>granit-odata]
     RL --> AU[Auth + Permission]
     AU --> QS[IQueryableSource&lt;Invoice&gt;]
-    QS -->|"ApplyGranitConventions<br/>(tenant + soft-delete)"| QE[IQueryEngine.BuildFilteredQuery]
+    QS -->|"ApplyGranitConventions<br/>(tenant + soft-delete)"| QE[IQueryEngine.BuildFilteredQuery<br/>+ translated $filter predicate]
     QE -->|"QueryDefinition pipeline"| OQ[ODataQueryOptions.ApplyTo]
-    OQ -->|"$filter / $select / $top / $orderby"| DB[(Database)]
+    OQ -->|"$select / $top / $orderby / $expand"| DB[(Database)]
 ```
 
 The order is load-bearing: **tenant first, framework filters second, user query
-third**. A BI consumer can never widen the result set — only narrow it.
+third**. A BI consumer can never widen the result set — only narrow it. `$filter`
+is consumed by the QueryEngine step (translated to a `QueryPredicate`) and
+excluded from `ApplyTo` — it is never applied twice.
 
 ## Strict-config validator
 
-Two security-sensitive intents must be declared **explicitly** per EntitySet, or
+Security-sensitive intents must be declared **explicitly**, or
 `MapGranitODataEndpoints` throws at host startup with a list of every misconfigured
-set:
+set. Per EntitySet:
 
 1. **Permission policy** — `.RequirePermission(...)` (gated) **or** `.AllowAnonymousAccess()`
    (true public reference data, e.g. countries/currencies).
 2. **`$expand` policy** — `.ExpandWhitelist(...)` (allow listed navigations) **or**
    `.DisableExpand()` (no expand at all).
 
-```csharp
-// ❌ Throws at startup — both intents missing
-opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices");
+And per mount:
 
-// ✅ Both intents explicit
-opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices")
-    .RequirePermission("OData.Invoicing.Invoices.Read")
-    .ExpandWhitelist("Customer", "Lines");
+<ol start="3">
+<li>
+
+**`$metadata` stance** — `opts.RequireMetadataPermission("...")` (gate
+`$metadata` + the service document behind a permission) **or**
+`opts.AllowAnonymousMetadata()`. The CSDL schema enumerates every exposed
+entity and column — reconnaissance gold — so the framework refuses an implicit
+stance. The host feed exposes **only** `RequireMetadataPermission(...)`: there
+is no anonymous option for cross-tenant metadata.
+
+</li>
+</ol>
+
+```csharp
+// ❌ Throws at startup — intents missing
+app.MapGranitODataEndpoints("/api/{version}/odata", opts =>
+{
+    opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices");
+});
+
+// ✅ All intents explicit
+app.MapGranitODataEndpoints("/api/{version}/odata", opts =>
+{
+    opts.RequireMetadataPermission("OData.Invoicing.Metadata.Read");
+
+    opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices")
+        .RequirePermission("OData.Invoicing.Invoices.Read")
+        .ExpandWhitelist("Customer", "Lines");
+});
 ```
 
 Convention drift toward "unprotected by default" is a top cause of data leaks. The
 framework refuses to ship a permission-less EntitySet by accident — silent defaults
 are the equivalent of an architecture test for a config surface that lives inside a
 closure.
+
+## `$filter` — translated to `QueryPredicate`
+
+`$filter` is no longer handed to `ODataQueryOptions.ApplyTo`. The
+`ODataFilterTranslator` walks the OData AST and produces a
+[`QueryPredicate` tree](/dotnet/building-blocks/query-engine/#structured-predicates--querypredicate)
+evaluated by the QueryEngine's strict `BuildFilteredQuery(source, request, predicate)`
+overload — **one enforcement point** for column whitelisting, operator/type
+validation, and value conversion, shared with the application's own grids.
+Anything the translator cannot express as a predicate is rejected with an
+explicit `400` — never silently widened or passed through.
+
+**Supported constructs:**
+
+| OData construct | Translated to |
+|-----------------|---------------|
+| `and` / `or` / `not` | `And` / `Or` / `Not` predicate nodes |
+| `eq` / `ne` | `Eq` / `Ne`; a `null` literal becomes `IsNull` / `IsNotNull` |
+| `gt` / `ge` / `lt` / `le` | `Gt` / `Gte` / `Lt` / `Lte` (mirrored when the literal is on the left) |
+| `contains` / `startswith` / `endswith` | `Contains` / `StartsWith` / `EndsWith` (string columns) |
+| `in ( ... )` | `In` with a literal list |
+
+**Rejected with `400 Bad Request`** (metric reason `filter_not_translatable`, each
+with a distinct detail message):
+
+| Construct | Example |
+|-----------|---------|
+| Lambdas | `Lines/any(l: l/Amount gt 100)`, `all(...)` |
+| Arithmetic | `Total add 5 gt 100`, `sub`/`mul`/`div`/`mod`, unary minus |
+| Navigation property access | `Customer/Name eq 'ACME'` |
+| Canonical functions | `tolower(Name) eq 'acme'`, `year(IssuedOn) eq 2026`, everything except contains/startswith/endswith |
+| Dynamic (open) properties | any property not in the EDM |
+| `has`, collection `$count`, bare boolean property | `Flags has Sales.Color'Red'`, `IsActive` (use `IsActive eq true`) |
+
+NULL semantics are two-valued (`ne` matches NULL rows; use `eq null` /
+`ne null` for explicit null checks) — see the
+[QueryEngine NULL semantics](/dotnet/building-blocks/query-engine/#null-semantics--two-valued-not-sql-three-valued).
+
+<Aside type="caution" title="Power BI compatibility">
+Power BI, Excel, and Tableau generate plain comparison/logic filters for their
+query folding — all translated. Two known edges: **case-insensitive text
+filters** fold to `tolower(...)`, which is rejected — model text columns with a
+consistent case or filter client-side; and **date hierarchy drill-downs** can
+fold to `year(...)`/`month(...)` — use explicit date-range filters
+(`IssuedOn ge 2026-01-01 and IssuedOn lt 2027-01-01`) instead. A rejected fold
+does not fail the report: the BI tool falls back to client-side filtering after
+the 400 — at the cost of transferring more rows.
+</Aside>
+
+### BREAKING — whitelist gates on `$filter` and `$orderby`
+
+Two behaviors that previously passed through silently now return `400`:
+
+| Request | Before | Now |
+|---------|--------|-----|
+| `$filter` on a column without `.Filterable()` in the QueryDefinition | Applied silently | `400` listing every offending field (metric `filter_field_rejected`) |
+| `$orderby` on a column without `.Sortable()` | Applied silently | `400` (metric `odata_validation_failed`) |
+
+The EDM (`ExportDefinition`) controls which columns are *visible*; the
+`QueryDefinition` controls which are *filterable/sortable* — the same
+whitelist-first contract the application's grids obey.
+
+**Migration:** audit your BI reports' filters and sorts, then add
+`.Filterable()` / `.Sortable()` to the corresponding `QueryDefinition` columns.
+A definition with **zero** sortable columns now rejects every `$orderby`.
+Watch the `granit.odata.query.rejected` counter (reasons
+`filter_field_rejected`, `odata_validation_failed`) after upgrading to catch
+reports relying on the old pass-through.
 
 ## Hardening per EntitySet
 
@@ -185,10 +281,43 @@ opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices")
 | Behaviour | Trigger | Response |
 |-----------|---------|----------|
 | `$top` clamped | Caller sends `$top` above `MaxTop` | Result trimmed + header `OData-MaxTop-Applied: <cap>` |
-| `$count` rejected | Caller sends `$count=true` without `.EnableCount()` | `400 Bad Request` |
-| `$expand` rejected | Property not in `ExpandWhitelist`, or no whitelist call | `400 Bad Request` |
-| Depth rejected | `$expand` depth above `MaxExpansionDepth` | `400 Bad Request` |
+| `$count` rejected | Caller sends `$count=true` without `.EnableCount()` | `400 Bad Request` (`count_disabled`) |
+| `$expand` rejected | Path not in `ExpandWhitelist`, or no whitelist call | `400 Bad Request` (`expand_not_whitelisted`) |
+| Depth rejected | `$expand` depth (incl. `$levels`) above `MaxExpansionDepth` | `400 Bad Request` (`expand_depth_exceeded`) |
+| `$filter` rejected | Untranslatable construct / non-filterable field | `400 Bad Request` (`filter_not_translatable` / `filter_field_rejected`) |
+| `$orderby` rejected | Column not `.Sortable()` in the QueryDefinition | `400 Bad Request` (`odata_validation_failed`) |
 | OTel counters | Every event | `granit.odata.query.rejected{entity_set, reason, tenant_id}`, `granit.odata.query.top_clamped` |
+
+## `$expand` — recursive whitelist
+
+`ExpandWhitelist(...)` accepts **dotted paths**, and whitelisting a nested path
+implicitly whitelists its prefixes:
+
+```csharp
+opts.EntitySet<Invoice, InvoiceQueryDefinition>("Invoices")
+    .RequirePermission("OData.Invoicing.Invoices.Read")
+    .ExpandWhitelist("Customer", "Lines.Product")  // "Lines" implied by "Lines.Product"
+    .MaxExpansionDepth(2);                          // must cover the longest path
+```
+
+`$expand=Lines($expand=Product)` now works; `$expand=Customer($expand=Address)`
+still returns `400` because `Customer.Address` is not whitelisted. `$levels` is
+normalized into repeated segments (`$expand=Manager($levels=2)` ≡
+`Manager.Manager` — each level must be whitelisted and within
+`MaxExpansionDepth`; `$levels=max` is always rejected as depth-exceeded).
+
+**Startup gates** — `MapGranitODataEndpoints` collects every violation and
+throws one `InvalidOperationException` at startup:
+
+1. Every path segment must be a real navigation property on its CLR type.
+2. Every type reachable through a whitelisted path must have a registered
+   `ExportDefinition` (`IExportDefinitionDescriptor`) — the expanded entity's
+   columns are whitelisted through the same EDM mechanism as the root
+   (ADR-050). No ExportDefinition, no expansion: register one or remove the
+   path.
+
+This closes the classic `$expand` exfiltration hole: a navigation reachable in
+the CLR model but never modeled for export cannot be pulled through a BI feed.
 
 ## Rate limiting per tenant
 
@@ -227,6 +356,8 @@ all tenants), compliance audit, capacity planning — mount a separate **host-fe
 ```csharp
 app.MapGranitODataHostEndpoints("/api/{version}/odata/host", opts =>
 {
+    opts.RequireMetadataPermission("OData.Host.Platform.Metadata.Read"); // mandatory — no anonymous variant
+
     opts.EntitySet<Tenant, TenantQueryDefinition>("Tenants")
         .RequirePermission("OData.Host.Platform.Tenants.Read")  // MUST be MultiTenancySides.Host
         .DisableExpand();
@@ -239,7 +370,7 @@ app.MapGranitODataHostEndpoints("/api/{version}/odata/host", opts =>
 });
 ```
 
-Three strict-config gates layered on top of the tenant-feed validator:
+Four strict-config gates layered on top of the tenant-feed validator:
 
 1. **Permission must be `MultiTenancySides.Host`.** The validator resolves the
    permission through `IPermissionDefinitionManager` at startup and refuses `Tenant`
@@ -251,6 +382,9 @@ Three strict-config gates layered on top of the tenant-feed validator:
    The host writes the per-query bypass lambda at the call site. Without it, the
    framework filter `tenantId == currentTenant.Id` returns no rows for a tenantless
    caller — fail-closed by default.
+4. **`RequireMetadataPermission(...)` mandatory.** The host builder has no
+   `AllowAnonymousMetadata()` — the cross-tenant CSDL schema and service document
+   are always permission-gated (a Host-side permission, same rule as gate 1).
 
 Operational distinctions:
 
@@ -313,9 +447,10 @@ discovery surface — Power BI / Excel / Tableau consume it natively.
 - **Collection access only.** `GET /Invoices` works; `GET /Invoices(<id>)` (single
   entity by key) is deferred — see
   [OData/AspNetCoreOData#1567](https://github.com/OData/AspNetCoreOData/issues/1567).
-- **Flat scalar fields.** Navigation paths in `ExportDefinition` (`PropertyPath`
-  containing `.`) are not exposed in v1; a follow-up will derive them from
-  `EntityDefinition.Relations`.
+- **Flat scalar fields on the root type.** Navigation paths in the root
+  `ExportDefinition` (`PropertyPath` containing `.`) are not flattened into the
+  root EDM type; related data is reached through the
+  [recursive `$expand` whitelist](#expand--recursive-whitelist) instead.
 
 ## See also
 
