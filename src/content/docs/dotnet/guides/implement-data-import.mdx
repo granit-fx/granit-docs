@@ -1,6 +1,6 @@
 ---
-title: "Implement Data Import \u2014 CSV & Excel Parsing"
-description: Build a CSV and Excel import pipeline with the Extract, Map, Validate, Execute flow — streaming IAsyncEnumerable and roundtrip INSERT/UPDATE support.
+title: "Implement Data Import — CSV & Excel Parsing"
+description: Build a CSV and Excel import pipeline with a guided upload/preview/mapping flow and batched, errors-as-data execution with roundtrip INSERT/UPDATE support.
 sidebar:
   order: 5
   label: Implement Data Import
@@ -8,16 +8,21 @@ sidebar:
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Granit.DataExchange provides a mini-ETL pipeline for importing and exporting
-tabular data. The import pipeline follows four steps -- Extract, Map, Validate,
-Execute -- with streaming `IAsyncEnumerable` processing, intelligent column
-mapping suggestions, and roundtrip (INSERT vs UPDATE) support.
+Granit.DataExchange provides a full import/export pipeline for tabular data. This
+guide builds an import (and a companion export) for a `Patient` entity end to
+end: upload a file, preview headers, confirm column mappings, then execute a
+typed pipeline with batched persistence and errors-as-data reporting — a bad
+row never throws, it surfaces as an `ImportRowError` in the final report.
 
 ## Prerequisites
 
 - A working Granit application with EF Core configured
 - A domain entity to import into (e.g., `Patient`)
 - `Granit.Validation` for row-level validation
+- A registered `ICommandSender` — `Granit.Wolverine` is the reference provider.
+  Both the import and export orchestrators take a hard constructor dependency
+  on it (there is no in-process fallback); DI resolution fails at startup
+  without one.
 
 ## 1. Install the packages
 
@@ -25,6 +30,11 @@ mapping suggestions, and roundtrip (INSERT vs UPDATE) support.
 dotnet add package Granit.DataExchange
 dotnet add package Granit.DataExchange.EntityFrameworkCore
 dotnet add package Granit.DataExchange.Endpoints
+
+# ICommandSender is required for asynchronous execution — Granit.Wolverine
+# is the reference provider (durable outbox via PostgreSQL)
+dotnet add package Granit.Wolverine
+dotnet add package Granit.Wolverine.Postgresql
 ```
 
 Then add one or both file parsers:
@@ -57,22 +67,43 @@ dotnet add package Granit.DataExchange.Excel
 ## 2. Register services
 
 ```csharp
-// Core import pipeline
-services.AddGranitDataExchange();
+// Import pipeline (mapping suggestions, orchestrator, job store defaults)
+services.AddGranitDataImport();
 
-// File parsers (at least one required)
+// Export pipeline (orchestrator, preset store defaults)
+services.AddGranitDataExport();
+
+// File parsers (at least one required) — also register the matching
+// IExportWriter (CsvExportWriter / ClosedXmlExportWriter), so no separate
+// export-writer registration is needed
 services.AddGranitDataExchangeCsv();
 services.AddGranitDataExchangeExcel();
 
-// EF Core persistence (import jobs, saved mappings)
+// EF Core persistence (import/export job store, saved mappings, presets)
 builder.AddGranitDataExchangeEntityFrameworkCore(opts =>
     opts.UseNpgsql(connectionString));
 
-// Import definition and executor for your entity
+// Opts AppDbContext into export discovery: gives the automatic export
+// fallback AND the generic IExportDataSource<T> that an explicit
+// ExportDefinition<T> can reuse (unless it needs navigation fields)
+services.AddDataExchangeDbContext<AppDbContext>();
+
+// Import definition, executor, and identity resolver for your entity
 services.AddImportDefinition<Patient, PatientImportDefinition>();
 services.AddImportExecutor<Patient, AppDbContext>();
 services.AddBusinessKeyResolver<Patient, AppDbContext>();
+
+// Export definition for your entity
+services.AddExportDefinition<Patient, PatientExportDefinition>();
 ```
+
+:::caution[File storage: no silent default]
+`Granit.DataExchange` registers a **fail-fast** `NullDataExchangeFileProvider`
+by default — every call throws `NotImplementedException`. Register a real
+provider before going further: add `Granit.DataExchange.BlobStorage`
+(production) or call `services.AddInMemoryDataExchangeFileProvider()`
+(tests / single-process CLI tools, registered as a singleton).
+:::
 
 ## 3. Define an import definition
 
@@ -115,18 +146,29 @@ public sealed class PatientImportDefinition : ImportDefinition<Patient>
 | Method | Description |
 |--------|-------------|
 | `Property(expr, config?)` | Declare an importable property (whitelist) |
-| `HasBusinessKey(expr)` | Business key for INSERT vs UPDATE resolution |
-| `HasCompositeKey(exprs)` | Composite key (multiple properties) |
-| `HasExternalId()` | External ID resolution (Odoo pattern) |
+| `HasBusinessKey(expr)` | Single natural key for INSERT vs UPDATE resolution |
+| `HasCompositeKey(exprs)` | Multi-column business key |
+| `HasExternalId()` | External ID column for cross-system identity mapping (via a dedicated mapping table) |
 | `ExcludeOnUpdate(expr)` | Never overwrite this property on UPDATE |
-| `GroupBy(column)` | Group rows for parent/child imports |
-| `HasMany(collection, config)` | Child collection (requires `GroupBy`) |
+
+:::note[Parent/child grouping — not yet available]
+An earlier design explored a `.GroupBy(...)` + `.HasMany(...)` surface for
+parent/child rows (e.g. an invoice header with line items on the same sheet).
+It was removed before release — each `ImportDefinition<T>` targets a single
+flat entity type. For now, model a parent/child import as **two flat
+definitions linked by a shared business key** (import the parent first, then
+the children referencing the parent's key). Grouped/hierarchical import is
+deferred to a future version.
+:::
 
 ## 4. The import pipeline
 
-The pipeline processes files through four stages, all streaming via
-`IAsyncEnumerable`. Only the current batch (default 500 entities) and accumulated
-errors are held in memory.
+The pipeline processes files through several stages, all streaming via
+`IAsyncEnumerable`. Only the current batch (default 500 entities) and
+accumulated errors are held in memory. Mapping, validation, and identity
+resolution never throw for a bad row — each source row yields a
+`RowOutcome<TEntity>` (`Ok`, `Failed`, or `Skipped`), and every failure
+surfaces as an `ImportRowError` in the final `ImportReport`.
 
 ```text
 Upload --> Preview --> Confirm mappings --> Execute (async)
@@ -147,7 +189,7 @@ services.AddGranitDataExchangeCsv();
 // configurable separators, and UTF-8 with BOM detection.
 ```
 
-CSV parsing options:
+`FileParsingOptions` properties relevant to CSV:
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -161,8 +203,7 @@ CSV parsing options:
 ```csharp
 services.AddGranitDataExchangeExcel();
 
-// Sylvan.Data.Excel (MIT, zero-dep) supports .xlsx, .xls, and .xlsb
-// via streaming DbDataReader.
+// Sylvan.Data.Excel (MIT) supports .xlsx and .xls via streaming DbDataReader.
 ```
 
 Supported formats:
@@ -171,7 +212,11 @@ Supported formats:
 |-----------|--------|-----------|
 | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | Open XML | `.xlsx` |
 | `application/vnd.ms-excel` | BIFF (Excel 97--2003) | `.xls` |
-| `application/vnd.ms-excel.sheet.binary.macroenabled.12` | Binary | `.xlsb` |
+
+:::note[Macro-enabled Excel files not supported]
+`.xlsb` (macro-enabled binary workbooks) is rejected at upload, preventing
+macro execution when exported files are re-served to users.
+:::
 
 </TabItem>
 </Tabs>
@@ -179,7 +224,8 @@ Supported formats:
 ### Stage 2: Map
 
 `IMappingSuggestionService` suggests column-to-property mappings using four
-strategies in decreasing confidence order:
+strategies in decreasing confidence order. Each tier only processes columns
+the previous tiers couldn't match:
 
 | Level | Source | Confidence |
 |-------|--------|------------|
@@ -195,14 +241,20 @@ never actual row data. This is a GDPR/ISO 27001 guarantee.
 
 ### Stage 3: Validate
 
-`IRowValidator<T>` validates each mapped entity using FluentValidation. Invalid
-rows are collected in the import report with their error codes and messages.
+`IRowValidator<T>` validates each mapped entity using FluentValidation. Rows
+that fail validation are folded into the `RowOutcome<T>` stream as `Failed`,
+with their error codes and messages collected in the final report — they
+never abort the batch.
 
 ### Stage 4: Execute
 
-`IImportExecutor<T>` persists valid entities in batches. For each entity, the
-`IRecordIdentityResolver<T>` determines whether to INSERT or UPDATE based on
-the business key.
+`IImportExecutor<T>` persists entities in batches (default 500 rows per
+`SaveChanges`), consuming the `IAsyncEnumerable<RowOutcome<T>>` stream
+produced by mapping and validation. Before each batch is written,
+`IRecordIdentityResolver<T>.ResolveBatchAsync` resolves the **whole batch at
+once** (not row by row) into `Insert`, `Update`, `Upsert`, `Skip`, or
+`Ambiguous` operations — one `WHERE key IN (...)` query per batch instead of
+one round-trip per row.
 
 ## 5. Map REST endpoints
 
@@ -210,27 +262,34 @@ the business key.
 app.MapGranitDataExchange();
 ```
 
+All endpoints require a **flat permission model** — `Execute` does not imply
+`Read`. Grant both to a role that needs full access.
+
 ### Import routes
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| `POST` | `/data-exchange` | Upload file and create an import job |
-| `POST` | `/{jobId}/preview` | Get headers, preview rows, mapping suggestions |
-| `PUT` | `/{jobId}/mappings` | Confirm column mappings |
-| `POST` | `/{jobId}/execute` | Execute import asynchronously (202 Accepted) |
-| `POST` | `/{jobId}/dry-run` | Execute synchronous dry run |
-| `GET` | `/{jobId}` | Job status |
-| `GET` | `/{jobId}/report` | Import report (statistics + errors) |
-| `GET` | `/{jobId}/correction-file` | Download file with error rows only |
+| Method | Route | Permission | Description |
+|--------|-------|-------------|-------------|
+| `GET` | `/jobs` | `Imports.Read` | List import jobs |
+| `POST` | `/jobs` | `Imports.Execute` | Upload file (creates import job) |
+| `POST` | `/{jobId}/preview` | `Imports.Execute` | Extract headers and generate mapping suggestions |
+| `PUT` | `/{jobId}/mappings` | `Imports.Execute` | Confirm column mappings |
+| `POST` | `/{jobId}/execute` | `Imports.Execute` | Execute import asynchronously |
+| `POST` | `/{jobId}/dry-run` | `Imports.Execute` | Full pipeline with transaction rollback |
+| `GET` | `/{jobId}` | `Imports.Read` | Job status |
+| `DELETE` | `/{jobId}` | `Imports.Execute` | Cancel import job |
+| `GET` | `/{jobId}/report` | `Imports.Read` | Import report (statistics + errors) |
+| `GET` | `/{jobId}/correction-file` | `Imports.Read` | Download CSV with failed rows only |
 
 ## 6. Import report
 
-The import report contains aggregate statistics and only the rows that failed --
-not the successful rows. For 100,000 rows with 50 errors, only ~50 error objects
-are held in memory.
+Retrieve the aggregate statistics and only the rows that failed — not the
+successful rows — via `GET /{jobId}/report`, or programmatically from the
+`ImportReport` returned by `IImportExecutor<T>.ExecuteAsync`:
 
 ```csharp
-ImportReport report = await executor.ExecuteAsync(entities, options);
+// rowOutcomes: IAsyncEnumerable<RowOutcome<Patient>> from the mapping +
+// validation stages
+ImportReport report = await executor.ExecuteAsync(rowOutcomes, options);
 
 report.TotalRows;      // 100000
 report.SucceededRows;  // 99950
@@ -240,10 +299,14 @@ report.UpdatedRows;    // 19950
 report.Duration;       // TimeSpan
 ```
 
+For 100,000 rows with 50 errors, only ~50 `ImportRowError` objects are held
+in memory.
+
 ## Export pipeline
 
 Granit.DataExchange also provides a full export pipeline with fluent field
-definitions, saveable presets, and background job support.
+definitions, saveable presets, and asynchronous dispatch (every export
+request is dispatched via `ICommandSender` — there is no synchronous path).
 
 ### Define an export
 
@@ -267,44 +330,50 @@ public sealed class PatientExportDefinition : ExportDefinition<Patient>
 
 ### Register export services
 
-```csharp
-services.AddGranitDataExport();
-services.AddExportDefinition<Patient, PatientExportDefinition>();
-services.AddScoped<IExportDataSource<Patient>, PatientExportDataSource>();
-services.AddSingleton<IExportWriter, CsvExportWriter>();
-services.AddSingleton<IExportWriter, ClosedXmlExportWriter>();
-```
+Already covered in [step 2](#2-register-services) — `AddGranitDataExport()`,
+`AddExportDefinition<Patient, PatientExportDefinition>()`, and
+`AddDataExchangeDbContext<AppDbContext>()` are all that's needed here since
+this definition has no navigation fields. The `IExportWriter` implementations
+(`CsvExportWriter`, `ClosedXmlExportWriter`) came from
+`AddGranitDataExchangeCsv()` / `AddGranitDataExchangeExcel()` in step 2 — no
+separate registration required. A navigation field (dot-notation traversal)
+would instead need a custom `IExportDataSource<T>` registered explicitly.
 
 ### Export routes
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| `GET` | `/export/definitions` | List export definitions |
-| `GET` | `/export/definitions/{name}/fields` | Available fields |
-| `POST` | `/export/jobs` | Create and dispatch an export job |
-| `GET` | `/export/jobs/{jobId}` | Job status |
-| `GET` | `/export/jobs/{jobId}/download` | Download exported file |
+| Method | Route | Permission | Description |
+|--------|-------|-------------|-------------|
+| `GET` | `/metadata/definitions` | `Exports.Read` | List registered export definitions |
+| `GET` | `/metadata/definitions/{name}/fields` | `Exports.Read` | Available fields for a definition |
+| `POST` | `/export/jobs` | `Exports.Execute` | Create and dispatch an export job |
+| `GET` | `/export/jobs/{id}` | `Exports.Read` | Job status |
+| `GET` | `/export/jobs/{id}/download` | `Exports.Read` | Download exported file |
 
 :::tip[Pro tip]
-Enable roundtrip import/export by setting `IncludeIdForImport = true` on the export
-request. The exported file includes the entity ID column, allowing re-import to
-UPDATE existing records instead of creating duplicates.
+Enable roundtrip import/export by setting `IncludeIdForImport = true` on the
+export request (`CreateExportJobRequest`). The exported file includes the
+entity ID column, allowing re-import to UPDATE existing records instead of
+creating duplicates.
 :::
 
 ## Configuration
 
 ```json
 {
-  "DataExchange": {
+  "DataExchange:Import": {
     "DefaultMaxFileSizeMb": 50,
     "DefaultBatchSize": 500,
-    "FuzzyMatchThreshold": 0.8
-  },
-  "DataExchange:Export": {
-    "BackgroundThreshold": 1000
+    "FuzzyMatchThreshold": 0.8,
+    "DeleteUploadedFileOnSuccess": false
   }
 }
 ```
+
+`DataExchange:Export` currently has no settings of its own — every export is
+dispatched asynchronously, so there is no more background-vs-synchronous
+threshold to configure. Export sizing/dispatch is controlled entirely by the
+caller's request and each writer's own limits (e.g. the Excel 1,048,576-row
+worksheet cap).
 
 ## Next steps
 

@@ -1048,7 +1048,12 @@ Each entry in `Policies`:
 |---|---|---|---|
 | **Section** | -- | `DataExchange:Export` | |
 | **Package** | -- | `Granit.DataExchange` | |
-| `BackgroundThreshold` | `int` | `1000` | Row count above which export runs as a background job. |
+
+The section currently has no settings of its own -- every export is
+dispatched asynchronously via `ICommandSender`, so there is no
+background-vs-synchronous row-count threshold to configure. Export
+sizing/dispatch is controlled entirely by the caller's request and each
+writer's own limits (e.g. the Excel 1,048,576-row worksheet cap).
 
 ### Data exchange endpoints -- `DataExchangeEndpointsOptions`
 
@@ -1059,6 +1064,23 @@ Each entry in `Policies`:
 | `RoutePrefix` | `string` | `"data-exchange"` | Route prefix. |
 | `RequiredRole` | `string` | `"granit-data-exchange-admin"` | Fallback authorization role. |
 | `TagName` | `string` | `"Data Exchange"` | OpenAPI tag. |
+
+### Data exchange retention (GDPR sweep) -- `DataExchangeRetentionOptions`
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **Section** | -- | `DataExchange:Retention` | |
+| **Package** | -- | `Granit.DataExchange.BackgroundJobs` | |
+| `ImportFileRetention` | `TimeSpan` | `30.00:00:00` (30 days) | How long an uploaded import file is kept after the job reaches a terminal state before the sweep purges it from blob storage. |
+| `ExportFileRetention` | `TimeSpan` | `7.00:00:00` (7 days) | How long a generated export file is kept before purge. Shorter than import retention by default -- an export is a derived, re-downloadable artifact. |
+| `JobRecordRetention` | `TimeSpan` | `365.00:00:00` (365 days) | How long a terminal job's database row (metadata, not the file) is kept before hard-delete. |
+| `StuckJobTimeout` | `TimeSpan` | `06:00:00` (6 hours) | How long a job may sit in a non-terminal executing state before the sweep treats it as stranded and force-fails it. |
+| `SweepBatchSize` | `int` | `500` | Max jobs processed per category, per run. |
+
+Validated at startup by `DataExchangeRetentionOptionsValidator` (`TimeSpan`
+values can't be expressed with `[Range]`). Opt-in via
+`[DependsOn(typeof(GranitDataExchangeBackgroundJobsModule))]` -- the base
+`Granit.DataExchange` module does not schedule the sweep on its own.
 
 ---
 
