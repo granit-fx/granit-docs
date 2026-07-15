@@ -95,7 +95,7 @@ flowchart TD
     subgraph Generic["Generic services (granit-dotnet)"]
         TMPL["Templating (8)"]:::business
         QRY["QueryEngine (4)"]:::business
-        DX["DataExchange (7)"]:::business
+        DX["DataExchange (11)"]:::business
         WF["Workflow (5)"]:::business
         TL["Timeline (5)"]:::business
         AUDIT["Auditing (4)"]:::business
@@ -142,11 +142,12 @@ flowchart TD
     UTILS --> TMPL
     QRY --> NOTIF
     EVT --> DX
-    WOL --> DX
     WOL --> JOBS
     QRY --> AUDIT
     QRY --> TL
     QRY --> DX
+    JOBS --> DX
+    STORAGE --> DX
     WF --> TMPL
     NOTIF --> WF
     NOTIF --> TL
@@ -199,7 +200,7 @@ flowchart TD
 | MCP | Mcp, Mcp.Client, Mcp.Server |
 | Workflow | Workflow (4), Workflow.Notifications |
 | Timeline | Timeline (4), Timeline.Notifications |
-| DataExchange | DataExchange (5), DataExchange.Wolverine |
+| DataExchange | DataExchange (11 incl. Abstractions, AI, BackgroundJobs, BlobStorage, Csv, Excel, EntityFrameworkCore, Endpoints, Json, Xml) |
 | QueryEngine | QueryEngine, QueryEngine.AspNetCore, QueryEngine.EntityFrameworkCore |
 | Wolverine | Wolverine, Wolverine.Postgresql, Wolverine.SqlServer |
 | AI | AI (9 incl. Endpoints, Mcp, VectorData, Extraction + 3 providers: OpenAI, AzureOpenAI, Ollama), and cross-cutting `*.AI` packages on framework modules |
@@ -556,28 +557,44 @@ These two domains share cross-module dependencies with Notifications and Identit
 
 ### DataExchange
 
-Import/export pipeline with format adapters (CSV, Excel) and async processing via Wolverine.
+Import/export pipeline with format adapters (CSV, Excel, JSON, XML). Both
+orchestrators dispatch through the generic `ICommandSender` abstraction
+(declared in `Granit`, not a hard Wolverine dependency) — `Granit.Wolverine`
+is the reference provider a host wires in separately. There is no
+`Granit.DataExchange.Wolverine` package.
 
 ```mermaid
 flowchart LR
-    DX["DataExchange"] --> DX_CSV["DataExchange.Csv"]
+    DXA["DataExchange.Abstractions"] --> DX["DataExchange"]
+    DX --> DX_CSV["DataExchange.Csv"]
     DX --> DX_EXCEL["DataExchange.Excel"]
+    DX --> DX_JSON["DataExchange.Json"]
+    DX --> DX_XML["DataExchange.Xml"]
     DX --> DX_EF["DataExchange.EF"]
     DX --> DX_EP["DataExchange.Endpoints"]
-    DX --> DX_WOL["DataExchange.Wolverine"]
+    DX --> DX_BLOB["DataExchange.BlobStorage"]
+    DX --> DX_BGJ["DataExchange.BackgroundJobs"]
+    DX --> DX_AI["DataExchange.AI"]
 
     style DX_CSV fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style DX_EXCEL fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style DX_JSON fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+    style DX_XML fill:#e8f5e9,stroke:#43a047,color:#1b5e20
 ```
 
 | Package | Depends on |
 |---------|------------|
-| `Granit.DataExchange` | `Events`, `Guids`, `QueryEngine`, `Timing`, `Validation` |
+| `Granit.DataExchange.Abstractions` | `Granit` |
+| `Granit.DataExchange` | `DataExchange.Abstractions`, `Events`, `Guids`, `QueryEngine`, `Timing`, `Validation` |
 | `Granit.DataExchange.Csv` | `DataExchange` |
 | `Granit.DataExchange.Excel` | `DataExchange` |
+| `Granit.DataExchange.Json` | `DataExchange` |
+| `Granit.DataExchange.Xml` | `DataExchange` |
 | `Granit.DataExchange.EntityFrameworkCore` | `DataExchange`, `Persistence` |
 | `Granit.DataExchange.Endpoints` | `DataExchange`, `Authorization` |
-| `Granit.DataExchange.Wolverine` | `DataExchange`, `Wolverine` |
+| `Granit.DataExchange.BlobStorage` | `DataExchange`, `BlobStorage` |
+| `Granit.DataExchange.BackgroundJobs` | `DataExchange`, `BackgroundJobs` |
+| `Granit.DataExchange.AI` | `DataExchange`, `AI` |
 
 ### Auditing
 
@@ -824,8 +841,11 @@ in the repository.
    pattern omitted from the diagrams for readability.
 
 6. **Wolverine is the sole message bus.** All asynchronous processing flows through
-   Wolverine: Notifications, Webhooks, BackgroundJobs, DataExchange.Wolverine,
-   Persistence.Migrations.Wolverine.
+   Wolverine: Notifications, Webhooks, BackgroundJobs, Persistence.Migrations.Wolverine.
+   `Granit.DataExchange` dispatches through the generic `ICommandSender` abstraction
+   (declared in `Granit`) rather than a hard Wolverine reference — `Granit.Wolverine`
+   is the reference provider a host wires in; there is no `Granit.DataExchange.Wolverine`
+   package.
 
 7. **`Persistence.Migrations` is decoupled from Wolverine.** Batch dispatch is abstracted
    via `IMigrationBatchDispatcher` (Channel-based by default, Wolverine optional via

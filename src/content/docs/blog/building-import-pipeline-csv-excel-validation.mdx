@@ -200,32 +200,15 @@ The matching `GET /{jobId}/correction-file` endpoint streams a CSV with the fail
 
 ## Parent/child imports
 
-Invoices with line items, orders with shipments, patients with vaccinations — the same definition supports a grouped import:
+Invoices with line items, orders with shipments, patients with vaccinations — a flat CSV often encodes a parent with one row per child, the invoice number repeated on every line.
 
-```csharp title="InvoiceImportDefinition.cs"
-protected override void Configure(ImportDefinitionBuilder<Invoice> builder)
-{
-    builder
-        .GroupBy("InvoiceNumber")
-        .HasBusinessKey(i => i.InvoiceNumber)
-        .Property(i => i.InvoiceNumber, p => p.Required())
-        .Property(i => i.CustomerName)
-        .HasMany(i => i.Lines, child =>
-        {
-            child.Property(l => l.ProductCode, p => p.Required());
-            child.Property(l => l.Quantity);
-            child.Property(l => l.UnitPrice);
-        });
-}
-```
+<Aside type="note" title="Grouped import returns in a later release">
+The pipeline was rebuilt on a fully-typed, end-to-end-tested execution path, and the grouped parent/child surface (`GroupBy` + `HasMany`) was pulled out during that work — it comes back in a future version with an explicit grouping stage rather than a declared-but-unexecuted API. Until then, import the parent and child as two definitions and link them by business key.
+</Aside>
 
-The CSV is flat (one row per line item, repeated invoice number on every row). The pipeline groups by `InvoiceNumber`, builds the parent entity once, and attaches the child collection.
+## Durable execution
 
-## Wolverine, or not
-
-Without Wolverine, the `/execute` endpoint dispatches the work through a bounded in-memory `Channel<T>` (capacity 100, back-pressure on full). It works, it is fast, and a crash drops in-flight imports.
-
-Add `Granit.DataExchange.Wolverine` and the dispatchers switch to the transactional outbox. The job survives a crash, is retried on transient failures, and lands in the dead-letter queue if it permanently fails. Same handlers, same `ImportDefinition<T>`, durable. We unpack the upgrade path in [From Channels to Wolverine](/blog/from-channels-to-wolverine-upgrading-messaging/).
+The `/execute` endpoint does not run the import inline. It dispatches an `ExecuteImportCommand` through `ICommandSender` and returns immediately; the host supplies the implementation. Register `Granit.Wolverine` and the command rides the transactional outbox — the job survives a crash, is retried on transient failures, and lands in the dead-letter queue if it permanently fails. Same handlers, same `ImportDefinition<T>`, durable. We unpack the messaging model in [From Channels to Wolverine](/blog/from-channels-to-wolverine-upgrading-messaging/).
 
 ## Hardening that ships in the box
 
@@ -233,7 +216,7 @@ Importers are an exploitation surface. A few things `Granit.DataExchange` enforc
 
 * **Formula injection guard** — CSV and Excel writers neutralize cell values starting with `=`, `+`, `-`, `@`, `\t`, or `\r`. Re-exporting an imported file does not turn user input into a spreadsheet formula (CWE-1236).
 * **`.xlsb` is rejected** — macro-enabled binary workbooks are blocked at upload. You cannot import a file you would refuse to re-serve.
-* **Multi-tenancy on every entity** — `ImportJobEntity`, `SavedMappingEntity`, `ExternalIdMappingEntity` all implement `IMultiTenant`. The query filter from [the interceptor stack](/blog/soft-deletes-audit-trails-query-filters-interceptor-stack/) keeps tenants from seeing each other's import history.
+* **Multi-tenancy on every entity** — `ImportJob`, `SavedMappingEntity`, `ExternalIdMappingEntity` all implement `IMultiTenant`. The query filter from [the interceptor stack](/blog/soft-deletes-audit-trails-query-filters-interceptor-stack/) keeps tenants from seeing each other's import history.
 * **Filename sanitization** — `Path.GetFileName()` on every upload, MIME cross-validated against the extension.
 * **AI output validated** — the semantic mapping service's suggestions are clamped to `[0.0, 1.0]` and verified against the property whitelist before being returned.
 
