@@ -118,7 +118,7 @@ Why not multi-tenant from day 1: the framework's current
 (`entity.TenantId == currentTenant.Id`) — it would *exclude* Host-owned
 rows from tenant queries, breaking the "tenant browses Host catalog"
 use case fundamental to billing. Fixing the filter today would lock us
-into a design before the e-commerce phase has been cadred. See
+into a design before the e-commerce phase has been scoped. See
 "Path forward" below.
 
 ### Free-form metadata: `IHasMetadata`, not a new dictionary

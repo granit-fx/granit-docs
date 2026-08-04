@@ -124,7 +124,7 @@ Doctrine (2) qualifies — and only qualifies — when **all** of these hold:
 
 - **Cosmetic categorisation only.** The value labels data; it never becomes executable code. No dispatch table beyond a deterministic render/aggregate function reads it as a discriminator selecting business logic.
 - **Governance at a neutral standards body.** Unicode, IETF, ISO. Not at Granit. Not at the consumer application. Granit gets to be a consumer of the standard, not a curator of it.
-- **Validable at insertion via a compact deterministic rule.** A regex, a range check, a state machine, or an ISO list — small enough to ship in a single source file and to update by editing a codepoint table, never by re-pulling a vendor catalog at every release.
+- **Validatable at insertion via a compact deterministic rule.** A regex, a range check, a state machine, or an ISO list — small enough to ship in a single source file and to update by editing a codepoint table, never by re-pulling a vendor catalog at every release.
 - **Audit-friendly.** The same identifier means the same thing across tenants, across versions of the framework, and across UI languages. A `"👍"` reaction, an `"FR"` country, a `"fr-BE"` locale, a `"EUR"` currency — the meaning is fixed by the standard, not by a translation table inside one tenant's database.
 
 Examples that qualify today:

@@ -1,0 +1,28 @@
+# Spell check for documentation prose. Code blocks and inline code are
+# ignored — identifiers are not prose. FR/NL dictionaries cover the
+# localization examples; en-GB accepts British spellings alongside en-US.
+version: "0.2"
+language: en,en-GB
+import:
+  - "@cspell/dict-fr-fr/cspell-ext.json"
+  - "@cspell/dict-nl-nl/cspell-ext.json"
+dictionaries:
+  - project-words
+  - fr-fr
+  - nl-nl
+dictionaryDefinitions:
+  - name: project-words
+    path: ./project-words.txt
+    addWords: true
+files:
+  - "src/content/docs/**/*.md"
+  - "src/content/docs/**/*.mdx"
+ignoreRegExpList:
+  # Fenced code blocks
+  - "/^\\s*```[\\s\\S]*?^\\s*```/gm"
+  # Inline code (single line — multi-line matches would desync backtick
+  # pairing after every fenced block)
+  - "/`[^`\\n]+`/g"
+  # Frontmatter keys and URLs
+  - "/^https?:\\/\\/\\S+/gm"
+  - "/\\((\\/|https?:\\/\\/)[^)\\s]+\\)/g"
