@@ -142,14 +142,33 @@ ensures uniqueness even if two proofs are generated in the same second.
 
 ### Server-side
 
-**No configuration needed.** OpenIddict 7.x validates DPoP proofs automatically
-through its built-in `ValidateProofOfPossession` handler. When a client presents
-a DPoP proof during a token request, the server:
+OpenIddict validates the DPoP proof JWT (signature, `htm`, `htu`, `exp`) during a
+token request. To **bind** the issued token to the client's key — stamping the JWK
+thumbprint as the `cnf.jkt` confirmation claim (RFC 9449 §6) and returning
+`token_type: "DPoP"` — reference the opt-in **`Granit.OpenIddict.Server.DPoP`**
+package:
+
+```bash
+dotnet add package Granit.OpenIddict.Server.DPoP
+```
+
+Referencing the package is all that is required: its module wires the
+`DPoPTokenBindingHandler` into the server pipeline, registers DPoP as a
+sender-constraining mechanism, and pins the FAPI 2.0 DPoP validation flags. When a
+client presents a DPoP proof during a token request, the server then:
 
 1. Validates the proof JWT (signature, `htm`, `htu`, `exp`)
 2. Extracts the public key from the proof header
-3. Computes the JWK thumbprint and embeds it as the `cnf` claim
+3. Computes the JWK thumbprint and embeds it as the `cnf.jkt` claim
 4. Returns `token_type: "DPoP"` instead of `"Bearer"`
+
+<Aside type="note">
+DPoP token binding is now **opt-in**. The core `Granit.OpenIddict.Server` package
+stays DPoP-free — an mTLS-only or Bearer-only host never pulls in the DPoP stack.
+Before the sender-constraining refactor the handler was wired automatically by
+`AddGranitOpenIddictServer()`; hosts issuing DPoP-bound tokens must now add the
+`Granit.OpenIddict.Server.DPoP` reference.
+</Aside>
 
 ### BFF integration
 

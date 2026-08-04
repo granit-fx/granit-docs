@@ -249,28 +249,35 @@ All permission strings follow the `[Group].[Resource].[Action]` convention
 
 | Method | Path | Permission | Description |
 |--------|------|------------|-------------|
-| `GET` | `/` | `Applications.Read` | List all registered OIDC clients |
-| `POST` | `/` | `Applications.Create` | Register a new OIDC application |
+| `GET` | `/` | `Applications.Read` | Paginated list (`?page`, `?pageSize`) of registered OIDC clients |
+| `POST` | `/` | `Applications.Create` | Register a new OIDC application (409 if client ID exists) |
 | `DELETE` | `/{clientId}` | `Applications.Delete` | Delete app + authorizations + tokens |
 | `POST` | `/{clientId}/rotate-secret` | `Applications.Rotate` | Rotate client secret (returns plaintext once) |
+
+All admin list endpoints (`applications`, `scopes`, `authorizations`) return a
+`PagedResult<T>` envelope — `{ "items": [...], "totalCount": n, "hasMore": bool }` —
+paginated with `?page` (1-based, default 1) and `?pageSize` (default 25, max 100).
 
 **Create application request:**
 
 ```json
 {
   "clientId": "my-spa",
-  "clientSecret": null,
   "displayName": "My SPA (PKCE)",
+  "generateClientSecret": false,
   "permissions": ["ept:authorization", "ept:token", "gt:authorization_code"],
   "redirectUris": ["https://app.example.com/callback"],
   "postLogoutRedirectUris": ["https://app.example.com"]
 }
 ```
 
-**Application response:** `{ id, clientId, displayName, type }`
+Set `generateClientSecret: true` to have the server mint a cryptographically strong
+secret for a confidential client and return it once in `generatedClientSecret` — the
+admin never has to invent secret material. Alternatively pass `clientSecret` explicitly;
+omit both for a public client. An admin-supplied secret is never echoed back.
 
-**Secret rotation response:** `{ clientId, newSecret }` — the new secret is returned
-**once only** in the response. It is hashed before storage and cannot be retrieved later.
+**Secret rotation response:** `{ clientId, displayName, newClientSecret }` — the new
+secret is returned **once only**. It is hashed before storage and cannot be retrieved later.
 
 ### OIDC Scopes (`/api/admin/oidc/scopes`)
 
@@ -292,11 +299,12 @@ All permission strings follow the `[Group].[Resource].[Action]` convention
 
 | Method | Path | Permission | Description |
 |--------|------|------------|-------------|
-| `GET` | `/?userId=&clientId=` | `Authorizations.Read` | List authorizations (filterable) |
+| `GET` | `/?subject=&clientId=` | `Authorizations.Read` | Paginated list, optionally filtered server-side by `subject` (user id) and/or `clientId` |
 | `DELETE` | `/{authorizationId}` | `Authorizations.Revoke` | Revoke single authorization + tokens |
 | `DELETE` | `/user/{userId}` | `Authorizations.Revoke` | Revoke all for user (GDPR / security incident) |
 
-**Authorization response:** `{ id, subject, status, type }`
+**Authorization response:** `{ id, subject, clientId, status, type, scopes }`. An unknown
+`clientId` filter yields an empty page.
 
 The `DELETE /user/{userId}` endpoint iterates all authorizations for the subject and
 revokes each one — used for GDPR erasure requests and security incident response.
