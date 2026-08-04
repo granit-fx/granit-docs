@@ -6,15 +6,15 @@ This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
 with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
 
-**Total production packages:** 498
+**Total production packages:** 503
 
 ## License summary
 
 | License | Packages |
 | --- | --- |
-| MIT | 419 |
+| MIT | 422 |
 | ISC | 39 |
-| BSD-3-Clause | 10 |
+| BSD-3-Clause | 12 |
 | Apache-2.0 | 9 |
 | BSD-2-Clause | 8 |
 | BlueOak-1.0.0 | 3 |
@@ -42,6 +42,8 @@ Packages declared in [package.json](package.json):
 | `@tailwindcss/vite` | 4.3.2 | MIT | [tailwindcss.com](https://tailwindcss.com) |
 | `astro` | 7.1.6 | MIT | [astro.build](https://astro.build) |
 | `astro-mermaid` | 2.1.0 | MIT | [github.com](https://github.com/joesaby/astro-mermaid#readme) |
+| `astro-og-canvas` | 0.13.0 | MIT | [github.com](https://github.com/delucis/astro-og-canvas#readme) |
+| `canvaskit-wasm` | 0.41.1 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
 | `mermaid` | 11.16.0 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
@@ -58,7 +60,7 @@ The full transitive graph (resolved by pnpm) contains the following packages.
 Versions reflect the pinned `pnpm-lock.yaml`.
 
 <details>
-<summary>Show 482 transitive packages</summary>
+<summary>Show 485 transitive packages</summary>
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
@@ -170,6 +172,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@types/unist` | 2.0.11 / 3.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist) |
 | `@ungap/structured-clone` | 1.3.1 | ISC | [github.com](https://github.com/ungap/structured-clone#readme) |
 | `@upsetjs/venn.js` | 2.0.0 | MIT | [github.com](https://github.com/upsetjs/venn.js) |
+| `@webgpu/types` | 0.1.21 | BSD-3-Clause | [github.com](https://github.com/gpuweb/types) |
 | `acorn` | 8.17.0 | MIT | [github.com](https://github.com/acornjs/acorn) |
 | `acorn-jsx` | 5.3.2 | MIT | [github.com](https://github.com/acornjs/acorn-jsx) |
 | `am-i-vibing` | 0.4.0 | MIT | [github.com](https://github.com/ascorbic/am-i-vibing) |
@@ -183,6 +186,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `astro-expressive-code` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `axobject-query` | 4.1.0 | Apache-2.0 | [github.com](https://github.com/A11yance/axobject-query#readme) |
 | `bail` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/bail#readme) |
+| `base-64` | 1.0.0 | MIT | [mths.be](https://mths.be/base64) |
 | `bcp-47` | 2.1.0 | MIT | [github.com](https://github.com/wooorm/bcp-47#readme) |
 | `bcp-47-match` | 2.0.3 | MIT | [github.com](https://github.com/wooorm/bcp-47-match#readme) |
 | `boolbase` | 1.0.0 | ISC | [github.com](https://github.com/fb55/boolbase) |
@@ -253,6 +257,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `dequal` | 2.0.3 | MIT | [github.com](https://github.com/lukeed/dequal#readme) |
 | `destr` | 2.0.5 | MIT | [github.com](https://github.com/unjs/destr#readme) |
 | `detect-libc` | 2.1.2 | Apache-2.0 | [github.com](https://github.com/lovell/detect-libc#readme) |
+| `deterministic-object-hash` | 2.0.2 | MIT | [github.com](https://github.com/zbauman3/Deterministic-Object-Hash#readme) |
 | `devalue` | 5.8.1 | MIT | [github.com](https://github.com/sveltejs/devalue#readme) |
 | `devlop` | 1.1.0 | MIT | [github.com](https://github.com/wooorm/devlop#readme) |
 | `diff` | 8.0.4 | BSD-3-Clause | [github.com](https://github.com/kpdecker/jsdiff#readme) |
@@ -264,7 +269,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `domutils` | 3.2.2 | BSD-2-Clause | [github.com](https://github.com/fb55/domutils#readme) |
 | `dset` | 3.1.4 | MIT | [github.com](https://github.com/lukeed/dset#readme) |
 | `enhanced-resolve` | 5.21.6 | MIT | [github.com](http://github.com/webpack/enhanced-resolve) |
-| `entities` | 4.5.0 / 6.0.1 | BSD-2-Clause | [github.com](https://github.com/fb55/entities#readme) |
+| `entities` | 4.5.0 / 6.0.1 / 8.0.0 | BSD-2-Clause | [github.com](https://github.com/fb55/entities#readme) |
 | `es-module-lexer` | 2.3.1 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
 | `es-toolkit` | 1.49.0 | MIT | [es-toolkit.dev](https://es-toolkit.dev) |
 | `esast-util-from-estree` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-estree#readme) |

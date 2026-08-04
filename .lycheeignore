@@ -1,0 +1,5 @@
+# Domains that block bots or always return 200 regardless of validity.
+https://twitter.com/.*
+https://x.com/.*
+https://www.linkedin.com/.*
+https://discord.gg/.*

@@ -1,9 +1,9 @@
 /**
- * Remark plugin that replaces {{VAR_NAME}} placeholders in markdown content
+ * Remark plugin that replaces %%VAR_NAME%% placeholders in markdown content
  * with values from the variables map. Works in both .md and .mdx files.
  *
- * Usage in markdown: "Granit ships {{PACKAGE_COUNT}} packages"
- * Renders as:        "Granit ships 93 packages"
+ * Usage in markdown: "Granit ships %%PACKAGE_COUNT%% packages"
+ * Renders as:        "Granit ships 429 packages" (value from src/data/constants.ts)
  */
 import {
   PACKAGE_COUNT,

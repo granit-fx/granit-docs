@@ -108,7 +108,7 @@ across all loaded `GranitModule` assemblies — unchanged behavior.
 
 ### 3. `IInvoiceCreditApplier` — thin integration primitive
 
-To let `Granit.CustomerBalance` rapatriate its `CustomerBalancePrePaymentProcessor`
+To let `Granit.CustomerBalance` repatriate its `CustomerBalancePrePaymentProcessor`
 without pulling the full `Granit.Invoicing` package, a thin integration interface
 is added in `Granit.Invoicing.Abstractions`:
 
@@ -207,7 +207,7 @@ supplies by default per ADR-005.
 
 1. **Keep `.Wolverine` adapters, only rename dispatchers.** Rejected — leaves the
    cosmetic suffix on public packages.
-2. **Rapatriate everything into base modules, accept `WolverineFx` dep.** Rejected
+2. **Repatriate everything into base modules, accept `WolverineFx` dep.** Rejected
    — force-feeds `WolverineFx` to consumers who never opt into Wolverine.
 3. **Replace `.Wolverine` suffix on domain modules with `.Messaging`.** Rejected —
    `Granit.Payments.Messaging` is semantically empty (messaging is an

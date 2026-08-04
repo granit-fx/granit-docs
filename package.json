@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "postbuild": "node scripts/generate-search-index.mjs",
     "preview": "astro preview",
-    "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\""
+    "lint": "markdownlint-cli2 \"src/content/docs/**/*.{md,mdx}\"",
+    "spell": "cspell --no-progress \"src/content/docs/**/*.{md,mdx}\""
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.2",
@@ -18,6 +20,8 @@
     "@tailwindcss/vite": "^4.3.2",
     "astro": "^7.1.6",
     "astro-mermaid": "^2.1.0",
+    "astro-og-canvas": "^0.13.0",
+    "canvaskit-wasm": "^0.41.1",
     "mermaid": "^11.16.0",
     "rehype-external-links": "^3.0.0",
     "sharp": "^0.35.3",
@@ -29,6 +33,9 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@cspell/dict-fr-fr": "^2.3.2",
+    "@cspell/dict-nl-nl": "^2.4.2",
+    "cspell": "^10.0.1",
     "markdownlint-cli2": "^0.23.0",
     "starlight-image-zoom": "^0.15.0",
     "starlight-links-validator": "^0.25.2"
