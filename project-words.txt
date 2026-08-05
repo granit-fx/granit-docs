@@ -41,6 +41,7 @@ collidable
 commercetools
 contributable
 Cookiebot
+cookieconsent
 CPRA
 creational
 creds

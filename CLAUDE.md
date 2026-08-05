@@ -71,6 +71,11 @@ New legitimate terms cspell doesn't know go in `project-words.txt` (sorted).
 
 - `.NET` reference → `src/content/docs/dotnet/<area>/`
 - React reference → `src/content/docs/frontend/<area>/`
+- Section follows the repo that hosts the module: `granit-dotnet` →
+  `core|data|security|api|infrastructure|operations|building-blocks|ai|mcp`,
+  `granit-business` → `business|saas`, `granit-iot` → `iot`,
+  `granit-website` → `cms`. Building Blocks ship with the framework;
+  Business Features live in their own repo — do not mix the two sections.
 - ADRs → `src/content/docs/dotnet/architecture/adr/NNN-<kebab-title>.md`
 - New module page → bump `PACKAGE_COUNT` in `src/data/constants.ts` and add
   a sidebar entry in `src/config/sidebar.mjs` (unless the section uses

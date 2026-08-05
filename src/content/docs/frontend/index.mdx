@@ -125,7 +125,7 @@ Data flows from types to API functions to hooks to providers:
 | [`@granit/react-localization`](/frontend/infrastructure/localization/) | React localization bindings |
 | [`@granit/cookies`](/frontend/security/cookies/) | Cookie consent abstraction |
 | [`@granit/react-cookies`](/frontend/security/cookies/) | Cookie consent provider and hook |
-| [`@granit/cookies-klaro`](/frontend/security/cookies/) | Klaro CMP adapter |
+| [`@granit/cookies-cookieconsent`](/frontend/security/cookies/) | vanilla-cookieconsent CMP adapter |
 | [`@granit/storage`](/frontend/data/storage/) | Typed browser storage factory |
 | [`@granit/react-storage`](/frontend/data/storage/) | Synchronized storage hook |
 | [`@granit/tracing`](/frontend/observability/tracing/) | OpenTelemetry browser tracing |
@@ -165,7 +165,7 @@ Each frontend package mirrors a Granit .NET module:
 | `Granit.BackgroundJobs` | `@granit/background-jobs`, `@granit/react-background-jobs` |
 | `Granit.Observability` | `@granit/logger`, `@granit/tracing` |
 | `Granit.Localization` | `@granit/localization`, `@granit/react-localization` |
-| `Granit.Http.Cookies` | `@granit/cookies`, `@granit/cookies-klaro` |
+| `Granit.Http.Cookies` | `@granit/cookies`, `@granit/cookies-cookieconsent` |
 | `Granit.Http.ExceptionHandling` | `@granit/error-boundary`, `@granit/react-error-boundary` |
 
 TypeScript types in each package mirror the corresponding .NET DTOs. Changes to a

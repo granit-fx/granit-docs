@@ -8,6 +8,12 @@ topic: backend
 
 ---
 
+:::note[Looking for the API?]
+This page explains the pattern and how Granit applies it. The shipped
+implementation, configuration, and API reference live on the
+[Rate Limiting module](/dotnet/api/rate-limiting/) page.
+:::
+
 ## Definition
 
 **Rate Limiting** controls the number of requests a client can send within a

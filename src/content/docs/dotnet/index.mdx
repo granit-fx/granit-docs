@@ -13,7 +13,28 @@ for enterprise applications. Each module follows the same layered anatomy
 (abstractions, EF Core, endpoints, providers) and wires into the
 dependency injection system via `[DependsOn]`.
 
+**New here?** [Get started](/dotnet/getting-started/) builds your first API in
+15 minutes. Coming from another stack? See
+[Migrating from ABP, FullStackHero, or Clean Architecture](/migrating-from/).
+
 <ArchDiagram />
+
+## How the catalog is organized
+
+- **Framework layers** ([Core](/dotnet/core/module-system/), [Data](/dotnet/data/persistence/),
+  [Security](/dotnet/security/authentication/), [API](/dotnet/api/),
+  [Infrastructure](/dotnet/infrastructure/wolverine-messaging/),
+  [Operations](/dotnet/operations/observability/)) — the horizontal concerns every
+  application uses, shipped with the framework core.
+- **[Building Blocks](/dotnet/building-blocks/workflow/)** — self-contained feature
+  modules included with the framework: Workflow, Data Exchange, Templating,
+  Timeline, QueryEngine, Indexing, and more.
+- **[Business Features](/dotnet/business/parties/)** — higher-level domain modules
+  (Parties, Documents, Reference Data, Analytics) maintained in their own repository
+  and versioned alongside the framework.
+- **Product verticals** — [IoT](/dotnet/iot/), [CMS](/dotnet/cms/),
+  [SaaS & Commerce](/dotnet/saas/), [AI](/dotnet/ai/), and [MCP](/dotnet/mcp/) each
+  get a dedicated section.
 
 ## Module groups
 
@@ -23,9 +44,10 @@ dependency injection system via `[DependsOn]`.
 | [Data](/dotnet/data/persistence/) | Persistence, Caching, Storage, QueryEngine, Reference Data | EF Core interceptors, FusionCache, multi-provider storage |
 | [Security & Compliance](/dotnet/security/authentication/) | Authentication, Authorization, Security, Identity, Privacy, Vault & Encryption | JWT Bearer, RBAC, GDPR, key management |
 | [API](/dotnet/api/) | API & Web, Webhooks | Versioning, OpenAPI, idempotency, HMAC-signed webhooks |
-| [Infrastructure](/dotnet/infrastructure/wolverine-messaging/) | Wolverine, Notifications, Background Jobs, Localization, Settings, Multi-Tenancy, Features | Message bus, 6-channel notifications, i18n (17 cultures), time zones, SaaS enablement |
+| [Infrastructure](/dotnet/infrastructure/wolverine-messaging/) | Wolverine, Notifications, Background Jobs, Localization, Settings, Multi-Tenancy, Features | Message bus, 6-channel notifications, i18n (18 cultures), time zones, SaaS enablement |
 | [Observability](/dotnet/core/observability/) | Observability & Diagnostics | Serilog, OpenTelemetry, health checks |
-| [Business Features](/dotnet/building-blocks/workflow/) | Workflow, Data Exchange, Templating, Timeline | FSM engine, import/export, PDF generation, activity stream |
+| [Building Blocks](/dotnet/building-blocks/workflow/) | Workflow, Data Exchange, Templating, Timeline | FSM engine, import/export, PDF generation, activity stream |
+| [Business Features](/dotnet/business/parties/) | Parties, Documents, Reference Data, Analytics | Contact management, document lifecycle, dashboards |
 
 ## AI
 
@@ -39,7 +61,7 @@ semantic search, document extraction, and more.
 - [HTTP Conventions](/dotnet/architecture/http-conventions/) — status codes, Problem Details, DTO naming
 - [Dependency Graph](/dotnet/architecture/dependency-graph/) — package relationships
 - [Tech Stack](/dotnet/architecture/tech-stack/) — third-party libraries and licenses
-- [Design Patterns](/dotnet/architecture/patterns/) — 57 patterns documented
+- [Design Patterns](/dotnet/architecture/patterns/) — %%PATTERN_COUNT%% patterns documented
 - [ADRs](/dotnet/architecture/adr/) — architecture decision records
 
 ## Reference

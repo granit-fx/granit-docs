@@ -64,7 +64,7 @@ Registers all five interceptors and `IDataFilter`.
 <TabItem label="With migrations">
 
 ```csharp
-[DependsOn(typeof(GranitPersistenceMigrationsModule))]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCoreMigrationsModule))]
 public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -81,11 +81,14 @@ public class AppModule : GranitModule
 <TabItem label="With Wolverine migrations">
 
 ```csharp
-[DependsOn(typeof(GranitPersistenceMigrationsWolverineModule))]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCoreMigrationsModule))]
+[DependsOn(typeof(GranitWolverineModule))]
 public class AppModule : GranitModule { }
 ```
 
-Replaces `Channel<T>` dispatcher with durable Wolverine outbox — no batch is lost on failure.
+There is no separate Wolverine migrations module: when `Granit.Wolverine` is hosted,
+`RunMigrationBatchHandler` cascades each batch as a Wolverine return-value message
+enrolled in the handler outbox — no batch is lost on failure.
 
 </TabItem>
 </Tabs>

@@ -73,7 +73,7 @@ src/MyCompany.MyModule/
 The module class declares dependencies and registers services:
 
 ```csharp
-[DependsOn(typeof(GranitCoreModule))]
+[DependsOn(typeof(GranitTimingModule))]
 public sealed class MyCompanyMyModuleModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

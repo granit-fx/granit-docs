@@ -36,7 +36,7 @@ graph LR
 | `createReactLocalization(config?)` | `@granit/react-localization` | i18next with `initReactI18next` plugin |
 | `createSignalRTransport(config)` | `@granit/notifications-signalr` | SignalR notification transport |
 | `createSseTransport(config)` | `@granit/notifications-sse` | SSE notification transport |
-| `createKlaroCookieConsentProvider(options)` | `@granit/cookies-klaro` | Klaro CMP adapter |
+| `createCookieConsentProvider(options)` | `@granit/cookies-cookieconsent` | vanilla-cookieconsent CMP adapter |
 | `createStorage<T>(key, options?)` | `@granit/storage` | Typed localStorage/sessionStorage accessor |
 | `createMockProvider<T>()` | `@granit/react-authentication` | Test provider using same context |
 

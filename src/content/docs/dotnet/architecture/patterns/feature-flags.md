@@ -8,6 +8,12 @@ topic: backend
 
 ---
 
+:::note[Looking for the API?]
+This page explains the pattern and how Granit applies it. The shipped
+implementation, configuration, and API reference live on the
+[Feature Flags module](/dotnet/infrastructure/feature-flags/) page.
+:::
+
 ## Definition
 
 The Feature Flags pattern enables activating or deactivating features at runtime

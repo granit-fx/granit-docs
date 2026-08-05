@@ -10,7 +10,7 @@ tags:
   - security
 description: "Turn any Granit module into an MCP server in 3 steps. Claude, Copilot and Cursor discover and invoke your tools — with RBAC, GDPR scrubbing, multi-tenancy."
 excerpt: >
-  The new Granit.Tools.Mcp module family wraps the MCP C# SDK to expose your application
+  The new Granit.Mcp module family wraps the MCP C# SDK to expose your application
   capabilities to AI agents, with auto-discovery, RBAC authorization, and GDPR-compliant
   output sanitization.
 ---
@@ -24,7 +24,7 @@ What agents actually need is your existing authorization, your multi-tenancy
 isolation, and automatic PII redaction.
 
 That's what the **Model Context Protocol** (MCP) enables. And with the new
-`Granit.Tools.Mcp` module family, any Granit module can become an MCP server in 3 steps.
+`Granit.Mcp` module family, any Granit module can become an MCP server in 3 steps.
 
 ## What is MCP?
 
@@ -58,7 +58,7 @@ It reads tool descriptions, decides which ones to call, and handles the conversa
 The official [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) handles
 the protocol. Granit adds what enterprise apps need:
 
-| Concern | MCP SDK alone | With Granit.Tools.Mcp |
+| Concern | MCP SDK alone | With Granit.Mcp |
 |---------|--------------|-----------------|
 | **Tool discovery** | Manual registration | Auto-discovery from module assemblies |
 | **Authorization** | Roll your own | `[Authorize(Policy = "...")]` with Granit RBAC |
@@ -77,10 +77,10 @@ filter pipeline.
 flowchart LR
     subgraph app["Your Granit Application"]
         direction TB
-        T1["Invoice tools"] --> MCP["Granit.Tools.Mcp\nAuto-discovery\n+ Filters"]
+        T1["Invoice tools"] --> MCP["Granit.Mcp\nAuto-discovery\n+ Filters"]
         T2["Workflow tools"] --> MCP
         T3["BlobStorage tools"] --> MCP
-        MCP --> SRV["Granit.Tools.Mcp.Server\nHTTP + Auth"]
+        MCP --> SRV["Granit.Mcp.Server\nHTTP + Auth"]
     end
 
     AI["AI Agent"] -- "/mcp" --> SRV
@@ -89,7 +89,7 @@ flowchart LR
         ERP["ERP Server"]
     end
 
-    CLI["Granit.Tools.Mcp.Client"] -- "HTTP" --> ERP
+    CLI["Granit.Mcp.Client"] -- "HTTP" --> ERP
     CLI --> AIM["Granit.AI.Mcp\n→ IChatClient"]
 
     style app fill:#1a1a2e,stroke:#e94560,color:#eee
@@ -99,9 +99,9 @@ flowchart LR
 
 | Package | Purpose |
 |---------|---------|
-| **Granit.Tools.Mcp** | Auto-discovery, sanitization pipeline, metrics |
-| **Granit.Tools.Mcp.Server** | ASP.NET Core HTTP transport, `[Authorize]`, permissions |
-| **Granit.Tools.Mcp.Client** | Connect to external MCP servers (HTTP + stdio) |
+| **Granit.Mcp** | Auto-discovery, sanitization pipeline, metrics |
+| **Granit.Mcp.Server** | ASP.NET Core HTTP transport, `[Authorize]`, permissions |
+| **Granit.Mcp.Client** | Connect to external MCP servers (HTTP + stdio) |
 | **Granit.AI.Mcp** | Inject MCP tools into AI workspaces, sampling guard |
 
 ## AI-enable your module in 3 steps
@@ -109,7 +109,7 @@ flowchart LR
 ### Step 1: Install and register
 
 ```bash
-dotnet add package Granit.Tools.Mcp.Server
+dotnet add package Granit.Mcp.Server
 ```
 
 ```csharp title="Program.cs"
@@ -236,7 +236,7 @@ Three visibility filters compose independently:
 
 ## Consuming external MCP servers
 
-The flow works both ways. `Granit.Tools.Mcp.Client` provides a named factory for connecting
+The flow works both ways. `Granit.Mcp.Client` provides a named factory for connecting
 to MCP servers exposed by other services:
 
 ```csharp title="Program.cs"
@@ -269,7 +269,7 @@ enabled).
 
 - **MCP lets AI agents discover and invoke your application tools** — no custom
   integrations, no prompt engineering per endpoint
-- **Granit.Tools.Mcp wraps the official SDK** with auto-discovery, RBAC authorization,
+- **Granit.Mcp wraps the official SDK** with auto-discovery, RBAC authorization,
   GDPR sanitization, multi-tenancy, and observability
 - **3 lines to expose your first tool**: install, register, annotate
 - **Standard `[Authorize]`** — no custom auth attributes, uses your existing

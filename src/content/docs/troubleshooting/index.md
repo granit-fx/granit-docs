@@ -26,3 +26,7 @@ If your issue is not covered here:
 1. Search existing [GitHub issues](https://github.com/granit-fx/granit-dotnet/issues)
 2. Check the [Reference documentation](/dotnet/) for the specific module
 3. Open a new issue using the **Bug** template with reproduction steps
+
+## See also
+
+- [Diagnostics reference (GRxxx)](/dotnet/reference/diagnostics/) — build-time analyzer errors and warnings
