@@ -91,7 +91,21 @@ export default defineConfig({
           exclude: ["/", "/api/**", "/blog/**"],
         }),
         starlightImageZoom(),
-        starlightLlmsTxt(),
+        starlightLlmsTxt({
+          // llms-small.txt is the working-reference variant: keep module and
+          // guide pages, skip the blog and the internal-architecture tail
+          // (ADRs, pattern catalog) that llms-full.txt still carries.
+          exclude: [
+            "blog",
+            "blog/**",
+            "migration/changelog",
+            "dotnet/architecture/adr/**",
+            "dotnet/architecture/patterns/**",
+            "frontend/architecture/adr/**",
+            "frontend/architecture/patterns/**",
+          ],
+          demote: ["contributing/**", "migrating-from/**"],
+        }),
         starlightKbd({
           globalPicker: false,
           types: [

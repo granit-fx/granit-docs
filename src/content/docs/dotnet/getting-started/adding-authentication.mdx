@@ -36,15 +36,18 @@ dotnet add package Granit.Authentication.JwtBearer.Keycloak
 Open `TaskManagementModule.cs` and add the Keycloak authentication dependency:
 
 ```csharp
-using Granit.Modularity;
-using Granit.Timing;
-using Granit.Persistence;
 using Granit.Authentication.JwtBearer.Keycloak;
+using Granit.Modularity;
+using Granit.Persistence.EntityFrameworkCore;
+using Granit.Persistence.EntityFrameworkCore.Extensions;
+using Granit.Timing;
+using Microsoft.EntityFrameworkCore;
+using TaskManagement.Api.Data;
 
 namespace TaskManagement.Api;
 
 [DependsOn(typeof(GranitTimingModule))]
-[DependsOn(typeof(GranitPersistenceModule))]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCoreModule))]
 [DependsOn(typeof(GranitAuthenticationJwtBearerKeycloakModule))]
 public sealed class TaskManagementModule : GranitModule
 {
@@ -141,20 +144,24 @@ Middleware order matters. `UseAuthentication()` must come before `UseAuthorizati
 
 ## 5. Protect your endpoints
 
-Add `.RequireAuthorization()` to your route group so that all task endpoints require a valid JWT:
+Add `.RequireAuthorization()` to the route group you created in the persistence
+tutorial. In `Endpoints/TaskEndpoints.cs`:
 
 ```csharp
-var tasks = app.MapGroup("/api/tasks")
-    .RequireAuthorization();
-
-tasks.MapGet("/", async (TaskManagementDbContext db) =>
+public static IEndpointRouteBuilder MapTaskEndpoints(
+    this IEndpointRouteBuilder endpoints)
 {
-    var items = await db.Tasks.ToListAsync();
-    return Results.Ok(items);
-});
+    var group = endpoints.MapGroup("/api/tasks")
+        .WithTags("Tasks")
+        .RequireAuthorization();
 
-// ... other endpoints in the group inherit the authorization requirement
+    TaskRoutes.Map(group);
+    return endpoints;
+}
 ```
+
+Every endpoint registered on the group — list, get, create, update, delete —
+inherits the authorization requirement. No per-endpoint attributes needed.
 
 Any request without a valid `Authorization: Bearer <token>` header now receives a `401 Unauthorized` response.
 
@@ -181,7 +188,7 @@ TOKEN=$(curl -s -X POST \
   -d "grant_type=password" | jq -r '.access_token')
 
 # Call the protected endpoint
-curl -H "Authorization: Bearer $TOKEN" http://localhost:5001/api/tasks
+curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/api/tasks
 ```
 
 A valid token returns your task list. An expired or missing token returns `401 Unauthorized`.

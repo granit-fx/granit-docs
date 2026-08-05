@@ -94,7 +94,7 @@ Application code and library code are not the same thing:
 
 ## The Granit answer
 
-Granit is 128 NuGet packages. Every one of them is library code by definition. The rule across the codebase is non-negotiable:
+Granit is %%PACKAGE_COUNT%% NuGet packages. Every one of them is library code by definition. The rule across the codebase is non-negotiable:
 
 > **Every `await` in `src/` calls `.ConfigureAwait(false)`. No exceptions, no analyzers turning a blind eye to a "fast path".**
 
@@ -202,5 +202,5 @@ When reviewing a PR with a new `await`:
 - [Stephen Toub — ConfigureAwait FAQ](https://devblogs.microsoft.com/dotnet/configureawait-faq/) — the canonical reference, still accurate
 - [.NET 8 ConfigureAwaitOptions reference](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.configureawaitoptions)
 - [Granit coding standards](/contributing/coding-standards/) — full async conventions
-- [Roslyn analyzers](/dotnet/core/analyzers/) — the build-time rules Granit ships across all 376 packages
+- [Roslyn analyzers](/dotnet/core/analyzers/) — the build-time rules Granit ships across all %%PACKAGE_COUNT%% packages
 - [Stop Using DateTime.Now](/blog/stop-using-datetime-now/) — another "the rule still applies, despite the rumor that it doesn't" best-practice

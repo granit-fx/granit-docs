@@ -13,7 +13,7 @@ description: "IOptions, IOptionsSnapshot and IOptionsMonitor solve different pro
 excerpt: >
   IOptions, IOptionsSnapshot, and IOptionsMonitor solve different problems. Picking
   the wrong one causes stale config, unnecessary allocations, or subtle concurrency
-  bugs. Here is when to use each — with real examples from Granit's 128 packages.
+  bugs. Here is when to use each — with real examples from the Granit codebase.
 ---
 
 You bind your configuration to a POCO, inject `IOptions<T>`, and move on. It works. Until it does not — your feature flag change requires a pod restart, your background worker reads stale config for hours, or your per-request options snapshot allocates a new object 5,000 times per second for no reason.
@@ -335,7 +335,7 @@ Without `.ValidateOnStart()`, validation runs **lazily** — only when the optio
 
 `.ValidateOnStart()` forces validation during `IHost.StartAsync()`. The application **refuses to start** with invalid configuration. You find out in CI, not in production.
 
-Across Granit's 128 packages, every options registration that binds configuration uses `ValidateOnStart()`. No exceptions.
+Across Granit's %%PACKAGE_COUNT%% packages, every options registration that binds configuration uses `ValidateOnStart()`. No exceptions.
 
 ## The decision matrix
 

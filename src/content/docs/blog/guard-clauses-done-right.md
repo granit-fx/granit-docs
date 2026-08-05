@@ -14,7 +14,7 @@ excerpt: >
   methods that are cleaner, faster, and throw the right exceptions every time.
 ---
 
-Every .NET codebase has dozens of methods that start with the same ritual: check a parameter, throw if it is null, repeat. The code is correct but **verbose, inconsistent, and easy to get wrong**. Since .NET 6, there is a better way — and Granit enforces it across all 376 packages.
+Every .NET codebase has dozens of methods that start with the same ritual: check a parameter, throw if it is null, repeat. The code is correct but **verbose, inconsistent, and easy to get wrong**. Since .NET 6, there is a better way — and Granit enforces it across all %%PACKAGE_COUNT%% packages.
 
 ## The problem
 

@@ -17,7 +17,8 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 :::
 
-In [Your First API](/dotnet/getting-started/your-first-api/), you created a module with an in-memory list.
+In [Your First API](/dotnet/getting-started/your-first-api/), you created a module and
+a sample endpoint that returns an in-memory `TaskItem`.
 That works for a demo, but real applications need a database. In this tutorial you
 will wire up EF Core with PostgreSQL and let Granit handle audit fields, soft delete,
 and sequential GUIDs automatically.
@@ -44,8 +45,10 @@ This gives you `Id`, `CreatedAt`, `CreatedBy`, `ModifiedAt`, `ModifiedBy`, `IsDe
 `DeletedAt`, and `DeletedBy` for free.
 
 ```csharp
-// Models/TaskItem.cs
+// Domain/TaskItem.cs
 using Granit.Domain;
+
+namespace TaskManagement.Api.Domain;
 
 public sealed class TaskItem : FullAuditedEntity
 {
@@ -71,6 +74,9 @@ using Granit.DataFiltering;
 using Granit.MultiTenancy;
 using Granit.Persistence.EntityFrameworkCore.Extensions;
 using Microsoft.EntityFrameworkCore;
+using TaskManagement.Api.Domain;
+
+namespace TaskManagement.Api.Data;
 
 public sealed class TaskDbContext(
     DbContextOptions<TaskDbContext> options,
@@ -110,6 +116,9 @@ using Granit.Persistence.EntityFrameworkCore;
 using Granit.Persistence.EntityFrameworkCore.Extensions;
 using Granit.Timing;
 using Microsoft.EntityFrameworkCore;
+using TaskManagement.Api.Data;
+
+namespace TaskManagement.Api;
 
 [DependsOn(typeof(GranitTimingModule))]
 [DependsOn(typeof(GranitPersistenceEntityFrameworkCoreModule))]
@@ -157,6 +166,7 @@ Define DTOs for the API. Input bodies use the `Request` suffix, return types use
 
 ```csharp
 // Endpoints/TaskContracts.cs
+namespace TaskManagement.Api.Endpoints;
 
 public sealed record CreateTaskRequest(string Title, string? Description);
 
@@ -180,6 +190,10 @@ method that creates the route group, and an internal class that contains the han
 // Endpoints/TaskEndpoints.cs
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using TaskManagement.Api.Data;
+using TaskManagement.Api.Domain;
+
+namespace TaskManagement.Api.Endpoints;
 
 public static class TaskEndpointsExtensions
 {
@@ -309,7 +323,8 @@ rows thanks to the query filter applied by `ApplyGranitConventions`.
 
 ## Wire the endpoints
 
-In `Program.cs`, after `var app = builder.Build();`:
+In `Program.cs`, add `using TaskManagement.Api.Endpoints;` to the top of the file,
+then after `var app = builder.Build();`:
 
 ```csharp
 app.MapTaskEndpoints();
@@ -317,11 +332,12 @@ app.MapTaskEndpoints();
 
 ## Create and apply migrations
 
-Install the EF Core tools if you have not already, then generate the initial migration
-and apply it:
+Install the EF Core tools if you have not already, add the design-time package the
+tools require, then generate the initial migration and apply it:
 
 ```bash
 dotnet tool install --global dotnet-ef
+dotnet add package Microsoft.EntityFrameworkCore.Design
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```

@@ -100,7 +100,7 @@ that changes.
 | **Settings** (DB-backed, tenant-aware) | `GranitSettingsModule` (`ISettingProvider`, `ISettingManager`) | **Net gain.** Ardalis CA uses `IOptions<T>` and `appsettings.json` only. |
 | **Notifications** (email + multi-channel) | `Granit.Notifications` (9 channels: email, SMS, push, in-app, webhook, Slack, Teams, …) with preference filtering | **Net gain.** Ardalis CA ships none — you typically wire MailKit/SendGrid yourself. |
 | **Background jobs** (Hangfire, Quartz, custom) | Wolverine scheduled / durable messages | **Net gain.** One primitive for immediate, scheduled, and durable work; no separate dashboard. |
-| **Localization** | `Granit.Localization` (17 cultures, source-generated keys, runtime DB overrides) | **Net gain.** Ardalis CA uses `IStringLocalizer` vanilla. |
+| **Localization** | `Granit.Localization` (18 cultures, source-generated keys, runtime DB overrides) | **Net gain.** Ardalis CA uses `IStringLocalizer` vanilla. |
 | **Webhooks** (sending, signing, retries) | `Granit.Webhooks` (dual-key signing, secret protection, durable delivery) | **Net gain.** Ardalis CA ships none. |
 | Domain-event dispatch wired in `SaveChangesAsync` (manual) | `Granit.Persistence.EntityFrameworkCore` ships the interceptor — no wiring needed | One less piece of infrastructure code to maintain. |
 

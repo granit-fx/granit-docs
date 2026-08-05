@@ -44,7 +44,7 @@ Granit is **not** the right choice when:
   Management commercial edition, identity server premium features). Most
   have an open-source equivalent in Granit, but the UI surface differs.
 - Your frontend is a tightly coupled ABP Angular template. Granit's React
-  companion (`@granit-fx/front`) is the canonical frontend; migrating an
+  companion (the `@granit/*` packages) is the canonical frontend; migrating an
   Angular ABP UI is a separate project.
 
 If you got past those filters, read on.
@@ -573,7 +573,7 @@ ingress.
 | **Validation** | Data annotations on DTO | FluentValidation class, auto-discovered |
 | **Permissions** | `PermissionDefinitionProvider` + `[Authorize(name)]` | ASP.NET Core policies declared in module |
 | **DTO ↔ Entity mapping** | `IObjectMapper` (AutoMapper) | Static `ToResponse` method (or Mapperly) |
-| **Multi-tenancy** | `IMultiTenant` interface + `ICurrentTenant` | `IMultiTenant` interface + `ITenantContext` |
+| **Multi-tenancy** | `IMultiTenant` interface + `ICurrentTenant` | Same shape: `IMultiTenant` interface + `ICurrentTenant` |
 
 The total line count drops by roughly 40% because the `Application.Contracts`
 project disappears (the `Request` / `Response` records sit next to the
@@ -776,7 +776,7 @@ explicitly.
   via the `dotnet new granit-microservice` template or by hand.
 - **ABP Studio (commercial).** No equivalent.
 - **LeptonX Theme + Angular template.** The Granit React companion
-  (`@granit-fx/front`) ships a different design system and component
+  (the `@granit/*` packages) ships a different design system and component
   library. The Angular ABP UI does not port automatically.
 - **Identity Server commercial features** (delegation, impersonation
   workflows shipped in ABP Commercial). Granit ships OpenIddict-based
