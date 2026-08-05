@@ -8,6 +8,12 @@ topic: backend
 
 ---
 
+:::note[Looking for the API?]
+This page explains the pattern and how Granit applies it. The shipped
+implementation, configuration, and API reference live on the
+[Idempotency module](/dotnet/api/idempotency/) page.
+:::
+
 ## Definition
 
 Idempotency guarantees that the same HTTP request, replayed multiple times,

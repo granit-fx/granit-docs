@@ -48,7 +48,7 @@ graph TD
         react-authz["@granit/react-authorization"]
         localization["@granit/localization"]
         logger-otlp["@granit/logger-otlp"]
-        cookies-klaro["@granit/cookies-klaro"]
+        cookies-cookieconsent["@granit/cookies-cookieconsent"]
         tracing["@granit/tracing"]
         error-boundary["@granit/error-boundary"]
     end
@@ -64,7 +64,7 @@ graph TD
     react-authn --> api
     localization --> storage
     logger-otlp --> logger
-    cookies-klaro --> cookies
+    cookies-cookieconsent --> cookies
     error-boundary --> logger
     queryEngine --> utils
     data-exchange --> utils
@@ -81,7 +81,7 @@ graph TD
     notifications -.-> signalr["@microsoft/signalr"]
     tracing -.-> otel["@opentelemetry/*"]
     logger-otlp -.-> otel
-    cookies-klaro -.-> klaro["klaro"]
+    cookies-cookieconsent -.-> vcc["vanilla-cookieconsent"]
     localization -.-> i18next["i18next"]
 
     style logger fill:#e8f5e9
@@ -93,7 +93,7 @@ graph TD
     style react-authz fill:#e3f2fd
     style localization fill:#e3f2fd
     style logger-otlp fill:#e3f2fd
-    style cookies-klaro fill:#e3f2fd
+    style cookies-cookieconsent fill:#e3f2fd
     style tracing fill:#e3f2fd
     style error-boundary fill:#e3f2fd
     style queryEngine fill:#fff3e0

@@ -14,6 +14,16 @@ Compliance is usually bolted on after the fact. A security audit reveals gaps, s
 
 Granit takes a different approach: compliance requirements are **architectural constraints** enforced by the framework itself. You cannot accidentally skip the audit trail because the interceptor runs on every write. You cannot forget tenant isolation because the query filter is applied globally. The framework makes the compliant path the default path.
 
+## Where to start, by regulation
+
+| You are targeting | Start here |
+|---|---|
+| **GDPR** — erasure, portability, restriction, privacy by design | This page, then [Crypto-Shredding](/dotnet/compliance/crypto-shredding/) (cryptographic erasure) and [Privacy](/dotnet/compliance/privacy/) (data export API) |
+| **ePrivacy / cookie consent** (incl. CCPA-style regimes) | [Cookies](/dotnet/compliance/cookies/) — consent ledger, CMP integration, regulation bridge |
+| **ISO 27001** | This page, then [Audit Log](/dotnet/compliance/audit-log/) and [Observability](/dotnet/operations/observability/) |
+| **NIS2** | [NIS2-ready .NET applications](/blog/nis2-ready-dotnet-applications/) walkthrough, plus [Audit Log](/dotnet/compliance/audit-log/) |
+| **SOC 2 Type II** | [SOC 2 Type II-ready SaaS with Granit](/blog/soc2-type2-ready-saas-granit/) walkthrough |
+
 ## GDPR -- Articles 17, 18, and 25
 
 The General Data Protection Regulation requires data minimization, right to erasure, processing restriction, data portability, and privacy by design. Granit maps each requirement to a concrete framework mechanism.
@@ -57,6 +67,11 @@ public async Task<List<PatientResponse>> GetDeletedPatientsAsync(
 :::caution[Warning]
 Soft-deleted records are preserved for audit purposes (3 years minimum under ISO 27001). Physical deletion requires explicit administrative action and is logged in the Timeline module.
 :::
+
+When retention rules require the data itself to become unrecoverable — not just
+hidden — [Crypto-Shredding](/dotnet/compliance/crypto-shredding/) complements soft
+delete: destroy the per-entity encryption key and the encrypted columns are
+permanently unreadable while rows and audit references stay intact.
 
 ### Processing restriction (Art. 18)
 
@@ -219,6 +234,9 @@ Which Granit modules enforce which compliance requirements:
 
 ## Next steps
 
+- [Audit Log](/dotnet/compliance/audit-log/) -- DB-backed audit entries with per-entity change snapshots
+- [Crypto-Shredding](/dotnet/compliance/crypto-shredding/) -- cryptographic erasure for GDPR Art. 17
+- [Cookies](/dotnet/compliance/cookies/) -- consent management and the multi-regulation bridge
 - [Privacy reference](/dotnet/compliance/privacy/) -- full API surface of `Granit.Privacy`
 - [Persistence reference](/dotnet/data/persistence/) -- `AuditedEntity`, interceptors, query filters
 - [Security model concept](/dotnet/concepts/security-model/) -- authentication and authorization architecture

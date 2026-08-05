@@ -81,7 +81,7 @@ builder.AddGranit<AppModule>();
 
 // Option 2: Fluent builder (multi-root)
 builder.AddGranit(granit => granit
-    .AddModule<GranitCoreModule>()
+    .AddModule<GranitTimingModule>()
     .AddModule<GranitPersistenceModule>()
     .AddModule<AppModule>());
 
@@ -134,7 +134,7 @@ Circular dependencies throw `InvalidOperationException` at startup.
 sequenceDiagram
     participant Host as Host Builder
     participant ML as ModuleLoader
-    participant M1 as GranitCoreModule
+    participant M1 as GranitTimingModule
     participant M2 as GranitPersistenceModule
     participant M3 as AppModule
 
@@ -169,7 +169,7 @@ Passed to `ConfigureServices` / `ConfigureServicesAsync`:
 Override `IsEnabled` to conditionally skip a module:
 
 ```csharp
-public class GranitNotificationsEmailSmtpModule : GranitModule
+public class GranitNotificationsSmtpModule : GranitModule
 {
     public override bool IsEnabled(ServiceConfigurationContext context)
     {
@@ -184,7 +184,7 @@ Alternative to `[DependsOn]` for composing modules in `Program.cs`:
 
 ```csharp
 builder.AddGranit(granit => granit
-    .AddModule<GranitCoreModule>()
+    .AddModule<GranitTimingModule>()
     .AddModule<GranitPersistenceModule>()
     .AddModule<GranitObservabilityModule>());
 ```

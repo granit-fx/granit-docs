@@ -13,6 +13,16 @@ export const sidebarTopics = [
         items: [{ autogenerate: { directory: "dotnet/getting-started" } }],
       },
       {
+        label: "Migrating from",
+        collapsed: true,
+        items: [
+          { label: "Overview", link: "/migrating-from/" },
+          { label: "From ABP Framework", link: "/migrating-from/abp/" },
+          { label: "From FullStackHero", link: "/migrating-from/fullstackhero/" },
+          { label: "From Clean Architecture", link: "/migrating-from/clean-architecture/" },
+        ],
+      },
+      {
         label: "Concepts",
         items: [{ autogenerate: { directory: "dotnet/concepts" } }],
         collapsed: true,
@@ -250,6 +260,10 @@ export const sidebarTopics = [
             link: "/dotnet/reference/configuration-keys/",
           },
           {
+            label: "Diagnostics (GRxxx)",
+            link: "/dotnet/reference/diagnostics/",
+          },
+          {
             label: "Cloud Providers",
             link: "/dotnet/reference/cloud-providers/",
           },
@@ -456,16 +470,6 @@ export const sidebarTopics = [
       {
         label: "Contributing",
         items: [{ autogenerate: { directory: "contributing" } }],
-      },
-      {
-        label: "Migrating from",
-        collapsed: true,
-        items: [
-          { label: "Overview", link: "/migrating-from/" },
-          { label: "From ABP Framework", link: "/migrating-from/abp/" },
-          { label: "From FullStackHero", link: "/migrating-from/fullstackhero/" },
-          { label: "From Clean Architecture", link: "/migrating-from/clean-architecture/" },
-        ],
       },
       {
         label: "Version Upgrades",

@@ -417,7 +417,7 @@ builder.AddGranitEntityMergeEntityFrameworkCore(o =>
 [DependsOn(
     typeof(GranitPartiesModule),
     typeof(GranitPartiesEndpointsModule),
-    typeof(GranitPartiesMergeableModule))]   // adds adapter + Party-internal rewriters
+    typeof(GranitPartiesEntityFrameworkCoreModule))]   // adds adapter + Party-internal rewriters
 public class AppModule : GranitModule { }
 ```
 

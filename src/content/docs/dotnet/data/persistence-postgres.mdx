@@ -27,7 +27,7 @@ drag EF Core onto the readiness probe path.
     - NpgsqlAdvisoryMigrationLock.cs `pg_try_advisory_lock` implementation
     - NpgsqlTenantSchemaActivator.cs `SET search_path` per tenant
     - NpgsqlTenantDbIsolator.cs schema-per-tenant migration isolation
-  - GranitPersistencePostgresModule.cs module entrypoint
+  - GranitPersistenceEntityFrameworkCorePostgresModule.cs module entrypoint
 
 </FileTree>
 
@@ -36,22 +36,22 @@ drag EF Core onto the readiness probe path.
 Declare the module dependency in your host module and call `AddGranitPostgres()`:
 
 ```csharp
-[DependsOn(typeof(GranitPersistencePostgresModule))]
+[DependsOn(typeof(GranitPersistenceEntityFrameworkCorePostgresModule))]
 public sealed class AppModule : GranitModule { }
 ```
 
-`GranitPersistencePostgresModule` depends on `GranitPersistenceHostingModule` — you
+`GranitPersistenceEntityFrameworkCorePostgresModule` depends on `GranitPersistenceEntityFrameworkCoreHostingModule` — you
 do not need to declare both.
 
 :::caution
-Register this module **before** `GranitPersistenceHostingModule` in the dependency
+Register this module **before** `GranitPersistenceEntityFrameworkCoreHostingModule` in the dependency
 graph so that `TryAdd` registrations override the no-op fallbacks. The `[DependsOn]`
 order controls registration order.
 :::
 
 ## `AddGranitPostgres()`
 
-Called automatically by `GranitPersistencePostgresModule`. Registers three services
+Called automatically by `GranitPersistenceEntityFrameworkCorePostgresModule`. Registers three services
 via `TryAddSingleton` — safe to call multiple times, only the first registration wins:
 
 | Service | Implementation | Role |
@@ -202,7 +202,7 @@ Use `AddGranitPostgresHealthCheck()` for a lighter, EF-free probe.
 
 | Member | Kind | Description |
 |--------|------|-------------|
-| `GranitPersistencePostgresModule` | Module | Entry point — `[DependsOn(GranitPersistenceHostingModule)]` |
+| `GranitPersistenceEntityFrameworkCorePostgresModule` | Module | Entry point — `[DependsOn(GranitPersistenceEntityFrameworkCoreHostingModule)]` |
 | `AddGranitPostgres()` | `IHostApplicationBuilder` extension | Registers migration lock, schema activator, tenant isolator |
 | `UseGranitNpgsql()` | `DbContextOptionsBuilder` extension | Opinionated Npgsql config (retry + timeout) |
 | `AddGranitPostgresHealthCheck()` | `IHealthChecksBuilder` extension | Raw-connection `SELECT 1` health check |

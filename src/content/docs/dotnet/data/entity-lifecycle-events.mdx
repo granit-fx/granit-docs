@@ -192,7 +192,7 @@ public sealed class AppModule : GranitModule { }
 ```
 
 Local domain events (`EntityCreatedEvent<T>`, …) are dispatched via `IDomainEventDispatcher`
-after `SaveChanges`. With `GranitEventBusModule`, they route to registered
+after `SaveChanges`. With `GranitEventsModule`, they route to registered
 `ILocalEventHandler<T>` implementations.
 
 </TabItem>
@@ -201,11 +201,11 @@ after `SaveChanges`. With `GranitEventBusModule`, they route to registered
 ```csharp
 [DependsOn(
     typeof(GranitPersistenceModule),
-    typeof(GranitEventBusWolverineModule))]  // Wolverine replaces NullIntegrationEventDispatcher
+    typeof(GranitEventsWolverineModule))]  // Wolverine replaces NullIntegrationEventDispatcher
 public sealed class AppModule : GranitModule { }
 ```
 
-`GranitEventBusWolverineModule` registers `WolverineIntegrationEventDispatcher`, which
+`GranitEventsWolverineModule` registers `WolverineIntegrationEventDispatcher`, which
 replaces the default no-op. ETOs are dispatched via `IMessageBus` and enrolled in
 Wolverine's transactional outbox — atomically with the `SaveChanges` transaction.
 
@@ -213,7 +213,7 @@ Wolverine's transactional outbox — atomically with the `SaveChanges` transacti
 </Tabs>
 
 :::note[Default dispatcher is a no-op]
-Without `GranitEventBusWolverineModule`, `IIntegrationEventDispatcher` resolves to
+Without `GranitEventsWolverineModule`, `IIntegrationEventDispatcher` resolves to
 `NullIntegrationEventDispatcher` — ETOs are silently dropped. This is intentional:
 apps that do not use distributed events incur no overhead.
 :::

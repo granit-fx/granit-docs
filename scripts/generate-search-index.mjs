@@ -28,10 +28,18 @@ const CATEGORY_RULES = [
   { pattern: /\/concepts\//, category: 'concept' },
   { pattern: /\/contributing\//, category: 'community' },
   { pattern: /\/migration\//, category: 'community' },
+  { pattern: /\/migrating-from\//, category: 'community' },
   { pattern: /\/troubleshooting\//, category: 'community' },
+  { pattern: /\/tools\//, category: 'community' },
   { pattern: /\/blog\//, category: 'blog' },
   // Module pages: dotnet topic-area pages (core, data, security, api, etc.)
-  { pattern: /\/dotnet\/(?:core|data|security|api|infrastructure|business|operations|ai)\//, category: 'module' },
+  {
+    pattern:
+      /\/dotnet\/(?:core|data|security|api|infrastructure|business|operations|ai|building-blocks|compliance|saas|iot|cms|mcp)\//,
+    category: 'module',
+  },
+  // Architecture overview + reference lookup pages (non-pattern, non-ADR)
+  { pattern: /\/dotnet\/(?:architecture|reference)\//, category: 'concept' },
   // Frontend pages
   { pattern: /\/frontend\//, category: 'frontend' },
 ];

@@ -80,7 +80,7 @@ sink. Each policy lives in `<pkg>/csp` next to the code that needs it.
 ```ts
 // main.tsx — apps compose only the policies they use.
 import { installPolicy as installCore } from '@granit/csp';
-import { installPolicy as installMap } from '@granit/react-map/csp';
+import { installPolicy as installMap } from '@granit/react-ui-map/csp';
 import {
   installPolicy as installKeycloak,
   setKeycloakAuthorities,
@@ -124,12 +124,12 @@ installPolicy();
 
 ### `granit-map`
 
-Shipped by `@granit/react-map/csp`. Covers Leaflet's
+Shipped by `@granit/react-ui-map/csp`. Covers Leaflet's
 `bindPopup(htmlString)` and similar APIs that hit `innerHTML` under the
 hood. Routes `createHTML` through DOMPurify with the HTML profile.
 
 ```ts
-import { installPolicy } from '@granit/react-map/csp';
+import { installPolicy } from '@granit/react-ui-map/csp';
 installPolicy();
 ```
 
@@ -214,7 +214,7 @@ significant CSP change.
 | Alternative considered | Why we did not pick it |
 |------------------------|------------------------|
 | One global `granit` policy with all sinks | Single escape hatch, no audit trail per package, every app pays the bundle cost of DOMPurify even without maps. |
-| Side-effect import (`import '@granit/react-map/csp/auto'`) | Breaks tree-shaking, registers a policy whose name is never explicit in the CSP header. |
+| Side-effect import (`import '@granit/react-ui-map/csp/auto'`) | Breaks tree-shaking, registers a policy whose name is never explicit in the CSP header. |
 | Policy registered server-side via header alone | Trusted Types creation must happen in the browser; the header allow-lists names but the policy must be installed at runtime. |
 | `default` policy that sanitizes silently | Defeats the point — a missed sink should error loudly so it's caught in dev, not silently sanitized into a half-broken state in production. |
 

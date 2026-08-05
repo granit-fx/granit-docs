@@ -1,6 +1,6 @@
 ---
 title: "Cookies \u2014 Secure Cookie Hooks for React"
-description: GDPR cookie consent in React with @granit/react-cookies — pluggable CMP adapter, Klaro integration via @granit/cookies-klaro, category-aware context.
+description: GDPR cookie consent in React with @granit/react-cookies — pluggable CMP adapter, vanilla-cookieconsent integration via @granit/cookies-cookieconsent.
 sidebar:
   label: Cookies
   order: 18
@@ -10,11 +10,11 @@ import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
 `@granit/cookies` defines an abstract `CookieConsentProvider` interface and GDPR
 category types — mirroring `Granit.Http.Cookies` on the .NET backend.
-`@granit/react-cookies` wraps this into a React context. `@granit/cookies-klaro`
-provides a concrete Klaro CMP adapter.
+`@granit/react-cookies` wraps this into a React context. `@granit/cookies-cookieconsent`
+provides a concrete adapter backed by vanilla-cookieconsent.
 
-The architecture is pluggable: swap `@granit/cookies-klaro` for any other CMP
-(Cookiebot, OneTrust, etc.) by implementing `CookieConsentProvider`.
+The architecture is pluggable: swap `@granit/cookies-cookieconsent` for any other
+CMP (Klaro, Cookiebot, OneTrust, etc.) by implementing `CookieConsentProvider`.
 
 **Peer dependencies:** `react ^19`
 
@@ -23,25 +23,25 @@ The architecture is pluggable: swap `@granit/cookies-klaro` for any other CMP
 <FileTree>
 - @granit/cookies/ CMP interface, GDPR categories, backend DTOs (framework-agnostic)
   - @granit/react-cookies CookieConsentProvider component, useCookieConsent hook
-  - @granit/cookies-klaro Klaro CMP adapter (static or dynamic config)
+  - @granit/cookies-cookieconsent vanilla-cookieconsent CMP adapter (static or dynamic config)
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
 | `@granit/cookies` | `CookieConsentProvider` interface, `CookieCategory`, backend DTOs | — |
 | `@granit/react-cookies` | React context provider, `useCookieConsent` hook | `@granit/cookies`, `react` |
-| `@granit/cookies-klaro` | `createKlaroCookieConsentProvider()` factory | `@granit/cookies`, `klaro` |
+| `@granit/cookies-cookieconsent` | `createCookieConsentProvider()` factory | `@granit/cookies`, `vanilla-cookieconsent` |
 
 ## Setup
 
 <Tabs>
-<TabItem label="React + Klaro">
+<TabItem label="React + vanilla-cookieconsent">
 
 ```tsx
 import { CookieConsentProvider } from '@granit/react-cookies';
-import { createKlaroCookieConsentProvider } from '@granit/cookies-klaro';
+import { createCookieConsentProvider } from '@granit/cookies-cookieconsent';
 
-const cmp = createKlaroCookieConsentProvider({
+const cmp = createCookieConsentProvider({
   loadConfig: () => fetch('/api/v1/cookies/config').then(r => r.json()),
 });
 
@@ -180,8 +180,9 @@ Two modes:
 | Interface | `CookieConsentProvider` | `@granit/cookies` |
 | React provider | `CookieConsentProvider` (component) | `@granit/react-cookies` |
 | React hook | `useCookieConsent()` | `@granit/react-cookies` |
-| Klaro adapter | `createKlaroCookieConsentProvider()` | `@granit/cookies-klaro` |
+| CMP adapter | `createCookieConsentProvider()` | `@granit/cookies-cookieconsent` |
 
 ## See also
 
+- [.NET counterpart: Cookies](/dotnet/compliance/cookies/) — the server-side module behind this package
 - [Granit.Http.Cookies module](/dotnet/compliance/cookies/) — .NET cookie consent management (CookieConsent CMP server-side)
