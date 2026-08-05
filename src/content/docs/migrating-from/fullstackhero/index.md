@@ -842,7 +842,7 @@ explicitly.
 
 - **The Blazor + MudBlazor UI shipped with FSH.** Granit's
   [React companion](https://github.com/granit-fx/granit-front)
-  (`@granit-fx/front`) is a different stack — a different design
+  (the `@granit/*` packages) is a different stack — a different design
   system, a different state management approach, a different bundler.
   If your users love the existing Blazor UI, keep it (it can keep
   talking to either host). A migration to React is a separate project.

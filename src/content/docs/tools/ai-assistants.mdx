@@ -13,16 +13,19 @@ that any LLM can ingest in one shot — so it answers with
 real framework knowledge, not guesswork.
 
 <Aside type="tip">
-Pick the file that fits your context window:
+Two flavors, both larger than a typical chat context window — attach them as
+**files** (assistants index uploads and retrieve from them) rather than pasting
+them into the prompt:
 
 - **Full** —
   [`granit-fx.dev/llms-full.txt`](https://granit-fx.dev/llms-full.txt)
-  (~1.6 MB, all %%PACKAGE_COUNT%% modules, patterns, ADRs)
+  (~7 MB: every page — modules, guides, patterns, ADRs, blog)
 - **Compact** —
   [`granit-fx.dev/llms-small.txt`](https://granit-fx.dev/llms-small.txt)
-  (~1.3 MB, essential content only)
+  (~4 MB: module reference and guides only — no blog, ADRs, or pattern catalog)
 
-Both follow the
+For direct in-context use, the MCP server below is the better fit — it serves
+individual pages on demand instead of the whole corpus. Both files follow the
 [llms.txt](https://llmstxt.org/) open standard.
 </Aside>
 

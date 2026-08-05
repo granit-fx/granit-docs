@@ -228,7 +228,7 @@ The typical pattern: no policy in Development (inherits `AllowAnonymous` from `a
 - [API Documentation reference](/dotnet/api/api-documentation/) — full option reference,
   transformer pipeline, custom schema examples
 - [ADR-009: Scalar API Documentation](/dotnet/architecture/adr/009-scalar-api-documentation/) — decision record and alternatives considered
-- [API versioning with Asp.Versioning](/dotnet/api/api-versioning/) — combining multi-version
+- [API versioning with Asp.Versioning](/dotnet/api/api-documentation/) — combining multi-version
   docs with `MapApiGroup()`
 - [Never Return Your EF Entities From an API](/blog/never-return-ef-entities/) — keeping
   your OpenAPI schema clean with response records
