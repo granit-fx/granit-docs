@@ -55,6 +55,10 @@ jobs:
         run: pnpm spell
 
       - name: Third-party notices up to date
+        # Dependabot PRs are auto-fixed by the dependabot-notices workflow, which
+        # commits the regenerated file back to the PR branch. Enforcing the check
+        # here would fail before that commit lands, so skip it for that actor.
+        if: github.actor != 'dependabot[bot]'
         run: |
           node scripts/generate-third-party-notices.mjs
           # -I: the "Last generated" stamp changes every day; only real

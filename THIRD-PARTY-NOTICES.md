@@ -1,18 +1,18 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-04
+Last generated: 2026-08-10
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
 with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
 
-**Total production packages:** 503
+**Total production packages:** 500
 
 ## License summary
 
 | License | Packages |
 | --- | --- |
-| MIT | 422 |
+| MIT | 419 |
 | ISC | 39 |
 | BSD-3-Clause | 12 |
 | Apache-2.0 | 9 |
@@ -36,15 +36,15 @@ Packages declared in [package.json](package.json):
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
 | `@astrojs/markdown-remark` | 7.2.1 / 7.2.2 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/starlight` | 0.41.6 | MIT | [starlight.astro.build](https://starlight.astro.build) |
+| `@astrojs/starlight` | 0.41.7 | MIT | [starlight.astro.build](https://starlight.astro.build) |
 | `@fontsource-variable/fira-code` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/fira-code) |
 | `@fontsource-variable/plus-jakarta-sans` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/plus-jakarta-sans) |
-| `@tailwindcss/vite` | 4.3.2 | MIT | [tailwindcss.com](https://tailwindcss.com) |
-| `astro` | 7.1.6 | MIT | [astro.build](https://astro.build) |
+| `@tailwindcss/vite` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
+| `astro` | 7.2.0 | MIT | [astro.build](https://astro.build) |
 | `astro-mermaid` | 2.1.0 | MIT | [github.com](https://github.com/joesaby/astro-mermaid#readme) |
 | `astro-og-canvas` | 0.13.0 | MIT | [github.com](https://github.com/delucis/astro-og-canvas#readme) |
 | `canvaskit-wasm` | 0.41.1 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
-| `mermaid` | 11.16.0 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
+| `mermaid` | 11.16.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
 | `starlight-blog` | 0.28.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
@@ -52,7 +52,7 @@ Packages declared in [package.json](package.json):
 | `starlight-llms-txt` | 0.11.0 | MIT | [delucis.github.io](https://delucis.github.io/starlight-llms-txt/) |
 | `starlight-scroll-to-top` | 1.0.1 | MIT | [github.com](https://github.com/frostybee/starlight-scroll-to-top) |
 | `starlight-sidebar-topics` | 0.8.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-sidebar-topics) |
-| `tailwindcss` | 4.3.2 / 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
+| `tailwindcss` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
 
 ## Transitive dependencies
 
@@ -60,7 +60,7 @@ The full transitive graph (resolved by pnpm) contains the following packages.
 Versions reflect the pinned `pnpm-lock.yaml`.
 
 <details>
-<summary>Show 485 transitive packages</summary>
+<summary>Show 482 transitive packages</summary>
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
@@ -77,22 +77,22 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@astrojs/telemetry` | 3.3.3 | MIT | [astro.build](https://astro.build) |
 | `@babel/helper-string-parser` | 7.29.7 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-helper-string-parser) |
 | `@babel/helper-validator-identifier` | 7.29.7 | MIT | [github.com](https://github.com/babel/babel#readme) |
-| `@babel/parser` | 7.29.7 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-parser) |
-| `@babel/types` | 7.29.7 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-types) |
+| `@babel/parser` | 7.29.8 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-parser) |
+| `@babel/types` | 7.29.8 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-types) |
 | `@braintree/sanitize-url` | 7.1.2 | MIT | [github.com](https://github.com/braintree/sanitize-url#readme) |
 | `@bruits/satteri-linux-x64-gnu` | 0.9.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
 | `@capsizecss/unpack` | 4.0.1 | MIT | [github.com](https://github.com/seek-oss/capsize#readme) |
 | `@chevrotain/types` | 11.1.2 | Apache-2.0 | [chevrotain.io](https://chevrotain.io/documentation/) |
-| `@clack/core` | 1.4.2 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/core#readme) |
-| `@clack/prompts` | 1.6.0 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/prompts#readme) |
+| `@clack/core` | 1.4.3 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/core#readme) |
+| `@clack/prompts` | 1.7.0 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/prompts#readme) |
 | `@ctrl/tinycolor` | 4.2.0 | MIT | [tinycolor.vercel.app](https://tinycolor.vercel.app) |
-| `@esbuild/linux-x64` | 0.28.1 | MIT | [github.com](https://github.com/evanw/esbuild#readme) |
+| `@esbuild/linux-x64` | 0.28.2 | MIT | [github.com](https://github.com/evanw/esbuild#readme) |
 | `@expressive-code/core` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `@expressive-code/plugin-frames` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `@expressive-code/plugin-shiki` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `@expressive-code/plugin-text-markers` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `@iconify/types` | 2.0.0 | MIT | [github.com](https://github.com/iconify/iconify) |
-| `@iconify/utils` | 3.1.3 | MIT | [iconify.design](https://iconify.design/docs/libraries/utils/) |
+| `@iconify/utils` | 3.1.4 | MIT | [iconify.design](https://iconify.design/docs/libraries/utils/) |
 | `@img/colour` | 1.1.0 | MIT | [github.com](https://github.com/lovell/colour#readme) |
 | `@img/sharp-libvips-linux-x64` | 1.3.2 | LGPL-3.0-or-later | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
 | `@img/sharp-linux-x64` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
@@ -110,19 +110,17 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@pagefind/linux-x64` | 1.5.2 | MIT | [github.com](https://github.com/Pagefind/pagefind#readme) |
 | `@rolldown/binding-linux-x64-gnu` | 1.2.2 | MIT | [rolldown.rs](https://rolldown.rs/) |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | [github.com](https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme) |
-| `@rollup/pluginutils` | 5.4.0 | MIT | [github.com](https://github.com/rollup/plugins/tree/master/packages/pluginutils#readme) |
-| `@rollup/rollup-linux-x64-gnu` | 4.62.2 | MIT | [rollupjs.org](https://rollupjs.org/) |
-| `@shikijs/core` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-javascript` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-oniguruma` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/langs` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/primitive` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/themes` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/types` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/core` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-javascript` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-oniguruma` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/langs` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/primitive` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/themes` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/types` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `@shikijs/vscode-textmate` | 10.0.2 | MIT | [github.com](https://github.com/shikijs/vscode-textmate#readme) |
-| `@tailwindcss/node` | 4.3.2 | MIT | [tailwindcss.com](https://tailwindcss.com) |
-| `@tailwindcss/oxide` | 4.3.2 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
-| `@tailwindcss/oxide-linux-x64-gnu` | 4.3.2 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
+| `@tailwindcss/node` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
+| `@tailwindcss/oxide` | 4.3.3 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
+| `@tailwindcss/oxide-linux-x64-gnu` | 4.3.3 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
 | `@types/braces` | 3.0.5 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/braces) |
 | `@types/d3` | 7.4.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3) |
 | `@types/d3-array` | 3.2.2 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-array) |
@@ -139,13 +137,13 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@types/d3-fetch` | 3.0.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-fetch) |
 | `@types/d3-force` | 3.0.10 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-force) |
 | `@types/d3-format` | 3.0.4 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-format) |
-| `@types/d3-geo` | 3.1.0 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-geo) |
+| `@types/d3-geo` | 3.1.1 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-geo) |
 | `@types/d3-hierarchy` | 3.1.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-hierarchy) |
 | `@types/d3-interpolate` | 3.0.4 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-interpolate) |
 | `@types/d3-path` | 3.1.1 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-path) |
 | `@types/d3-polygon` | 3.0.2 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-polygon) |
 | `@types/d3-quadtree` | 3.0.6 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-quadtree) |
-| `@types/d3-random` | 3.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-random) |
+| `@types/d3-random` | 3.0.4 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-random) |
 | `@types/d3-scale` | 4.0.9 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-scale) |
 | `@types/d3-scale-chromatic` | 3.1.0 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-scale-chromatic) |
 | `@types/d3-selection` | 3.0.11 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/d3-selection) |
@@ -166,14 +164,14 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@types/micromatch` | 4.0.10 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/micromatch) |
 | `@types/ms` | 2.1.0 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ms) |
 | `@types/nlcst` | 2.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/nlcst) |
-| `@types/node` | 24.13.2 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
+| `@types/node` | 24.13.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
 | `@types/sax` | 1.2.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/sax) |
 | `@types/trusted-types` | 2.0.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types) |
 | `@types/unist` | 2.0.11 / 3.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist) |
 | `@ungap/structured-clone` | 1.3.1 | ISC | [github.com](https://github.com/ungap/structured-clone#readme) |
 | `@upsetjs/venn.js` | 2.0.0 | MIT | [github.com](https://github.com/upsetjs/venn.js) |
 | `@webgpu/types` | 0.1.21 | BSD-3-Clause | [github.com](https://github.com/gpuweb/types) |
-| `acorn` | 8.17.0 | MIT | [github.com](https://github.com/acornjs/acorn) |
+| `acorn` | 8.18.0 | MIT | [github.com](https://github.com/acornjs/acorn) |
 | `acorn-jsx` | 5.3.2 | MIT | [github.com](https://github.com/acornjs/acorn-jsx) |
 | `am-i-vibing` | 0.4.0 | MIT | [github.com](https://github.com/ascorbic/am-i-vibing) |
 | `anymatch` | 3.1.3 | ISC | [github.com](https://github.com/micromatch/anymatch) |
@@ -187,7 +185,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `axobject-query` | 4.1.0 | Apache-2.0 | [github.com](https://github.com/A11yance/axobject-query#readme) |
 | `bail` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/bail#readme) |
 | `base-64` | 1.0.0 | MIT | [mths.be](https://mths.be/base64) |
-| `bcp-47` | 2.1.0 | MIT | [github.com](https://github.com/wooorm/bcp-47#readme) |
+| `bcp-47` | 2.1.1 | MIT | [github.com](https://github.com/wooorm/bcp-47#readme) |
 | `bcp-47-match` | 2.0.3 | MIT | [github.com](https://github.com/wooorm/bcp-47-match#readme) |
 | `boolbase` | 1.0.0 | ISC | [github.com](https://github.com/fb55/boolbase) |
 | `braces` | 3.0.3 | MIT | [github.com](https://github.com/micromatch/braces) |
@@ -258,23 +256,23 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `destr` | 2.0.5 | MIT | [github.com](https://github.com/unjs/destr#readme) |
 | `detect-libc` | 2.1.2 | Apache-2.0 | [github.com](https://github.com/lovell/detect-libc#readme) |
 | `deterministic-object-hash` | 2.0.2 | MIT | [github.com](https://github.com/zbauman3/Deterministic-Object-Hash#readme) |
-| `devalue` | 5.8.1 | MIT | [github.com](https://github.com/sveltejs/devalue#readme) |
+| `devalue` | 5.9.0 | MIT | [github.com](https://github.com/sveltejs/devalue#readme) |
 | `devlop` | 1.1.0 | MIT | [github.com](https://github.com/wooorm/devlop#readme) |
 | `diff` | 8.0.4 | BSD-3-Clause | [github.com](https://github.com/kpdecker/jsdiff#readme) |
 | `direction` | 2.0.1 | MIT | [github.com](https://github.com/wooorm/direction#readme) |
 | `dom-serializer` | 2.0.0 | MIT | [github.com](https://github.com/cheeriojs/dom-serializer#readme) |
 | `domelementtype` | 2.3.0 | BSD-2-Clause | [github.com](https://github.com/fb55/domelementtype#readme) |
 | `domhandler` | 5.0.3 | BSD-2-Clause | [github.com](https://github.com/fb55/domhandler#readme) |
-| `dompurify` | 3.4.11 | (MPL-2.0 OR Apache-2.0) | [github.com](https://github.com/cure53/DOMPurify) |
+| `dompurify` | 3.4.13 | (MPL-2.0 OR Apache-2.0) | [github.com](https://github.com/cure53/DOMPurify) |
 | `domutils` | 3.2.2 | BSD-2-Clause | [github.com](https://github.com/fb55/domutils#readme) |
 | `dset` | 3.1.4 | MIT | [github.com](https://github.com/lukeed/dset#readme) |
-| `enhanced-resolve` | 5.21.6 | MIT | [github.com](http://github.com/webpack/enhanced-resolve) |
+| `enhanced-resolve` | 5.24.5 | MIT | [github.com](https://github.com/webpack/enhanced-resolve#readme) |
 | `entities` | 4.5.0 / 6.0.1 / 8.0.0 | BSD-2-Clause | [github.com](https://github.com/fb55/entities#readme) |
 | `es-module-lexer` | 2.3.1 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
-| `es-toolkit` | 1.49.0 | MIT | [es-toolkit.dev](https://es-toolkit.dev) |
+| `es-toolkit` | 1.50.0 | MIT | [es-toolkit.dev](https://es-toolkit.dev) |
 | `esast-util-from-estree` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-estree#readme) |
 | `esast-util-from-js` | 2.0.1 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-js#readme) |
-| `esbuild` | 0.28.1 | MIT | [github.com](https://github.com/evanw/esbuild#readme) |
+| `esbuild` | 0.28.2 | MIT | [github.com](https://github.com/evanw/esbuild#readme) |
 | `escape-string-regexp` | 5.0.0 | MIT | [github.com](https://github.com/sindresorhus/escape-string-regexp#readme) |
 | `estree-util-attach-comments` | 3.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-attach-comments#readme) |
 | `estree-util-build-jsx` | 3.0.1 | MIT | [github.com](https://github.com/syntax-tree/estree-util-build-jsx#readme) |
@@ -282,7 +280,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `estree-util-scope` | 1.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-scope#readme) |
 | `estree-util-to-js` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-to-js#readme) |
 | `estree-util-visit` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-visit#readme) |
-| `estree-walker` | 2.0.2 / 3.0.3 | MIT | [github.com](https://github.com/Rich-Harris/estree-walker#readme) |
+| `estree-walker` | 3.0.3 | MIT | [github.com](https://github.com/Rich-Harris/estree-walker#readme) |
 | `eventemitter3` | 5.0.4 | MIT | [github.com](https://github.com/primus/eventemitter3#readme) |
 | `expressive-code` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `extend` | 3.0.2 | MIT | [github.com](https://github.com/justmoon/node-extend#readme) |
@@ -326,7 +324,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `html-void-elements` | 3.0.0 | MIT | [github.com](https://github.com/wooorm/html-void-elements#readme) |
 | `html-whitespace-sensitive-tag-names` | 3.0.1 | MIT | [github.com](https://github.com/rehypejs/rehype-minify/tree/main#readme) |
 | `http-cache-semantics` | 4.2.0 | BSD-2-Clause | [github.com](https://github.com/kornelski/http-cache-semantics#readme) |
-| `i18next` | 26.3.1 | MIT | [i18next.com](https://www.i18next.com) |
+| `i18next` | 26.3.6 | MIT | [i18next.com](https://www.i18next.com) |
 | `iconv-lite` | 0.6.3 | MIT | [github.com](https://github.com/ashtuchkin/iconv-lite) |
 | `import-meta-resolve` | 4.2.0 | MIT | [github.com](https://github.com/wooorm/import-meta-resolve#readme) |
 | `inline-style-parser` | 0.2.7 | MIT | [github.com](https://github.com/remarkablemark/inline-style-parser#readme) |
@@ -342,7 +340,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `is-plain-obj` | 4.1.0 | MIT | [github.com](https://github.com/sindresorhus/is-plain-obj#readme) |
 | `is-unsafe` | 2.0.0 | MIT | [github.com](https://github.com/NaturalIntelligence/is-unsafe#readme) |
 | `jiti` | 2.7.0 | MIT | [github.com](https://github.com/unjs/jiti#readme) |
-| `js-yaml` | 4.3.0 | MIT | [github.com](https://github.com/nodeca/js-yaml#readme) |
+| `js-yaml` | 4.3.1 | MIT | [github.com](https://github.com/nodeca/js-yaml#readme) |
 | `jsonc-parser` | 3.3.1 | MIT | [github.com](https://github.com/microsoft/node-jsonc-parser#readme) |
 | `katex` | 0.16.47 | MIT | [katex.org](https://katex.org) |
 | `khroma` | 2.1.0 | Unknown | [github.com](https://github.com/fabiospampinato/khroma#readme) |
@@ -352,9 +350,9 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `lightningcss-linux-x64-gnu` | 1.32.0 / 1.33.0 | MPL-2.0 | [github.com](https://github.com/parcel-bundler/lightningcss#readme) |
 | `lodash-es` | 4.18.1 | MIT | [lodash.com](https://lodash.com/custom-builds) |
 | `longest-streak` | 3.1.0 | MIT | [github.com](https://github.com/wooorm/longest-streak#readme) |
-| `lru-cache` | 11.5.1 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/node-lru-cache#readme) |
+| `lru-cache` | 11.5.2 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/node-lru-cache#readme) |
 | `magic-string` | 0.30.21 / 1.1.0 | MIT | [github.com](https://github.com/Rich-Harris/magic-string#readme) |
-| `magicast` | 0.5.3 | MIT | [github.com](https://github.com/unjs/magicast#readme) |
+| `magicast` | 0.5.4 | MIT | [github.com](https://github.com/unjs/magicast#readme) |
 | `markdown-extensions` | 2.0.0 | MIT | [github.com](https://github.com/sindresorhus/markdown-extensions#readme) |
 | `markdown-table` | 3.0.4 | MIT | [github.com](https://github.com/wooorm/markdown-table#readme) |
 | `marked` | 16.4.2 | MIT | [marked.js.org](https://marked.js.org) |
@@ -416,22 +414,22 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `micromatch` | 4.0.8 | MIT | [github.com](https://github.com/micromatch/micromatch) |
 | `mrmime` | 2.0.1 | MIT | [github.com](https://github.com/lukeed/mrmime#readme) |
 | `ms` | 2.1.3 | MIT | [github.com](https://github.com/vercel/ms#readme) |
-| `nanoid` | 3.3.15 / 3.3.17 | MIT | [github.com](https://github.com/ai/nanoid#readme) |
+| `nanoid` | 3.3.18 | MIT | [github.com](https://github.com/ai/nanoid#readme) |
 | `neotraverse` | 1.0.1 | MIT | [neotraverse.puruvj.dev](https://neotraverse.puruvj.dev) |
 | `nlcst-to-string` | 4.0.0 | MIT | [github.com](https://github.com/syntax-tree/nlcst-to-string#readme) |
 | `node-fetch-native` | 1.6.7 | MIT | [github.com](https://github.com/unjs/node-fetch-native#readme) |
-| `node-mock-http` | 1.0.4 | MIT | [github.com](https://github.com/unjs/node-mock-http#readme) |
+| `node-mock-http` | 1.0.5 | MIT | [github.com](https://github.com/unjs/node-mock-http#readme) |
 | `normalize-path` | 3.0.0 | MIT | [github.com](https://github.com/jonschlinkert/normalize-path) |
 | `nth-check` | 2.1.1 | BSD-2-Clause | [github.com](https://github.com/fb55/nth-check) |
-| `obug` | 2.1.3 | MIT | [github.com](https://github.com/sxzz/obug#readme) |
+| `obug` | 2.1.4 | MIT | [github.com](https://github.com/sxzz/obug#readme) |
 | `ofetch` | 1.5.1 | MIT | [github.com](https://github.com/unjs/ofetch#readme) |
 | `ohash` | 2.0.11 | MIT | [github.com](https://github.com/unjs/ohash#readme) |
 | `oniguruma-parser` | 0.12.2 | MIT | [github.com](https://github.com/slevithan/oniguruma-parser#readme) |
 | `oniguruma-to-es` | 4.3.6 | MIT | [github.com](https://github.com/slevithan/oniguruma-to-es#readme) |
-| `p-limit` | 7.3.0 | MIT | [github.com](https://github.com/sindresorhus/p-limit#readme) |
-| `p-queue` | 9.3.0 | MIT | [github.com](https://github.com/sindresorhus/p-queue#readme) |
+| `p-limit` | 7.3.1 | MIT | [github.com](https://github.com/sindresorhus/p-limit#readme) |
+| `p-queue` | 9.3.3 | MIT | [github.com](https://github.com/sindresorhus/p-queue#readme) |
 | `p-timeout` | 7.0.1 | MIT | [github.com](https://github.com/sindresorhus/p-timeout#readme) |
-| `package-manager-detector` | 1.6.0 | MIT | [github.com](https://github.com/antfu-collective/package-manager-detector#readme) |
+| `package-manager-detector` | 1.8.0 | MIT | [github.com](https://github.com/antfu-collective/package-manager-detector#readme) |
 | `pagefind` | 1.5.2 | MIT | [github.com](https://github.com/Pagefind/pagefind#readme) |
 | `parse-entities` | 4.0.2 | MIT | [github.com](https://github.com/wooorm/parse-entities#readme) |
 | `parse-latin` | 7.0.0 | MIT | [github.com](https://github.com/wooorm/parse-latin#readme) |
@@ -443,14 +441,14 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `picomatch` | 4.0.4 / 4.0.5 | MIT | [github.com](https://github.com/micromatch/picomatch) |
 | `points-on-curve` | 0.2.0 | MIT | [github.com](https://github.com/pshihn/bezier-points#readme) |
 | `points-on-path` | 0.2.1 | MIT | [github.com](https://github.com/pshihn/points-on-path#readme) |
-| `postcss` | 8.5.15 / 8.5.25 | MIT | [postcss.org](https://postcss.org/) |
+| `postcss` | 8.5.26 | MIT | [postcss.org](https://postcss.org/) |
 | `postcss-nested` | 6.2.0 | MIT | [github.com](https://github.com/postcss/postcss-nested#readme) |
 | `postcss-selector-parser` | 6.1.4 | MIT | [github.com](https://github.com/postcss/postcss-selector-parser) |
 | `prismjs` | 1.30.0 | MIT | [github.com](https://github.com/PrismJS/prism#readme) |
 | `process-ancestry` | 0.1.0 | MIT | [github.com](https://github.com/ascorbic/process-ancestry) |
 | `property-information` | 7.2.0 | MIT | [github.com](https://github.com/wooorm/property-information#readme) |
 | `radix3` | 1.1.2 | MIT | [github.com](https://github.com/unjs/radix3#readme) |
-| `readdirp` | 5.0.0 | MIT | [github.com](https://github.com/paulmillr/readdirp) |
+| `readdirp` | 5.1.1 | MIT | [github.com](https://github.com/paulmillr/readdirp) |
 | `recma-build-jsx` | 1.0.0 | MIT | [github.com](https://github.com/mdx-js/recma) |
 | `recma-jsx` | 1.0.1 | MIT | [github.com](https://github.com/mdx-js/recma) |
 | `recma-parse` | 1.0.0 | MIT | [github.com](https://github.com/mdx-js/recma) |
@@ -472,7 +470,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `remark-mdx` | 3.1.1 | MIT | [mdxjs.com](https://mdxjs.com) |
 | `remark-parse` | 11.0.0 | MIT | [remark.js.org](https://remark.js.org) |
 | `remark-rehype` | 11.1.2 | MIT | [github.com](https://github.com/remarkjs/remark-rehype#readme) |
-| `remark-smartypants` | 3.0.2 | MIT | [github.com](https://github.com/silvenon/remark-smartypants#readme) |
+| `remark-smartypants` | 3.0.2 / 3.0.3 | MIT | [github.com](https://github.com/silvenon/remark-smartypants#readme) |
 | `remark-stringify` | 11.0.0 | MIT | [remark.js.org](https://remark.js.org) |
 | `resolve-pkg-maps` | 1.0.0 | MIT | [github.com](https://github.com/privatenumber/resolve-pkg-maps#readme) |
 | `retext` | 9.0.0 | MIT | [github.com](https://github.com/retextjs/retext) |
@@ -481,19 +479,18 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `retext-stringify` | 4.0.0 | MIT | [github.com](https://github.com/retextjs/retext) |
 | `robust-predicates` | 3.0.3 | Unlicense | [github.com](https://github.com/mourner/robust-predicates#readme) |
 | `rolldown` | 1.2.2 | MIT | [rolldown.rs](https://rolldown.rs/) |
-| `rollup` | 4.62.2 | MIT | [rollupjs.org](https://rollupjs.org/) |
 | `roughjs` | 4.6.6 | MIT | [roughjs.com](https://roughjs.com) |
 | `rw` | 1.3.3 | BSD-3-Clause | [github.com](https://github.com/mbostock/rw) |
 | `safer-buffer` | 2.1.2 | MIT | [github.com](https://github.com/ChALkeR/safer-buffer#readme) |
 | `satteri` | 0.9.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
-| `sax` | 1.6.0 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/sax-js#readme) |
+| `sax` | 1.6.1 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/sax-js#readme) |
 | `schema-dts` | 2.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `schema-dts-lib` | 1.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `semver` | 7.8.5 | ISC | [github.com](https://github.com/npm/node-semver#readme) |
-| `shiki` | 4.3.1 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `shiki` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `sisteransi` | 1.0.5 | MIT | [github.com](https://github.com/terkelg/sisteransi#readme) |
 | `sitemap` | 9.0.1 | MIT | [github.com](https://github.com/ekalinin/sitemap.js#readme) |
-| `smol-toml` | 1.7.0 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
+| `smol-toml` | 1.7.1 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
 | `source-map` | 0.7.6 | BSD-3-Clause | [github.com](https://github.com/mozilla/source-map) |
 | `source-map-js` | 1.2.1 | BSD-3-Clause | [github.com](https://github.com/7rulnik/source-map-js) |
 | `space-separated-tokens` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/space-separated-tokens#readme) |
@@ -503,11 +500,11 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `style-to-js` | 1.1.21 | MIT | [github.com](https://github.com/remarkablemark/style-to-js#readme) |
 | `style-to-object` | 1.0.14 | MIT | [github.com](https://github.com/remarkablemark/style-to-object#readme) |
 | `stylis` | 4.4.0 | MIT | [github.com](https://github.com/thysultan/stylis.js) |
-| `svgo` | 4.0.1 | MIT | [svgo.dev](https://svgo.dev) |
+| `svgo` | 4.0.2 | MIT | [svgo.dev](https://svgo.dev) |
 | `tapable` | 2.3.3 | MIT | [github.com](https://github.com/webpack/tapable) |
 | `tiny-inflate` | 1.0.3 | MIT | [github.com](https://github.com/devongovett/tiny-inflate) |
 | `tinyclip` | 0.1.15 | MIT | [github.com](https://github.com/tinylibs/tinyclip#readme) |
-| `tinyexec` | 1.2.4 | MIT | [github.com](https://github.com/tinylibs/tinyexec#readme) |
+| `tinyexec` | 1.3.0 | MIT | [github.com](https://github.com/tinylibs/tinyexec#readme) |
 | `tinyglobby` | 0.2.17 | MIT | [superchupu.dev](https://superchupu.dev/tinyglobby) |
 | `to-regex-range` | 5.0.1 | MIT | [github.com](https://github.com/micromatch/to-regex-range) |
 | `trim-lines` | 3.0.1 | MIT | [github.com](https://github.com/wooorm/trim-lines#readme) |
@@ -516,7 +513,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `ts-dedent` | 2.3.0 | MIT | [github.com](https://github.com/tamino-martinius/node-ts-dedent#readme) |
 | `typescript` | 6.0.3 | Apache-2.0 | [typescriptlang.org](https://www.typescriptlang.org/) |
 | `ufo` | 1.6.4 | MIT | [github.com](https://github.com/unjs/ufo#readme) |
-| `ultrahtml` | 1.6.0 | MIT | [github.com](https://github.com/natemoo-re/ultrahtml#README) |
+| `ultrahtml` | 1.7.0 | MIT | [github.com](https://github.com/natemoo-re/ultrahtml#README) |
 | `uncrypto` | 0.1.3 | MIT | [github.com](https://github.com/unjs/uncrypto#readme) |
 | `undici-types` | 7.18.2 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
 | `unified` | 11.0.5 | MIT | [unifiedjs.com](https://unifiedjs.com) |
@@ -539,7 +536,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `vfile` | 6.0.3 | MIT | [github.com](https://github.com/vfile/vfile#readme) |
 | `vfile-location` | 5.0.3 | MIT | [github.com](https://github.com/vfile/vfile-location#readme) |
 | `vfile-message` | 4.0.3 | MIT | [github.com](https://github.com/vfile/vfile-message#readme) |
-| `vite` | 8.2.0 | MIT | [vite.dev](https://vite.dev) |
+| `vite` | 8.2.1 | MIT | [vite.dev](https://vite.dev) |
 | `vitefu` | 1.1.3 | MIT | [github.com](https://github.com/svitejs/vitefu#readme) |
 | `web-namespaces` | 2.0.1 | MIT | [github.com](https://github.com/wooorm/web-namespaces#readme) |
 | `xml-naming` | 0.3.0 | MIT | [github.com](https://github.com/NaturalIntelligence/xml-naming#readme) |

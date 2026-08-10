@@ -195,6 +195,41 @@ export const redirects = {
   "/frontend/api/": "/frontend/api/http-client/",
   "/frontend/cookies/": "/frontend/security/cookies/",
 
+  // Search Console 404s (2026-08) — legacy/relative-resolved URLs Googlebot still holds.
+  // Templating moved out of /business/ into /building-blocks/; sibling links without a
+  // trailing-slash base also resolved into deep dead paths.
+  "/dotnet/business/templating/layouts/": "/dotnet/building-blocks/templating/layouts/",
+  "/dotnet/business/templating/lifecycle/": "/dotnet/building-blocks/templating/lifecycle/",
+  "/dotnet/business/templating/mjml-email-templates/post-render-transformers/":
+    "/dotnet/building-blocks/templating/post-render-transformers/",
+  "/dotnet/business/templating/rendering-pipeline/layouts/": "/dotnet/building-blocks/templating/layouts/",
+  "/dotnet/building-blocks/templating/layouts/reference/": "/dotnet/building-blocks/templating/reference/",
+  "/dotnet/building-blocks/templating/rendering-pipeline/layouts/": "/dotnet/building-blocks/templating/layouts/",
+  // Notifications sibling pages indexed as nested paths.
+  "/dotnet/infrastructure/notifications/wolverine-integration/fan-out-engine/":
+    "/dotnet/infrastructure/notifications/fan-out-engine/",
+  "/dotnet/infrastructure/notifications/conventions/email-channel/":
+    "/dotnet/infrastructure/notifications/email-channel/",
+  // Concepts / module-system / timeline relative-resolved paths.
+  "/dotnet/infrastructure/wolverine-messaging/multi-tenancy/": "/dotnet/concepts/multi-tenancy/",
+  "/dotnet/concepts/bundles/framework-vs-modules/": "/dotnet/concepts/framework-vs-modules/",
+  "/dotnet/data/core/module-system/": "/dotnet/core/module-system/",
+  "/dotnet/business/timeline/blob-storage/": "/dotnet/data/blob-storage/",
+  "/dotnet/api/webhooks/webhooks-endpoints/": "/dotnet/api/webhooks/endpoints/",
+  // ADRs renumbered/renamed, plus a relative link without a trailing-slash base.
+  "/dotnet/architecture/adr/066-validation-key-naming-convention/":
+    "/dotnet/architecture/adr/068-validation-key-naming-convention/",
+  "/dotnet/architecture/adr/041-widget-catalog/": "/dotnet/architecture/adr/041-component-catalog/",
+  "/dotnet/architecture/adr/041-component-catalog/040-three-tier-metadata-architecture":
+    "/dotnet/architecture/adr/040-three-tier-metadata-architecture/",
+  // OpenIddict sibling page indexed as a nested path.
+  "/dotnet/security/openiddict/configuration/openid-connect-server/":
+    "/dotnet/security/openiddict/openid-connect-server/",
+  // Frontend section indexes (no landing page) and a relative-resolved query-engine path.
+  "/frontend/core/utils/query-engine/": "/frontend/data/query-engine/",
+  "/frontend/core/": "/frontend/core/utils/",
+  "/frontend/infrastructure/": "/frontend/infrastructure/multi-tenancy/",
+
   // Legacy auto-generated API reference pages — redirect to the matching doc section.
   "/api/Granit.Identity.html": "/dotnet/security/identity/",
   "/api/Granit.Workflow.html": "/dotnet/building-blocks/workflow/",
