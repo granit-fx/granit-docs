@@ -81,7 +81,7 @@ to its Granit equivalent.
 | `AuditedEntity<TKey>` / `FullAuditedEntity<TKey>` | `Granit.Domain.CreationAuditedEntity`, `AuditedEntity`, `FullAuditedEntity` (+ matching `*AggregateRoot` variants) | The audit columns are `CreatedAt` / `CreatedBy` (`Modified*`, `Deleted*` on the fuller variants). `FullAudited*` adds soft-delete via `ISoftDeletable`. Auto-populated by the `AuditedEntityInterceptor`. |
 | `IMultiTenant` interface on entities | `Granit.MultiTenancy.IMultiTenant` (same shape, exposes `TenantId`) | Tenant resolution is contextual; the entity opts in via the `TenantId` property. |
 | `ICurrentTenant.Change(...)` | `ICurrentTenant.Change(id, name?)` (`Granit.MultiTenancy`) | Same name, same scoping semantics. Read access is `currentTenant.Id` (not `.TenantId`). |
-| `ISettingProvider` / `ISettingManagementStore` | `Granit.Settings.Services.ISettingProvider` + `ISettingManager` (module: `GranitSettingsModule`) | Same name as ABP, same name-based API: `await settingProvider.GetOrNullAsync("Inventory.LowStockThreshold")`. DB-backed, tenant-aware. |
+| `ISettingProvider` / `ISettingManagementStore` | `Granit.Settings.Services.ISettingProvider` + `ISettingWriter` (module: `GranitSettingsModule`) | Same name as ABP, same name-based API: `await settingProvider.GetOrNullAsync("Inventory.LowStockThreshold")`. DB-backed, tenant-aware. |
 | `IPermissionChecker` + `PermissionDefinitionProvider` | ASP.NET Core authorization policies + Granit endpoint registry | Granit uses native `[Authorize(Policy = "...")]`. Permissions are declared per-endpoint. |
 | `IDistributedEventBus` / `ILocalEventBus` | **Wolverine** (`IMessageBus`) | Local + transport (RabbitMQ, Kafka, Azure Service Bus). See [Wolverine messaging](/dotnet/infrastructure/wolverine-messaging/). |
 | `IBackgroundJobManager` (Hangfire/Quartz wrapper) | Wolverine scheduled / durable messages | A single primitive for sync, async and scheduled work. |
@@ -624,7 +624,7 @@ var threshold = int.Parse(raw ?? "0");
 ```
 
 Both back-end stores are database-backed and tenant-aware. Writes go
-through `ISettingManager`. The migration is mostly a one-time DB write to
+through `ISettingWriter`. The migration is mostly a one-time DB write to
 copy the rows. See
 [Manage Application Settings](/dotnet/guides/manage-application-settings/).
 
@@ -653,9 +653,9 @@ The handler signature is a free function:
 public static class InventoryItemCreatedHandler
 {
     public static Task Handle(
-        InventoryItemCreated msg, INotificationSender sender, CancellationToken ct)
+        InventoryItemCreated msg, INotificationPublisher publisher, CancellationToken ct)
     {
-        return sender.NotifyAsync(/* ... */, ct);
+        return publisher.PublishAsync(/* ... */, ct);
     }
 }
 ```

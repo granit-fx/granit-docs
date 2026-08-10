@@ -14,6 +14,9 @@ export const redirects = {
   // Granit.Http.ApiVersioning merged into Granit.Http.ApiDocumentation.
   "/dotnet/api/api-versioning/": "/dotnet/api/api-documentation/",
 
+  // Granit.Documents.AssetMetadata was renamed to Granit.Documents.Properties.
+  "/dotnet/business/documents-asset-metadata/": "/dotnet/business/documents-properties/",
+
   // Pages renamed within /dotnet/.
   "/dotnet/glossary/": "/dotnet/reference/glossary/",
   "/dotnet/infrastructure/settings/": "/dotnet/infrastructure/application-settings/",

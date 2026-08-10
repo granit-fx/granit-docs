@@ -31,18 +31,19 @@ classDiagram
         +DeleteAsync()
     }
 
-    class IBlobDescriptorStoreReader {
+    class IBlobDescriptorReader {
         +FindAsync()
     }
 
-    class IBlobDescriptorStoreWriter {
+    class IBlobDescriptorWriter {
         +SaveAsync()
         +UpdateAsync()
     }
 
-    class IBlobStorageClient {
-        +DeleteObjectAsync()
-        +HeadObjectAsync()
+    class IBlobStoreProvider {
+        +SaveAsync()
+        +OpenReadAsync()
+        +DeleteAsync()
     }
 
     class IBlobKeyStrategy {
@@ -75,15 +76,15 @@ classDiagram
     }
 
     IBlobStorage <|.. DefaultBlobStorage
-    DefaultBlobStorage --> IBlobDescriptorStoreReader
-    DefaultBlobStorage --> IBlobDescriptorStoreWriter
-    DefaultBlobStorage --> IBlobStorageClient
+    DefaultBlobStorage --> IBlobDescriptorReader
+    DefaultBlobStorage --> IBlobDescriptorWriter
+    DefaultBlobStorage --> IBlobStoreProvider
     DefaultBlobStorage --> IBlobKeyStrategy
     DefaultBlobStorage --> IBlobValidator
 
-    IBlobDescriptorStoreReader <|.. EfBlobDescriptorStore
-    IBlobDescriptorStoreWriter <|.. EfBlobDescriptorStore
-    IBlobStorageClient <|.. S3BlobClient
+    IBlobDescriptorReader <|.. EfBlobDescriptorStore
+    IBlobDescriptorWriter <|.. EfBlobDescriptorStore
+    IBlobStoreProvider <|.. S3BlobClient
     IBlobKeyStrategy <|.. PrefixBlobKeyStrategy
     IBlobValidator <|.. MagicBytesValidator
 ```
@@ -95,8 +96,8 @@ classDiagram
 | Port (interface) | File | Adapter(s) |
 | ---------------- | ---- | ---------- |
 | `IBlobStorage` | `src/Granit.BlobStorage/IBlobStorage.cs` | `DefaultBlobStorage` (orchestrator) |
-| `IBlobDescriptorStoreReader` / `IBlobDescriptorStoreWriter` | `src/Granit.BlobStorage/` | `EfBlobDescriptorStore` in `Granit.BlobStorage.EntityFrameworkCore` |
-| `IBlobStorageClient` | `src/Granit.BlobStorage/Internal/IBlobStorageClient.cs` | `S3BlobClient` in `Granit.BlobStorage.S3` |
+| `IBlobDescriptorReader` / `IBlobDescriptorWriter` | `src/Granit.BlobStorage/` | `EfBlobDescriptorStore` in `Granit.BlobStorage.EntityFrameworkCore` |
+| `IBlobStoreProvider` / `IPresignedUrlProvider` | `src/Granit.BlobStorage/Internal/` | `S3BlobClient` in `Granit.BlobStorage.S3` (implements both) |
 | `IBlobKeyStrategy` | `src/Granit.BlobStorage/IBlobKeyStrategy.cs` | `PrefixBlobKeyStrategy` in `Granit.BlobStorage.S3` |
 | `IBlobValidator` | `src/Granit.BlobStorage/IBlobValidator.cs` | `MagicBytesValidator`, `MaxSizeValidator` (built-in) + custom |
 
@@ -106,7 +107,7 @@ classDiagram
 | ------ | ---- | -------- |
 | Features | `IFeatureStoreReader` / `IFeatureStoreWriter` | `InMemoryFeatureStore`, `EfCoreFeatureStore` |
 | BackgroundJobs | `IBackgroundJobStoreReader` / `IBackgroundJobStoreWriter` | `InMemoryBackgroundJobStore`, `EfBackgroundJobStore` |
-| Webhooks | `IWebhookSubscriptionStoreReader` / `IWebhookSubscriptionStoreWriter` | `EfWebhookSubscriptionStore` |
+| Webhooks | `IWebhookSubscriptionReader` / `IWebhookSubscriptionWriter` | `EfWebhookSubscriptionStore` |
 | Settings | `ISettingStoreReader` / `ISettingStoreWriter` | `EfCoreSettingStore` |
 | Caching | `IFusionCache` | FusionCache (via `Granit.Caching`) |
 | Encryption | `IStringEncryptionProvider` | `AesStringEncryptionProvider` |
@@ -117,15 +118,18 @@ classDiagram
 | ------- | -------- |
 | Coupling to a cloud provider (S3, Azure Blob) | Ports allow swapping adapters without touching the core |
 | Unit tests requiring a database | `InMemoryFeatureStore` and `InMemoryBackgroundJobStore` implement Reader/Writer interfaces, replacing EF Core in tests |
-| ISO 27001 compliance -- ability to migrate from S3-compatible storage to a sovereign provider | Implementing `IBlobStorageClient` for the new provider is sufficient |
+| ISO 27001 compliance -- ability to migrate from S3-compatible storage to a sovereign provider | A provider package implementing `IBlobStoreProvider` is sufficient; the core and every consumer stay untouched |
 | Independent NuGet packages | The core (`Granit.BlobStorage`) has no dependency on EF Core or the AWS SDK |
 
 ## Usage example
 
+Ports are `internal` to the package that owns them — adapters ship as
+first-party provider packages, and hosts select one through its registration
+extension. Swapping AWS S3 for MinIO reuses the same adapter against a
+different endpoint (`ServiceUrl` + `ForcePathStyle` on `S3BlobOptions`):
+
 ```csharp
-// Replacing S3 with MinIO -- only the adapter changes
-services.AddSingleton<IBlobStorageClient, MinioBlobClient>();
-services.AddSingleton<IBlobKeyStrategy, MinioBlobKeyStrategy>();
+builder.AddGranitBlobStorageS3();
 
 // The rest of the application code remains unchanged
 IBlobStorage blobStorage = serviceProvider.GetRequiredService<IBlobStorage>();

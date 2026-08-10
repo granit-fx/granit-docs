@@ -165,16 +165,17 @@ Every `*.EntityFrameworkCore` package that owns an isolated `DbContext` **must**
 follow this checklist with no exceptions:
 
 1. **`<ProjectReference>` to `Granit.Persistence`** in the `.csproj`
-2. **Constructor injection** of `ICurrentTenant?` and `IDataFilter?` (both
-   optional, default `null`)
-3. **Call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)`** at
-   the end of `OnModelCreating`
+2. **Derive from `GranitDbContext`**, passing `ICurrentTenant` and an optional
+   `IDataFilter` to the base constructor
+3. **Override `OnGranitModelCreating`** for entity configuration —
+   `OnModelCreating` is sealed on the base class and `ApplyGranitConventions`
+   is `internal`
 4. **Interceptor wiring** in the extension method: use the `(sp, options)`
    overload of `AddDbContextFactory` with `ServiceLifetime.Scoped` and resolve
    `AuditedEntityInterceptor` / `SoftDeleteInterceptor` from the service provider
 5. **`[DependsOn(typeof(GranitPersistenceModule))]`** on the module class
 6. **No manual `HasQueryFilter`** in entity configurations --
-   `ApplyGranitConventions` handles all standard filters centrally
+   the conventions pass handles all standard filters centrally
 7. **`IMultiTenant` entities** use `Guid? TenantId` (never `string`)
 
 :::tip[Pro tip]

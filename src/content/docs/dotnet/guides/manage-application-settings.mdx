@@ -194,16 +194,16 @@ using Microsoft.EntityFrameworkCore;
 namespace MyApp.Persistence;
 
 public sealed class AppDbContext(
-    DbContextOptions<AppDbContext> options)
-    : DbContext(options), ISettingsDbContext
+    DbContextOptions<AppDbContext> options,
+    ICurrentTenant currentTenant,
+    IDataFilter? dataFilter = null)
+    : GranitDbContext(options, currentTenant, dataFilter), ISettingsDbContext
 {
     public DbSet<SettingRecord> SettingRecords { get; set; } = null!;
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ConfigureSettingsModule();
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```

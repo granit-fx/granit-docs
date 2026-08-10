@@ -163,18 +163,17 @@ using Microsoft.EntityFrameworkCore;
 
 public sealed class InvoicingDbContext(
     DbContextOptions<InvoicingDbContext> options,
-    ICurrentTenant? currentTenant = null,
-    IDataFilter? dataFilter = null) : DbContext(options)
+    ICurrentTenant currentTenant,
+    IDataFilter? dataFilter = null)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Invoice> Invoices => Set<Invoice>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // The base class registers soft-delete, multi-tenant, and the rest of the
+    // named filters around this override.
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<Invoice>(e => e.ToTable("invoices"));
-
-        // Registers soft-delete, multi-tenant, and the rest of the named filters
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```

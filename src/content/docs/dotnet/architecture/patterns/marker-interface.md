@@ -122,7 +122,7 @@ public sealed class MedicalRecord : FullAuditedEntity, IMultiTenant, IActive
 
 ## Used by
 
-- [Persistence](/dotnet/data/persistence/) — `IAuditedEntity`, `ISoftDeletable`, `IMultiTenant`, `IMetadata` interceptors
+- [Persistence](/dotnet/data/persistence/) — `ICreationAuditedObject`, `IModificationAuditedObject`, `ISoftDeletable`, `IMultiTenant`, `IMetadata` interceptors
 - [Multi-tenancy](/dotnet/infrastructure/multi-tenancy/) — `IMultiTenant` query filter wiring
 - [Soft Delete pattern](/dotnet/architecture/patterns/soft-delete/) — relies on `ISoftDeletable`
 - [Metadata pattern](/dotnet/architecture/patterns/metadata/) — `IMetadata` triggers the property-bag interceptor

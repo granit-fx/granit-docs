@@ -227,9 +227,11 @@ would let an attacker probe internal hosts via `<img src>`, `<link href>`, or
 `@import url(...)`. The constraint is pinned by an embedded-source architecture
 test in `Granit.Html.AngleSharp.Tests`.
 
-Hosts that index trusted templates (e.g. internal CMS) can opt into
-`ResolveHtmlExternalResources = true`, which switches the converter to
-`BuildForTrustedTemplates()`. The default stays SSRF-safe.
+Hosts that index trusted templates (e.g. an internal CMS) opt in **in code**,
+not through configuration: construct `AngleSharpHtmlToPlainTextConverter` with
+`AngleSharpConfiguration.BuildForTrustedTemplates()` and register it yourself.
+There is deliberately no appsettings switch — flipping SSRF protection must be a
+reviewed code change, not a deploy-time toggle. The default stays SSRF-safe.
 
 ### Tika sidecar — hostname allowlist + mTLS
 
@@ -283,7 +285,7 @@ public sealed class IngestModule : GranitModule { }
     "MaxDecompressedBytes": 524288000,
     "MaxZipEntries": 10000,
     "MaxExtractedCharLength": 500000,
-    "ResolveHtmlExternalResources": false
+    "MaxImagePixels": 50000000
   }
 }
 ```

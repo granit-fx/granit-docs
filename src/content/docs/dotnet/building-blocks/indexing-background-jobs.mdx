@@ -23,7 +23,7 @@ keeps the index in sync via lifecycle events; reach for the rebuild job when:
 
 ```csharp
 builder.Services.AddGranitIndexing();
-builder.Services.AddGranitBackgroundJobs();
+builder.AddGranitBackgroundJobs();
 builder.Services.AddGranitIndexingBackgroundJobs();
 
 // One per TKey you want to rebuild:

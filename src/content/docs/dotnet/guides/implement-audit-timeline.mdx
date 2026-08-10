@@ -106,7 +106,7 @@ services.AddGranitTimelineNotifications();
 
 ## Step 4 -- Post timeline entries
 
-Use `ITimelineStoreWriter` to create entries programmatically. Three entry types
+Use `ITimelineWriter` to create entries programmatically. Three entry types
 are available:
 
 | Type | Purpose | Editable | Deletable |
@@ -129,7 +129,7 @@ using Granit.Timeline;
 namespace MyApp.Services;
 
 public sealed class PatientWorkflowService(
-    ITimelineStoreWriter timelineWriter)
+    ITimelineWriter timelineWriter)
 {
     public async Task RecordStatusChangeAsync(
         Guid patientId,
@@ -157,7 +157,7 @@ using Granit.Timeline;
 namespace MyApp.Services;
 
 public sealed class TimelineCommentService(
-    ITimelineStoreWriter timelineWriter,
+    ITimelineWriter timelineWriter,
     ITimelineFollowerService followerService,
     ITimelineNotifier notifier)
 {
@@ -199,7 +199,7 @@ The mention format is: `@[Dr. Martin](user:550e8400-e29b-41d4-a716-446655440000)
 
 ## Step 5 -- Query the timeline
 
-Use `ITimelineStoreReader` to retrieve the paginated activity feed for an entity:
+Use `ITimelineReader` to retrieve the paginated activity feed for an entity:
 
 ```csharp
 using Granit.Timeline;
@@ -207,7 +207,7 @@ using Granit.Timeline;
 namespace MyApp.Services;
 
 public sealed class PatientTimelineService(
-    ITimelineStoreReader timelineReader)
+    ITimelineReader timelineReader)
 {
     public async Task<TimelineResult> GetFeedAsync(
         Guid patientId,

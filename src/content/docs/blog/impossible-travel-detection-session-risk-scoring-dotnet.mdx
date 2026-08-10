@@ -185,7 +185,7 @@ two package references: `Granit.Identity.AnomalyDetection` for the heuristic + A
 detector, and `Granit.Identity.EntityFrameworkCore` for durable persistence.
 
 ```csharp title="Program.cs"
-builder.AddGranitIdentityEntityFrameworkCore<AppDbContext>(options =>
+builder.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Identity")));
 ```
 
@@ -215,7 +215,7 @@ public sealed class SuspiciousSessionHandler
 
 Nothing kills adoption of an anomaly system faster than paging the user every
 time they log in from a new laptop. `IUserSessionRiskEvaluator.EvaluateAsync`
-takes the resolved `deviceId` and consults an `IDeviceTrustStore` to dampen
+takes the resolved `deviceId` and consults `IIdentitySecurityStateStore` to dampen
 noise without masking real threats:
 
 | Detected level | On an actively-trusted device |
@@ -236,7 +236,7 @@ sequenceDiagram
     participant Det as IUserSessionAnomalyDetector
     participant RL as AI rate limiter
     participant AI as Granit.AI
-    participant Store as IUserSessionRiskStore
+    participant Store as IIdentitySecurityStateStore
     participant Bus as IDistributedEventBus
 
     App->>Eval: EvaluateAsync(candidate, history)

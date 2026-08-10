@@ -61,7 +61,7 @@ surface that needs per-tenant vanity domains.
 
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
-| `Granit.Hostnames` | `ManagedHostname` aggregate, `IHostnameResolver`, `IHostnameVerifier`, `IHostnameWriter`/`Reader`, DNS FSM, exponential backoff | `Granit` |
+| `Granit.Hostnames` | `ManagedHostname` aggregate, `IHostnameResolver`, `IHostnameVerifier`, `IManagedHostnameWriter`/`Reader`, DNS FSM, exponential backoff | `Granit` |
 | `Granit.Hostnames.EntityFrameworkCore` | `HostnamesDbContext`, `EfManagedHostnameStore`, `EfHostnameResolver`, `HostnamesOptions` | `Granit.Hostnames`, `Granit.Persistence` |
 | `Granit.Hostnames.Endpoints` | Minimal API: CRUD, availability check, `/verify-now`, `/certificate-status` webhook | `Granit.Hostnames`, `Granit.Authorization` |
 | `Granit.Hostnames.BackgroundJobs` | `HostnameVerificationJob` (5-min cron), `HostnameVerificationBatchService` | `Granit.Hostnames`, `Granit.BackgroundJobs` |
@@ -155,10 +155,13 @@ builder.AddGranitHostnamesEntityFrameworkCore(options =>
 ```json
 {
   "Hostnames": {
-    "VerificationPollInterval": "00:05:00",
-    "MaxVerificationAttempts": 10,
-    "BackoffBaseMinutes": 1,
-    "MaxBackoffMinutes": 60
+    "IngressTarget": "customers.platform.example.com",
+    "TxtChallengePrefix": "_granit-challenge",
+    "VerificationBatchSize": 100,
+    "VerificationConcurrency": 10,
+    "DnsQueryTimeoutSeconds": 5,
+    "CertificateWebhookSecret": "vault:secret/data/hostnames#webhook-secret",
+    "CertificateWebhookSignatureHeader": "X-Webhook-Signature-256"
   }
 }
 ```
@@ -211,16 +214,16 @@ public interface IHostnameResolver
 }
 ```
 
-### IHostnameWriter / IHostnameReader
+### IManagedHostnameWriter / IManagedHostnameReader
 
 CQRS split — inject the interface that matches your intent:
 
 ```csharp
 // Read-side: querying hostname metadata
-public class HostnameQueryHandler(IHostnameReader reader) { }
+public class HostnameQueryHandler(IManagedHostnameReader reader) { }
 
 // Write-side: registering or updating hostnames
-public class HostnameCommandHandler(IHostnameWriter writer) { }
+public class HostnameCommandHandler(IManagedHostnameWriter writer) { }
 ```
 
 ### IHostnameVerifier
@@ -243,7 +246,7 @@ the check does not pass, allowing callers to surface actionable feedback to user
 ## Registering a hostname
 
 ```csharp
-public class RegisterHostnameHandler(IHostnameWriter writer)
+public class RegisterHostnameHandler(IManagedHostnameWriter writer)
 {
     public async Task HandleAsync(RegisterHostnameCommand cmd, CancellationToken ct)
     {
@@ -353,10 +356,13 @@ your SSL provider to call the `/certificate-status` webhook.
 
 | Property | Default | Description |
 | -------- | ------- | ----------- |
-| `VerificationPollInterval` | `00:05:00` | Cron cadence for `HostnameVerificationJob` |
-| `MaxVerificationAttempts` | `10` | Attempts before transitioning to `Error` |
-| `BackoffBaseMinutes` | `1` | Initial retry delay (doubles each attempt) |
-| `MaxBackoffMinutes` | `60` | Ceiling for exponential backoff |
+| `IngressTarget` | `null` | Platform CNAME target customers point their hostname at. When set, `BeginVerification` runs on creation so the response already carries the DNS records. |
+| `TxtChallengePrefix` | `"_granit-challenge"` | DNS label prefix for the TXT ownership challenge — the full name is `{prefix}.{host}`. |
+| `VerificationBatchSize` | `100` | Hostnames fetched by the poller per tick. |
+| `VerificationConcurrency` | `10` | Parallel DNS verifications per tick, so one slow delegation chain cannot block the batch. |
+| `DnsQueryTimeoutSeconds` | `5` | Per-query DNS timeout. |
+| `CertificateWebhookSecret` | `null` | Shared secret for the HMAC-SHA-256 signature on `POST /{id}/certificate-status`. Skipped when null (local dev only) — source it from Vault. |
+| `CertificateWebhookSignatureHeader` | `"X-Webhook-Signature-256"` | Header carrying the signature; override to match your edge provider. |
 
 ## Public API summary
 
@@ -364,7 +370,7 @@ your SSL provider to call the `/certificate-status` webhook.
 | -------- | --------- | ------- |
 | Module | `GranitHostnamesModule`, `GranitHostnamesEntityFrameworkCoreModule`, `GranitHostnamesEndpointsModule`, `GranitHostnamesBackgroundJobsModule`, `GranitHostnamesNotificationsModule` | — |
 | Aggregate | `ManagedHostname`, `VerificationStatus`, `CertificateStatus` | `Granit.Hostnames` |
-| Interfaces | `IHostnameResolver`, `IHostnameVerifier`, `IHostnameWriter`, `IHostnameReader` | `Granit.Hostnames` |
+| Interfaces | `IHostnameResolver`, `IHostnameVerifier`, `IManagedHostnameWriter`, `IManagedHostnameReader` | `Granit.Hostnames` |
 | Value objects | `VerificationResult`, `HostnamesOptions` | `Granit.Hostnames` |
 | ETOs | `HostnameVerifiedEto`, `HostnameVerificationFailedEto`, `HostnameCertificateSecuredEto`, `HostnameCertificateFailedEto` | `Granit.Hostnames` |
 | Persistence | `HostnamesDbContext`, `EfManagedHostnameStore`, `EfHostnameResolver` | `Granit.Hostnames.EntityFrameworkCore` |

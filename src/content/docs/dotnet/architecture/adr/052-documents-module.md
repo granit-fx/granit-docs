@@ -12,6 +12,11 @@ topic: backend
 > **Authors:** Jean-Francois Meyers
 > **Scope:** NEW modules `Granit.Documents`, `Granit.Documents.EntityFrameworkCore`, `Granit.Documents.Endpoints`, `Granit.Documents.BackgroundJobs`, `Granit.Documents.Notifications` (phase 1). Future opt-in extensions: `Granit.Documents.Renditions`, `Granit.Documents.AssetMetadata`, `Granit.Documents.PublicLinks`, `Granit.Documents.Indexing`, `Granit.Documents.Workflow`, `Granit.Documents.Collections`.
 > **Status:** Accepted (tagging story superseded by [ADR-054](/dotnet/architecture/adr/054-taxonomy-module/) — Documents wires up to `Granit.Taxonomy` instead of building its own `DocumentTag` join.)
+>
+> **Later change:** the `Granit.Documents.AssetMetadata` extension named below shipped
+> under the name `Granit.Documents.Properties`. The decision is unchanged; only the
+> package family was renamed. See
+> [Documents — Properties](/dotnet/business/documents-properties/).
 
 ## Context
 

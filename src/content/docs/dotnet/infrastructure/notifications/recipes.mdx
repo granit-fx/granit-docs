@@ -41,13 +41,24 @@ public static class InvoiceApprovalNotificationHandler
 Use `IPermissionChecker` to restrict notification channels based on the sender's
 permissions (e.g., only managers can trigger SMS notifications):
 
+`INotificationDeliveryGate` is consulted per recipient **and** per channel — the
+gate sees the user, the notification type, the channel, and the tenant, and
+returns whether that specific delivery should go out.
+
 ```csharp
-public class SmsPermissionFilter(IPermissionChecker permissionChecker)
-    : INotificationChannelFilter
+public sealed class SmsPermissionGate(IPermissionChecker permissionChecker)
+    : INotificationDeliveryGate
 {
-    public async Task<bool> ShouldSendAsync(
-        NotificationContext context, CancellationToken ct)
+    public async Task<bool> ShouldDeliverAsync(
+        string userId,
+        string notificationTypeName,
+        string channelName,
+        Guid? tenantId,
+        CancellationToken cancellationToken)
     {
+        if (!string.Equals(channelName, "Sms", StringComparison.Ordinal))
+            return true;
+
         return await permissionChecker
             .IsGrantedAsync("Notifications.Sms.Send")
             .ConfigureAwait(false);
@@ -57,22 +68,34 @@ public class SmsPermissionFilter(IPermissionChecker permissionChecker)
 
 ## Encryption + Notifications: protect PII in notification payloads
 
-When notification data contains PII (patient names, account numbers), encrypt the
-`Data` dictionary before persisting. The `InApp` channel stores the notification
-in the database — combine with `IStringEncryptionService`:
+The `InApp` channel persists `UserNotification.Data` — a `JsonElement` payload —
+in the notifications database. There is no payload-mutation hook on the publish
+path, so the rule is **do not put PII in the payload**. Send identifiers and let
+the renderer resolve display values at render time:
 
 ```csharp
-public class EncryptedNotificationEnricher(IStringEncryptionService encryption)
-    : INotificationDataEnricher
+// Publish an identifier, not the name.
+await publisher.PublishAsync(
+    NotificationTypes.AppointmentConfirmed,
+    new AppointmentConfirmedData(AppointmentId: appointment.Id),
+    recipientUserIds: [appointment.PatientUserId],
+    cancellationToken);
+```
+
+When a column genuinely must hold PII, encrypt it at rest on **your own** entity
+with `[Encrypted]` — `ApplyEncryptionConventions` wires the EF Core value
+converter through `IStringEncryptionService`:
+
+```csharp
+public sealed class Patient : AggregateRoot
 {
-    public Task EnrichAsync(NotificationContext context, CancellationToken ct)
-    {
-        if (context.Data.TryGetValue("PatientName", out var name))
-            context.Data["PatientName"] = encryption.Encrypt(name?.ToString() ?? "");
-        return Task.CompletedTask;
-    }
+    [Encrypted]
+    public string FullName { get; private set; } = string.Empty;
 }
 ```
+
+`NotificationsDbContext` already applies the same convention to its own
+encrypted columns — see [Encryption](/dotnet/data/encryption/).
 
 ## Identity + Notifications: zero-boilerplate recipient resolution
 
@@ -124,7 +147,7 @@ for the field mapping and the `Identity:RecipientResolver` options.
 | Zulip | `IZulipSender`, `ZulipMessage` | `Granit.Notifications.Zulip` |
 | Exceptions | `NotificationDeliveryException` | `Granit.Notifications` |
 | Endpoints | `NotificationEndpointsOptions`, `MobilePushTokenEndpoints` | `Granit.Notifications.Endpoints` |
-| Extensions | `AddGranitNotifications()`, `AddGranitNotificationsEntityFrameworkCore()`, `AddGranitNotificationsEmail()`, `AddGranitNotificationsEmailSmtp()`, `AddGranitNotificationsEmailAcs()`, `AddGranitNotificationsEmailScaleway()`, `AddGranitNotificationsEmailSendGrid()`, `AddGranitNotificationsBrevo()`, `AddGranitNotificationsSms()`, `AddGranitNotificationsSmsAcs()`, `AddGranitNotificationsSmsAwsSns()`, `AddGranitNotificationsTwilio()`, `AddGranitNotificationsWhatsApp()`, `AddGranitNotificationsMobilePush()`, `AddGranitNotificationsMobilePushGoogleFcm()`, `AddGranitNotificationsMobilePushAzureNotificationHubs()`, `AddGranitNotificationsMobilePushAwsSns()`, `AddGranitNotificationsSignalR()`, `AddGranitNotificationsPush()`, `AddGranitNotificationsSse()`, `AddGranitNotificationsZulip()`, `AddNotificationDefinitions<T>()`, `MapGranitNotifications()`, `MapGranitMobilePushTokens()` | various |
+| Extensions | `AddGranitNotifications()`, `AddGranitNotificationsEntityFrameworkCore()`, `AddGranitNotificationsEmail()`, `AddGranitNotificationsSmtp()`, `AddGranitNotificationsAcsEmail()`, `AddGranitNotificationsAcsSms()`, `AddGranitNotificationsScaleway()`, `AddGranitNotificationsSendGrid()`, `AddGranitNotificationsBrevo()`, `AddGranitNotificationsAwsSes()`, `AddGranitNotificationsSms()`, `AddGranitNotificationsAwsSnsSms()`, `AddGranitNotificationsTwilio()`, `AddGranitNotificationsWhatsApp()`, `AddGranitNotificationsMobilePush()`, `AddGranitNotificationsGoogleFcm()`, `AddGranitNotificationsAzureNotificationHubs()`, `AddGranitNotificationsAwsSnsMobilePush()`, `AddGranitNotificationsSignalR()`, `AddGranitNotificationsWebPush()`, `AddGranitNotificationsSse()`, `AddGranitNotificationsSseRedisBackplane()`, `AddGranitNotificationsZulip()`, `AddNotificationDefinitions<T>()`, `MapGranitNotifications()`, `MapGranitMobilePushTokens()` | various |
 
 ## See also
 

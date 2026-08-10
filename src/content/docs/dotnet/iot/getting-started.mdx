@@ -114,9 +114,8 @@ sequenceDiagram
 
    var builder = WebApplication.CreateBuilder(args);
 
-   builder.Services
-       .AddGranit(builder.Configuration)
-       .AddIoT();
+   builder.AddGranit(granit => granit
+       .AddIoT());
 
    var app = builder.Build();
 

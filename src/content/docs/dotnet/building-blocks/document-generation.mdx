@@ -173,10 +173,8 @@ Bound from configuration section `DocumentGeneration:Pdf`:
       "HeaderTemplate": null,
       "FooterTemplate": "<div style='font-size:9px;text-align:center;width:100%'><span class='pageNumber'></span>/<span class='totalPages'></span></div>",
       "PrintBackground": true,
-      "ChromiumExecutablePath": null,
       "RenderTimeoutMs": 30000,
-      "MaxConcurrentPages": 4,
-      "DisableSandbox": false
+      "MaxHtmlBytes": 16777216
     }
   }
 }
@@ -190,10 +188,19 @@ Bound from configuration section `DocumentGeneration:Pdf`:
 | `HeaderTemplate` | `null` | HTML header (supports `pageNumber`, `totalPages` classes) |
 | `FooterTemplate` | `null` | HTML footer (same classes as header) |
 | `PrintBackground` | `true` | Print background graphics |
-| `ChromiumExecutablePath` | `null` | Custom Chromium path; validated at startup (auto-download if null) |
-| `RenderTimeoutMs` | `30000` | Maximum rendering time in ms (1 000--300 000) |
-| `MaxConcurrentPages` | `4` | Max parallel Chromium tabs (1--32) |
-| `DisableSandbox` | `false` | Disable Chromium OS sandbox (see [Security](#security) below) |
+| `RenderTimeoutMs` | `30000` | Maximum rendering time in ms |
+| `MaxHtmlBytes` | `16777216` | Reject HTML payloads larger than 16 MiB |
+
+:::note[Browser settings moved]
+Chromium process concerns are no longer part of `DocumentGeneration:Pdf`. The
+browser pool lives in `Granit.Browsing` (`Browsing` section: `MaxBrowsers`,
+`MaxPagesPerBrowser`, `AcquireTimeout`, `MaxRenderDuration`, …) and the engine
+specifics in the provider sections — `Browsing:PuppeteerSharp`
+(`ChromiumExecutablePath`, `DisableSandbox`, `SkipChromiumDownload`,
+`ExtraArgs`, `ExpectedSha256`) or `Browsing:Playwright` (`Engine`,
+`ExecutablePath`, `SkipBrowserInstall`, …). See
+[Browsing](/dotnet/infrastructure/browsing/).
+:::
 
 ## Public API summary
 
@@ -221,8 +228,8 @@ In containerized environments that cannot grant `CAP_SYS_ADMIN` or configure a
 
 ```json
 {
-  "DocumentGeneration": {
-    "Pdf": {
+  "Browsing": {
+    "PuppeteerSharp": {
       "DisableSandbox": true
     }
   }

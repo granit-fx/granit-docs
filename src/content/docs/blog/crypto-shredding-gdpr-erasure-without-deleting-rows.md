@@ -65,7 +65,7 @@ public sealed class Patient : AuditedAggregateRoot
 }
 ```
 
-`NationalId` uses shared encryption — fast, simple, supports key rotation via `IReEncryptionJob`. `MedicalNotes` and `DiagnosisCode` use isolated keys — each patient has their own AES-256 key stored in HashiCorp Vault KV v2. When you shred patient #4821, only their medical notes and diagnosis become unreadable. Their `NationalId` (shared key) and `LastName` (plaintext) are unaffected.
+`NationalId` uses shared encryption — fast, simple, supports key rotation via `IReEncryptionService`. `MedicalNotes` and `DiagnosisCode` use isolated keys — each patient has their own AES-256 key stored in HashiCorp Vault KV v2. When you shred patient #4821, only their medical notes and diagnosis become unreadable. Their `NationalId` (shared key) and `LastName` (plaintext) are unaffected.
 
 **Use key isolation only for properties that need individual erasure.** It is heavier than shared encryption — one Vault KV secret per entity instance. Choose deliberately.
 

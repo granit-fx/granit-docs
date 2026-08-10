@@ -256,7 +256,7 @@ unreadable. Other patients are unaffected.
 
 :::tip
 Use key isolation only for properties that require **individual erasure**. Shared
-encryption is simpler, faster, and supports key rotation via `IReEncryptionJob`.
+encryption is simpler, faster, and supports key rotation via `IReEncryptionService`.
 Key isolation is heavier — one Vault KV secret per entity instance.
 :::
 
@@ -265,10 +265,9 @@ Key isolation is heavier — one Vault KV secret per entity instance.
 The `ApplyEncryptionConventions` method handles both encryption modes automatically:
 
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Inside a DbContext deriving from GranitDbContext.
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
-    base.OnModelCreating(modelBuilder);
-    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     modelBuilder.ApplyEncryptionConventions(encryptionService);
 }
 ```

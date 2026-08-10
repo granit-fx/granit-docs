@@ -89,9 +89,8 @@ dependency conflicts — every package in the bundle targets the same
 ```csharp
 using Granit.Bundle.IoT;
 
-builder.Services
-    .AddGranit(builder.Configuration)
-    .AddIoT();
+builder.AddGranit(granit => granit
+    .AddIoT());
 
 app.MapGranitIoTEndpoints();          // /iot/devices + /iot/telemetry
 app.MapGranitIoTIngestionEndpoints(); // /iot/ingest/{source}
@@ -134,9 +133,8 @@ builder.Services
         configureShared: o => o.UseNpgsql(connectionString));
 
 // The Endpoints layer ships as a module — register it, then map its routes:
-builder.Services
-    .AddGranit(builder.Configuration)
-    .AddModule<GranitIoTEndpointsModule>();          // CRUD API
+builder.AddGranit(granit => granit
+    .AddModule<GranitIoTEndpointsModule>());     // CRUD API
 
 app.MapGranitIoTEndpoints();
 // skip ingestion / wolverine / jobs / bridges
@@ -171,10 +169,9 @@ dotnet add package Granit.Bundle.IoT.Aws
 ### Registration
 
 ```csharp
-builder.Services
-    .AddGranit(builder.Configuration)
+builder.AddGranit(granit => granit
     .AddIoT()        // cloud-agnostic core
-    .AddIoTAws();    // AWS bridge family
+    .AddIoTAws());   // AWS bridge family
 ```
 
 Full deep dive: [AWS IoT Core bridge](/dotnet/iot/aws/).

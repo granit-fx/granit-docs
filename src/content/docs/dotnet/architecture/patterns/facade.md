@@ -26,10 +26,11 @@ classDiagram
 
     class DefaultBlobStorage {
         -currentTenant : ICurrentTenant
-        -store : IBlobDescriptorStore
+        -reader : IBlobDescriptorReader
+        -writer : IBlobDescriptorWriter
         -keyStrategy : IBlobKeyStrategy
-        -storageClient : IBlobStorageClient
-        -urlGenerator : IBlobPresignedUrlGenerator
+        -storeProvider : IBlobStoreProvider
+        -presignedUrlProvider : IPresignedUrlProvider
         -validators : IBlobValidator[]
         -clock : IClock
     }
@@ -40,10 +41,11 @@ classDiagram
     }
 
     DefaultBlobStorage ..|> IBlobStorage
-    DefaultBlobStorage --> IBlobDescriptorStore
+    DefaultBlobStorage --> IBlobDescriptorReader
+    DefaultBlobStorage --> IBlobDescriptorWriter
     DefaultBlobStorage --> IBlobKeyStrategy
-    DefaultBlobStorage --> IBlobStorageClient
-    DefaultBlobStorage --> IBlobPresignedUrlGenerator
+    DefaultBlobStorage --> IBlobStoreProvider
+    DefaultBlobStorage --> IPresignedUrlProvider
     DefaultBlobStorage --> IBlobValidator
 ```
 
@@ -51,7 +53,7 @@ classDiagram
 
 | Facade | File | Orchestrated sub-components |
 |--------|------|-----------------------------|
-| `DefaultBlobStorage` | `src/Granit.BlobStorage/Internal/DefaultBlobStorage.cs` | `ICurrentTenant`, `IBlobDescriptorStore`, `IBlobKeyStrategy`, `IBlobStorageClient`, `IBlobPresignedUrlGenerator`, `IBlobValidator[]`, `IClock` |
+| `DefaultBlobStorage` | `src/Granit.BlobStorage/Internal/DefaultBlobStorage.cs` | `ICurrentTenant`, `IBlobDescriptorReader`, `IBlobDescriptorWriter`, `IBlobKeyStrategy`, `IBlobStoreProvider`, `IPresignedUrlProvider`, `IBlobValidator[]`, `IGuidGenerator`, `IClock` |
 | `GranitExceptionHandler` | `src/Granit.Http.ExceptionHandling/GranitExceptionHandler.cs` | `IExceptionStatusCodeMapper[]`, `ILogger`, `ExceptionHandlingOptions` |
 
 ## Rationale

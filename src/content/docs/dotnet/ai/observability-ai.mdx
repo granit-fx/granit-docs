@@ -128,12 +128,12 @@ Insights:
 Log analysis is never interactive — use a cron job:
 
 ```csharp
-// Register with Granit.BackgroundJobs
-builder.AddGranitBackgroundJob<HourlyLogAnalysisJob>(
-    cron: "0 * * * *");  // Every hour
+// Declarative registration — Granit.BackgroundJobs discovers the attribute.
+[RecurringJob("0 * * * *", "observability-hourly-log-analysis")]  // Every hour
+public sealed record HourlyLogAnalysisJob : IBackgroundJob;
 
 // Wolverine handler
-public static async Task Handle(
+public static async Task HandleAsync(
     HourlyLogAnalysisJob job,
     ILogStore logStore,
     IAILogAnalyzer analyzer,

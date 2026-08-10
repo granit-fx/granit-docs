@@ -210,7 +210,7 @@ builder.AddGranitBlobStorageEntityFrameworkCore(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
 
 var app = builder.Build();
-app.MapGranitBlobProxy();
+app.MapGranitBlobStorageProxy();
 ```
 
 ```json
@@ -244,7 +244,7 @@ builder.AddGranitBlobStorageEntityFrameworkCore(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BlobStorage")));
 
 var app = builder.Build();
-app.MapGranitBlobProxy();
+app.MapGranitBlobStorageProxy();
 ```
 
 ```json
@@ -777,7 +777,7 @@ Verifies GCS connectivity by listing one object in the default bucket. Tagged
 | FileSystem options | `FileSystemBlobOptions` | `Granit.BlobStorage.FileSystem` |
 | Database options | `DatabaseBlobOptions` | `Granit.BlobStorage.Database` |
 | Proxy options | `ProxyBlobOptions` | `Granit.BlobStorage.Proxy` |
-| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageAzureBlob()`, `AddGranitBlobStorageGoogleCloud()`, `AddGranitBlobStorageFileSystem()`, `AddGranitBlobStorageDatabase()`, `AddGranitBlobStorageProxy()`, `AddGranitBlobStorageEntityFrameworkCore()`, `MapGranitBlobProxy()` | -- |
+| Extensions | `AddGranitBlobStorageS3()`, `AddGranitBlobStorageAzureBlob()`, `AddGranitBlobStorageGoogleCloud()`, `AddGranitBlobStorageFileSystem()`, `AddGranitBlobStorageDatabase()`, `AddGranitBlobStorageProxy()`, `AddGranitBlobStorageEntityFrameworkCore()`, `MapGranitBlobStorageProxy()` | -- |
 
 ## See also
 

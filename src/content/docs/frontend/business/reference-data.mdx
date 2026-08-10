@@ -1,6 +1,6 @@
 ---
 title: "Reference Data \u2014 Lookup Tables for React"
-description: Lookup tables in React with @granit/react-reference-data — ISO 3166-1 countries, i18n labels, TanStack Query filtering, and admin CRUD hooks.
+description: Lookup tables in React with @granit/react-reference-data — one generic entry contract, a typed hook factory per entity, i18n labels, and admin CRUD.
 sidebar:
   label: Reference Data
   order: 16
@@ -8,26 +8,28 @@ sidebar:
 
 import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
-`@granit/reference-data` provides framework-agnostic types for reference data entities
-— mirroring `Granit.ReferenceData` on the .NET backend. Currently covers ISO 3166-1
-countries with multilingual labels.
+`@granit/reference-data` provides framework-agnostic types and API functions for
+**any** reference-data entity — countries, product categories, document types,
+anything backed by `Granit.ReferenceData` on the .NET side. The contract is
+generic: one `ReferenceDataEntry` shape, one query type, one set of endpoints.
 
-`@granit/react-reference-data` wraps these into TanStack Query hooks with separate
-read and admin endpoints for query/mutation operations.
+`@granit/react-reference-data` exposes a **hook factory**: you call it once per
+entity type and get a typed set of TanStack Query hooks back. There are no
+per-entity packages and no `useCountries`-style hardcoded hooks.
 
 **Peer dependencies:** `axios`, `react ^19`, `@tanstack/react-query ^5`
 
 ## Package structure
 
 <FileTree>
-- @granit/reference-data/ Country types and list params (framework-agnostic)
-  - @granit/react-reference-data Query/mutation hooks for country CRUD
+- @granit/reference-data/ Generic entry types, query params, API functions (framework-agnostic)
+  - @granit/react-reference-data `createReferenceDataHooks()` factory
 </FileTree>
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `@granit/reference-data` | `Country`, `CountriesListParams` | — |
-| `@granit/react-reference-data` | `useCountries`, `useCountry`, `useCreateCountry`, `useUpdateCountry`, `useDeactivateCountry`, `useReactivateCountry` | `@granit/reference-data`, `@tanstack/react-query`, `axios`, `react` |
+| `@granit/reference-data` | `ReferenceDataEntry`, `ReferenceDataQuery`, `listReferenceData()`, `getReferenceDataEntry()`, … | — |
+| `@granit/react-reference-data` | `createReferenceDataHooks()` | `@granit/reference-data`, `@tanstack/react-query`, `axios`, `react` |
 
 ## Setup
 
@@ -35,16 +37,23 @@ read and admin endpoints for query/mutation operations.
 <TabItem label="React (recommended)">
 
 ```tsx
-import { useCountries, useCountry } from '@granit/react-reference-data';
+import { createReferenceDataHooks } from '@granit/react-reference-data';
+import type { ReferenceDataEntry } from '@granit/reference-data';
 import { api } from './api-client';
 
+// Call the factory once per entity — the name is the plural, kebab-cased
+// backend route segment. Base path defaults to
+// `/api/v1/reference-data/countries`.
+interface Country extends ReferenceDataEntry {}
+const countries = createReferenceDataHooks<Country>('countries');
+
 function CountrySelect() {
-  const { data: countries, isLoading } = useCountries({
+  const { data, isLoading } = countries.useList({
     client: api,
-    params: { isActive: true },
+    params: { activeOnly: true },
   });
 
-  // Render country options...
+  // data is a PagedResult<Country> — render data.items
 }
 ```
 
@@ -52,7 +61,8 @@ function CountrySelect() {
 <TabItem label="TypeScript only">
 
 ```ts
-import type { Country, CountriesListParams } from '@granit/reference-data';
+import { listReferenceData, getReferenceDataEntry } from '@granit/reference-data';
+import type { ReferenceDataEntry, ReferenceDataQuery } from '@granit/reference-data';
 ```
 
 </TabItem>
@@ -63,147 +73,124 @@ import type { Country, CountriesListParams } from '@granit/reference-data';
 ### Types
 
 ```ts
-interface Country {
-  readonly code: string;           // ISO 3166-1 alpha-2
-  readonly alpha3: string;         // ISO 3166-1 alpha-3
-  readonly numericCode: string;    // ISO 3166-1 numeric
-  readonly labelEn: string;
-  readonly labelFr: string;
-  readonly labelNl: string;
-  readonly labelDe: string;
-  readonly officialName: string;
-  readonly nativeName: string;
-  readonly region: string;
-  readonly subRegion: string;
-  readonly phoneCode: string;
+interface ReferenceDataEntry extends ReferenceDataLabels {
+  readonly id: ReferenceDataEntryId;
+  readonly code: string;
+  /** Resolved label for the current UI culture (server-computed, not persisted). */
+  readonly label: string;
+  readonly activated: boolean;
   readonly sortOrder: number;
-  readonly isActive: boolean;
-  readonly validFrom: string | null;
-  readonly validTo: string | null;
-  readonly createdAt: string;
-  readonly updatedAt: string;
+  readonly validFrom: ISODateString | null;
+  readonly validTo: ISODateString | null;
+  /** Parent code for hierarchical types (null for root entries). */
+  readonly parentCode: string | null;
+  /** Custom properties bag (all values are strings). */
+  readonly metadata: Record<string, string> | null;
 }
 
-interface CountriesListParams {
-  readonly search?: string;
-  readonly page?: number;
-  readonly pageSize?: number;
-  readonly sortBy?: string;
-  readonly desc?: boolean;
-  readonly region?: string;
-  readonly isActive?: boolean;
+interface ReferenceDataQuery extends PaginationParams {
+  readonly activeOnly?: boolean;   // default: true
+  readonly search?: string;        // free-text on code and labels
+  readonly sortBy?: string;        // default: 'SortOrder'
+  readonly descending?: boolean;   // default: false
 }
 ```
+
+Entity-specific fields go in `metadata` (all values are strings) or in your own
+interface extending `ReferenceDataEntry` — the framework does not ship an
+ISO-3166 `Country` type.
+
+### API functions
+
+| Function | Endpoint | Purpose |
+|----------|----------|---------|
+| `listReferenceData(client, basePath, params?)` | `GET {basePath}` | Paginated list — returns `PagedResult<T>` |
+| `getReferenceDataEntry(client, basePath, code)` | `GET {basePath}/{code}` | Single entry by code |
+| `listReferenceDataChildren(client, basePath, code)` | `GET {basePath}/{code}/children` | Children of a hierarchical entry |
+| `createReferenceDataEntry(client, basePath, request)` | `POST {basePath}` | Create |
+| `updateReferenceDataEntry(client, basePath, code, request)` | `PUT {basePath}/{code}` | Update |
+| `deactivateReferenceDataEntry(client, basePath, code)` | `DELETE {basePath}/{code}` | Soft-delete |
 
 ## React bindings
 
 :::note[Framework-agnostic core]
-All types live in `@granit/reference-data` — pure TypeScript.
-The React package below wraps HTTP calls into TanStack Query hooks.
+Types and API functions live in `@granit/reference-data` — pure TypeScript.
+The React package wraps them into TanStack Query hooks.
 :::
+
+### `createReferenceDataHooks(entityName, options?)`
+
+```ts
+function createReferenceDataHooks<T extends ReferenceDataEntry>(
+  /** Plural, kebab-cased entity name matching the backend route segment. */
+  entityName: string,
+  factoryOptions?: { readonly defaultBasePath?: string }
+): {
+  keys: ReferenceDataKeys;
+  useList: (options: ReferenceDataListHookOptions) => UseQueryResult<PagedResult<T>>;
+  useEntry: (code: string, options: ReferenceDataHookOptions) => UseQueryResult<T>;
+  useChildren: (parentCode: string, options: ReferenceDataHookOptions) => UseQueryResult<T[]>;
+  useCreate: (options: ReferenceDataMutationHookOptions) => UseMutationResult<void, Error, ReferenceDataCreateRequest>;
+  useUpdate: (options: ReferenceDataMutationHookOptions) => UseMutationResult<void, Error, ReferenceDataUpdateVariables>;
+  useDeactivate: (options: ReferenceDataMutationHookOptions) => UseMutationResult<void, Error, string>;
+};
+```
+
+`defaultBasePath` falls back to `/api/v1/reference-data/{entityName}`; every hook
+accepts a per-call `basePath` override.
 
 ### Hook options
 
 ```ts
-interface ReferenceDataHookOptions {
+interface ReferenceDataListHookOptions {
   client: AxiosInstance;
-  basePath?: string;    // default: '/api/v1/reference-data/countries'
-}
-
-interface ReferenceDataMutationOptions {
-  client: AxiosInstance;
-  basePath?: string;    // default: '/api/v1/admin/reference-data/countries'
+  basePath?: string;
+  params?: ReferenceDataQuery;
+  enabled?: boolean;   // default: true
 }
 ```
 
-### Query hooks
+### Mutations
 
-#### `useCountries(options)`
-
-Fetches countries with optional filtering, search, pagination, and sorting.
-
-```ts
-function useCountries(
-  options: ReferenceDataHookOptions & { params?: CountriesListParams; enabled?: boolean }
-): UseQueryResult<Country[]>;
-```
-
-#### `useCountry(code, options)`
-
-Fetches a single country by ISO 3166-1 alpha-2 code.
+Mutations resolve to `void` and invalidate the affected queries on success:
+`useCreate` invalidates the lists, `useUpdate` and `useDeactivate` invalidate the
+lists plus that entry's detail key.
 
 ```ts
-function useCountry(
-  code: string,
-  options: ReferenceDataHookOptions & { enabled?: boolean }
-): UseQueryResult<Country>;
-```
-
-### Mutation hooks
-
-All mutations invalidate the country list and detail queries on success.
-
-#### `useCreateCountry(options)`
-
-```ts
-type CreateCountryPayload = Omit<Country, 'createdAt' | 'updatedAt'>;
-
-function useCreateCountry(
-  options: ReferenceDataMutationOptions
-): UseMutationResult<Country, Error, CreateCountryPayload>;
-```
-
-#### `useUpdateCountry(options)`
-
-```ts
-interface UpdateCountryPayload {
-  code: string;
-  data: Partial<Omit<Country, 'code' | 'createdAt' | 'updatedAt'>>;
+interface ReferenceDataCreateRequest extends Partial<ReferenceDataLabels> {
+  readonly code: string;
+  readonly labelEn: string;
+  readonly sortOrder?: number;
+  readonly validFrom?: ISODateString | null;
+  readonly validTo?: ISODateString | null;
+  readonly parentCode?: string | null;
+  readonly metadata?: Record<string, string> | null;
 }
 
-function useUpdateCountry(
-  options: ReferenceDataMutationOptions
-): UseMutationResult<Country, Error, UpdateCountryPayload>;
-```
-
-#### `useDeactivateCountry(options)`
-
-Soft-deletes a country by code.
-
-```ts
-function useDeactivateCountry(
-  options: ReferenceDataMutationOptions
-): UseMutationResult<void, Error, string>;
-```
-
-#### `useReactivateCountry(options)`
-
-Reactivates a previously deactivated country.
-
-```ts
-function useReactivateCountry(
-  options: ReferenceDataMutationOptions
-): UseMutationResult<Country, Error, string>;
+// useUpdate takes { code, data: ReferenceDataUpdateRequest }
 ```
 
 ### Query keys
 
+The factory returns a `keys` object scoped to the entity name:
+
 ```ts
-const countryKeys = {
-  all: ['reference-data', 'countries'] as const,
-  list: (params?: CountriesListParams) => [...countryKeys.all, 'list', params] as const,
-  detail: (code: string) => [...countryKeys.all, 'detail', code] as const,
-};
+const countries = createReferenceDataHooks<Country>('countries');
+
+countries.keys.all;                // ['reference-data', 'countries']
+countries.keys.lists();            // [...all, 'list']
+countries.keys.list(params);       // [...lists(), params]
+countries.keys.detail('BE');       // [...all, 'detail', 'BE']
+countries.keys.children('EU');     // [...all, 'children', 'EU']
 ```
 
 ## Public API summary
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Types | `Country`, `CountriesListParams` | `@granit/reference-data` |
-| Query hooks | `useCountries()`, `useCountry()` | `@granit/react-reference-data` |
-| Mutation hooks | `useCreateCountry()`, `useUpdateCountry()`, `useDeactivateCountry()`, `useReactivateCountry()` | `@granit/react-reference-data` |
-| Cache keys | `countryKeys` | `@granit/react-reference-data` |
+| Types | `ReferenceDataEntry`, `ReferenceDataQuery`, `ReferenceDataCreateRequest`, `ReferenceDataUpdateRequest` | `@granit/reference-data` |
+| API functions | `listReferenceData()`, `getReferenceDataEntry()`, `listReferenceDataChildren()`, `createReferenceDataEntry()`, `updateReferenceDataEntry()`, `deactivateReferenceDataEntry()` | `@granit/reference-data` |
+| Hook factory | `createReferenceDataHooks()` | `@granit/react-reference-data` |
 
 ## See also
 

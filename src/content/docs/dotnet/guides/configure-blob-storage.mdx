@@ -250,26 +250,34 @@ partitions, avoiding hot-spots on high-volume buckets.
 
 Implement `IBlobValidator` to add custom validation (e.g., antivirus scanning):
 
+Validators run **after** the bytes land in storage (direct-to-cloud upload).
+`BlobValidationContext` hands you the descriptor, the actual size from the
+HEAD response, and a factory that opens a partial range-GET stream — the full
+file is never buffered in the application server.
+
 ```csharp
 public sealed class AntivirusValidator : IBlobValidator
 {
     public int Order => 30; // Runs after MagicBytes (10) and MaxSize (20)
 
     public async Task<BlobValidationResult> ValidateAsync(
-        BlobDescriptor descriptor,
-        IBlobStorageClient storageClient,
-        CancellationToken cancellationToken)
+        BlobValidationContext context,
+        CancellationToken cancellationToken = default)
     {
-        // Perform antivirus scan
+        await using Stream head = await context.OpenPartialStreamAsync(64 * 1024, cancellationToken);
+
+        // Perform antivirus scan over the range-GET stream
         return BlobValidationResult.Success();
     }
 }
 ```
 
-Register it before calling `AddGranitBlobStorageS3()`:
+The pipeline is fail-fast: it stops at the first result whose `IsValid` is
+`false`. Register the validator before calling `AddGranitBlobStorageS3()` —
+the built-ins are registered as singletons:
 
 ```csharp
-builder.Services.AddScoped<IBlobValidator, AntivirusValidator>();
+builder.Services.AddSingleton<IBlobValidator, AntivirusValidator>();
 ```
 
 ## BlobDescriptor lifecycle

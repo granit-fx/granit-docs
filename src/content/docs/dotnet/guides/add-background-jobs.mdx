@@ -62,20 +62,20 @@ public sealed class MyAppModule : GranitModule { }
 </TabItem>
 </Tabs>
 
-## 3. Configure the store mode
+## 3. Choose the store
 
-```json
-{
-  "BackgroundJobs": {
-    "Mode": "Durable"
-  }
-}
-```
+The store is selected by **which package you reference**, not by a setting.
+`Granit.BackgroundJobs` registers `InMemoryBackgroundJobStore` as the default;
+calling `AddGranitBackgroundJobsEntityFrameworkCore()` replaces it with the EF
+Core store.
 
-| Mode | Package | Behavior |
-|------|---------|----------|
-| `InMemory` | `Granit.BackgroundJobs` | State lost on restart. Use for development and tests. |
-| `Durable` | `Granit.BackgroundJobs.EntityFrameworkCore` | State persisted in PostgreSQL/SQL Server. Use for production. |
+| Store | Package | Behavior |
+|-------|---------|----------|
+| `InMemoryBackgroundJobStore` | `Granit.BackgroundJobs` (default) | State lost on restart. Use for development and tests. |
+| `EfBackgroundJobStore` | `Granit.BackgroundJobs.EntityFrameworkCore` | State persisted in PostgreSQL/SQL Server. Use for production. |
+
+The only key on the `BackgroundJobs` section is `FailureAlertThreshold`
+(default `3`) — consecutive failures before a job raises an alert.
 
 ## 4. Define a recurring job
 
@@ -138,7 +138,7 @@ Or with custom options:
 app.MapGranitBackgroundJobs(opts =>
 {
     opts.RoutePrefix = "admin/jobs";
-    opts.RequiredRole = "ops-team";
+    opts.TagName = "Ops — Jobs";
 });
 ```
 
@@ -156,26 +156,28 @@ All endpoints require the `BackgroundJobs.Jobs.Manage` permission.
 
 ## 7. Administer jobs programmatically
 
-Inject `IBackgroundJobManager` to control jobs from your own code:
+Administration is split CQRS-style: `IBackgroundJobWriter` for state changes
+(`PauseAsync`, `ResumeAsync`, `TriggerNowAsync`) and `IBackgroundJobReader` for
+queries (`GetAllAsync`, `FindAsync`).
 
 ```csharp
-public sealed class MaintenanceService(IBackgroundJobManager jobManager)
+public sealed class MaintenanceService(IBackgroundJobWriter jobs)
 {
     public async Task PauseReportingAsync(CancellationToken cancellationToken)
     {
-        await jobManager.PauseAsync("daily-report", cancellationToken);
+        await jobs.PauseAsync("daily-report", cancellationToken);
     }
 
     public async Task TriggerNowAsync(CancellationToken cancellationToken)
     {
-        await jobManager.TriggerNowAsync("daily-report", cancellationToken);
+        await jobs.TriggerNowAsync("daily-report", cancellationToken);
     }
 }
 ```
 
 ### Job status
 
-`IBackgroundJobManager.GetAllAsync()` returns a list of `BackgroundJobStatus` records:
+`IBackgroundJobReader.GetAllAsync()` returns a list of `BackgroundJobStatus` records:
 
 ```csharp
 public sealed record BackgroundJobStatus(
@@ -216,7 +218,7 @@ production, grant this permission using one of two approaches:
 <TabItem label="Fine-grained (per-tenant)">
 
 ```csharp
-await permissionManager.SetAsync(
+await permissionWriter.SetAsync(
     permissionName: "BackgroundJobs.Jobs.Manage",
     providerName:   PermissionGrantProviderNames.Role,   // "R" — grant to a role
     providerKey:    "ops-team",                          // the role name

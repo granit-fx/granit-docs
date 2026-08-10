@@ -52,8 +52,8 @@ function EntityDetail({ children }) {
 <TabItem label="TypeScript only">
 
 ```ts
-import { fetchStream, createEntry, followEntity } from '@granit/timeline';
-import type { TimelineStreamEntry, CreateTimelineEntryRequest } from '@granit/timeline';
+import { getStream, createEntry, followEntity } from '@granit/timeline';
+import type { TimelineStreamEntryResponse, PostTimelineEntryRequest } from '@granit/timeline';
 ```
 
 </TabItem>
@@ -76,7 +76,7 @@ type TimelineEntryTypeValue = (typeof TimelineEntryType)[keyof typeof TimelineEn
 ### Types
 
 ```ts
-interface TimelineStreamEntry {
+interface TimelineStreamEntryResponse {
   readonly id: string;
   readonly entityType: string;
   readonly entityId: string;
@@ -90,12 +90,12 @@ interface TimelineStreamEntry {
 }
 
 interface TimelineStreamPage {
-  readonly items: TimelineStreamEntry[];
+  readonly items: TimelineStreamEntryResponse[];
   readonly totalCount: number;
   readonly nextCursor: string | null;
 }
 
-interface CreateTimelineEntryRequest {
+interface PostTimelineEntryRequest {
   readonly entryType: TimelineEntryTypeValue;
   readonly body: string;
   readonly parentEntryId?: string;
@@ -117,7 +117,7 @@ interface MentionSuggestion {
 
 | Function | Endpoint | Description |
 |----------|----------|-------------|
-| `fetchStream(client, basePath, entityType, entityId, params?)` | `GET /{entityType}/{entityId}` | Paginated timeline stream |
+| `getStream(client, basePath, entityType, entityId, params?)` | `GET /{entityType}/{entityId}` | Paginated timeline stream |
 | `createEntry(client, basePath, entityType, entityId, request)` | `POST /{entityType}/{entityId}/entries` | Create comment, note, or log |
 | `deleteEntry(client, basePath, entityType, entityId, entryId)` | `DELETE /{entityType}/{entityId}/entries/{id}` | Delete an entry |
 | `followEntity(client, basePath, entityType, entityId)` | `POST /{entityType}/{entityId}/follow` | Follow entity |
@@ -156,7 +156,7 @@ Infinite-scroll timeline stream with optimistic update helpers.
 
 ```ts
 interface UseTimelineReturn {
-  readonly entries: readonly TimelineStreamEntry[];
+  readonly entries: readonly TimelineStreamEntryResponse[];
   readonly totalCount: number;
   readonly loading: boolean;
   readonly loadingMore: boolean;
@@ -164,7 +164,7 @@ interface UseTimelineReturn {
   readonly hasMore: boolean;
   readonly loadMore: () => void;
   readonly refresh: () => void;
-  readonly addOptimisticEntry: (entry: TimelineStreamEntry) => void;
+  readonly addOptimisticEntry: (entry: TimelineStreamEntryResponse) => void;
   readonly removeOptimisticEntry: (entryId: string) => void;
 }
 ```
@@ -177,12 +177,12 @@ Create and delete timeline entries with callbacks for optimistic updates.
 interface UseTimelineActionsOptions {
   entityType: string;
   entityId: string;
-  onEntryCreated?: (entry: TimelineStreamEntry) => void;
+  onEntryCreated?: (entry: TimelineStreamEntryResponse) => void;
   onEntryDeleted?: (entryId: string) => void;
 }
 
 interface UseTimelineActionsReturn {
-  readonly postEntry: (request: CreateTimelineEntryRequest) => Promise<TimelineStreamEntry>;
+  readonly postEntry: (request: PostTimelineEntryRequest) => Promise<TimelineStreamEntryResponse>;
   readonly removeEntry: (entryId: string) => Promise<void>;
   readonly posting: boolean;
   readonly deleting: boolean;
@@ -236,8 +236,8 @@ grouped by `parentEntryId`.
 | Category | Key exports | Package |
 |----------|-------------|---------|
 | Enums | `TimelineEntryType` | `@granit/timeline` |
-| Types | `TimelineStreamEntry`, `CreateTimelineEntryRequest`, `TimelineStreamPage`, `MentionSuggestion` | `@granit/timeline` |
-| Stream API | `fetchStream()`, `createEntry()`, `deleteEntry()` | `@granit/timeline` |
+| Types | `TimelineStreamEntryResponse`, `PostTimelineEntryRequest`, `TimelineStreamPage`, `MentionSuggestion` | `@granit/timeline` |
+| Stream API | `getStream()`, `createEntry()`, `deleteEntry()` | `@granit/timeline` |
 | Follower API | `followEntity()`, `unfollowEntity()`, `fetchFollowers()` | `@granit/timeline` |
 | Provider | `TimelineProvider`, `useTimelineConfig()` | `@granit/react-timeline` |
 | Stream hooks | `useTimeline()`, `useTimelineActions()` | `@granit/react-timeline` |

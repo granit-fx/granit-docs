@@ -129,6 +129,9 @@ candidate for a rename to `react-ui-map` so its name reflects the tier it
 actually occupies. That rename is a separate follow-up, out of scope for this
 ADR.
 
+> **Resolved:** the follow-up shipped. The package is now `@granit/react-ui-map`;
+> `@granit/react-map` no longer exists.
+
 ## Re-evaluation conditions
 
 This decision should be re-evaluated if:

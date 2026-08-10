@@ -48,7 +48,7 @@ the rest of the application works with standard React state.
 ## Usage example
 
 ```tsx
-import { useKeycloakInit } from '@granit/react-authentication';
+import { useKeycloakInit } from '@granit/react-authentication-keycloak';
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const { authenticated, loading, user, login, logout } = useKeycloakInit({

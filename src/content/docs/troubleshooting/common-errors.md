@@ -48,39 +48,39 @@ other.
 
 ## DbContext configuration issues
 
-### Missing `ApplyGranitConventions`
+### DbContext does not derive from `GranitDbContext`
 
 **Symptom**: Soft-deleted entities still appear in queries. Multi-tenant data
 leaks across tenants. `IActive` and `IPublishable` filters do not apply.
 
-**Cause**: The isolated `DbContext` does not call `ApplyGranitConventions` in
-`OnModelCreating`.
+**Cause**: The isolated `DbContext` derives from `DbContext` directly, so the
+conventions pass that registers the named query filters never runs.
 
-**Fix**: Call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)` at
-the end of `OnModelCreating`.
+**Fix**: Derive from `GranitDbContext` and move entity configuration into
+`OnGranitModelCreating` — `OnModelCreating` is sealed on the base class.
 
 ```csharp
 public class MyDbContext(
     DbContextOptions<MyDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(MyDbContext).Assembly);
-
-        // This line is mandatory
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
 
 :::caution
-Never add manual `HasQueryFilter` calls for `ISoftDeletable`, `IMultiTenant`,
-`IActive`, or `IPublishable`. `ApplyGranitConventions` handles all standard
-filters centrally. Manual filters cause duplicates or conflicts.
+`ApplyGranitConventions` is `internal` — a `DbContext` that still calls it will
+not compile. It also must not be called by hand: the filters it registered
+captured their bypass flags through a proxy, which EF Core constant-folded into
+the cached query plan, making `IDataFilter.Disable<T>()` a silent no-op on
+relational providers. Never add manual `HasQueryFilter` calls for
+`ISoftDeletable`, `IMultiTenant`, `IActive`, or `IPublishable` either — the
+conventions pass owns all standard filters.
 :::
 
 ### Missing interceptors

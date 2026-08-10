@@ -18,21 +18,24 @@ collaborate. The adapter wraps the existing class and translates calls.
 
 ```mermaid
 classDiagram
-    class IBlobStorageClient {
-        +DeleteObjectAsync()
-        +HeadObjectAsync()
+    class IBlobStoreProvider {
+        +SaveAsync()
+        +OpenReadAsync()
+        +DeleteAsync()
+        +GetSizeAsync()
     }
 
     class AmazonS3Client {
+        +PutObjectAsync()
+        +GetObjectAsync()
         +DeleteObjectAsync()
-        +GetObjectMetadataAsync()
     }
 
     class S3BlobClient {
         -s3Client : AmazonS3Client
     }
 
-    IBlobStorageClient <|.. S3BlobClient
+    IBlobStoreProvider <|.. S3BlobClient
     S3BlobClient --> AmazonS3Client : adapts
 
     class ISmtpTransport {
@@ -56,8 +59,8 @@ classDiagram
 
 | Adapter | File | Target interface | Adapted class |
 |---------|------|------------------|---------------|
-| `S3BlobClient` | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | `IBlobStorageClient` | `AmazonS3Client` (AWS SDK) |
-| `MailKitSmtpTransport` | `src/Granit.Notifications.Smtp/MailKitSmtpTransport.cs` | `ISmtpTransport` | `SmtpClient` (MailKit, sealed) |
+| `S3BlobClient` | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | `IBlobStoreProvider` + `IPresignedUrlProvider` | `AmazonS3Client` (AWS SDK) |
+| `MailKitSmtpTransport` | `src/Granit.Notifications.Smtp/Internal/MailKitSmtpTransport.cs` | `ISmtpTransport` | `SmtpClient` (MailKit, sealed) |
 
 ## Rationale
 
@@ -66,11 +69,28 @@ changes (European hosting, MinIO) without touching the core.
 `MailKitSmtpTransport` wraps the sealed MailKit `SmtpClient` behind a
 testable `ISmtpTransport` interface.
 
+Both ports are `internal` to their owning package: adapters are a framework
+extension point, not a host extension point. Hosts select a provider through
+its registration extension rather than by implementing the port.
+
 ## Usage example
 
+Swapping AWS S3 for MinIO is the same adapter pointed at a different endpoint
+— `AddGranitBlobStorageS3()` binds `S3BlobOptions` from the `BlobStorage`
+configuration section:
+
+```jsonc
+// appsettings.Development.json — credentials come from Granit.Vault in production.
+{
+  "BlobStorage": {
+    "ServiceUrl": "http://localhost:9000",
+    "ForcePathStyle": true
+  }
+}
+```
+
 ```csharp
-// Replacing S3 with MinIO -- only the adapter changes
-services.AddSingleton<IBlobStorageClient, MinioBlobClient>();
+builder.AddGranitBlobStorageS3();
 
 // The rest of the application code remains unchanged
 IBlobStorage blobStorage = serviceProvider.GetRequiredService<IBlobStorage>();

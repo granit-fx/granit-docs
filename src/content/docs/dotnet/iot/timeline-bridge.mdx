@@ -63,15 +63,14 @@ not just "system".
 Bundled in `Granit.Bundle.IoT`:
 
 ```csharp
-builder.Services.AddGranit(builder.Configuration).AddIoT();
+builder.AddGranit(granit => granit.AddIoT());
 ```
 
 Or standalone:
 
 ```csharp
-builder.Services
-    .AddGranit(builder.Configuration)
-    .AddModule<GranitIoTTimelineModule>();
+builder.AddGranit(granit => granit
+    .AddModule<GranitIoTTimelineModule>());
 ```
 
 `GranitIoTTimelineModule` depends on `GranitIoTModule` and

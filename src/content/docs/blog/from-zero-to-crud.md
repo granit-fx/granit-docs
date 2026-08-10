@@ -63,25 +63,23 @@ namespace ProductCatalog.EntityFrameworkCore;
 
 internal sealed class ProductDbContext(
     DbContextOptions<ProductDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Product> Products => Set<Product>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProductDbContext).Assembly);
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
 
 Three things to note:
 
-- **`ICurrentTenant?` and `IDataFilter?`** are injected as optional parameters. If multi-tenancy is not installed, a `NullTenantContext` is used and the tenant filter is simply skipped.
-- **`ApplyGranitConventions`** registers one named query filter per applicable interface (`ISoftDeletable`, `IMultiTenant`, `IActive`, `IProcessingRestrictable`, `IPublishable`). You never write a manual `HasQueryFilter` — each filter is independent and bypassable per query via `IgnoreQueryFilters([GranitFilterNames.SoftDelete])`.
+- **Deriving from `GranitDbContext`** is what makes the tenant filter safe: EF Core only parameterises a filter value read from a member of the context instance, so the base class exposes `CurrentTenantId` and the SQL carries `@ef_filter__CurrentTenantId` instead of a literal frozen into the cached plan.
+- **`OnModelCreating` is sealed** on the base class; put entity configuration in `OnGranitModelCreating`. The conventions pass registers one named query filter per applicable interface (`ISoftDeletable`, `IMultiTenant`, `IActive`, `IProcessingRestrictable`, `IPublishable`). You never write a manual `HasQueryFilter` — each filter is independent and bypassable per query via `IgnoreQueryFilters([GranitFilterNames.SoftDelete])`.
 - **`ApplyConfigurationsFromAssembly`** picks up any `IEntityTypeConfiguration<T>` in the same assembly. Add one if you need column constraints, indexes, or value conversions.
 
 To register the context with Granit's interceptor wiring, use `AddGranitDbContext`:

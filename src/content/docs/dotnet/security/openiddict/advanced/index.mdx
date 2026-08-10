@@ -198,12 +198,15 @@ Set the idle timeout in minutes per-tenant via `Granit.Settings`:
 |-------------|---------|-------|
 | `OpenIddict.IdleSessionTimeout` | `0` (disabled) | `0` = off, `1`+ = minutes |
 
-```json
-{
-  "OpenIddict": {
-    "IdleSessionTimeout": "30"
-  }
-}
+This is a **setting**, not an appsettings section — write it through
+`ISettingWriter` so it can differ per tenant:
+
+```csharp
+await settingWriter.SetForTenantAsync(
+    tenantId,
+    OpenIddictSettingNames.IdleSessionTimeout,  // "OpenIddict.IdleSessionTimeout"
+    "30",
+    cancellationToken);
 ```
 
 ## Passkeys (WebAuthn / FIDO2)
@@ -233,13 +236,21 @@ conditional mediation to enable autofill suggestions.
 
 ### Configuration
 
+Passkey options are owned by `Granit.Identity.Local`
+(`GranitPasskeyOptions`), bound from `Identity:Local:Passkey`:
+
 ```json
 {
-  "OpenIddict": {
-    "Passkeys": {
-      "ServerDomain": "example.com",
-      "AuthenticatorTimeout": "00:05:00",
-      "ChallengeSize": 32
+  "Identity": {
+    "Local": {
+      "Passkey": {
+        "ServerDomain": "example.com",
+        "ServerName": "Granit",
+        "AllowedOrigins": ["https://example.com"],
+        "AuthenticatorTimeout": "00:05:00",
+        "ChallengeLifetime": "00:05:00",
+        "ChallengeSize": 32
+      }
     }
   }
 }

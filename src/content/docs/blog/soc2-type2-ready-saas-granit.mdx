@@ -214,15 +214,22 @@ Named EF Core 10 query filters (`HasQueryFilter(name, expr)`) make individual fi
 
 `Granit.Privacy` implements the GDPR processing principles that also satisfy SOC 2 Privacy TSC criteria:
 
-```csharp title="PatientPersonalDataProvider.cs"
-public class PatientPersonalDataProvider : IPersonalDataProvider
+```csharp title="PatientPrivacyDataProvider.cs"
+public sealed class PatientPrivacyDataProvider(
+    IStagedFragmentBuilder fragmentBuilder) : IPrivacyDataProvider
 {
-    public string Category => "Medical records";
+    public static string ProviderName => "medical-records";
+    public static string DisplayKey => "Privacy.Scopes.MedicalRecords";
+    public static string? FeatureName => null;
 
-    public async Task<PersonalDataExport> ExportAsync(
-        string userId, CancellationToken cancellationToken)
+    public ValueTask<bool> HasDataAsync(
+        PrivacyExportContext context, CancellationToken cancellationToken) { /* … */ }
+
+    public async IAsyncEnumerable<ExportFragment> ExportAsync(
+        PrivacyExportContext context,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Aggregated by the Privacy module for data portability requests
+        // Streamed and aggregated by the Privacy module for portability requests
     }
 }
 ```
@@ -251,7 +258,7 @@ public class PatientPersonalDataProvider : IPersonalDataProvider
 | A1.2 — Tenant isolation | Database/schema/filter strategies | `Granit.MultiTenancy`, `Granit.Persistence` |
 | C1.1 — Confidentiality | Field encryption + crypto-shredding | `Granit.Encryption`, `Granit.Privacy` |
 | P3.1 — Data minimization | Module-scoped storage, no shared profile table | Architecture |
-| P4.1 — Personal data portability | `IPersonalDataProvider` aggregation | `Granit.Privacy` |
+| P4.1 — Personal data portability | `IPrivacyDataProvider` aggregation | `Granit.Privacy` |
 | P8.1 — Right to erasure | Crypto-shredding via Vault key destruction | `Granit.Privacy` |
 
 ## What Granit does not replace

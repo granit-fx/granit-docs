@@ -133,14 +133,11 @@ flowchart LR
 Apply Shadow Property mappings in your `DbContext`:
 
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Inside a DbContext deriving from GranitDbContext.
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
-    base.OnModelCreating(modelBuilder);
-
     // Apply Shadow Properties for Invoice extra properties
     modelBuilder.ApplyMetadataMappings(invoiceExtensionOptions);
-
-    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
 }
 ```
 

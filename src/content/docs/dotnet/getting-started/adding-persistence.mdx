@@ -80,23 +80,20 @@ namespace TaskManagement.Api.Data;
 
 public sealed class TaskDbContext(
     DbContextOptions<TaskDbContext> options,
-    ICurrentTenant? currentTenant = null,
-    IDataFilter? dataFilter = null) : DbContext(options)
+    ICurrentTenant currentTenant,
+    IDataFilter? dataFilter = null)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
         modelBuilder.Entity<TaskItem>(e =>
         {
             e.ToTable("tasks");
             e.Property(x => x.Title).HasMaxLength(200).IsRequired();
             e.Property(x => x.Description).HasMaxLength(2000);
         });
-
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```

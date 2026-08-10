@@ -28,7 +28,7 @@ doesn't support it, disable user creation when the backend can't handle it.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `@granit/identity` | `IdentityProviderCapabilities` type, `fetchIdentityCapabilities()` | `axios` |
+| `@granit/identity` | `IdentityProviderCapabilitiesResponse` type, `getIdentityCapabilities()` | `axios` |
 | `@granit/react-identity` | `IdentityProvider`, `useIdentityCapabilities`, `useIdentityConfig` | `@granit/identity`, `@tanstack/react-query`, `axios`, `react` |
 
 ## Setup
@@ -53,10 +53,10 @@ function App() {
 <TabItem label="TypeScript only">
 
 ```ts
-import { fetchIdentityCapabilities } from '@granit/identity';
-import type { IdentityProviderCapabilities } from '@granit/identity';
+import { getIdentityCapabilities } from '@granit/identity';
+import type { IdentityProviderCapabilitiesResponse } from '@granit/identity';
 
-const caps = await fetchIdentityCapabilities(axiosClient, '/identity/users');
+const caps = await getIdentityCapabilities(axiosClient, '/identity/users');
 if (!caps.supportsUserCreation) {
   // disable user creation in the UI
 }
@@ -67,12 +67,12 @@ if (!caps.supportsUserCreation) {
 
 ## TypeScript SDK
 
-### `IdentityProviderCapabilities`
+### `IdentityProviderCapabilitiesResponse`
 
 Describes the capabilities of the active identity provider (Keycloak, Entra ID, etc.).
 
 ```ts
-interface IdentityProviderCapabilities {
+interface IdentityProviderCapabilitiesResponse {
   readonly providerName: string;
   readonly supportsIndividualSessionTermination: boolean;
   readonly supportsNativePasswordResetEmail: boolean;
@@ -93,21 +93,21 @@ interface IdentityProviderCapabilities {
 | Credential verification | Yes (ROPC) | Varies | Yes |
 | User creation | Yes | Yes | Yes |
 
-### `fetchIdentityCapabilities(client, basePath)`
+### `getIdentityCapabilities(client, basePath)`
 
 Fetches capabilities from `GET {basePath}/capabilities`.
 
 ```ts
-function fetchIdentityCapabilities(
+function getIdentityCapabilities(
   client: AxiosInstance,
   basePath: string
-): Promise<IdentityProviderCapabilities>;
+): Promise<IdentityProviderCapabilitiesResponse>;
 ```
 
 ## React bindings
 
 :::note[Framework-agnostic core]
-`IdentityProviderCapabilities` and `fetchIdentityCapabilities` live in `@granit/identity` —
+`IdentityProviderCapabilitiesResponse` and `getIdentityCapabilities` live in `@granit/identity` —
 pure TypeScript with zero React dependency. The React package below wraps them into a
 provider and hook.
 :::
@@ -148,7 +148,7 @@ Cached with `staleTime: Infinity` — capabilities are stable for the backend de
 ```ts
 function useIdentityCapabilities(options?: {
   enabled?: boolean;
-}): UseQueryResult<IdentityProviderCapabilities>;
+}): UseQueryResult<IdentityProviderCapabilitiesResponse>;
 ```
 
 ```tsx
@@ -187,8 +187,8 @@ buildIdentityQueryKey(config, 'capabilities');
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Capabilities type | `IdentityProviderCapabilities` | `@granit/identity` |
-| API function | `fetchIdentityCapabilities()` | `@granit/identity` |
+| Capabilities type | `IdentityProviderCapabilitiesResponse` | `@granit/identity` |
+| API function | `getIdentityCapabilities()` | `@granit/identity` |
 | Provider | `IdentityProvider`, `IdentityProviderProps`, `IdentityConfig` | `@granit/react-identity` |
 | Hooks | `useIdentityCapabilities()`, `useIdentityConfig()` | `@granit/react-identity` |
 | Utilities | `buildIdentityQueryKey()` | `@granit/react-identity` |

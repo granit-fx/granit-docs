@@ -41,7 +41,7 @@ can never see rows the user's own UI couldn't see.
 
 - Granit.Http.ODataExposure/
   - Extensions/
-    - ODataExposureServiceCollectionExtensions.cs `AddGranitOData()`
+    - ODataExposureServiceCollectionExtensions.cs `AddGranitODataExposure()`
     - ODataExposureEndpointRouteBuilderExtensions.cs `MapGranitODataEndpoints` / `MapGranitODataHostEndpoints`
   - Internal/
     - ODataEdmModelBuilder.cs EDM whitelist via `EntityDefinition` (ADR-050)
@@ -59,7 +59,7 @@ can never see rows the user's own UI couldn't see.
 ```csharp
 // Program.cs — DI
 builder.Services
-    .AddGranitOData()                                    // OData runtime + ODataQueryOptions<T> binding
+    .AddGranitODataExposure()                                    // OData runtime + ODataQueryOptions<T> binding
     .AddGranitQueryEngine()                              // existing QueryEngine registration
     .AddQueryDefinition<Invoice, InvoiceQueryDefinition>();
 

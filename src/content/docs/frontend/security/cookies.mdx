@@ -8,13 +8,13 @@ sidebar:
 
 import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
-`@granit/cookies` defines an abstract `CookieConsentProvider` interface and GDPR
+`@granit/cookies` defines an abstract `CookieConsentAdapter` interface and GDPR
 category types — mirroring `Granit.Http.Cookies` on the .NET backend.
 `@granit/react-cookies` wraps this into a React context. `@granit/cookies-cookieconsent`
 provides a concrete adapter backed by vanilla-cookieconsent.
 
 The architecture is pluggable: swap `@granit/cookies-cookieconsent` for any other
-CMP (Klaro, Cookiebot, OneTrust, etc.) by implementing `CookieConsentProvider`.
+CMP (Klaro, Cookiebot, OneTrust, etc.) by implementing `CookieConsentAdapter`.
 
 **Peer dependencies:** `react ^19`
 
@@ -28,7 +28,7 @@ CMP (Klaro, Cookiebot, OneTrust, etc.) by implementing `CookieConsentProvider`.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `@granit/cookies` | `CookieConsentProvider` interface, `CookieCategory`, backend DTOs | — |
+| `@granit/cookies` | `CookieConsentAdapter` interface, `CookieCategory`, backend DTOs | — |
 | `@granit/react-cookies` | React context provider, `useCookieConsent` hook | `@granit/cookies`, `react` |
 | `@granit/cookies-cookieconsent` | `createCookieConsentProvider()` factory | `@granit/cookies`, `vanilla-cookieconsent` |
 
@@ -60,7 +60,7 @@ function App({ children }) {
 ```ts
 import type {
   CookieCategory,
-  CookieConsentProvider,
+  CookieConsentAdapter,
   ConsentState,
 } from '@granit/cookies';
 ```
@@ -77,7 +77,7 @@ type CookieCategory = 'strictly_necessary' | 'preferences' | 'analytics' | 'mark
 
 type ConsentState = Record<CookieCategory, boolean>;
 
-interface CookieConsentProvider {
+interface CookieConsentAdapter {
   init(): Promise<void>;
   getConsents(): ConsentState;
   onConsentChange(callback: (consents: ConsentState) => void): () => void;
@@ -115,7 +115,7 @@ adapters translate this into their own configuration format.
 ## React bindings
 
 :::note[Framework-agnostic core]
-All types and the `CookieConsentProvider` interface live in `@granit/cookies` — pure
+All types and the `CookieConsentAdapter` interface live in `@granit/cookies` — pure
 TypeScript. The React package below wraps it into a context.
 :::
 
@@ -151,7 +151,7 @@ function useCookieConsent(): CookieConsentContextValue;
 
 ### `createKlaroCookieConsentProvider(options)`
 
-Creates a `CookieConsentProvider` backed by Klaro CMP.
+Creates a `CookieConsentAdapter` backed by Klaro CMP.
 
 ```ts
 interface CreateKlaroCookieConsentProviderOptions {
@@ -177,7 +177,7 @@ Two modes:
 | Category | Key exports | Package |
 |----------|-------------|---------|
 | Types | `CookieCategory`, `ConsentState`, `CookieConsentConfig`, `CookieDefinitionDto` | `@granit/cookies` |
-| Interface | `CookieConsentProvider` | `@granit/cookies` |
+| Interface | `CookieConsentAdapter` | `@granit/cookies` |
 | React provider | `CookieConsentProvider` (component) | `@granit/react-cookies` |
 | React hook | `useCookieConsent()` | `@granit/react-cookies` |
 | CMP adapter | `createCookieConsentProvider()` | `@granit/cookies-cookieconsent` |

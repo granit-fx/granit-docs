@@ -61,7 +61,7 @@ function App({ children }) {
 
 ```ts
 import { createLocalization, resolveInitialLocale, applyTranslations } from '@granit/localization';
-import type { LanguageInfo, ApplicationLocalizationDto } from '@granit/localization';
+import type { LanguageInfo, ApplicationLocalizationResponse } from '@granit/localization';
 
 const i18n = createLocalization();
 const locale = resolveInitialLocale();
@@ -83,7 +83,7 @@ interface LanguageInfo {
   isDefault: boolean;
 }
 
-interface ApplicationLocalizationDto {
+interface ApplicationLocalizationResponse {
   cultureName: string;
   resources: Record<string, Record<string, string>>;
   languages: LanguageInfo[];
@@ -134,7 +134,7 @@ module (e.g. `{ "Granit": {...}, "MyApp": {...} }`) — this function merges the
 the single `translation` namespace.
 
 ```ts
-function applyTranslations(instance: i18n, data: ApplicationLocalizationDto): void;
+function applyTranslations(instance: i18n, data: ApplicationLocalizationResponse): void;
 ```
 
 ### Constants
@@ -188,7 +188,7 @@ For convenience, the following are re-exported from `react-i18next`:
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Types | `LanguageInfo`, `ApplicationLocalizationDto`, `LocalizationConfig` | `@granit/localization` |
+| Types | `LanguageInfo`, `ApplicationLocalizationResponse`, `LocalizationConfig` | `@granit/localization` |
 | Factory | `createLocalization()` | `@granit/localization` |
 | Locale resolution | `resolveInitialLocale()`, `LOCALE_STORAGE_KEY` | `@granit/localization` |
 | Translation loader | `applyTranslations()` | `@granit/localization` |

@@ -707,10 +707,10 @@ public static class InventoryItemCreatedHandler
 {
     public static Task Handle(
         InventoryItemCreated msg,
-        INotificationSender sender,
+        INotificationPublisher publisher,
         CancellationToken ct)
     {
-        return sender.NotifyAsync(/* ... */, ct);
+        return publisher.PublishAsync(/* ... */, ct);
     }
 }
 ```

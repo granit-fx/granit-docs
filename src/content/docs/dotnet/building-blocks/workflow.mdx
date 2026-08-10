@@ -360,15 +360,17 @@ The host application's `DbContext` must implement `IWorkflowDbContext` and call 
 model configuration extension:
 
 ```csharp
-public class AppDbContext : DbContext, IWorkflowDbContext
+public class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    ICurrentTenant currentTenant,
+    IDataFilter? dataFilter = null)
+    : GranitDbContext(options, currentTenant, dataFilter), IWorkflowDbContext
 {
     public DbSet<WorkflowTransitionRecord> WorkflowTransitionRecords => Set<WorkflowTransitionRecord>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ConfigureWorkflowModule();
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```

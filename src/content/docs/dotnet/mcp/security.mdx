@@ -25,7 +25,7 @@ standard ASP.NET Core `[Authorize]` on tool classes and methods. Granit's
 ```csharp
 [McpServerToolType, McpExposed]
 [Authorize(Policy = McpPermissions.Tools.Execute)]  // Class-level default
-public sealed class NotificationMcpTools(INotificationSender sender)
+public sealed class NotificationMcpTools(INotificationPublisher publisher)
 {
     [McpServerTool, Description("Sends a notification to a user.")]
     [Authorize(Policy = "Notifications.Messages.Create")]

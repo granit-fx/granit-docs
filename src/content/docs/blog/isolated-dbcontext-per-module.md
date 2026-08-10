@@ -30,17 +30,15 @@ Here is the real `DbContext` from the Localization module:
 ```csharp title="LocalizationDbContext.cs"
 internal sealed class LocalizationDbContext(
     DbContextOptions<LocalizationDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<LocalizationOverride> LocalizationOverrides { get; set; } = null!;
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new LocalizationOverrideConfiguration());
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
@@ -63,7 +61,7 @@ The constructor accepts `ICurrentTenant?` and `IDataFilter?` as **optional param
 
 ### 2. ApplyGranitConventions — centralized query filters
 
-The call to `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)` at the end of `OnModelCreating` is where the framework applies **global query filters** for five marker interfaces:
+Deriving from `GranitDbContext` is where the framework applies **global query filters** for five marker interfaces:
 
 - **`ISoftDeletable`** — filters out records where `IsDeleted == true`
 - **`IActive`** — filters out records where `Activated == false`
@@ -192,7 +190,7 @@ If you are creating a new `*.EntityFrameworkCore` package in Granit, every item 
 
 1. Add a `<ProjectReference>` to `Granit.Persistence` in the `.csproj`.
 2. Accept `ICurrentTenant?` and `IDataFilter?` as optional constructor parameters (default `null`).
-3. Call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)` at the end of `OnModelCreating`.
+3. Derive from `GranitDbContext` and put entity configuration in `OnGranitModelCreating`.
 4. Register the context via `AddGranitDbContext<TContext>` — never call `AddDbContextFactory` manually.
 5. Add `[DependsOn(typeof(GranitPersistenceModule))]` on the module class.
 6. Never write manual `HasQueryFilter` calls — `ApplyGranitConventions` handles all standard filters.

@@ -23,32 +23,45 @@ the framework handles the plumbing.
 
 ## EF Core interceptors
 
-Three `SaveChangesInterceptor` implementations run in sequence before
-every `SaveChanges` / `SaveChangesAsync` call:
+Six `SaveChangesInterceptor` implementations run in sequence before
+every `SaveChanges` / `SaveChangesAsync` call. This page covers the three you
+meet first; see [Interceptors](/dotnet/data/interceptors/) for the full set.
 
 ```mermaid
 flowchart LR
     A[SaveChanges called] --> B[AuditedEntityInterceptor]
-    B --> C[SoftDeleteInterceptor]
-    C --> D[VersioningInterceptor]
-    D --> E[Database]
+    B --> C[VersioningInterceptor]
+    C --> D[ConcurrencyStampInterceptor]
+    D --> E[DomainEventDispatcherInterceptor]
+    E --> F[EntityLifecycleEventInterceptor]
+    F --> G[SoftDeleteInterceptor]
+    G --> H[Database]
 ```
+
+`SoftDeleteInterceptor` runs last on purpose: it flips `EntityState.Deleted` to
+`Modified`, which would hide the original state from every interceptor before
+it.
 
 ### 1. AuditedEntityInterceptor
 
-Targets entities implementing `IAuditedEntity`. On every save:
+Audit tracking splits across two interfaces in `Granit.Domain`, so an entity can
+opt into creation stamps without carrying modification stamps:
 
-| State | Fields set |
-|-------|------------|
-| Added | `CreatedAt`, `CreatedBy`, `TenantId` (if `IMultiTenant`) |
-| Modified | `ModifiedAt`, `ModifiedBy` |
+| Interface | Fields | Set when |
+|-----------|--------|----------|
+| `ICreationAuditedObject` | `CreatedAt`, `CreatedBy` (+ `TenantId` if `IMultiTenant`) | Added |
+| `IModificationAuditedObject` | `ModifiedAt`, `ModifiedBy` | Modified |
+
+The interceptor pivots on the **interfaces**, not on a base class — inheriting
+`FullAuditedEntity` / `FullAuditedAggregateRoot` is a convenience, not a
+requirement.
 
 Timestamps come from the injected `TimeProvider` (never `DateTime.Now`).
 User identity comes from `ICurrentUserService`. Tenant ID comes from
 `ICurrentTenant`.
 
 ```csharp
-public class Invoice : AggregateRoot, IAuditedEntity, IMultiTenant
+public class Invoice : AggregateRoot, ICreationAuditedObject, IModificationAuditedObject, IMultiTenant
 {
     public Guid? TenantId { get; set; }
     public string Number { get; set; } = string.Empty;
@@ -56,7 +69,7 @@ public class Invoice : AggregateRoot, IAuditedEntity, IMultiTenant
 
     // These are set automatically — never assign them manually
     public DateTimeOffset CreatedAt { get; set; }
-    public string? CreatedBy { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
     public DateTimeOffset? ModifiedAt { get; set; }
     public string? ModifiedBy { get; set; }
 }
@@ -100,7 +113,7 @@ The filter is restored automatically when the `using` block exits.
 
 ### 3. VersioningInterceptor
 
-Targets entities implementing `IVersionedEntity`. On insert:
+Targets entities implementing `IVersioned` (`Granit.Domain`). On insert:
 
 - Assigns a `VersionId` (stable GUID shared across all versions of the same
   logical entity).
@@ -121,6 +134,7 @@ independent and individually bypassable:
 | `IMultiTenant` | `MultiTenant` | `WHERE TenantId = @currentTenantId` |
 | `IProcessingRestrictable` | `ProcessingRestrictable` | `WHERE IsProcessingRestricted = false` |
 | `IPublishable` | `Publishable` | `WHERE IsPublished = true` |
+| `IHasMergeTombstone` | `MergeTombstone` | `WHERE MergedIntoId IS NULL` |
 
 An entity implementing both `ISoftDeletable` and `IMultiTenant` gets two named
 filters, both applied by EF Core as AND conditions:
@@ -155,33 +169,53 @@ follow this checklist. No exceptions — the architecture tests enforce it.
 <ProjectReference Include="..\Granit.Persistence\Granit.Persistence.csproj" />
 ```
 
-### 2. Constructor injection
+### 2. Derive from `GranitDbContext`
 
-Inject `ICurrentTenant?` and `IDataFilter?` — both optional, defaulting
-to `null`:
+Inherit `GranitDbContext` and pass `ICurrentTenant` plus an optional
+`IDataFilter` to the base constructor:
 
 ```csharp
-public class InvoiceDbContext(
+internal sealed class InvoiceDbContext(
     DbContextOptions<InvoiceDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
-    // ...
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 }
 ```
 
-### 3. Call ApplyGranitConventions
+Deriving is what makes the tenant filter **safe**. EF Core only parameterises a
+query-filter value when it reads it from a member of the `DbContext` instance.
+A value captured from a constructor-injected service is inlined as a literal
+into the compiled SQL and frozen for the lifetime of the cached model — request
+A pins `WHERE TenantId = 'A'` and request B reuses the frozen plan. Because
+`CurrentTenantId` is an instance property on `GranitDbContext`, EF Core emits
+`@ef_filter__CurrentTenantId` and re-binds it on every command.
 
-At the end of `OnModelCreating`, after all entity configurations:
+### 3. Override `OnGranitModelCreating`
+
+`OnModelCreating` is `sealed` on the base class — the conventions pass is not
+something a module can skip, reorder, or duplicate. Put your entity
+configuration in `OnGranitModelCreating` instead:
 
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
     modelBuilder.ApplyConfigurationsFromAssembly(typeof(InvoiceDbContext).Assembly);
-    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
 }
 ```
+
+:::caution[`ApplyGranitConventions` is internal]
+Earlier versions asked every module to call `modelBuilder.ApplyGranitConventions(...)`
+by hand at the end of `OnModelCreating`. That extension is now `internal`: the
+filters it registered captured their bypass flags through a proxy, which EF Core
+constant-folded into the cached query plan and turned `IDataFilter.Disable<T>()`
+into a silent no-op on relational providers. `GranitDbContext` now registers
+every named filter against `this`, so bypass flags actually reach the SQL.
+Contexts that still call the extension will not compile — derive from
+`GranitDbContext` instead.
+:::
 
 ### 4. Register the DbContext — `AddGranitDbContext` or `AddGranitIsolatedDbContext`
 
@@ -293,7 +327,7 @@ for large data loads.
 ## Putting it all together
 
 Here is what happens when you call `SaveChangesAsync` on an entity that
-implements `IAuditedEntity`, `ISoftDeletable`, and `IMultiTenant`:
+implements `ICreationAuditedObject`, `IModificationAuditedObject`, `ISoftDeletable`, and `IMultiTenant`:
 
 **On insert:**
 

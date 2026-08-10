@@ -83,6 +83,7 @@ Provider selection uses **Keyed Services**. You ask for `IEmailSender` keyed `"B
 ```csharp title="AppModule.cs"
 [DependsOn(typeof(GranitNotificationsWolverineModule))]
 [DependsOn(typeof(GranitNotificationsEntityFrameworkCoreModule))]
+[DependsOn(typeof(GranitNotificationsEndpointsModule))]
 public sealed class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -105,9 +106,6 @@ public sealed class AppModule : GranitModule
         // Real-time browser delivery
         context.Services.AddGranitNotificationsSignalR(
             context.Configuration.GetConnectionString("Redis")!);
-
-        // Inbox + preferences endpoints
-        context.Services.AddGranitNotificationsEndpoints();
     }
 
     public override void OnApplicationInitialization(

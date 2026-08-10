@@ -145,8 +145,8 @@ await app.UseGranitAsync();
 app.UseGranitApiDocumentation(); // Maps /openapi/v{n}.json and Scalar UI
 ```
 
-`UseGranitApiDocumentation()` is a **no-op in Production** unless
-`EnableInProduction: true` is set. You cannot accidentally expose your schema in a
+`UseGranitApiDocumentation()` is a **no-op outside Development** unless
+`Http:ApiDocumentation:Scalar:EnableInProduction` is `true`. You cannot accidentally expose your schema in a
 production environment.
 
 ### Step 3 — Configure via appsettings
@@ -156,12 +156,14 @@ production environment.
   "Http:ApiDocumentation": {
     "Title": "Acme API",
     "Description": "Internal REST API for the Acme platform.",
-    "PartyEmail": "api-support@example.com",
+    "ContactEmail": "api-support@example.com",
     "LogoUrl": "/logo.svg",
-    "FaviconUrl": "/favicon.svg",
     "MajorVersions": [1, 2],
-    "EnableInProduction": false,
-    "AuthorizationPolicy": "InternalDeveloper"
+    "Scalar": {
+      "FaviconUrl": "/favicon.svg",
+      "EnableInProduction": false,
+      "AuthorizationPolicy": "InternalDeveloper"
+    }
   }
 }
 ```

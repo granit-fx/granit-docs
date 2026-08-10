@@ -58,7 +58,7 @@ graph TD
 public class AppModule : GranitModule { }
 ```
 
-Registers all five interceptors and `IDataFilter`.
+Registers the six standard interceptors and `IDataFilter`.
 
 </TabItem>
 <TabItem label="With migrations">
@@ -69,7 +69,7 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitPersistenceMigrations(context.Builder, options =>
+        context.Builder.AddGranitPersistenceMigrations(options =>
         {
             options.UseNpgsql(context.Configuration.GetConnectionString("Migrations"));
         });
@@ -99,24 +99,33 @@ Every `*.EntityFrameworkCore` package that owns a `DbContext` **must** follow th
 checklist. No exceptions.
 
 ```csharp
-public class AppointmentDbContext(
+internal sealed class AppointmentDbContext(
     DbContextOptions<AppointmentDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // OnModelCreating is sealed on GranitDbContext — override this instead.
+    // The conventions pass (query filters, converters, audit columns) runs
+    // automatically around it.
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppointmentDbContext).Assembly);
-
-        // MANDATORY — applies all query filters (soft delete, multi-tenant, active, etc.)
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
+
+:::caution[`ApplyGranitConventions` is internal]
+Modules used to call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)`
+themselves at the end of `OnModelCreating`. That extension is now `internal` and the
+call site no longer compiles. The filters it registered captured their bypass flags
+through a proxy, which EF Core constant-folded into the cached query plan — making
+`IDataFilter.Disable<T>()` a silent no-op on relational providers. `GranitDbContext`
+now registers every named filter against `this`, so the tenant value is
+parameterised and bypass flags reach the SQL.
+:::
 
 Registration in the module:
 
@@ -144,18 +153,22 @@ Two registration extensions, two intents:
 | `AddGranitDbContext<T>(opts)` | Default — dual-scope or host-only contexts | Runs interceptors, applies host schema, leaves tenant resolution to `ApplyGranitConventions` |
 | `AddGranitIsolatedDbContext<T>(opts)` | Strictly tenant-isolated modules (BlobStorage, Privacy, Encryption-bound contexts, etc.) | Forces every query through `ICurrentTenant`, throws if no tenant is active, refuses host-side bypass |
 
-Seven framework modules now register their DbContext via `AddGranitIsolatedDbContext`
-(PR #2021): the safety net is on by default for anything storing per-tenant blobs,
-PII, or encrypted data. PR #2028 fixed an infinite-recursion bug in the non-generic
-overload — make sure you are on the patched version if you use it.
+Around fifteen framework and business modules register their DbContext via
+`AddGranitIsolatedDbContext` — BlobStorage, Privacy, Webhooks, Activities,
+Taxonomy, ApiKeys, the Documents family (including Properties, Renditions and
+PublicLinks), the AI Chat / Prompts stores, and the federated identity cache.
+The safety net is on by default for anything holding per-tenant blobs, PII, or
+encrypted data.
 
-`[Encrypted]` fields can only live on entities owned by an `IsolatedDbContext` —
-architecture tests fail the build otherwise (PR #2062).
+Encrypted columns pair with classification: `SensitiveDataEncryptionConventionTests`
+fails the build when a `string` property marked `[SensitiveData(Level >= Confidential)]`
+on a persisted type is missing `[Encrypted]`. See
+[Encryption](/dotnet/data/encryption/).
 
 :::danger
-Never call `HasQueryFilter` manually in entity configurations.
-`ApplyGranitConventions` handles all standard filters centrally.
-Manual filters cause duplicates or conflicts.
+Never call `HasQueryFilter` manually in entity configurations. The conventions
+pass owns every standard filter and registers it by name; a manual filter
+collides with those keys and silently breaks tenant isolation or soft delete.
 :::
 
 ## Host-owned migrations
@@ -182,22 +195,17 @@ The host calls these in its own DbContext's `OnModelCreating`:
 ```csharp
 public class AppDbContext(
     DbContextOptions<AppDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
         // Include Granit module tables in this DbContext
         modelBuilder.ConfigureSettingsModule();
         modelBuilder.ConfigureBackgroundJobsModule();
         modelBuilder.ConfigureNotificationsModule();
         modelBuilder.ConfigureWorkflowModule();
-
-        // MANDATORY — always call last
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
@@ -231,12 +239,12 @@ Default prefixes follow the convention **module name in snake\_case + `_`**:
 | `Features` | `features_` | `features_overrides` |
 | `Localization` | `localization_` | `localization_overrides` |
 | `AI` | `ai_` | `ai_workspaces` |
-| `ApiKeys` | `api_keys_` | `api_keys_api_keys` |
+| `ApiKeys` | `authentication_api_keys_` | `authentication_api_keys_entries` |
 | `Authorization` | `authorization_` | `authorization_permission_grants` |
 | `OpenIddict` | `openiddict_` | `openiddict_users` |
 | `Identity` | `identity_` | `identity_user_cache_entries` |
 | `DataExchange` | `data_exchange_` | `data_exchange_import_jobs` |
-| `QueryEngine` | `query_engine_` | `query_engine_saved_views` |
+| `Entities.Views` | `entity_views_` | `entity_views_entity_views` |
 | `Templating` | `templating_` | `templating_revisions` |
 | `Timeline` | `timeline_` | `timeline_entries` |
 
@@ -464,7 +472,7 @@ and is equivalent to EF's default key when no extensions are registered.
 | Tenant provisioning | `ITenantProvisioner`, `AutoTenantProvisioner` | `Granit.Persistence.EntityFrameworkCore.Hosting` |
 | Host migrations | `Configure{Module}Module()`, `Granit{Module}DbProperties` | Each `*.EntityFrameworkCore` package |
 | Migrations | `MigrationPhase`, `MigrationCycleAttribute`, `IMigrationCycleRegistry`, `BatchMigrationDelegate` | `Granit.Persistence.EntityFrameworkCore.Migrations` |
-| Wolverine dispatch | `GranitPersistenceMigrationsWolverineModule` | `Granit.Persistence.Migrations.Wolverine` |
+| Wolverine dispatch | `GranitPersistenceEntityFrameworkCoreMigrationsModule` (with `Granit.Wolverine` hosted) | `Granit.Persistence.EntityFrameworkCore.Migrations` |
 | Model extensions | `IGranitModelExtension`, `GranitModelCacheKeyFactory` | `Granit.Persistence.EntityFrameworkCore` |
 
 ## Testing persistence

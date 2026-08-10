@@ -228,7 +228,7 @@ The default key generator uses `crypto.randomUUID()`. Call `enableIdempotency()`
 Import from `@granit/api-client/test-utils` for Vitest:
 
 ```ts
-import { createMockClient, axiosResponse } from '@granit/api-client/test-utils';
+import { createMockClient, axiosResponse } from '@granit/testing';
 
 const client = createMockClient();
 vi.mocked(client.get).mockResolvedValue(axiosResponse({ items: [], total: 0 }));
@@ -248,7 +248,7 @@ vi.mocked(client.get).mockResolvedValue(axiosResponse({ items: [], total: 0 }));
 | Error classes | `HttpError`, `ValidationError`, `TimeoutError` | `@granit/api-client` |
 | Response types | `ProblemDetails`, `ProblemDetailsPayload`, `ValidationDetails`, `PaginatedResponse<T>`, `ApiClientConfig` | `@granit/api-client` |
 | Idempotency | `enableIdempotency()`, `disableIdempotency()`, `IdempotencyOptions` | `@granit/idempotency` |
-| Test utilities | `createMockClient()`, `axiosResponse()` | `@granit/api-client/test-utils` |
+| Test utilities | `createMockClient()`, `axiosResponse()` | `@granit/testing` |
 
 ## See also
 

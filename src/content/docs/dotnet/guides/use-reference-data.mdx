@@ -101,12 +101,10 @@ public sealed class CountryConfiguration
 Apply the configuration in your `DbContext`:
 
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Inside a DbContext deriving from GranitDbContext.
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
-    base.OnModelCreating(modelBuilder);
-
     modelBuilder.ConfigureReferenceData(new CountryConfiguration());
-    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
 }
 ```
 

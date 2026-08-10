@@ -35,7 +35,7 @@ push (Capacitor).
 | Package | Role | Depends on |
 |---------|------|------------|
 | `@granit/notifications` | DTOs, API functions, `NotificationTransport` interface | `axios` |
-| `@granit/react-notifications` | `NotificationProvider`, inbox/feed/preferences hooks | `@granit/notifications`, `@granit/react-query-engine`, `react` |
+| `@granit/react-notifications` | `NotificationsProvider`, inbox/feed/preferences hooks | `@granit/notifications`, `@granit/react-query-engine`, `react` |
 | `@granit/notifications-signalr` | `createSignalRTransport()` factory | `@granit/notifications`, `@microsoft/signalr` |
 | `@granit/notifications-sse` | `createSseTransport()` factory | `@granit/notifications`, `@microsoft/fetch-event-source` |
 | `@granit/notifications-web-push` | `registerPushSubscription()`, VAPID helpers | `axios` |
@@ -74,7 +74,7 @@ graph TD
 <TabItem label="React + SignalR">
 
 ```tsx
-import { NotificationProvider } from '@granit/react-notifications';
+import { NotificationsProvider } from '@granit/react-notifications';
 import { createSignalRTransport } from '@granit/notifications-signalr';
 import { api } from './api-client';
 
@@ -85,9 +85,9 @@ const transport = createSignalRTransport({
 
 function App() {
   return (
-    <NotificationProvider config={{ apiClient: api }} transport={transport}>
+    <NotificationsProvider config={{ apiClient: api }} transport={transport}>
       <NotificationBell />
-    </NotificationProvider>
+    </NotificationsProvider>
   );
 }
 ```
@@ -96,7 +96,7 @@ function App() {
 <TabItem label="React + SSE">
 
 ```tsx
-import { NotificationProvider } from '@granit/react-notifications';
+import { NotificationsProvider } from '@granit/react-notifications';
 import { createSseTransport } from '@granit/notifications-sse';
 
 const transport = createSseTransport({
@@ -104,17 +104,17 @@ const transport = createSseTransport({
   tokenGetter: () => keycloak.token,
 });
 
-<NotificationProvider config={{ apiClient: api }} transport={transport}>
+<NotificationsProvider config={{ apiClient: api }} transport={transport}>
   {children}
-</NotificationProvider>
+</NotificationsProvider>
 ```
 
 </TabItem>
 <TabItem label="TypeScript only">
 
 ```ts
-import type { NotificationDto, NotificationTransport } from '@granit/notifications';
-import { fetchNotifications, markAsRead } from '@granit/notifications';
+import type { UserNotification, NotificationTransport } from '@granit/notifications';
+import { listNotifications, markAsRead } from '@granit/notifications';
 ```
 
 </TabItem>
@@ -130,10 +130,10 @@ import { fetchNotifications, markAsRead } from '@granit/notifications';
 type NotificationSeverity = 'info' | 'success' | 'warning' | 'error';
 ```
 
-#### `NotificationDto`
+#### `UserNotification`
 
 ```ts
-interface NotificationDto {
+interface UserNotification {
   id: string;
   title: string;
   body: string | null;
@@ -150,7 +150,7 @@ interface NotificationDto {
 
 ```ts
 interface NotificationPageDto {
-  items: NotificationDto[];
+  items: UserNotification[];
   totalCount: number;
   nextCursor: string | null;
   unreadCount: number;
@@ -210,21 +210,21 @@ interface NotificationTransport {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   readonly state: ConnectionState;
-  onNotification(callback: (notification: NotificationDto) => void): () => void;
+  onNotification(callback: (notification: UserNotification) => void): () => void;
   onStateChange(callback: (state: ConnectionState) => void): () => void;
 }
 ```
 
-Any transport implementing this interface can be plugged into `NotificationProvider`.
+Any transport implementing this interface can be plugged into `NotificationsProvider`.
 
 ### API functions
 
 | Function | Endpoint | Description |
 |----------|----------|-------------|
-| `fetchNotifications(client, basePath, params?)` | `GET /notifications` | Paginated inbox |
+| `listNotifications(client, basePath, params?)` | `GET /notifications` | Paginated inbox |
 | `markAsRead(client, basePath, id)` | `PATCH /notifications/{id}/read` | Mark single as read |
 | `markAllAsRead(client, basePath)` | `POST /notifications/read-all` | Mark all as read |
-| `fetchUnreadCount(client, basePath)` | `GET /notifications/unread-count` | Unread count |
+| `getUnreadCount(client, basePath)` | `GET /notifications/unread-count` | Unread count |
 | `fetchEntityActivityFeed(client, basePath, entityType, entityId, params?)` | `GET /activity-feed/{type}/{id}` | Entity activity feed |
 | `fetchPreferences(client, basePath)` | `GET /notification-preferences` | User preference matrix |
 | `updatePreference(client, basePath, preference)` | `PUT /notification-preferences/{type}` | Update preference |
@@ -268,16 +268,16 @@ All types, API functions, and the `NotificationTransport` interface live in
 a provider and hooks.
 :::
 
-### `NotificationProvider`
+### `NotificationsProvider`
 
 ```tsx
-interface NotificationProviderProps {
+interface NotificationsProviderProps {
   children: React.ReactNode;
   config: NotificationConfig;
   transport?: NotificationTransport;
 }
 
-function NotificationProvider(props: NotificationProviderProps): JSX.Element;
+function NotificationsProvider(props: NotificationsProviderProps): JSX.Element;
 ```
 
 ### `useNotificationContext()`
@@ -290,7 +290,7 @@ Paginated inbox with mark-as-read support and infinite scroll via `@granit/react
 
 ```ts
 interface UseNotificationsReturn {
-  notifications: readonly NotificationDto[];
+  notifications: readonly UserNotification[];
   totalCount: number;
   loading: boolean;
   loadingMore: boolean;
@@ -426,14 +426,14 @@ compliant).
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Core types | `NotificationDto`, `NotificationSeverity`, `ConnectionState`, `NotificationChannels` | `@granit/notifications` |
+| Core types | `UserNotification`, `NotificationSeverity`, `ConnectionState`, `NotificationChannels` | `@granit/notifications` |
 | Transport | `NotificationTransport`, `NotificationConfig` | `@granit/notifications` |
-| API functions | `fetchNotifications()`, `markAsRead()`, `markAllAsRead()`, `fetchUnreadCount()` | `@granit/notifications` |
+| API functions | `listNotifications()`, `markAsRead()`, `markAllAsRead()`, `getUnreadCount()` | `@granit/notifications` |
 | Activity feed | `fetchEntityActivityFeed()`, `ActivityFeedEntryDto` | `@granit/notifications` |
 | Preferences | `fetchPreferences()`, `updatePreference()`, `NotificationPreferenceDto` | `@granit/notifications` |
 | SignalR | `createSignalRTransport()` | `@granit/notifications-signalr` |
 | SSE | `createSseTransport()` | `@granit/notifications-sse` |
-| Provider | `NotificationProvider`, `useNotificationContext()` | `@granit/react-notifications` |
+| Provider | `NotificationsProvider`, `useNotificationContext()` | `@granit/react-notifications` |
 | Inbox hooks | `useNotifications()`, `useUnreadCount()` | `@granit/react-notifications` |
 | Feed hooks | `useEntityActivityFeed()`, `useNotificationPreferences()` | `@granit/react-notifications` |
 | Web Push | `useWebPush()`, `registerPushSubscription()`, `urlBase64ToUint8Array()` | `@granit/react-notifications-web-push`, `@granit/notifications-web-push` |

@@ -24,16 +24,16 @@ sees can flag it and your handlers can step up authentication or notify the acco
 ## Package structure
 
 <FileTree>
-- Granit.Identity.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, the `...Eto` integration event — safe no-op defaults
+- Granit.Identity.Abstractions/ `UserSessionDescriptor`, `UserSessionRiskAssessment`, `IUserSessionAnomalyDetector`, `IIdentitySecurityStateStore`, the `...Eto` integration event — safe no-op defaults
 - Granit.Identity.AnomalyDetection/ Heuristics (impossible travel, new device, new country) + opt-in AI layer over `Granit.AI`
-- Granit.Identity.EntityFrameworkCore/ Durable `IUserSessionRiskStore` and `IDeviceTrustStore`, persisted in the Identity DbContext (`identity_user_session_risks`, `identity_device_trusts`)
+- Granit.Identity.EntityFrameworkCore/ `EfCoreIdentitySecurityStateStore` — durable session risk, device trust, behavioural profile and session reviews, persisted in the Identity DbContext
 </FileTree>
 
 | Package | Role | Depends on |
 | ------- | ---- | ---------- |
 | `Granit.Identity.Abstractions` | Contracts + no-op detector + in-memory store | `Granit` |
 | `Granit.Identity.AnomalyDetection` | Heuristic + AI detector, risk evaluator | `Granit.AI`, `Granit.Identity.Abstractions` |
-| `Granit.Identity.EntityFrameworkCore` | Durable `IUserSessionRiskStore`, mapped into the User DbContext | `Granit.Persistence.EntityFrameworkCore`, `Granit.Identity.Abstractions` |
+| `Granit.Identity.EntityFrameworkCore` | `EfCoreIdentitySecurityStateStore`, mapped into the User DbContext | `Granit.Persistence.EntityFrameworkCore`, `Granit.Identity.Abstractions` |
 
 <Aside type="note">
 `Granit.Identity.Abstractions` alone registers a **no-op** detector (`None` for every
@@ -166,11 +166,11 @@ the `identity_user_session_risks` table. The table is mapped into the **Identity
 is no separate session-risk database to provision.
 
 Adding the package and calling `AddGranitIdentityEntityFrameworkCore` is all that is required;
-the module registers the EF Core–backed `IUserSessionRiskStore` automatically, overriding the
+the module registers the EF Core–backed `IIdentitySecurityStateStore` automatically, overriding the
 in-memory default.
 
 ```csharp
-builder.AddGranitIdentityEntityFrameworkCore(options =>
+builder.Services.AddGranitIdentityEntityFrameworkCore(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Identity")));
 ```
 
@@ -184,12 +184,15 @@ store is wired automatically.
 </Aside>
 
 ```csharp
-public interface IUserSessionRiskStore
+// Session risk shares IIdentitySecurityStateStore with device trust,
+// the behavioural profile, and single-use session reviews.
+public interface IIdentitySecurityStateStore
 {
-    Task SetAsync(string userId, string sessionId, UserSessionRiskVerdict verdict, CancellationToken ct);
-    Task<UserSessionRiskVerdict?> GetAsync(string userId, string sessionId, CancellationToken ct);
-    Task<IReadOnlyDictionary<string, UserSessionRiskVerdict>> GetManyAsync(
-        string userId, IReadOnlyCollection<string> sessionIds, CancellationToken ct);
+    Task SetSessionRiskAsync(string userId, string sessionId, UserSessionRiskVerdict verdict, CancellationToken ct = default);
+    Task<UserSessionRiskVerdict?> GetSessionRiskAsync(string userId, string sessionId, CancellationToken ct = default);
+    Task<IReadOnlyDictionary<string, UserSessionRiskVerdict>> GetSessionRisksAsync(
+        string userId, IReadOnlyCollection<string> sessionIds, CancellationToken ct = default);
+    // … device-trust, behavioural-profile and session-review members
 }
 ```
 
@@ -211,7 +214,7 @@ sequenceDiagram
     participant Det as IUserSessionAnomalyDetector
     participant RL as AI rate limiter
     participant AI as Granit.AI
-    participant Store as IUserSessionRiskStore
+    participant Store as IIdentitySecurityStateStore
     participant Bus as IDistributedEventBus
 
     App->>Eval: EvaluateAsync(candidate, history)
@@ -236,8 +239,8 @@ sequenceDiagram
 
 When the user has explicitly [trusted the device](/dotnet/security/identity/#trusted-devices)
 the session originates from, the evaluator dampens the noise without masking real threats.
-`IUserSessionRiskEvaluator.EvaluateAsync` takes the resolved `deviceId` and consults the
-`IDeviceTrustStore`:
+`IUserSessionRiskEvaluator.EvaluateAsync` takes the resolved `deviceId` and consults
+`IIdentitySecurityStateStore.GetDeviceTrustAsync`:
 
 | Detected level | On an actively-trusted device |
 |----------------|-------------------------------|
@@ -256,10 +259,10 @@ so it carries no `deviceId` and is treated as untrusted — the full risk verdic
 | Category | Key types | Package |
 |----------|-----------|---------|
 | Contracts | `UserSessionDescriptor`, `UserSessionRiskAssessment`, `UserSessionRiskVerdict`, `UserSessionRiskLevel` | `Granit.Identity.Abstractions` |
-| Detection | `IUserSessionAnomalyDetector`, `IUserSessionRiskStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
-| Device trust | `IDeviceTrustStore`, `DeviceTrustVerdict`, `DeviceTrustLevel` | `Granit.Identity.Abstractions` |
+| Detection | `IUserSessionAnomalyDetector`, `IIdentitySecurityStateStore`, `SuspiciousUserSessionDetectedEto` | `Granit.Identity.Abstractions` |
+| Device trust | `IIdentitySecurityStateStore`, `DeviceTrustVerdict`, `DeviceTrustLevel` | `Granit.Identity.Abstractions` |
 | AI + heuristics | `IUserSessionRiskEvaluator`, `IdentityAnomalyDetectionOptions` | `Granit.Identity.AnomalyDetection` |
-| Persistence | EF Core `IUserSessionRiskStore`, `GranitIdentityDbProperties` | `Granit.Identity.EntityFrameworkCore` |
+| Persistence | `EfCoreIdentitySecurityStateStore`, `GranitIdentityDbProperties` | `Granit.Identity.EntityFrameworkCore` |
 
 ## Compliance
 
