@@ -80,7 +80,7 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitTemplatingEntityFrameworkCore(options =>
+        context.Builder.AddGranitTemplatingEntityFrameworkCore(options =>
             options.UseNpgsql(context.Configuration.GetConnectionString("Templating")));
     }
 }

@@ -52,7 +52,7 @@ function App({ children }) {
 <TabItem label="TypeScript only">
 
 ```ts
-import { fetchSettings, updateSetting, deleteSetting } from '@granit/settings';
+import { getSettings, updateSetting, deleteSetting } from '@granit/settings';
 import type { SettingsMap, SettingScope } from '@granit/settings';
 ```
 
@@ -91,8 +91,8 @@ const SETTING_NAMES = {
 
 | Function | Endpoint | Description |
 |----------|----------|-------------|
-| `fetchSettings(client, basePath, scope)` | `GET /settings/{scope}` | All visible settings for a scope |
-| `fetchSetting(client, basePath, scope, name)` | `GET /settings/{scope}/{name}` | Single setting by name |
+| `getSettings(client, basePath, scope)` | `GET /settings/{scope}` | All visible settings for a scope |
+| `getSetting(client, basePath, scope, name)` | `GET /settings/{scope}/{name}` | Single setting by name |
 | `updateSetting(client, basePath, scope, name, request)` | `PUT /settings/{scope}/{name}` | Create or update a setting |
 | `deleteSetting(client, basePath, scope, name)` | `DELETE /settings/{scope}/{name}` | Delete (reset) — cascade takes over |
 
@@ -188,7 +188,7 @@ user-level override makes the tenant or global value visible again.
 |----------|-------------|---------|
 | Types | `SettingScope`, `SettingValueResponse`, `SettingsMap`, `UpdateSettingValueRequest` | `@granit/settings` |
 | Constants | `SETTING_NAMES` | `@granit/settings` |
-| API functions | `fetchSettings()`, `fetchSetting()`, `updateSetting()`, `deleteSetting()` | `@granit/settings` |
+| API functions | `getSettings()`, `getSetting()`, `updateSetting()`, `deleteSetting()` | `@granit/settings` |
 | Provider | `SettingsProvider`, `useSettingsConfig()`, `buildSettingsQueryKey()` | `@granit/react-settings` |
 | Query hooks | `useSettings()`, `useSetting()` | `@granit/react-settings` |
 | Mutation hooks | `useUpdateSetting()`, `useDeleteSetting()` | `@granit/react-settings` |

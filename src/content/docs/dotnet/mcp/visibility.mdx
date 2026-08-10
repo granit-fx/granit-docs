@@ -155,7 +155,7 @@ Implement `IMcpToolVisibilityFilter` for application-specific logic:
 
 ```csharp
 internal sealed class FeatureFlagVisibilityFilter(
-    IFeatureFlagChecker features) : IMcpToolVisibilityFilter
+    IFeatureChecker features) : IMcpToolVisibilityFilter
 {
     public async ValueTask<bool> IsVisibleAsync(
         string toolName, Type? toolType, IServiceProvider services,

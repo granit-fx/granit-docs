@@ -88,23 +88,47 @@ public interface IProcessingRestrictable
 
 ### Data portability
 
-`Granit.Privacy` provides the `IPersonalDataProvider` interface. Each module that stores personal data registers a provider that can export its data in a structured format.
+`Granit.Privacy` provides the `IPrivacyDataProvider` interface (namespace
+`Granit.Privacy.DataExport`). Each module that stores personal data registers a
+provider that streams its data as export fragments.
 
 ```csharp
-public class PatientPersonalDataProvider : IPersonalDataProvider
+public sealed class PatientPrivacyDataProvider(
+    IPatientReader patients,
+    IStagedFragmentBuilder fragmentBuilder) : IPrivacyDataProvider
 {
-    public string Category => "Medical records";
+    public static string ProviderName => "medical-records";
+    public static string DisplayKey => "Privacy.Scopes.MedicalRecords";
+    public static string? FeatureName => null;
 
-    public async Task<PersonalDataExport> ExportAsync(
-        string userId, CancellationToken cancellationToken)
+    public async ValueTask<bool> HasDataAsync(
+        PrivacyExportContext context, CancellationToken cancellationToken)
+        => await patients.ExistsAsync(context.SubjectUserId, cancellationToken);
+
+    public async IAsyncEnumerable<ExportFragment> ExportAsync(
+        PrivacyExportContext context,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Query all personal data for this user
-        // Return structured export (JSON-serializable)
+        // Stage each record as a fragment; the archive assembler picks them up.
+        yield return await fragmentBuilder.BuildJsonAsync(
+            context,
+            ProviderName,
+            "medical-records/patient.json",
+            await patients.GetAsync(context.SubjectUserId, cancellationToken),
+            cancellationToken);
     }
 }
 ```
 
-The privacy module aggregates all registered providers to produce a complete data export for a given user -- satisfying the right to data portability without each module knowing about the others.
+The static abstract members (`ProviderName`, `DisplayKey`, `FeatureName`) let the
+privacy module enumerate and localize export scopes without instantiating a
+provider. `FeatureName` gates the scope behind a feature flag when non-null.
+
+Fragments are streamed rather than buffered: `StagedExportFragment` points at a
+blob the provider wrote, `PassThroughExportFragment` references bytes that
+already live in blob storage. The privacy module aggregates every registered
+provider into one signed archive — satisfying the right to data portability
+without any module knowing about the others.
 
 ### Pseudonymization
 

@@ -8,11 +8,15 @@ sidebar:
 
 import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
-`@granit/authentication` defines framework-agnostic Keycloak/OIDC types — user claims,
-login/logout options, lifecycle events, and a base auth context interface. `@granit/react-authentication`
-provides the `useKeycloakInit` hook that handles PKCE initialization, silent SSO, automatic
-token refresh, and back-channel logout. It also exports `createAuthContext` and `createMockProvider`
+`@granit/authentication` defines provider-neutral OIDC types — user claims,
+login/logout options, and a base auth context interface. `@granit/react-authentication`
+stays provider-agnostic too: it exports the `createAuthContext` and `createMockProvider`
 factories so each consuming app can define its own typed auth context.
+
+Keycloak specifics live one package further out: `@granit/authentication-keycloak` holds
+the Keycloak types (`KeycloakCoreConfig`, `KeycloakEvent`), and
+`@granit/react-authentication-keycloak` provides the `useKeycloakInit` hook that handles
+PKCE initialization, silent SSO, automatic token refresh, and back-channel logout.
 
 `@granit/authentication-api-keys` and `@granit/react-authentication-api-keys` add API key
 management — types and React Query hooks for creating, revoking, rotating, and scoping keys.
@@ -31,7 +35,8 @@ management — types and React Query hooks for creating, revoking, rotating, and
 | Package | Role | Depends on |
 |---------|------|------------|
 | `@granit/authentication` | Keycloak types, login/logout options, lifecycle events | `keycloak-js` |
-| `@granit/react-authentication` | `useKeycloakInit`, `createAuthContext`, `createMockProvider` | `@granit/authentication`, `@granit/api-client`, `react`, `keycloak-js` |
+| `@granit/react-authentication` | `createAuthContext`, `createMockProvider` | `@granit/authentication`, `react` |
+| `@granit/react-authentication-keycloak` | `useKeycloakInit` | `@granit/authentication-keycloak`, `react`, `keycloak-js` |
 | `@granit/authentication-api-keys` | API key DTOs (`ApiKeyResponse`, `ApiKeyCreateRequest`, etc.) | — |
 | `@granit/react-authentication-api-keys` | `useApiKeys`, `useCreateApiKey`, `useRevokeApiKey`, `useRotateApiKey` | `@granit/authentication-api-keys`, `@tanstack/react-query`, `axios` |
 
@@ -62,7 +67,7 @@ graph TD
 
 ```tsx
 // src/auth/auth-context.ts
-import type { BaseAuthContextType, KeycloakUserInfo } from '@granit/authentication';
+import type { BaseAuthContextType, OidcUserInfo } from '@granit/authentication';
 import { createAuthContext } from '@granit/react-authentication';
 
 interface AuthContextType extends BaseAuthContextType {
@@ -74,7 +79,7 @@ export const { AuthContext, useAuth } = createAuthContext<AuthContextType>();
 
 ```tsx
 // src/auth/AuthProvider.tsx
-import { useKeycloakInit } from '@granit/react-authentication';
+import { useKeycloakInit } from '@granit/react-authentication-keycloak';
 import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -94,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 ```ts
 import type {
   BaseAuthContextType,
-  KeycloakUserInfo,
+  OidcUserInfo,
   LoginOptions,
   LogoutOptions,
 } from '@granit/authentication';
@@ -109,12 +114,13 @@ import type {
 
 ### Types
 
-#### `KeycloakUserInfo`
+#### `OidcUserInfo`
 
-Standard OIDC user claims from the Keycloak `/userinfo` endpoint.
+Standard OIDC user claims from the provider's `/userinfo` endpoint. The type is
+provider-neutral — it is not Keycloak-specific.
 
 ```ts
-interface KeycloakUserInfo {
+interface OidcUserInfo {
   sub: string;
   email?: string;
   email_verified?: boolean;
@@ -173,7 +179,7 @@ interface BaseAuthContextType {
   keycloak: Keycloak | null;
   authenticated: boolean;
   loading: boolean;
-  user: KeycloakUserInfo | null;
+  user: OidcUserInfo | null;
   login: () => void;
   logout: () => void;
 }
@@ -466,9 +472,10 @@ function useUpdateApiKeyScopes(
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| OIDC types | `KeycloakUserInfo`, `KeycloakEvent`, `LoginOptions`, `LogoutOptions` | `@granit/authentication` |
-| Auth context | `BaseAuthContextType`, `KeycloakCoreConfig` | `@granit/authentication` |
-| Keycloak hook | `useKeycloakInit()`, `KeycloakCoreResult` | `@granit/react-authentication` |
+| OIDC types | `OidcUserInfo`, `LoginOptions`, `LogoutOptions` | `@granit/authentication` |
+| Auth context | `BaseAuthContextType` | `@granit/authentication` |
+| Keycloak types | `KeycloakEvent`, `KeycloakCoreConfig` | `@granit/authentication-keycloak` |
+| Keycloak hook | `useKeycloakInit()`, `KeycloakCoreResult` | `@granit/react-authentication-keycloak` |
 | Context factory | `createAuthContext()`, `createMockProvider()` | `@granit/react-authentication` |
 | API key types | `ApiKeyResponse`, `ApiKeyCreateRequest`, `ApiKeyCreateResponse`, `ApiKeyRotateResponse` | `@granit/authentication-api-keys` |
 | API key hooks | `useApiKeys()`, `useApiKey()`, `useCreateApiKey()`, `useRevokeApiKey()`, `useRotateApiKey()` | `@granit/react-authentication-api-keys` |

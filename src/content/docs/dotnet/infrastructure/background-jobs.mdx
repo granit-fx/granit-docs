@@ -438,12 +438,10 @@ When `Granit.Observability` is loaded, the activity source is auto-discovered vi
 ```json
 {
   "BackgroundJobs": {
-    "Mode": "Durable",
-    "ConnectionString": "Host=db;Database=myapp;Username=app;Password=..."
+    "FailureAlertThreshold": 3
   },
   "BackgroundJobs:Endpoints": {
     "RoutePrefix": "background-jobs",
-    "RequiredRole": "granit-background-jobs-admin",
     "TagName": "Background Jobs"
   }
 }
@@ -451,11 +449,15 @@ When `Granit.Observability` is loaded, the activity source is auto-discovered vi
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `BackgroundJobs.Mode` | `InMemory` | `InMemory` (no DB) or `Durable` (EF Core) |
-| `BackgroundJobs.ConnectionString` | — | Required when `Mode = Durable` |
+| `BackgroundJobs.FailureAlertThreshold` | `3` | Consecutive failures before the job raises an alert |
 | `BackgroundJobs:Endpoints.RoutePrefix` | `"background-jobs"` | URL prefix for admin endpoints |
-| `BackgroundJobs:Endpoints.RequiredRole` | `"granit-background-jobs-admin"` | Role required for endpoint access |
 | `BackgroundJobs:Endpoints.TagName` | `"Background Jobs"` | OpenAPI tag name |
+
+Persistence is not configured here: referencing
+`Granit.BackgroundJobs.EntityFrameworkCore` swaps the default in-memory store for
+the EF Core one, and the connection string comes from that `DbContext`
+registration. Endpoint access is gated by the `BackgroundJobs.Jobs.Manage`
+permission, not by a role setting.
 
 ## Public API summary
 

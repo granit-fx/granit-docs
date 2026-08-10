@@ -32,7 +32,7 @@ public sealed class GranitNotificationsModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitNotifications();
+        context.Builder.AddGranitNotifications();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

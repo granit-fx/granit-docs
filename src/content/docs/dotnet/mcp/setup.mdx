@@ -100,7 +100,7 @@ app.MapGranitMcpServer();
 app.MapGranitMcpServer(options =>
 {
     options.RoutePrefix = "/api/mcp";
-    options.MapAdminEndpoints = false;
+    options.MapDiagnosticsEndpoints = false;
 });
 ```
 
@@ -126,8 +126,8 @@ All options are bindable from `appsettings.json`:
     "Server": {
       "RoutePrefix": "/mcp",
       "RequireAuthentication": true,
-      "MapAdminEndpoints": true,
-      "AdminTagName": "MCP Admin",
+      "MapDiagnosticsEndpoints": true,
+      "DiagnosticsTagName": "MCP Admin",
       "EnabledModules": []
     }
   }
@@ -153,8 +153,8 @@ All options are bindable from `appsettings.json`:
 |----------|------|---------|-------------|
 | `RoutePrefix` | `string` | `"/mcp"` | HTTP endpoint route |
 | `RequireAuthentication` | `bool` | `true` | Enforce `Mcp.Server.Access` permission |
-| `MapAdminEndpoints` | `bool` | `true` | Expose tool listing admin API |
-| `AdminTagName` | `string` | `"MCP Admin"` | OpenAPI tag for admin endpoints |
+| `MapDiagnosticsEndpoints` | `bool` | `true` | Expose tool listing admin API |
+| `DiagnosticsTagName` | `string` | `"MCP Admin"` | OpenAPI tag for admin endpoints |
 | `EnabledModules` | `HashSet<string>` | `[]` | Module whitelist (empty = all modules) |
 
 </TabItem>

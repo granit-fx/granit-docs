@@ -10,7 +10,7 @@ topic: backend
 
 > **Date:** 2026-04-30 (component rename: 2026-05-01)
 > **Authors:** Jean-Francois Meyers
-> **Scope:** granit-dotnet (`Granit.Entities` form / detail builders); granit-front (`@granit/entities-react` renderer)
+> **Scope:** granit-dotnet (`Granit.Entities` form / detail builders); granit-front (`@granit/react-entities` renderer)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
 > **Story:** [#1521](https://github.com/granit-fx/granit-dotnet/issues/1521) — ADR-041 component catalog
 > **Status:** Accepted
@@ -70,7 +70,7 @@ The framework ships a fixed catalog of **standard component names** that every G
 | `tags` | Free-form tag set | chip input | suggestions from completed values |
 | `relation_inline` | Embedded child collection (e.g. invoice lines) | inline grid | `relationName` config |
 
-This is the **v1 catalog**. Adding a new standard name requires an ADR amendment and coordinated change in `@granit/entities-react`. Removing a name is a breaking change.
+This is the **v1 catalog**. Adding a new standard name requires an ADR amendment and coordinated change in `@granit/react-entities`. Removing a name is a breaking change.
 
 ### 2. Custom component namespacing — `custom:<app-prefix>-<name>`
 
@@ -100,7 +100,7 @@ A component can carry a config payload alongside its name:
 }
 ```
 
-Each standard component has a documented config schema (lives next to the component in `@granit/entities-react`). The C# fluent builder exposes typed wrappers — `f.Field(x => x.Amount).Money("EUR", precision: 2)` — so the developer never types a JSON blob by hand.
+Each standard component has a documented config schema (lives next to the component in `@granit/react-entities`). The C# fluent builder exposes typed wrappers — `f.Field(x => x.Amount).Money("EUR", precision: 2)` — so the developer never types a JSON blob by hand.
 
 For `custom:` components, the backend may pass any opaque JSON object; the front's typed registry validates it.
 

@@ -69,7 +69,7 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitPersistenceMigrations(context.Builder, options =>
+        context.Builder.AddGranitPersistenceMigrations(options =>
         {
             options.UseNpgsql(context.Configuration.GetConnectionString("Migrations"));
         });
@@ -99,24 +99,33 @@ Every `*.EntityFrameworkCore` package that owns a `DbContext` **must** follow th
 checklist. No exceptions.
 
 ```csharp
-public class AppointmentDbContext(
+internal sealed class AppointmentDbContext(
     DbContextOptions<AppointmentDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // OnModelCreating is sealed on GranitDbContext — override this instead.
+    // The conventions pass (query filters, converters, audit columns) runs
+    // automatically around it.
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppointmentDbContext).Assembly);
-
-        // MANDATORY — applies all query filters (soft delete, multi-tenant, active, etc.)
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```
+
+:::caution[`ApplyGranitConventions` is internal]
+Modules used to call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)`
+themselves at the end of `OnModelCreating`. That extension is now `internal` and the
+call site no longer compiles. The filters it registered captured their bypass flags
+through a proxy, which EF Core constant-folded into the cached query plan — making
+`IDataFilter.Disable<T>()` a silent no-op on relational providers. `GranitDbContext`
+now registers every named filter against `this`, so the tenant value is
+parameterised and bypass flags reach the SQL.
+:::
 
 Registration in the module:
 
@@ -182,22 +191,17 @@ The host calls these in its own DbContext's `OnModelCreating`:
 ```csharp
 public class AppDbContext(
     DbContextOptions<AppDbContext> options,
-    ICurrentTenant? currentTenant = null,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter = null)
-    : DbContext(options)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
         // Include Granit module tables in this DbContext
         modelBuilder.ConfigureSettingsModule();
         modelBuilder.ConfigureBackgroundJobsModule();
         modelBuilder.ConfigureNotificationsModule();
         modelBuilder.ConfigureWorkflowModule();
-
-        // MANDATORY — always call last
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     }
 }
 ```

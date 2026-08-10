@@ -261,12 +261,12 @@ configuration, caches, or lookup tables.
 Every isolated `DbContext` MUST:
 
 1. `<ProjectReference>` to `Granit.Persistence`
-2. Constructor-inject `ICurrentTenant?` and `IDataFilter?` (both optional, default `null`)
-3. Call `modelBuilder.ApplyGranitConventions(currentTenant, dataFilter)` at end of
-   `OnModelCreating`
+2. Derive from `GranitDbContext`, passing `ICurrentTenant` + optional `IDataFilter` to base
+3. Override `OnGranitModelCreating` for entity configuration (`OnModelCreating` is sealed;
+   `ApplyGranitConventions` is `internal`)
 4. Wire interceptors via `(sp, options)` overload of `AddDbContextFactory` (Scoped)
 5. `[DependsOn(typeof(GranitPersistenceModule))]` on module class
-6. **No manual `HasQueryFilter`** — `ApplyGranitConventions` handles all standard filters
+6. **No manual `HasQueryFilter`** — the conventions pass handles all standard filters
 7. `IMultiTenant` entities use `Guid? TenantId` (never `string`)
 
 ## Validation

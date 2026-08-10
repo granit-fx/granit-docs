@@ -142,6 +142,7 @@ graph TD
 ```csharp
 [DependsOn(typeof(GranitNotificationsWolverineModule))]
 [DependsOn(typeof(GranitNotificationsEntityFrameworkCoreModule))]
+[DependsOn(typeof(GranitNotificationsEndpointsModule))]
 public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -153,14 +154,11 @@ public class AppModule : GranitModule
 
         // Email channel via SMTP
         context.Services.AddGranitNotificationsEmail(opts => opts.Provider = "Smtp");
-        context.Services.AddGranitNotificationsEmailSmtp();
+        context.Services.AddGranitNotificationsSmtp();
 
         // SignalR real-time channel with Redis backplane
         context.Services.AddGranitNotificationsSignalR(
             context.Configuration.GetConnectionString("Redis")!);
-
-        // Notification endpoints
-        context.Services.AddGranitNotificationsEndpoints();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

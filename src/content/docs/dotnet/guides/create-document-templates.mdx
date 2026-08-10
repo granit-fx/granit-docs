@@ -372,28 +372,31 @@ Configure PDF rendering options in `appsettings.json`:
       "MarginRight": "10mm",
       "PrintBackground": true,
       "RenderTimeoutMs": 30000,
-      "MaxConcurrentPages": 4,
-      "ChromiumExecutablePath": null,
-      "DisableSandbox": false
+      "MaxHtmlBytes": 16777216
     }
   }
 }
 ```
 
-For Docker deployments, install Chromium system-wide, set
-`ChromiumExecutablePath` to `/usr/bin/chromium`, and enable `DisableSandbox` if
-the container cannot run with `CAP_SYS_ADMIN` or a Chromium `seccomp` profile:
+Browser-process settings live in `Granit.Browsing`, not in the PDF section. For
+Docker deployments, install Chromium system-wide, point the provider at it, and
+enable `DisableSandbox` if the container cannot run with `CAP_SYS_ADMIN` or a
+Chromium `seccomp` profile:
 
 ```json
 {
-  "DocumentGeneration": {
-    "Pdf": {
+  "Browsing": {
+    "PuppeteerSharp": {
       "ChromiumExecutablePath": "/usr/bin/chromium",
       "DisableSandbox": true
     }
   }
 }
 ```
+
+Pool sizing (`MaxBrowsers`, `MaxPagesPerBrowser`, `AcquireTimeout`,
+`MaxRenderDuration`) is configured on the `Browsing` section itself — see
+[Browsing](/dotnet/infrastructure/browsing/).
 
 :::caution[Warning]
 Disabling the sandbox reduces OS-level process isolation. Only use this in

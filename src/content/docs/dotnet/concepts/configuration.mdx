@@ -186,12 +186,12 @@ public class ReportService(ISettingProvider settings)
 ### Writing a setting
 
 ```csharp
-public class AdminService(ISettingManager settingManager)
+public class AdminService(ISettingWriter settingWriter)
 {
     public async Task SetGlobalPageSizeAsync(
         int size, CancellationToken ct)
     {
-        await settingManager
+        await settingWriter
             .SetGlobalAsync("Acme.DefaultPageSize", size.ToString(), ct)
             .ConfigureAwait(false);
     }
@@ -199,7 +199,7 @@ public class AdminService(ISettingManager settingManager)
     public async Task SetUserLocaleAsync(
         string userId, string locale, CancellationToken ct)
     {
-        await settingManager
+        await settingWriter
             .SetForUserAsync(userId, "Granit.PreferredCulture", locale, ct)
             .ConfigureAwait(false);
     }
@@ -305,7 +305,7 @@ flowchart TD
 ## See also
 
 - [Dependency Injection](/dotnet/concepts/dependency-injection/) -- Options pattern details, `ValidateOnStart`, `PostConfigure`
-- [Settings, Features & Reference Data](/dotnet/infrastructure/application-settings/) -- full API reference for `ISettingProvider`, `ISettingManager`, and endpoints
+- [Settings, Features & Reference Data](/dotnet/infrastructure/application-settings/) -- full API reference for `ISettingProvider`, `ISettingWriter`, and endpoints
 - [Vault](/dotnet/data/vault/) -- secret management for Options-level configuration
 - [Caching](/dotnet/data/caching/) -- cache layer used by Settings for value resolution
 - [Blog: The Options pattern: 3 levels of configuration binding](/blog/the-options-pattern-3-levels-of-configuration-binding/) -- a deep dive into the binding modes Granit relies on

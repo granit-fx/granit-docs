@@ -97,7 +97,7 @@ that changes.
 | **Multi-tenancy** | `Granit.MultiTenancy` (`ICurrentTenant`, `IMultiTenant`, three strategies: shared / schema / database) | **Net gain.** Ardalis CA ships none. |
 | **Identity** | `Granit.Identity.Local` (OpenIddict OIDC server) or `Granit.Identity.Federated.{Keycloak,EntraId,Cognito,GoogleCloud}` | **Net gain.** Ardalis CA expects you to wire ASP.NET Identity or another IdP yourself. |
 | **Audit logging** | `GranitAuditingModule` — `AuditEntry` rows + per-entity change snapshots, populated via interceptor | **Net gain.** Ardalis CA ships none. |
-| **Settings** (DB-backed, tenant-aware) | `GranitSettingsModule` (`ISettingProvider`, `ISettingManager`) | **Net gain.** Ardalis CA uses `IOptions<T>` and `appsettings.json` only. |
+| **Settings** (DB-backed, tenant-aware) | `GranitSettingsModule` (`ISettingProvider`, `ISettingWriter`) | **Net gain.** Ardalis CA uses `IOptions<T>` and `appsettings.json` only. |
 | **Notifications** (email + multi-channel) | `Granit.Notifications` (9 channels: email, SMS, push, in-app, webhook, Slack, Teams, …) with preference filtering | **Net gain.** Ardalis CA ships none — you typically wire MailKit/SendGrid yourself. |
 | **Background jobs** (Hangfire, Quartz, custom) | Wolverine scheduled / durable messages | **Net gain.** One primitive for immediate, scheduled, and durable work; no separate dashboard. |
 | **Localization** | `Granit.Localization` (18 cultures, source-generated keys, runtime DB overrides) | **Net gain.** Ardalis CA uses `IStringLocalizer` vanilla. |
@@ -585,8 +585,8 @@ In Granit:
 public static class InventoryItemCreatedHandler
 {
     public static Task Handle(
-        InventoryItemCreated msg, INotificationSender sender, CancellationToken ct)
-        => sender.NotifyAsync(/* ... */, ct);
+        InventoryItemCreated msg, INotificationPublisher publisher, CancellationToken ct)
+        => publisher.PublishAsync(/* ... */, ct);
 }
 ```
 

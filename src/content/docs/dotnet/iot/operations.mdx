@@ -200,15 +200,14 @@ None. The job infers the schema and table name from `IoTDbContext`.
 The jobs are bundled in `Granit.Bundle.IoT`:
 
 ```csharp
-builder.Services.AddGranit(builder.Configuration).AddIoT();
+builder.AddGranit(granit => granit.AddIoT());
 ```
 
 Or register individually (e.g. when not using the bundle):
 
 ```csharp
-builder.Services
-    .AddGranit(builder.Configuration)
-    .AddModule<GranitIoTBackgroundJobsModule>();
+builder.AddGranit(granit => granit
+    .AddModule<GranitIoTBackgroundJobsModule>());
 ```
 
 `GranitIoTBackgroundJobsModule` depends on `GranitIoTModule`,

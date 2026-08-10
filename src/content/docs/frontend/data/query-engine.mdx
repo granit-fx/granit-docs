@@ -54,8 +54,8 @@ function PatientList() {
 <TabItem label="TypeScript only">
 
 ```ts
-import { fetchPage, fetchQueryMeta, serializeQueryParams } from '@granit/query-engine';
-import type { QueryParams, PagedResult, FilterEntry } from '@granit/query-engine';
+import { getPage, getQueryMeta, serializeQueryRequest } from '@granit/query-engine';
+import type { QueryRequest, PagedResult, FilterEntry } from '@granit/query-engine';
 ```
 
 </TabItem>
@@ -66,7 +66,7 @@ import type { QueryParams, PagedResult, FilterEntry } from '@granit/query-engine
 ### Query parameters
 
 ```ts
-interface QueryParams {
+interface QueryRequest {
   readonly page?: number;
   readonly pageSize?: number;
   readonly cursor?: string;           // opaque cursor for keyset pagination
@@ -259,9 +259,9 @@ interface FilterSuggestion {
 ### API functions
 
 ```ts
-function fetchPage<T>(client, basePath, params: QueryParams): Promise<PagedResult<T>>;
-function fetchGrouped<T>(client, basePath, params: QueryParams): Promise<GroupedResult<T>>;
-function fetchQueryMeta(client, basePath): Promise<QueryMetadata>;
+function getPage<T>(client, basePath, params: QueryRequest): Promise<PagedResult<T>>;
+function getGrouped<T>(client, basePath, params: QueryRequest): Promise<GroupedResult<T>>;
+function getQueryMeta(client, basePath): Promise<QueryMetadata>;
 
 // Saved views CRUD
 function fetchSavedViews(client, basePath): Promise<SavedViewSummary[]>;
@@ -276,11 +276,11 @@ function setDefaultSavedView(client, basePath, id): Promise<SavedViewSummary>;
 Bookmarkable URLs — serialize query state to URL search params and back.
 
 ```ts
-function serializeQueryParams(params: QueryParams): string;
-function parseQueryParams(search: string): QueryParams;
+function serializeQueryRequest(params: QueryRequest): string;
+function parseQueryRequest(search: string): QueryRequest;
 
 // Example:
-serializeQueryParams({
+serializeQueryRequest({
   page: 2, pageSize: 20, search: 'dupont',
   filters: [{ field: 'Status', operator: 'Eq', value: 'Active' }],
   sort: [{ field: 'CreatedAt', direction: 'desc' }],
@@ -349,7 +349,7 @@ grouping) via `useReducer` (14 actions) with TanStack Query for data fetching.
 
 ```ts
 interface UseQueryEndpointReturn<T> {
-  readonly params: QueryParams;
+  readonly params: QueryRequest;
   readonly query: UseQueryResult<PagedResult<T>>;
   readonly groupedQuery: UseQueryResult<GroupedResult<T>>;
   readonly isGrouped: boolean;
@@ -366,7 +366,7 @@ interface UseQueryEndpointReturn<T> {
   readonly setPresets: (group: string, names: readonly string[]) => void;
   readonly toggleQuickFilter: (name: string) => void;
   readonly setGroupBy: (groupBy: string | undefined) => void;
-  readonly setParams: (params: QueryParams) => void;
+  readonly setParams: (params: QueryRequest) => void;
   readonly reset: () => void;
 }
 ```
@@ -467,12 +467,12 @@ interface UseSmartFilterReturn {
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Query types | `QueryParams`, `FilterEntry`, `SortEntry`, `FilterOperator`, `PagedResult<T>`, `GroupedResult<T>` | `@granit/query-engine` |
+| Query types | `QueryRequest`, `FilterEntry`, `SortEntry`, `FilterOperator`, `PagedResult<T>`, `GroupedResult<T>` | `@granit/query-engine` |
 | Metadata | `QueryMetadata`, `ColumnDefinition`, `FilterableField`, `SortableField` | `@granit/query-engine` |
 | Saved views | `SavedViewSummary`, `CreateSavedViewRequest`, `UpdateSavedViewRequest` | `@granit/query-engine` |
 | SmartFilter | `FilterToken`, `FilterSuggestion`, `SmartFilterPhase` | `@granit/query-engine` |
-| API functions | `fetchPage()`, `fetchGrouped()`, `fetchQueryMeta()`, saved views CRUD | `@granit/query-engine` |
-| Serialization | `serializeQueryParams()`, `parseQueryParams()` | `@granit/query-engine` |
+| API functions | `getPage()`, `getGrouped()`, `getQueryMeta()`, saved views CRUD | `@granit/query-engine` |
+| Serialization | `serializeQueryRequest()`, `parseQueryRequest()` | `@granit/query-engine` |
 | Operators | `inferOperators()`, `STRING_OPERATORS`, `OPERATOR_LABELS` | `@granit/query-engine` |
 | Provider | `QueryProvider`, `useQueryConfig()`, `buildQueryKey()` | `@granit/react-query-engine` |
 | Query hook | `useQueryEndpoint()` | `@granit/react-query-engine` |

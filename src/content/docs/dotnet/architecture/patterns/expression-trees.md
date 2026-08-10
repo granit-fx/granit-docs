@@ -78,11 +78,11 @@ code for each combination (2^3 = 8 cases).
 ## Usage example
 
 ```csharp
-// The application calls a single line in OnModelCreating
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Deriving from GranitDbContext runs the conventions pass automatically.
+// -> Dynamically builds query filters for all entities
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
-    modelBuilder.ApplyGranitConventions(serviceProvider);
-    // -> Dynamically builds query filters for all entities
+    // Module-specific entity configuration only.
 }
 
 // The filters are automatic and transparent

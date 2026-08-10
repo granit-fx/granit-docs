@@ -426,22 +426,33 @@ for the evaluator detail.
 
 ### Persistence
 
-`Granit.Identity.Abstractions` registers an in-memory, single-node `IDeviceTrustStore` — fine
-for development. Installing `Granit.Identity.EntityFrameworkCore` swaps in a durable store
-backed by the `identity_device_trusts` table (unique on `(UserId, DeviceId)`), mapped into the
-**same `IdentityDbContext`** as the user-session risk store — one DbContext, one set of
-migrations, no separate database to provision. The application owns the migration.
+Device trust, session risk, the behavioural profile, and single-use session reviews
+share one contract — `IIdentitySecurityStateStore`. `Granit.Identity` registers
+`MemoryIdentitySecurityStateStore` (in-memory, single-node — fine for development);
+installing `Granit.Identity.EntityFrameworkCore` swaps in `EfCoreIdentitySecurityStateStore`,
+mapped into the **same `IdentityDbContext`** — one DbContext, one set of migrations, no
+separate database to provision. The application owns the migration.
 
 ```csharp
-public interface IDeviceTrustStore
+public interface IIdentitySecurityStateStore
 {
-    Task SetAsync(string userId, string deviceId, DeviceTrustVerdict verdict, CancellationToken ct = default);
-    Task<DeviceTrustVerdict?> GetAsync(string userId, string deviceId, CancellationToken ct = default);
-    Task<IReadOnlyDictionary<string, DeviceTrustVerdict>> GetManyAsync(
+    // Device trust
+    Task SetDeviceTrustAsync(string userId, string deviceId, DeviceTrustVerdict verdict, CancellationToken ct = default);
+    Task<DeviceTrustVerdict?> GetDeviceTrustAsync(string userId, string deviceId, CancellationToken ct = default);
+    Task<IReadOnlyDictionary<string, DeviceTrustVerdict>> GetDeviceTrustsAsync(
         string userId, IReadOnlyCollection<string> deviceIds, CancellationToken ct = default);
-    Task RevokeAsync(string userId, string deviceId, CancellationToken ct = default);
+    Task RevokeDeviceTrustAsync(string userId, string deviceId, CancellationToken ct = default);
+
+    // Session risk, behavioural profile, and session review live on the same store.
 }
 ```
+
+:::note[Merged from four micro-stores]
+`IDeviceTrustStore`, `IUserSessionRiskStore`, and their two siblings were merged into
+`IIdentitySecurityStateStore`. Hosts that injected the old interfaces switch to the
+merged one and prefix the method names with the concern (`SetDeviceTrustAsync`,
+`GetSessionRiskAsync`, …).
+:::
 
 ### Security posture
 
@@ -461,13 +472,13 @@ sequenceDiagram
     participant U as User / browser
     participant API as /devices/trust
     participant Cookie as IDeviceTrustCookieService
-    participant Store as IDeviceTrustStore
+    participant Store as IIdentitySecurityStateStore
     participant Login as Login pipeline
 
     U->>API: POST /devices/trust
     API->>Cookie: IssueDeviceCookieAsync(user)
     Cookie-->>U: Set-Cookie __Host-id-devicetrust (signed)
-    API->>Store: SetAsync(user, deviceId, Remembered, trustedUntil)
+    API->>Store: SetDeviceTrustAsync(user, deviceId, Remembered)
     Note over U,Login: later sign-in from the same browser
     U->>Login: authenticate (2FA required)
     Login->>Cookie: ResolveDeviceId(user)
@@ -780,7 +791,6 @@ Firebase Auth tokens and transforms custom claims into standard `ClaimTypes.Role
   "Authentication:GoogleCloud": {
     "ProjectId": "my-firebase-project",
     "RequireHttpsMetadata": true,
-    "AdminRole": "admin",
     "RolesClaimKey": "roles"
   }
 }
@@ -790,7 +800,6 @@ Firebase Auth tokens and transforms custom claims into standard `ClaimTypes.Role
 |----------|---------|-------------|
 | `ProjectId` | — | GCP project ID (derives OIDC authority) |
 | `RequireHttpsMetadata` | `true` | Require HTTPS for OIDC metadata discovery |
-| `AdminRole` | `"admin"` | Role name for the "Admin" authorization policy |
 | `RolesClaimKey` | `"roles"` | Custom claims key containing roles |
 
 The module derives the OIDC authority as `https://securetoken.google.com/{ProjectId}`
@@ -976,7 +985,7 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Module | `GranitIdentityModule`, `GranitIdentityFederatedModule`, `GranitIdentityFederatedKeycloakModule`, `GranitIdentityFederatedCognitoModule`, `GranitIdentityFederatedGoogleCloudModule`, `GranitAuthenticationJwtBearerGoogleCloudModule`, `GranitIdentityFederatedEntityFrameworkCoreModule`, `GranitIdentityEndpointsModule`, `GranitIdentityLocalAspNetIdentityModule` | — |
 | Abstractions | `IIdentityProvider`, `IIdentityUserReader`, `IIdentityUserWriter`, `IIdentityRoleManager`, `IIdentityGroupManager`, `IIdentityPasswordManager`, `IIdentityCredentialVerifier` | `Granit.Identity` |
 | Sessions | `IUserSessionManager`, `IUserSessionProvider`, `IUserDeviceProvider` | `Granit.Identity` |
-| Device trust | `IDeviceTrustStore`, `DeviceTrustVerdict`, `DeviceTrustLevel`, `IDeviceTrustCookieService`, `DeviceTrustOptions`, `UseGranitDeviceTrust()` | `Granit.Identity` · `Granit.Identity.Endpoints` |
+| Device trust | `IIdentitySecurityStateStore`, `DeviceTrustVerdict`, `DeviceTrustLevel`, `IDeviceTrustCookieService`, `DeviceTrustOptions`, `UseGranitDeviceTrust()` | `Granit.Identity` · `Granit.Identity.Endpoints` |
 | Lookup | `IUserLookupService`, `IUserCacheStats`, `IIdentityProviderCapabilities` | `Granit.Identity` |
 | Models | `IdentityUser`, `IdentityUserCreate`, `IdentityUserUpdate`, `IdentityRole`, `IdentityGroup`, `UserSessionDescriptor`, `UserSessionView`, `UserDevice` | `Granit.Identity` |
 | Keycloak | `KeycloakIdentityProvider`, `KeycloakAdminOptions` | `Granit.Identity.Federated.Keycloak` |

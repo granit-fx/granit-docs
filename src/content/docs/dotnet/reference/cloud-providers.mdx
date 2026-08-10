@@ -40,13 +40,16 @@ for the full matrix.
 
 ```csharp
 // Program.cs — AWS provider stack
-builder.AddGranitAuthenticationCognito();
-builder.AddGranitIdentityCognito();
-builder.AddGranitVaultAws();
+builder.AddGranit(granit => granit
+    .AddModule<GranitAuthenticationJwtBearerCognitoModule>());
+
 builder.AddGranitBlobStorageS3();
-builder.AddGranitNotificationsEmailAwsSes();
-builder.AddGranitNotificationsSmsAwsSns();
-builder.AddGranitNotificationsMobilePushAwsSns();
+
+builder.Services.AddGranitIdentityCognito();
+builder.Services.AddGranitVaultAws();
+builder.Services.AddGranitNotificationsAwsSes();
+builder.Services.AddGranitNotificationsAwsSnsSms();
+builder.Services.AddGranitNotificationsAwsSnsMobilePush();
 ```
 
 </TabItem>
@@ -54,13 +57,16 @@ builder.AddGranitNotificationsMobilePushAwsSns();
 
 ```csharp
 // Program.cs — Azure provider stack
-builder.AddGranitAuthenticationEntraId();
-builder.AddGranitIdentityEntraId();
-builder.AddGranitVaultAzure();
+builder.AddGranit(granit => granit
+    .AddModule<GranitAuthenticationJwtBearerEntraIdModule>());
+
 builder.AddGranitBlobStorageAzureBlob();
-builder.AddGranitNotificationsEmailAzureCommunicationServices();
-builder.AddGranitNotificationsSmsAzureCommunicationServices();
-builder.AddGranitNotificationsMobilePushAzureNotificationHubs();
+
+builder.Services.AddGranitIdentityEntraId();
+builder.Services.AddGranitVaultAzure();
+builder.Services.AddGranitNotificationsAcsEmail();
+builder.Services.AddGranitNotificationsAcsSms();
+builder.Services.AddGranitNotificationsAzureNotificationHubs();
 ```
 
 </TabItem>
@@ -68,11 +74,14 @@ builder.AddGranitNotificationsMobilePushAzureNotificationHubs();
 
 ```csharp
 // Program.cs — Google Cloud provider stack
-builder.AddGranitAuthenticationGoogleCloud();
-builder.AddGranitIdentityGoogleCloud();
-builder.AddGranitVaultGoogleCloud();
+builder.AddGranit(granit => granit
+    .AddModule<GranitAuthenticationJwtBearerGoogleCloudModule>());
+
 builder.AddGranitBlobStorageGoogleCloud();
-builder.AddGranitNotificationsMobilePushGoogleFcm();
+
+builder.Services.AddGranitIdentityGoogleCloud();
+builder.Services.AddGranitVaultGoogleCloud();
+builder.Services.AddGranitNotificationsGoogleFcm();
 ```
 
 </TabItem>

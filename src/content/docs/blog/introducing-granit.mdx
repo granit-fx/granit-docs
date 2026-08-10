@@ -142,7 +142,7 @@ Add the Granit meta-packages to your project and wire them up in `Program.cs`:
 ```csharp title="Program.cs"
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddGranit(builder.Configuration, granit =>
+builder.AddGranit(builder.Configuration, granit =>
 {
     granit.AddEssentials();       // Core, Timing, Guids, Validation, Security
     granit.AddApi();              // Versioning, OpenAPI (Scalar), ExceptionHandling, CORS

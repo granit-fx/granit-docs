@@ -219,7 +219,7 @@ Granit ships two registration extensions:
 | `AddGranitIsolatedDbContext<T>(opts)` | Strictly tenant-isolated modules (BlobStorage, Privacy, Encryption-bound contexts, …) | Forces every query through `ICurrentTenant`, throws if no tenant is active, refuses host-side bypass |
 
 PR #2021 made seven framework modules opt into `AddGranitIsolatedDbContext` by default —
-BlobStorage, Privacy, Activities, Documents, AssetMetadata, Renditions, PublicLinks —
+BlobStorage, Privacy, Activities, Documents, Properties, Renditions, PublicLinks —
 and PR #2028 patched an infinite-recursion bug in the non-generic overload. Reach for
 `AddGranitIsolatedDbContext<T>` whenever your context stores blobs, PII, encrypted
 columns, or anything else that must never leak across tenants. `[Encrypted]` fields on

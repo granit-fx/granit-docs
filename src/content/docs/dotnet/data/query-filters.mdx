@@ -110,11 +110,12 @@ var results = await db.Patients
 
 ## Common pitfalls
 
-:::caution[Forgetting `ApplyGranitConventions`]
-If your `DbContext.OnModelCreating` does not call `modelBuilder.ApplyGranitConventions(...)`,
-**no query filters** (soft delete, multi-tenancy, active, publishable) are applied.
-Entities will appear unfiltered — including soft-deleted and other-tenant data. This is
-the #1 cause of "I see deleted records" bugs.
+:::caution[Not deriving from `GranitDbContext`]
+The conventions pass runs from `GranitDbContext.OnModelCreating`. A `DbContext` that
+derives from EF Core's `DbContext` directly gets **no query filters** (soft delete,
+multi-tenancy, active, publishable) — entities appear unfiltered, including
+soft-deleted and other-tenant rows. This is the #1 cause of "I see deleted records"
+bugs. `ApplyGranitConventions` is `internal` and cannot be called as a substitute.
 :::
 
 :::caution[Named vs unnamed query filters]

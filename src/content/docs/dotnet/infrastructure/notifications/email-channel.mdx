@@ -23,7 +23,7 @@ Register the channel abstraction and your chosen provider:
 
 ```csharp
 context.Services.AddGranitNotificationsEmail(opts => opts.Provider = "Smtp");
-context.Services.AddGranitNotificationsEmailSmtp();
+context.Services.AddGranitNotificationsSmtp();
 ```
 
 ## Automatic plain text generation

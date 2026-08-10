@@ -24,7 +24,7 @@ non-null value wins.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `Granit.Settings` | `ISettingProvider`, `ISettingManager`, cascading resolution | `Granit.Caching`, `Granit.Encryption`, `Granit.Users` |
+| `Granit.Settings` | `ISettingProvider`, `ISettingWriter`, cascading resolution | `Granit.Caching`, `Granit.Encryption`, `Granit.Users` |
 | `Granit.Settings.EntityFrameworkCore` | `SettingsDbContext` (isolated, multi-tenant + soft-delete) | `Granit.Settings`, `Granit.Persistence` |
 | `Granit.Settings.Endpoints` | User/Global/Tenant HTTP endpoints, `SettingsCultureMiddleware` | `Granit.Settings`, `Granit.Authorization` |
 
@@ -159,25 +159,25 @@ public class ReportService(ISettingProvider settings)
 ## Writing settings
 
 ```csharp
-public class AdminService(ISettingManager settingManager)
+public class AdminService(ISettingWriter settingWriter)
 {
     public async Task SetGlobalPageSizeAsync(int size, CancellationToken ct)
     {
-        await settingManager
+        await settingWriter
             .SetGlobalAsync("Acme.DefaultPageSize", size.ToString(), ct)
             .ConfigureAwait(false);
     }
 
     public async Task SetTenantThemeAsync(Guid tenantId, string theme, CancellationToken ct)
     {
-        await settingManager
+        await settingWriter
             .SetForTenantAsync(tenantId, "Acme.Theme", theme, ct)
             .ConfigureAwait(false);
     }
 
     public async Task SetUserLocaleAsync(string userId, string locale, CancellationToken ct)
     {
-        await settingManager
+        await settingWriter
             .SetForUserAsync(userId, "Granit.PreferredCulture", locale, ct)
             .ConfigureAwait(false);
     }
@@ -269,7 +269,7 @@ All counters include `tenant_id`, `provider_name`, and `setting_name` tags.
 | Category | Key types | Package |
 |----------|-----------|---------|
 | Modules | `GranitSettingsModule`, `GranitSettingsEntityFrameworkCoreModule`, `GranitSettingsEndpointsModule` | -- |
-| Abstractions | `ISettingProvider` (`GetOrNullAsync`, `GetAllAsync`), `ISettingManager` (`SetGlobalAsync`, `SetForTenantAsync`, `SetForUserAsync`) | `Granit.Settings` |
+| Abstractions | `ISettingProvider` (`GetOrNullAsync`, `GetAllAsync`), `ISettingWriter` (`SetGlobalAsync`, `SetForTenantAsync`, `SetForUserAsync`) | `Granit.Settings` |
 | Definitions | `SettingDefinition`, `ISettingDefinitionProvider`, `SettingDefinitionManager` | `Granit.Settings` |
 | Options | `SettingsOptions` (section `"Settings"`, `CacheExpiration`) | `Granit.Settings` |
 | Endpoints | `MapGranitUserSettings()`, `MapGranitGlobalSettings()`, `MapGranitTenantSettings()`, `SettingsCultureMiddleware` | `Granit.Settings.Endpoints` |

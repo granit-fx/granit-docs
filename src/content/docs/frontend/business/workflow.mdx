@@ -51,8 +51,8 @@ function App({ children }) {
 <TabItem label="TypeScript only">
 
 ```ts
-import { fetchStatus, executeTransition, fetchHistory } from '@granit/workflow';
-import type { WorkflowStatusDto, TransitionResultDto } from '@granit/workflow';
+import { listTransitions, executeStateMachineTransition, getHistory } from '@granit/workflow';
+import type { WorkflowStatusResponse, WorkflowTransitionResultResponse } from '@granit/workflow';
 ```
 
 </TabItem>
@@ -86,7 +86,7 @@ type WorkflowLifecycleStatusValue =
 ### Types
 
 ```ts
-interface TransitionDto {
+interface WorkflowTransitionResponse {
   readonly targetState: string;
   readonly name: string;
   readonly allowed: boolean;
@@ -98,13 +98,13 @@ interface TransitionRequestDto {
   readonly comment?: string;
 }
 
-interface TransitionResultDto {
+interface WorkflowTransitionResultResponse {
   readonly succeeded: boolean;
   readonly resultingState: string;
   readonly outcome: TransitionOutcomeValue;
 }
 
-interface TransitionHistoryDto {
+interface WorkflowTransitionHistoryResponse {
   readonly previousState: string;
   readonly newState: string;
   readonly transitionedAt: string;
@@ -112,13 +112,13 @@ interface TransitionHistoryDto {
   readonly comment: string | null;
 }
 
-interface WorkflowStatusDto {
+interface WorkflowStatusResponse {
   readonly currentState: string;
-  readonly availableTransitions: TransitionDto[];
+  readonly availableTransitions: WorkflowTransitionResponse[];
 }
 
 interface WorkflowHistoryPage {
-  items: TransitionHistoryDto[];
+  items: WorkflowTransitionHistoryResponse[];
   totalCount: number;
   nextCursor: string | null;
 }
@@ -128,9 +128,9 @@ interface WorkflowHistoryPage {
 
 | Function | Endpoint | Description |
 |----------|----------|-------------|
-| `fetchStatus(client, basePath, entityType, entityId)` | `GET /{entityType}/{entityId}/transitions` | Current state and available transitions |
-| `executeTransition(client, basePath, entityType, entityId, request)` | `POST /{entityType}/{entityId}/transition` | Trigger a transition |
-| `fetchHistory(client, basePath, entityType, entityId, params?)` | `GET /{entityType}/{entityId}/history` | Paginated transition history |
+| `listTransitions(client, basePath, entityType, entityId)` | `GET /{entityType}/{entityId}/transitions` | Current state and available transitions |
+| `executeStateMachineTransition(client, basePath, entityType, entityId, request)` | `POST /{entityType}/{entityId}/transition` | Trigger a transition |
+| `getHistory(client, basePath, entityType, entityId, params?)` | `GET /{entityType}/{entityId}/history` | Paginated transition history |
 
 ## React bindings
 
@@ -160,7 +160,7 @@ Fetches current state and available transitions for an entity.
 ```ts
 interface UseWorkflowStatusReturn {
   readonly currentState: string | null;
-  readonly transitions: TransitionDto[];
+  readonly transitions: WorkflowTransitionResponse[];
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refetch: () => Promise<void>;
@@ -175,14 +175,14 @@ Executes a state transition with optional audit comment.
 interface UseWorkflowTransitionOptions {
   entityType: string;
   entityId: string;
-  onSuccess?: (result: TransitionResultDto) => void;
+  onSuccess?: (result: WorkflowTransitionResultResponse) => void;
   onError?: (error: Error) => void;
 }
 
 interface UseWorkflowTransitionReturn {
-  readonly transition: (targetState: string, comment?: string) => Promise<TransitionResultDto | null>;
+  readonly transition: (targetState: string, comment?: string) => Promise<WorkflowTransitionResultResponse | null>;
   readonly loading: boolean;
-  readonly result: TransitionResultDto | null;
+  readonly result: WorkflowTransitionResultResponse | null;
   readonly error: Error | null;
 }
 ```
@@ -199,7 +199,7 @@ interface UseWorkflowHistoryOptions {
 }
 
 interface UseWorkflowHistoryReturn {
-  readonly history: TransitionHistoryDto[];
+  readonly history: WorkflowTransitionHistoryResponse[];
   readonly loading: boolean;
   readonly error: Error | null;
   readonly refetch: () => Promise<void>;
@@ -220,7 +220,7 @@ graph LR
 
 ### Approval routing
 
-When a transition has `requiresApproval: true`, calling `executeTransition` returns
+When a transition has `requiresApproval: true`, calling `executeStateMachineTransition` returns
 `outcome: 'ApprovalRequested'` and the entity enters a pending state. An approver
 must then complete or deny the transition via the same API.
 
@@ -229,8 +229,8 @@ must then complete or deny the transition via the same API.
 | Category | Key exports | Package |
 |----------|-------------|---------|
 | Enums | `TransitionOutcome`, `WorkflowLifecycleStatus` | `@granit/workflow` |
-| Types | `WorkflowStatusDto`, `TransitionDto`, `TransitionResultDto`, `TransitionHistoryDto` | `@granit/workflow` |
-| API functions | `fetchStatus()`, `executeTransition()`, `fetchHistory()` | `@granit/workflow` |
+| Types | `WorkflowStatusResponse`, `WorkflowTransitionResponse`, `WorkflowTransitionResultResponse`, `WorkflowTransitionHistoryResponse` | `@granit/workflow` |
+| API functions | `listTransitions()`, `executeStateMachineTransition()`, `getHistory()` | `@granit/workflow` |
 | Provider | `WorkflowProvider`, `useWorkflowConfig()` | `@granit/react-workflow` |
 | Hooks | `useWorkflowStatus()`, `useWorkflowTransition()`, `useWorkflowHistory()` | `@granit/react-workflow` |
 

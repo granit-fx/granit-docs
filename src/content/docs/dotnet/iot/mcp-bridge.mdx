@@ -118,17 +118,16 @@ for more.
 Bundled in `Granit.Bundle.IoT`:
 
 ```csharp
-builder.Services.AddGranit(builder.Configuration).AddIoT();
+builder.AddGranit(granit => granit.AddIoT());
 ```
 
 Or standalone:
 
 ```csharp
-builder.Services
-    .AddGranit(builder.Configuration)
+builder.AddGranit(granit => granit
     .AddModule<GranitIoTModule>()
     .AddModule<GranitIoTEntityFrameworkCoreModule>()
-    .AddModule<GranitIoTMcpModule>();
+    .AddModule<GranitIoTMcpModule>());
 ```
 
 Then in the HTTP pipeline, expose the MCP server endpoints (from

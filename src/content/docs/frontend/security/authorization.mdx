@@ -63,9 +63,9 @@ function ProtectedButton() {
 
 ```ts
 import type {
-  PermissionDefinitionDto,
-  PermissionGroupDto,
-  PermissionGrantDto,
+  PermissionDefinitionResponse,
+  PermissionGroupResponse,
+  PermissionGrantResponse,
 } from '@granit/authorization';
 
 // Use the types to build your own permission layer (Angular, Vue, etc.)
@@ -84,35 +84,35 @@ type PermissionsResponse = {
 };
 ```
 
-### `PermissionDefinitionDto`
+### `PermissionDefinitionResponse`
 
 A single permission definition.
 
 ```ts
-type PermissionDefinitionDto = {
+type PermissionDefinitionResponse = {
   name: string;
   displayName: string | null;
 };
 ```
 
-### `PermissionGroupDto`
+### `PermissionGroupResponse`
 
 A group of related permissions (one per module).
 
 ```ts
-type PermissionGroupDto = {
+type PermissionGroupResponse = {
   name: string;
   displayName: string | null;
-  permissions: readonly PermissionDefinitionDto[];
+  permissions: readonly PermissionDefinitionResponse[];
 };
 ```
 
-### `PermissionGrantDto`
+### `PermissionGrantResponse`
 
 Permissions granted to a specific role.
 
 ```ts
-type PermissionGrantDto = {
+type PermissionGrantResponse = {
   roleName: string;
   permissions: readonly string[];
 };
@@ -215,7 +215,7 @@ Used for admin UIs (role-permission matrix).
 ```ts
 function usePermissionDefinitions(
   options: UsePermissionDefinitionsOptions
-): UseQueryResult<PermissionGroupDto[]>;
+): UseQueryResult<PermissionGroupResponse[]>;
 ```
 
 Returns groups organized by module, each containing permission definitions with optional display names.
@@ -228,7 +228,7 @@ Fetches permissions granted to a specific role from `GET {basePath}/roles/{roleN
 ```ts
 function useRolePermissions(
   options: UseRolePermissionsOptions
-): UseQueryResult<PermissionGrantDto>;
+): UseQueryResult<PermissionGrantResponse>;
 ```
 
 URL-encodes `roleName` for safe handling of special characters (e.g. accented names).
@@ -269,7 +269,7 @@ revoke.mutate({ roleName: 'editor', permissionName: 'Invoices.Delete' });
 
 | Category | Key exports | Package |
 |----------|-------------|---------|
-| Permission types | `PermissionDefinitionDto`, `PermissionGroupDto`, `PermissionGrantDto`, `PermissionsResponse` | `@granit/authorization` |
+| Permission types | `PermissionDefinitionResponse`, `PermissionGroupResponse`, `PermissionGrantResponse`, `PermissionsResponse` | `@granit/authorization` |
 | Option types | `UsePermissionsOptions`, `UsePermissionDefinitionsOptions`, `UseRolePermissionsOptions`, `UsePermissionGrantOptions` | `@granit/authorization` |
 | User permissions | `usePermissions()`, `UsePermissionsReturn` | `@granit/react-authorization` |
 | Admin hooks | `usePermissionDefinitions()`, `useRolePermissions()`, `usePermissionGrant()` | `@granit/react-authorization` |

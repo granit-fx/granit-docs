@@ -10,7 +10,7 @@ topic: backend
 
 > **Date:** 2026-04-30
 > **Authors:** Jean-Francois Meyers
-> **Scope:** granit-dotnet (`Granit.Entities.Abstractions`, `Granit.Entities`, `Granit.Entities.Endpoints`); granit-front (`@granit/entities-react` smart-button bar)
+> **Scope:** granit-dotnet (`Granit.Entities.Abstractions`, `Granit.Entities`, `Granit.Entities.Endpoints`); granit-front (`@granit/react-entities` smart-button bar)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
 > **Story:** [#1527](https://github.com/granit-fx/granit-dotnet/issues/1527) — ADR Cross-module entity relations
 > **Status:** Accepted
@@ -84,7 +84,7 @@ services.AddEntityRelationContribution<InvoicesOnPartyRelationContribution>();
 | `Tab` | Embedded grid as a tab inside the detail (intra-module collections) | Owned child collections that belong to the parent's editing context (InvoiceLines, Addresses) |
 | `InlineChips` | Chip row inline with the detail content | Many-to-many relations where the items are short labels (Tags, Categories) |
 
-This is the **v1 catalog** — same closed-set + `custom:` namespace pattern as [ADR-041](/dotnet/architecture/adr/041-component-catalog/) §2 / [ADR-042](/dotnet/architecture/adr/042-view-catalog/) §2. Adding a new display mode requires an ADR amendment + renderer in `@granit/entities-react`.
+This is the **v1 catalog** — same closed-set + `custom:` namespace pattern as [ADR-041](/dotnet/architecture/adr/041-component-catalog/) §2 / [ADR-042](/dotnet/architecture/adr/042-view-catalog/) §2. Adding a new display mode requires an ADR amendment + renderer in `@granit/react-entities`.
 
 ### 3. Aggregates — closed primitive set
 

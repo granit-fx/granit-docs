@@ -119,16 +119,15 @@ namespace MyApp.Infrastructure;
 
 public sealed class AppDbContext(
     DbContextOptions<AppDbContext> options,
-    ICurrentTenant? currentTenant,
+    ICurrentTenant currentTenant,
     IDataFilter? dataFilter,
-    IStringEncryptionService encryptionService) : DbContext(options)
+    IStringEncryptionService encryptionService)
+    : GranitDbContext(options, currentTenant, dataFilter)
 {
     public DbSet<Patient> Patients => Set<Patient>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
         modelBuilder.ApplyEncryptionConventions(encryptionService); // must be last
     }
 }

@@ -38,7 +38,7 @@ The public-links module solves it once:
 
 ## Architecture
 
-Three packages, mirroring the Documents / Renditions / AssetMetadata split:
+Three packages, mirroring the Documents / Renditions / Properties split:
 
 - `Granit.Documents.PublicLinks` — domain (`DocumentPublicLink` aggregate),
   `IDocumentPublicLinkService`, options, permissions, events, localization.
@@ -293,7 +293,7 @@ possession alone.
 | Information disclosure on miss | Anonymous endpoints return identical 404 for invalid / expired / revoked / exhausted / unknown links. |
 | Cross-tenant access | Anonymous resolution bypasses the tenant filter intentionally; the link carries its own `TenantId` and the presigned URL inherits it. |
 | Replay after revocation | `RevokedAt` is checked on every resolution; revocation takes effect at the next request. |
-| GPS / PII in served bytes | Out of scope — see [Documents — Asset Metadata](/dotnet/business/documents-asset-metadata/) for the synchronous GPS scrub on upload. |
+| GPS / PII in served bytes | Out of scope — see [Documents — Properties](/dotnet/business/documents-properties/) for the synchronous GPS and personal-data scrubs on upload. |
 
 ## Architecture boundary tests
 
@@ -322,7 +322,7 @@ admin grid or business KPI surface).
   version / blob domain.
 - [Documents — Renditions](/dotnet/business/documents-renditions/) — derived
   previews; complementary surface to public links.
-- [Documents — Asset Metadata](/dotnet/business/documents-asset-metadata/) —
-  GPS scrub and descriptive-metadata extraction.
+- [Documents — Properties](/dotnet/business/documents-properties/) —
+  GPS / personal-data scrubs and descriptive-metadata extraction.
 - [ADR-017 — DDD aggregate / value-object strategy](/dotnet/architecture/adr/017-ddd-aggregate-value-object-strategy/) —
   the aggregate-root rules `DocumentPublicLink` follows.

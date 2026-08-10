@@ -32,7 +32,7 @@ OpenIddict, Privacy, Scheduling, Settings, Templating, Timeline, Validation,
 Webhooks, Workflow.
 
 Modules in `granit-business` (commercial): Activities, Analytics, Catalog,
-CustomerBalance, Dashboards, Documents (+ AssetMetadata, PublicLinks, Renditions),
+CustomerBalance, Dashboards, Documents (+ Properties, PublicLinks, Renditions),
 Entities, Entities.Customization, Entities.Views, Invoicing, Metering, Parties,
 Payments, ReferenceData, Subscriptions, Tax, Taxonomy.
 </Aside>
@@ -825,17 +825,23 @@ spurious error.
 directly on the current route group. The module's existing group structure
 defines the route — there is no separate `pattern` parameter.
 
+The queryable is resolved from DI: each `*.EntityFrameworkCore` package registers
+an `IQueryableSource<TEntity>` (for example
+`AddScoped<IQueryableSource<BlobDescriptor>, EfBlobQueryableSource>()`), so the
+mapping call itself carries no factory.
+
 ```csharp
 // Single-entity module — mounts directly on the module group
-group.MapGranitQuery<BlobDescriptor>(
-    sp => sp.GetRequiredService<IBlobQueryableProvider>().GetDescriptors());
+group.MapGranitQuery<BlobDescriptor>();
 // → GET /blobs, GET /blobs/meta, GET /blobs/saved-views, …
 
 // Multi-entity module — create a sub-group first
-group.MapGroup("deliveries").MapGranitQuery<WebhookDeliveryAttempt>(
-    sp => sp.GetRequiredService<IWebhookQueryableProvider>().GetDeliveryAttempts());
+group.MapGranitGroup("deliveries").MapGranitQuery<WebhookDeliveryAttempt>();
 // → GET /webhooks/deliveries, GET /webhooks/deliveries/meta, …
 ```
+
+An overload taking `Func<IServiceProvider, IQueryable<TEntity>>` exists for
+sources that are not registered as `IQueryableSource<TEntity>`.
 
 </Aside>
 

@@ -29,8 +29,8 @@ This page documents all configuration options, health checks, and OpenTelemetry 
   "Notifications": {
     "Email": {
       "Provider": "Smtp",
-      "SenderAddress": "noreply@clinic.example.com",
-      "SenderName": "Clinic Portal"
+      "DefaultSenderEmail": "noreply@clinic.example.com",
+      "DefaultSenderName": "Clinic Portal"
     }
   }
 }
@@ -79,7 +79,7 @@ This page documents all configuration options, health checks, and OpenTelemetry 
       "ApiKey": "vault:secret/data/sendgrid#api-key",
       "DefaultSenderEmail": "noreply@clinic.example.com",
       "DefaultSenderName": "Clinic Portal",
-      "SandboxMode": false,
+      "BaseUrl": null,
       "TimeoutSeconds": 30
     }
   }
@@ -94,9 +94,8 @@ This page documents all configuration options, health checks, and OpenTelemetry 
     "Twilio": {
       "AccountSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "AuthToken": "vault:secret/data/twilio#auth-token",
-      "DefaultSmsFrom": "+15551234567",
-      "DefaultWhatsAppFrom": "whatsapp:+14155238886",
-      "MessagingServiceSid": null,
+      "DefaultSmsFromNumber": "+15551234567",
+      "DefaultWhatsAppFromNumber": "whatsapp:+14155238886",
       "TimeoutSeconds": 30
     }
   }
@@ -181,7 +180,7 @@ the email sender, and vice versa.
     "AzureCommunicationServices": {
       "Email": {
         "ConnectionString": "endpoint=...;accesskey=...",
-        "SenderAddress": "noreply@mydomain.com",
+        "DefaultSenderEmail": "noreply@mydomain.com",
         "TimeoutSeconds": 120
       },
       "Sms": {

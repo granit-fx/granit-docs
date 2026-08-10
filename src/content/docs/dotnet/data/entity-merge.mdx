@@ -431,7 +431,7 @@ builder.AddGranitEntityMergeEntityFrameworkCore(o =>
 // Adapter + Party-children + Party-parent rewriters.
 // Cross-module rewriters (Invoice/Subscription/BalanceAccount) auto-register from
 // their own AddGranit{Module}EntityFrameworkCore calls.
-builder.AddGranitPartiesMergeable();
+builder.AddGranitPartiesEntityMerge();
 ```
 
 ```csharp

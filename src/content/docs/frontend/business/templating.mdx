@@ -26,12 +26,13 @@ with automatic cache invalidation.
 
 | Package | Role | Depends on |
 |---------|------|------------|
-| `@granit/templating` | DTOs, lifecycle enums, API functions, `TemplatingProvider`, query/mutation hooks | `axios`, `@tanstack/react-query`, `react` |
+| `@granit/templating` | DTOs, lifecycle enums, API functions | `axios` |
+| `@granit/react-templating` | `TemplatingProvider`, query/mutation hooks | `@granit/templating`, `@tanstack/react-query`, `react` |
 
-:::note[Unified package]
-Unlike other Granit frontend domains, templating ships as a single package — there is
-no separate `@granit/react-templating`. The API functions can still be used standalone
-without React.
+:::note[Two-tier like every other domain]
+Templating follows the standard split: `@granit/templating` holds the DTOs and API
+functions with no React dependency, and `@granit/react-templating` adds the provider
+and hooks. The API functions can be used standalone without React.
 :::
 
 ## Setup
@@ -40,7 +41,7 @@ without React.
 <TabItem label="React (recommended)">
 
 ```tsx
-import { TemplatingProvider } from '@granit/templating';
+import { TemplatingProvider } from '@granit/react-templating';
 import { api } from './api-client';
 
 function App({ children }) {
@@ -56,7 +57,7 @@ function App({ children }) {
 <TabItem label="TypeScript only">
 
 ```ts
-import { getTemplates, saveDraft, publishTemplate, previewTemplate } from '@granit/templating';
+import { listTemplates, saveDraft, publishTemplate, previewTemplate } from '@granit/templating';
 import type { TemplateDetail, SaveTemplateRequest } from '@granit/templating';
 ```
 
@@ -249,7 +250,7 @@ interface UpdateTemplateCategoryRequest {
 
 | Function | Endpoint | Description |
 |----------|----------|-------------|
-| `getTemplates(client, basePath, params?)` | `GET /templates` | Paginated template list with filtering |
+| `listTemplates(client, basePath, params?)` | `GET /templates` | Paginated template list with filtering |
 | `getTemplate(client, basePath, name, culture?)` | `GET /templates/{name}` | Single template detail |
 | `saveDraft(client, basePath, request)` | `POST /templates` | Create a new draft |
 | `updateDraft(client, basePath, name, request)` | `PUT /templates/{name}` | Update an existing draft |
@@ -438,7 +439,7 @@ graph LR
 | Preview types | `TemplatePreviewRequest`, `TemplatePreviewResponse`, `TemplateParseError` | `@granit/templating` |
 | Variable types | `TemplateVariable`, `TemplateVariables` | `@granit/templating` |
 | Category types | `TemplateCategory`, `CreateTemplateCategoryRequest` | `@granit/templating` |
-| API functions | `getTemplates()`, `saveDraft()`, `publishTemplate()`, `previewTemplate()`, `getVariables()` | `@granit/templating` |
+| API functions | `listTemplates()`, `saveDraft()`, `publishTemplate()`, `previewTemplate()`, `getVariables()` | `@granit/templating` |
 | Provider | `TemplatingProvider`, `useTemplatingConfig()` | `@granit/templating` |
 | Query hooks | `useTemplates()`, `useTemplate()`, `useTemplateVariables()`, `useTemplateHistory()`, `useTemplateCategories()` | `@granit/templating` |
 | Mutation hooks | `useTemplateMutations()`, `useTemplatePreview()`, `useTemplateBinaryPreview()`, `useTemplateCategoryMutations()` | `@granit/templating` |

@@ -265,10 +265,9 @@ Key isolation is heavier — one Vault KV secret per entity instance.
 The `ApplyEncryptionConventions` method handles both encryption modes automatically:
 
 ```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+// Inside a DbContext deriving from GranitDbContext.
+protected override void OnGranitModelCreating(ModelBuilder modelBuilder)
 {
-    base.OnModelCreating(modelBuilder);
-    modelBuilder.ApplyGranitConventions(currentTenant, dataFilter);
     modelBuilder.ApplyEncryptionConventions(encryptionService);
 }
 ```

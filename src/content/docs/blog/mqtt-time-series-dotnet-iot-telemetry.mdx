@@ -104,9 +104,8 @@ dotnet add package Granit.IoT.Mqtt.Mqttnet
 ```
 
 ```csharp title="Program.cs"
-builder.Services
-    .AddGranit(builder.Configuration)
-    .AddIoT();
+builder.AddGranit(granit => granit
+    .AddIoT());
 
 builder.Services.AddGranitIoTMqtt();          // abstractions + parser
 builder.Services.AddGranitIoTMqttMqttnet();   // MQTTnet implementation

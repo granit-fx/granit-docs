@@ -10,7 +10,7 @@ topic: backend
 
 > **Date:** 2026-04-30
 > **Authors:** Jean-Francois Meyers
-> **Scope:** granit-dotnet (`Granit.Workspaces`, `Granit.Workspaces.Endpoints`, `Granit.Workspaces.Framework`); granit-front (`@granit/workspaces-react`)
+> **Scope:** granit-dotnet (`Granit.Workspaces`, `Granit.Workspaces.Endpoints`, `Granit.Workspaces.Framework`); granit-front (`@granit/react-workspaces`)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
 > **Story:** [#1523](https://github.com/granit-fx/granit-dotnet/issues/1523) — ADR Workspace navigation
 > **Status:** Accepted

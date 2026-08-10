@@ -106,23 +106,25 @@ GranitActivitySourceRegistry.Register("Granit.Workflow");
 
 ### Registered activity sources
 
-Around 70 `ActivitySource` names are pre-registered. Major groups:
+Around 110 `ActivitySource` names are pre-registered. Major groups:
 
 | Domain | ActivitySource names |
 | ------ | -------------------- |
-| Core data | `Granit.Persistence`, `Granit.Entities`, `Granit.Encryption`, `Granit.Events`, `Granit.Wolverine` |
-| Security & identity | `Granit.Http.UrlSafety`, `Granit.DPoP`, `Granit.TokenManagement`, `Granit.OpenIddict`, `Granit.Identity`, `Granit.Identity.Local`, `Granit.Identity.{Cognito,EntraId,GoogleCloud,Keycloak}` |
+| Core data | `Granit.Persistence.EntityFrameworkCore`, `Granit.Entities`, `Granit.Entities.{Customization,Views}`, `Granit.Encryption`, `Granit.Events`, `Granit.Wolverine`, `Granit.MultiTenancy` |
+| Security & identity | `Granit.Http.UrlSafety`, `Granit.Authentication.{DPoP,Mtls}`, `Granit.Oidc.TokenManagement`, `Granit.OpenIddict`, `Granit.Identity`, `Granit.Identity.Local`, `Granit.Identity.AnomalyDetection`, `Granit.Identity.Federated.{Cognito,EntraId,GoogleCloud,Keycloak}` |
 | Vault / KMS | `Granit.Vault.{Aws,Azure,GoogleCloud,HashiCorp}` |
-| Blob storage | `Granit.BlobStorage.{Azure,Database,FileSystem,GoogleCloud,Proxy,S3}` |
-| Notifications | `Granit.Notifications`, `Granit.Notifications.{AwsSes,Scaleway,SendGrid,AzureCommunicationServices,AwsSns,AzureNotificationHubs,GoogleFcm}` |
+| Blob storage | `Granit.BlobStorage`, `Granit.BlobStorage.{AzureBlob,Database,FileSystem,GoogleCloud,Proxy,S3}` |
+| Notifications | `Granit.Notifications`, `Granit.Notifications.{Smtp,Brevo,SendGrid,Scaleway,Twilio,Zulip,AwsSes,GoogleFcm,AzureNotificationHubs}`, `Granit.Notifications.AwsSns.{MobilePush,Sms}`, `Granit.Notifications.AzureCommunicationServices.{Email,Sms}` |
 | Privacy / compliance | `Granit.Privacy`, `Granit.Auditing` |
 | Background work | `Granit.BackgroundJobs`, `Granit.Scheduling`, `Granit.Webhooks`, `Granit.Browsing` |
-| Documents & media | `Granit.Templating`, `Granit.PdfRendering`, `Granit.Imaging.{AI,MagickNet}`, `Granit.Documents`, `Granit.Documents.PublicLinks`, `Granit.AssetMetadata`, `Granit.Renditions` |
-| AI | `Granit.AI`, `Granit.AI.{AzureOpenAI,Ollama,OpenAI}`, `Granit.QueryEngine.AI`, `Granit.Observability.AI`, `Granit.Timeline.AI` |
-| Query engine / BFF | `Granit.QueryEngine.EfCore`, `Granit.DataExchange`, `Granit.DataLookup`, `Granit.ReferenceData`, `Granit.Bff` |
-| Multi-tenant primitives | `Granit.RateLimiting`, `Granit.Bulkhead`, `Granit.Features`, `Granit.Settings`, `Granit.Localization`, `Granit.IO` |
-| SaaS business | `Granit.Activities`, `Granit.Workflow`, `Granit.Catalog`, `Granit.CustomerBalance`, `Granit.Invoicing`, `Granit.Payments`, `Granit.Parties`, `Granit.Subscriptions`, `Granit.Tax`, `Granit.Taxonomy`, `Granit.Metering`, `Granit.Analytics` |
-| MCP / integration | `Granit.Mcp` |
+| Documents & media | `Granit.Templating`, `Granit.DocumentGeneration.Pdf`, `Granit.Imaging.{AI,MagickNet}`, `Granit.Documents`, `Granit.Documents.{Properties,PublicLinks,Renditions,Resolution}`, `Granit.TextExtraction` |
+| AI | `Granit.AI`, `Granit.AI.{Anthropic,AzureOpenAI,Chat,Ollama,OpenAI,Tools}`, `Granit.QueryEngine.AI`, `Granit.Observability.AI`, `Granit.Timeline.AI`, `Granit.Cms.Seo.AI` |
+| Query engine / BFF | `Granit.QueryEngine.EntityFrameworkCore`, `Granit.DataExchange`, `Granit.DataLookup`, `Granit.ReferenceData`, `Granit.Bff` |
+| Search & enrichment | `Granit.Indexing`, `Granit.Indexing.Embeddings`, `Granit.Geocoding`, `Granit.IpGeolocation`, `Granit.LanguageDetection` |
+| Multi-tenant primitives | `Granit.RateLimiting`, `Granit.Bulkhead`, `Granit.Features`, `Granit.Settings`, `Granit.Localization`, `Granit.Hostnames`, `Granit.IO` |
+| SaaS business | `Granit.Activities`, `Granit.Timeline`, `Granit.Workflow`, `Granit.Catalog`, `Granit.CustomerBalance`, `Granit.Invoicing`, `Granit.Payments`, `Granit.Parties`, `Granit.Subscriptions`, `Granit.Tax`, `Granit.Taxonomy`, `Granit.Metering`, `Granit.Analytics`, `Granit.Presence` |
+| CMS | `Granit.Cms`, `Granit.Cms.{Documents,Redirects,Seo}`, `Granit.Blog` |
+| IoT / MCP | `Granit.IoT`, `Granit.Mcp` |
 
 The canonical list is the `GranitActivitySourceRegistry` registrations performed inside
 each module's `AddGranit*()` extension — read it in source for the exact set shipped

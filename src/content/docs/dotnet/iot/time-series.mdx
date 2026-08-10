@@ -136,11 +136,10 @@ Indicative speed-up on a 100-million-row table:
 ### Enabling TimescaleDB
 
 ```csharp
-builder.Services
-    .AddGranit(builder.Configuration)
+builder.AddGranit(granit => granit
     .AddModule<GranitIoTModule>()
     .AddModule<GranitIoTEntityFrameworkCoreModule>()
-    .AddModule<GranitIoTTimescaleModule>();
+    .AddModule<GranitIoTTimescaleModule>());
 ```
 
 On first startup the module runs:

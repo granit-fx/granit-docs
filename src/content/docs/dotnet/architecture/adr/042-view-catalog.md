@@ -10,7 +10,7 @@ topic: backend
 
 > **Date:** 2026-04-30
 > **Authors:** Jean-Francois Meyers
-> **Scope:** granit-dotnet (`Granit.Entities` collections facet); granit-front (`@granit/entities-react` view renderers)
+> **Scope:** granit-dotnet (`Granit.Entities` collections facet); granit-front (`@granit/react-entities` view renderers)
 > **Epic:** [#1506](https://github.com/granit-fx/granit-dotnet/issues/1506) — Refonte UI Hybride
 > **Story:** [#1522](https://github.com/granit-fx/granit-dotnet/issues/1522) — ADR-042 View catalog
 > **Status:** Accepted
@@ -34,7 +34,7 @@ The framework ships a fixed catalog of **view kinds**. Every kind has:
 
 - A canonical name (string, lowercase, kebab-case for multi-word — none today are multi-word).
 - A typed configuration schema (validated at startup).
-- A reference React renderer in `@granit/entities-react`.
+- A reference React renderer in `@granit/react-entities`.
 - A documented data-source contract (what shape the QueryDefinition must expose).
 
 | Kind | Phase | Renderer | Required config | Optional config | Data-source contract |
@@ -48,7 +48,7 @@ The framework ships a fixed catalog of **view kinds**. Every kind has:
 | `tree` | 3 (on demand) | `<EntityTree />` hierarchy | `parentField` (self-reference) | `expandDefault` | QueryDefinition exposes the parent reference |
 | `gantt` | 3 (on demand) | `<EntityGantt />` schedule | `startField`, `endField` | `dependenciesField`, `progressField` | QueryDefinition exposes start/end + optional dependencies |
 
-This is the **v1 catalog**. Adding a new kind requires an ADR amendment, a renderer in `@granit/entities-react`, and coordinated wiring in `Granit.Entities.Endpoints`. Removing a kind is a breaking change.
+This is the **v1 catalog**. Adding a new kind requires an ADR amendment, a renderer in `@granit/react-entities`, and coordinated wiring in `Granit.Entities.Endpoints`. Removing a kind is a breaking change.
 
 ### 2. Custom view-kind namespacing — `custom:<app-prefix>-<name>`
 
