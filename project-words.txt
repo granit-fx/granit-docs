@@ -238,6 +238,7 @@ sourcemaking
 SSIN
 statelessly
 Steuer
+stringly
 subclassing
 Sunter
 Swashbuckle
