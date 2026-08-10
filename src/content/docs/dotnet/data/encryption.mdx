@@ -37,12 +37,18 @@ all marked fields in batch without downtime.
 | `Granit.Encryption` | `IStringEncryptionService` abstraction, in-memory AES-256-CBC default provider | `Granit` |
 | `Granit.Encryption.EntityFrameworkCore` | `[Encrypted]` attribute, `EncryptedStringConverter`, `ApplyEncryptionConventions` extension, `IReEncryptionService` + `AddGranitEncryptionReEncryption<TContext>()` | `Granit.Encryption`, `Granit.Persistence.EntityFrameworkCore` |
 
-:::caution[`[Encrypted]` requires an `IsolatedDbContext`]
-An architecture test (PR #2062) pins `[Encrypted]` properties to entities mapped on an
-`IsolatedDbContext` — i.e. a tenant-scoped DbContext registered via
-`AddGranitIsolatedDbContext<T>()`. Encrypted columns on a host-shared context would
-mix per-tenant keys with cross-tenant data; the rule fails the build before that
-mistake reaches production.
+:::caution[`[SensitiveData]` and `[Encrypted]` are bridged by an architecture test]
+The two markers are deliberately separate: `[SensitiveData]` is a **classification**
+consumed by the audit, log, AI and export paths to mask or omit a value at runtime,
+while `[Encrypted]` is **storage protection** driving the EF Core value converter and
+the Wolverine JSON resolver.
+
+`SensitiveDataEncryptionConventionTests` pins the conjunction: every `string` property
+carrying `[SensitiveData(Level >= Confidential)]` on a **persisted** type — entity,
+saga, or integration event — must also carry `[Encrypted]`. A confidential value that
+lands plain-text in the database or the outbox is a GDPR Art. 32 / ISO 27001 A.8.2
+violation, so the build fails before it ships. Transient DTOs (`*Request`,
+`*Response`) are exempt: they flow over HTTP and never reach a persistence boundary.
 :::
 
 ## Setup

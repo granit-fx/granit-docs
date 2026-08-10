@@ -23,16 +23,24 @@ the framework handles the plumbing.
 
 ## EF Core interceptors
 
-Three `SaveChangesInterceptor` implementations run in sequence before
-every `SaveChanges` / `SaveChangesAsync` call:
+Six `SaveChangesInterceptor` implementations run in sequence before
+every `SaveChanges` / `SaveChangesAsync` call. This page covers the three you
+meet first; see [Interceptors](/dotnet/data/interceptors/) for the full set.
 
 ```mermaid
 flowchart LR
     A[SaveChanges called] --> B[AuditedEntityInterceptor]
-    B --> C[SoftDeleteInterceptor]
-    C --> D[VersioningInterceptor]
-    D --> E[Database]
+    B --> C[VersioningInterceptor]
+    C --> D[ConcurrencyStampInterceptor]
+    D --> E[DomainEventDispatcherInterceptor]
+    E --> F[EntityLifecycleEventInterceptor]
+    F --> G[SoftDeleteInterceptor]
+    G --> H[Database]
 ```
+
+`SoftDeleteInterceptor` runs last on purpose: it flips `EntityState.Deleted` to
+`Modified`, which would hide the original state from every interceptor before
+it.
 
 ### 1. AuditedEntityInterceptor
 
@@ -105,7 +113,7 @@ The filter is restored automatically when the `using` block exits.
 
 ### 3. VersioningInterceptor
 
-Targets entities implementing `IVersionedEntity`. On insert:
+Targets entities implementing `IVersioned` (`Granit.Domain`). On insert:
 
 - Assigns a `VersionId` (stable GUID shared across all versions of the same
   logical entity).
@@ -126,6 +134,7 @@ independent and individually bypassable:
 | `IMultiTenant` | `MultiTenant` | `WHERE TenantId = @currentTenantId` |
 | `IProcessingRestrictable` | `ProcessingRestrictable` | `WHERE IsProcessingRestricted = false` |
 | `IPublishable` | `Publishable` | `WHERE IsPublished = true` |
+| `IHasMergeTombstone` | `MergeTombstone` | `WHERE MergedIntoId IS NULL` |
 
 An entity implementing both `ISoftDeletable` and `IMultiTenant` gets two named
 filters, both applied by EF Core as AND conditions:

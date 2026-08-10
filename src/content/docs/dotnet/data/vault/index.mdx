@@ -109,7 +109,7 @@ real vault with no code change.
 |---------|------|------------|
 | `Granit.Encryption` | `IStringEncryptionService`, AES-256-CBC provider | `Granit` |
 | `Granit.Encryption.EntityFrameworkCore` | `[Encrypted]`, `EncryptedStringConverter`, `ApplyEncryptionConventions` | `Granit.Encryption`, `Granit.Persistence` |
-| `Granit.Encryption.ReEncryption` | `IReEncryptionJob`, `DefaultReEncryptionJob<TContext>` | `Granit.Encryption.EntityFrameworkCore` |
+| `Granit.Encryption.EntityFrameworkCore` | `IReEncryptionService`, `DefaultReEncryptionService`, `AddGranitEncryptionReEncryption<TContext>()` | `Granit.Encryption`, `Granit.Persistence.EntityFrameworkCore` |
 | `Granit.Vault` | Abstractions — `ITransitEncryptionService`, `ITransitMacService` (+ `SecretBackedMacService` fallback), `IDatabaseCredentialProvider`, `ISecretStore`, `SecretDescriptor`, `SecretStoreOptions`, `SecretStoreHealthCheck`, `ReEncryptionOptions` | `Granit.Caching`, `Granit.Encryption` |
 | `Granit.Vault.HashiCorp` | VaultSharp client, Transit, dynamic DB credentials, KV v2 secrets | `Granit.Vault` |
 | `Granit.Vault.Azure` | RSA-OAEP-256 encryption, secrets, dynamic credentials | `Granit.Vault` |
@@ -128,7 +128,6 @@ graph TD
     V --> CA[Granit.Caching]
     E --> C[Granit]
     EEFC[Granit.Encryption.EntityFrameworkCore] --> E
-    EERE[Granit.Encryption.ReEncryption] --> EEFC
 ```
 
 <Aside type="note" title="Why does Granit.Vault pull Granit.Caching?">

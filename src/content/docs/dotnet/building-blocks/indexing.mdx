@@ -35,7 +35,7 @@ opt-in (`Granit.Indexing.Embeddings`), as do AI summaries
 | Pain | This package's answer |
 |------|----------------------|
 | Hand-rolled `LIKE '%…%'` per endpoint with no ACL filter past tenant scope | One `ISearchService<TKey, TResult>` with consumer-supplied `ISearchResultAuthorizer<TKey>` on every hit |
-| tsquery / Lucene injection from anonymous traffic | `plainto_tsquery` / `simple_query_string` (restricted flags) on the default path; advanced syntax gated on a `Search.Advanced.Execute` permission |
+| tsquery / Lucene injection from anonymous traffic | `plainto_tsquery` / `simple_query_string` (restricted flags) on the default path; advanced syntax gated on a host-defined permission |
 | Existence-oracle probing via empty-result pings | Per-principal sliding window — `MaxEmptyResultQueriesPerPrincipalPerMinute = 10` by default; 11th hits `429` |
 | Long-tail "no results" page reveals row counts to restricted principals | Exponential over-fetch loop with a `MaxAuthorizationDepth = 5 000` ceiling; aggregated `HitAuthorizationLimit` hint, not a per-query oracle |
 | Index outlives the source row after a GDPR Art. 17 request | `IIndexedDataEraser` + `Granit.Indexing.Privacy` bridge: one bulk statement per backend, atomic with the source delete |
@@ -136,8 +136,9 @@ public sealed record SearchRequest(
 
 `SearchRequest.Query` is treated as a phrase by default. `UseAdvancedSyntax`
 opts the backend into operator-aware parsing (`to_tsquery` on Postgres,
-Lucene `query_string` on ES) — endpoints MUST gate this on a dedicated
-`Search.Advanced.Execute` permission before forwarding the flag.
+Lucene `query_string` on ES) — endpoints MUST gate this behind a
+host-defined permission (for example `Search.Advanced.Execute`; the framework
+ships no such permission) before forwarding the flag.
 `PrincipalIdentifier` (typically `User.GetSubjectId()`) is hashed before any
 log emission and used as the bucket key for the empty-result rate limiter.
 

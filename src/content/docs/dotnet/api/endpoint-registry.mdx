@@ -355,16 +355,16 @@ no permission required.
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="GET" variant="note" /> | `/` | SearchIdentityUserCache | `Identity.UserCache.Read` |
-| <Badge text="GET" variant="note" /> | `/{userId}` | GetIdentityUserById | `Identity.UserCache.Read` |
-| <Badge text="POST" variant="success" /> | `/batch` | BatchResolveIdentityUsers | `Identity.UserCache.Read` |
-| <Badge text="GET" variant="note" /> | `/stats` | GetIdentityUserCacheStats | `Identity.UserCache.Read` |
-| <Badge text="GET" variant="note" /> | `/capabilities` | GetIdentityProviderCapabilities | `Identity.UserCache.Read` |
-| <Badge text="POST" variant="success" /> | `/sync` | SyncIdentityUsers | `Identity.UserCache.Sync` |
-| <Badge text="POST" variant="success" /> | `/sync-all` | SyncAllIdentityUsers | `Identity.UserCache.Sync` |
-| <Badge text="POST" variant="success" /> | `/sync-stale` | SyncStaleIdentityUsers | `Identity.UserCache.Sync` |
-| <Badge text="PATCH" variant="caution" /> | `/{userId}/pseudonymize` | PseudonymizeIdentityUserCache | `Identity.UserCache.Delete` |
-| <Badge text="DELETE" variant="danger" /> | `/{userId}` | EraseIdentityUserCache | `Identity.UserCache.Delete` |
+| <Badge text="GET" variant="note" /> | `/` | SearchIdentityUserCache | `Identity.Users.Read` |
+| <Badge text="GET" variant="note" /> | `/{userId}` | GetIdentityUserById | `Identity.Users.Read` |
+| <Badge text="POST" variant="success" /> | `/batch` | BatchResolveIdentityUsers | `Identity.Users.Read` |
+| <Badge text="GET" variant="note" /> | `/stats` | GetIdentityUserCacheStats | `Identity.Users.Read` |
+| <Badge text="GET" variant="note" /> | `/capabilities` | GetIdentityProviderCapabilities | `Identity.Users.Read` |
+| <Badge text="POST" variant="success" /> | `/sync` | SyncIdentityUsers | `Identity.Users.Sync` |
+| <Badge text="POST" variant="success" /> | `/sync-all` | SyncAllIdentityUsers | `Identity.Users.Sync` |
+| <Badge text="POST" variant="success" /> | `/sync-stale` | SyncStaleIdentityUsers | `Identity.Users.Sync` |
+| <Badge text="PATCH" variant="caution" /> | `/{userId}/pseudonymize` | PseudonymizeIdentityUserCache | `Identity.Users.Delete` |
+| <Badge text="DELETE" variant="danger" /> | `/{userId}` | EraseIdentityUserCache | `Identity.Users.Delete` |
 
 ### Identity Provider (`identity/provider`)
 
@@ -903,33 +903,33 @@ Operation IDs are suffixed with the entity type name. For example,
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="GET" variant="note" /> | `/templates/` | ListTemplates | `Templates.Templates.Manage` |
-| <Badge text="GET" variant="note" /> | `/templates/{name}` | GetTemplateDetail | `Templates.Templates.Manage` |
-| <Badge text="POST" variant="success" /> | `/templates/` | CreateTemplateDraft | `Templates.Templates.Manage` |
-| <Badge text="PUT" variant="caution" /> | `/templates/{name}` | UpdateTemplateDraft | `Templates.Templates.Manage` |
-| <Badge text="DELETE" variant="danger" /> | `/templates/{name}/draft` | DeleteTemplateDraft | `Templates.Templates.Manage` |
-| <Badge text="POST" variant="success" /> | `/templates/{name}/publish` | PublishTemplate | `Templates.Templates.Manage` |
-| <Badge text="POST" variant="success" /> | `/templates/{name}/unpublish` | UnpublishTemplate | `Templates.Templates.Manage` |
-| <Badge text="GET" variant="note" /> | `/templates/{name}/lifecycle` | GetTemplateLifecycle | `Templates.Templates.Manage` |
-| <Badge text="POST" variant="success" /> | `/templates/{name}/preview` | PreviewTemplate | `Templates.Templates.Manage` |
-| <Badge text="GET" variant="note" /> | `/templates/{name}/variables` | GetTemplateVariables | `Templates.Templates.Manage` |
-| <Badge text="GET" variant="note" /> | `/templates/{name}/history` | GetTemplateHistory | `Templates.Templates.Manage` |
-| <Badge text="GET" variant="note" /> | `/templates/{name}/history/{revisionId:guid}` | GetTemplateRevisionDetail | `Templates.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/` | ListTemplates | `Templating.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/{name}` | GetTemplateDetail | `Templating.Templates.Manage` |
+| <Badge text="POST" variant="success" /> | `/templates/` | CreateTemplateDraft | `Templating.Templates.Manage` |
+| <Badge text="PUT" variant="caution" /> | `/templates/{name}` | UpdateTemplateDraft | `Templating.Templates.Manage` |
+| <Badge text="DELETE" variant="danger" /> | `/templates/{name}/draft` | DeleteTemplateDraft | `Templating.Templates.Manage` |
+| <Badge text="POST" variant="success" /> | `/templates/{name}/publish` | PublishTemplate | `Templating.Templates.Manage` |
+| <Badge text="POST" variant="success" /> | `/templates/{name}/unpublish` | UnpublishTemplate | `Templating.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/{name}/lifecycle` | GetTemplateLifecycle | `Templating.Templates.Manage` |
+| <Badge text="POST" variant="success" /> | `/templates/{name}/preview` | PreviewTemplate | `Templating.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/{name}/variables` | GetTemplateVariables | `Templating.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/{name}/history` | GetTemplateHistory | `Templating.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/templates/{name}/history/{revisionId:guid}` | GetTemplateRevisionDetail | `Templating.Templates.Manage` |
 
 ### Layouts
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="GET" variant="note" /> | `/layouts` | ListAvailableLayouts | `Templates.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/layouts` | ListAvailableLayouts | `Templating.Templates.Manage` |
 
 ### Categories
 
 | Method | Route | Operation | Permission |
 |--------|-------|-----------|------------|
-| <Badge text="GET" variant="note" /> | `/categories` | ListTemplateCategories | `Templates.Templates.Manage` |
-| <Badge text="POST" variant="success" /> | `/categories` | CreateTemplateCategory | `Templates.Templates.Manage` |
-| <Badge text="PUT" variant="caution" /> | `/categories/{id:guid}` | UpdateTemplateCategory | `Templates.Templates.Manage` |
-| <Badge text="DELETE" variant="danger" /> | `/categories/{id:guid}` | DeleteTemplateCategory | `Templates.Templates.Manage` |
+| <Badge text="GET" variant="note" /> | `/categories` | ListTemplateCategories | `Templating.Templates.Manage` |
+| <Badge text="POST" variant="success" /> | `/categories` | CreateTemplateCategory | `Templating.Templates.Manage` |
+| <Badge text="PUT" variant="caution" /> | `/categories/{id:guid}` | UpdateTemplateCategory | `Templating.Templates.Manage` |
+| <Badge text="DELETE" variant="danger" /> | `/categories/{id:guid}` | DeleteTemplateCategory | `Templating.Templates.Manage` |
 
 ---
 

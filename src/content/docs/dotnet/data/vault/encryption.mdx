@@ -139,8 +139,8 @@ foreach (string ciphertext in ciphertexts)
 }
 ```
 
-In practice you schedule this via `IReEncryptionJob` from
-`Granit.Encryption.ReEncryption` — see
+In practice you schedule this via `IReEncryptionService` from
+`Granit.Encryption.EntityFrameworkCore` — see
 [Field-level encryption](/dotnet/data/encryption/#full-key-rotation-workflow) for
 the batched, restartable job pattern.
 
@@ -177,7 +177,7 @@ catch (RetiredKeyVersionException ex)
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `RetiredKeyVersions` | `ISet<string>` | `{}` | Versions that trigger `RetiredKeyVersionException` on decrypt |
-| `BatchSize` | `int` | `500` | Default batch size for `IReEncryptionJob` |
+| `BatchSize` | `int` | `500` | Default batch size for `IReEncryptionService` |
 
 <Aside type="note" title="HashiCorp-only enforcement">
 `RetiredKeyVersions` is **only enforced by the HashiCorp Vault provider**. AWS KMS,

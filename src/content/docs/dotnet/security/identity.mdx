@@ -819,15 +819,15 @@ duplication.
 
 | Method | Route | Permission | Description |
 |--------|-------|------------|-------------|
-| GET | `/identity/users/search` | `Identity.UserCache.Read` | Search cached users |
-| GET | `/identity/users/{id}` | `Identity.UserCache.Read` | Get by external ID |
-| POST | `/identity/users/batch` | `Identity.UserCache.Read` | Batch resolve by IDs |
-| POST | `/identity/users/sync` | `Identity.UserCache.Sync` | Sync specific user |
-| POST | `/identity/users/sync-all` | `Identity.UserCache.Sync` | Full sync from provider |
-| DELETE | `/identity/users/{id}` | `Identity.UserCache.Delete` | GDPR erase |
-| PATCH | `/identity/users/{id}/pseudonymize` | `Identity.UserCache.Delete` | GDPR pseudonymize |
-| GET | `/identity/users/stats` | `Identity.UserCache.Read` | Cache statistics |
-| GET | `/identity/users/capabilities` | `Identity.UserCache.Read` | Provider capabilities |
+| GET | `/identity/users` | `Identity.Users.Read` | Search cached users (free-text, paginated) |
+| GET | `/identity/users/{userId}` | `Identity.Users.Read` | Get by external ID |
+| POST | `/identity/users/batch` | `Identity.Users.Read` | Batch resolve by IDs |
+| POST | `/identity/users/sync` | `Identity.Users.Sync` | Sync specific user |
+| POST | `/identity/users/sync-all` | `Identity.Users.Sync` | Full sync from provider |
+| DELETE | `/identity/users/{userId}` | `Identity.Users.Delete` | GDPR erase |
+| PATCH | `/identity/users/{userId}/pseudonymize` | `Identity.Users.Delete` | GDPR pseudonymize |
+| GET | `/identity/users/stats` | `Identity.Users.Read` | Cache statistics |
+| GET | `/identity/users/capabilities` | `Identity.Users.Read` | Provider capabilities |
 | POST | `/identity/webhook` | *(anonymous, signature-validated)* | IdP webhook receiver |
 
 ### Webhook
