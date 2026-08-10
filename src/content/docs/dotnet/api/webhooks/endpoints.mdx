@@ -272,7 +272,7 @@ Every request DTO is auto-validated via `FluentValidation` through `MapGranitGro
 - **SSRF protection (delivery)** — `SocketsHttpHandler.ConnectCallback` validates the
   **resolved IP** at connection time, defeating DNS rebinding.
 - **Event type** — non-empty, max 200 chars, **must exist in the event-type registry**.
-  Unknown types are rejected with `Granit:Validation:UnknownWebhookEventType` —
+  Unknown types are rejected with `Validation:UnknownWebhookEventType` —
   always call `GET /event-types` before submitting a create form.
 - **Deactivation reason** — non-empty, max 1000 chars.
 

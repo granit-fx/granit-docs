@@ -107,7 +107,7 @@ responses in the OpenAPI documentation.
   "title": "One or more validation errors occurred.",
   "status": 422,
   "errors": {
-    "Name": ["Granit:Validation:NotEmptyValidator"]
+    "Name": ["Validation:Builtin:NotEmpty"]
   }
 }
 ```

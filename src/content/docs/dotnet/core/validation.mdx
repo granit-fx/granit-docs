@@ -113,9 +113,9 @@ When validation fails, the filter returns `422 Unprocessable Entity` with a
 {
   "status": 422,
   "errors": {
-    "Email": ["Granit:Validation:InvalidEmail"],
-    "Phone": ["Granit:Validation:InvalidE164Phone"],
-    "Iban": ["Granit:Validation:InvalidIban"]
+    "Email": ["Validation:Format:Email"],
+    "Phone": ["Validation:Format:E164Phone"],
+    "Iban": ["Validation:Format:Iban"]
   }
 }
 ```
@@ -157,7 +157,7 @@ your `IValidator<T>` implementations.
 | `Matches(regex)` | `pattern: regex` |
 | `Matches(regex).WithPatternHint(key)` | `pattern` + `x-granit-pattern-hint: key` |
 | `EmailAddress()` | `format: "email"` |
-| Custom (IBAN, E.164...) | `x-granit-validator: "Granit:Validation:InvalidIban"` |
+| Custom (IBAN, E.164...) | `x-granit-validator: "Validation:Format:Iban"` |
 | `MustAsync()` / async rules | Ignored (no static OpenAPI equivalent) |
 
 ### Pattern hints
@@ -169,7 +169,7 @@ an i18n key that the frontend can resolve to a human-readable hint:
 ```csharp
 RuleFor(x => x.CountryCode)
     .Matches(@"^[A-Z]{2}$")
-    .WithPatternHint("Granit:Validation:Hints:Alpha2Code");
+    .WithPatternHint("Validation:Hint:Alpha2Code");
 ```
 
 The transformer emits both `pattern` and `x-granit-pattern-hint` in the
@@ -178,7 +178,7 @@ OpenAPI schema:
 ```json
 {
   "pattern": "^[A-Z]{2}$",
-  "x-granit-pattern-hint": "Granit:Validation:Hints:Alpha2Code"
+  "x-granit-pattern-hint": "Validation:Hint:Alpha2Code"
 }
 ```
 
@@ -190,11 +190,11 @@ Built-in hint keys:
 
 | Key | en | fr |
 | --- | -- | -- |
-| `Hints:Alpha2Code` | 2 uppercase letters (e.g. FR, BE) | 2 lettres majuscules (ex. FR, BE) |
-| `Hints:Alpha3Code` | 3 uppercase letters (e.g. FRA, BEL) | 3 lettres majuscules (ex. FRA, BEL) |
-| `Hints:NumericCode` | 3 digits (e.g. 250, 056) | 3 chiffres (ex. 250, 056) |
+| `Hint:Alpha2Code` | 2 uppercase letters (e.g. FR, BE) | 2 lettres majuscules (ex. FR, BE) |
+| `Hint:Alpha3Code` | 3 uppercase letters (e.g. FRA, BEL) | 3 lettres majuscules (ex. FRA, BEL) |
+| `Hint:NumericCode` | 3 digits (e.g. 250, 056) | 3 chiffres (ex. 250, 056) |
 
-All hint keys are prefixed with `Granit:Validation:` (omitted in the table).
+All hint keys are prefixed with `Validation:` (omitted in the table).
 Add custom hints in `Localization/Validation/*.json` files.
 
 ### Frontend benefit
@@ -213,15 +213,17 @@ Extension methods on `IRuleBuilder<T, string?>` for common international formats
 
 | Category | Validator | Format | Error code |
 | -------- | --------- | ------ | ---------- |
-| Party | `.Email()` | RFC 5321 practical subset | `InvalidEmail` |
-| Party | `.E164Phone()` | `+` followed by 7-15 digits | `InvalidE164Phone` |
-| Payment | `.Iban()` | ISO 13616 (MOD-97 check) | `InvalidIban` |
-| Payment | `.BicSwift()` | ISO 9362 (8 or 11 chars) | `InvalidBicSwift` |
-| Payment | `.SepaCreditorIdentifier()` | EPC262-08 (MOD 97-10) | `InvalidSepaCreditorIdentifier` |
-| Locale | `.Iso3166Alpha2CountryCode()` | 2 uppercase letters | `InvalidIso3166Alpha2` |
-| Locale | `.Bcp47LanguageTag()` | `fr`, `fr-BE`, `zh-Hans-CN` | `InvalidBcp47LanguageTag` |
+| Party | `.Email()` | RFC 5321 practical subset | `Format:Email` |
+| Party | `.E164Phone()` | `+` followed by 7-15 digits | `Format:E164Phone` |
+| Payment | `.Iban()` | ISO 13616 (MOD-97 check) | `Format:Iban` |
+| Payment | `.BicSwift()` | ISO 9362 (8 or 11 chars) | `Format:BicSwift` |
+| Payment | `.SepaCreditorIdentifier()` | EPC262-08 (MOD 97-10) | `Format:SepaCreditorIdentifier` |
+| Locale | `.Iso3166Alpha2CountryCode()` | 2 uppercase letters | `Format:Iso3166Alpha2` |
+| Locale | `.Bcp47LanguageTag()` | `fr`, `fr-BE`, `zh-Hans-CN` | `Format:Bcp47LanguageTag` |
 
-All error codes are prefixed with `Granit:Validation:` (omitted in the table for brevity).
+All error codes are prefixed with `Validation:` (omitted in the table for brevity)
+— see [ADR-068](/dotnet/architecture/adr/068-validation-key-naming-convention/)
+for the `Validation:{Category}:{Rule}` shape.
 
 ## Custom error codes
 
@@ -361,8 +363,8 @@ app.MapGranitValidation()
 
 ```json
 // POST /validation/validate
-{ "errorCode": "Granit:Validation:InvalidIban", "value": "BE68539007547034" }
-// → { "errorCode": "Granit:Validation:InvalidIban", "status": "Valid" }
+{ "errorCode": "Validation:Format:Iban", "value": "BE68539007547034" }
+// → { "errorCode": "Validation:Format:Iban", "status": "Valid" }
 ```
 
 Unknown error codes return **404 Not Found** (RFC 7807).
@@ -373,14 +375,14 @@ Unknown error codes return **404 Not Found** (RFC 7807).
 // POST /validation/validate-batch
 {
   "fields": [
-    { "errorCode": "Granit:Validation:InvalidIban", "value": "BE68539007547034" },
-    { "errorCode": "Granit:Validation:InvalidEmail", "value": "bad" },
+    { "errorCode": "Validation:Format:Iban", "value": "BE68539007547034" },
+    { "errorCode": "Validation:Format:Email", "value": "bad" },
     { "errorCode": "Unknown:Code", "value": "x" }
   ]
 }
 // → { "results": [
-//     { "errorCode": "Granit:Validation:InvalidIban", "status": "Valid" },
-//     { "errorCode": "Granit:Validation:InvalidEmail", "status": "Invalid" },
+//     { "errorCode": "Validation:Format:Iban", "status": "Valid" },
+//     { "errorCode": "Validation:Format:Email", "status": "Invalid" },
 //     { "errorCode": "Unknown:Code", "status": "ValidatorNotFound" }
 //   ] }
 ```

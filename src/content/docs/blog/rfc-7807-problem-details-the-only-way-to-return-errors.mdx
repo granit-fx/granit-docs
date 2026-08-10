@@ -239,8 +239,8 @@ FluentValidation failures get special treatment. The `errors` dictionary maps fi
   "status": 422,
   "title": "One or more validation errors occurred.",
   "errors": {
-    "Name": ["Granit:Validation:NotEmptyValidator"],
-    "Price": ["Granit:Validation:GreaterThanValidator"]
+    "Name": ["Validation:Builtin:NotEmpty"],
+    "Price": ["Validation:Builtin:GreaterThan"]
   }
 }
 ```
@@ -280,7 +280,7 @@ Standard RFC 7807 gets you `type`, `title`, `status`, `detail`, and `instance`. 
   "traceId": "abcd1234ef567890",
   "errorCode": "Invoices:InvalidAmount",
   "errors": {
-    "Amount": ["Granit:Validation:GreaterThanValidator"]
+    "Amount": ["Validation:Builtin:GreaterThan"]
   }
 }
 ```
@@ -333,7 +333,7 @@ No error escapes as a bare string. No status code is returned without `applicati
 - **RFC 7807 Problem Details** is the only acceptable format for HTTP error responses. Bare strings break structured error handling, localization, and OpenAPI contracts.
 - **`TypedResults.Problem()`** is the .NET 10 primitive. Use it for anticipated errors. Let Granit's exception pipeline handle everything else.
 - **`IUserFriendlyException`** controls what the client sees. Without it, the message is masked in production (ISO 27001).
-- **Error codes over messages** — the frontend resolves `Granit:Validation:NotEmptyValidator` to localized strings. Ship codes, not strings.
+- **Error codes over messages** — the frontend resolves `Validation:Builtin:NotEmpty` to localized strings. Ship codes, not strings.
 - **`traceId` on every error** enables instant log correlation. No reproduction steps needed.
 
 ## Further reading
