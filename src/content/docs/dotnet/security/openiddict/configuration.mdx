@@ -468,14 +468,14 @@ options.Lockout.DefaultLockoutTimeSpan = ...;  // from GranitLockoutOptions.Base
 options.SignIn.RequireConfirmedEmail = true;
 ```
 
-These values are read from `GranitLockoutOptions` (section `Identity:Lockout`).
+These values are read from `GranitLockoutOptions` (section `Identity:Local:Lockout`).
 The `MaxLoginAttempts` runtime setting (`OpenIddict.MaxLoginAttempts`) overrides
 `MaxFailedAccessAttempts` per-tenant.
 
 ### Lockout with exponential backoff
 
 Granit replaces ASP.NET Core Identity's fixed lockout duration with **exponential
-backoff** via `GranitUserManager`. Each consecutive lockout doubles the duration,
+backoff** via `LocalIdentityManager`. Each consecutive lockout doubles the duration,
 capped at `MaxLockoutDuration` (default: 2 hours).
 
 ```json

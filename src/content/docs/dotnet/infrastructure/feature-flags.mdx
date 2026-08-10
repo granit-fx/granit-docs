@@ -326,10 +326,11 @@ The module registers `FeaturesMetrics` (singleton) with `IMeterFactory` and a
 
 | Metric | Type | Tags | Description |
 |--------|------|------|-------------|
-| `granit.features.value.resolved` | Counter | `tenant_id`, `feature_name`, `value_provider` | Feature values resolved through the cascade |
-| `granit.features.override.changed` | Counter | `tenant_id`, `feature_name`, `operation` | Override mutations (set or delete) |
-| `granit.features.limit.checked` | Counter | `tenant_id`, `feature_name` | Limit guard checks |
 | `granit.features.limit.exceeded` | Counter | `tenant_id`, `feature_name` | Limit guard checks that exceeded the plan limit |
+
+`FeaturesMetrics` ships this single counter (meter `Granit.Features`) — the
+resolution cascade and override mutations are traced on the
+`Granit.Features` activity source rather than counted.
 
 Structured log messages use `[LoggerMessage]` in `FeaturesLog`:
 

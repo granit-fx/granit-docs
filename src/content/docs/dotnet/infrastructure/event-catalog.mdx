@@ -35,10 +35,13 @@ repository.
 
 | Event | Type | Trigger | Compliance |
 |-------|------|---------|------------|
-| `ApiKeyCreatedEvent` | Domain | `ApiKeyEntry.Create()` | ISO 27001 |
-| `ApiKeyRevokedEvent` | Domain | Service layer | ISO 27001 |
-| `ApiKeyRotatedEvent` | Domain | Service layer | ISO 27001 |
-| `ApiKeyScopesUpdatedEvent` | Domain | Service layer | ISO 27001 |
+| `ApiKeyCreatedEto` | Integration | `ApiKeyEntry.Create()` | ISO 27001 |
+| `ApiKeyRevokedEto` | Integration | Service layer | ISO 27001 |
+| `ApiKeyRotatedEto` | Integration | Service layer | ISO 27001 |
+| `ApiKeyScopesUpdatedEto` | Integration | Service layer | ISO 27001 |
+| `ApiKeyExpiringSoonEto` | Integration | Expiry sweep | ISO 27001 |
+| `ApiKeyExpiredEvent` | Domain | Expiry sweep | ISO 27001 |
+| `ApiKeyUsedEto` | Integration | Successful key authentication | ISO 27001 |
 | `ApiKeyUsedEto` | Integration | `ApiKeyEntry.RecordUsage()` | ISO 27001 |
 | `ApiKeyExpiredEvent` | Domain | `ApiKeyEntry.MarkAsExpired()` | ISO 27001 |
 
@@ -46,9 +49,9 @@ repository.
 
 | Event | Type | Trigger | Compliance |
 |-------|------|---------|------------|
-| `IdentityUserUpdatedEvent` | Integration | Identity provider webhook | — |
-| `IdentityUserDeletedEvent` | Integration | Identity provider webhook | GDPR Art. 17 |
-| `UserCacheEntryErasedEvent` | Domain | After hard-delete in handler | GDPR Art. 17 |
+| `IdentityUserUpdatedEto` | Integration | Identity provider webhook | — |
+| `IdentityUserDeletedEto` | Integration | Identity provider webhook | GDPR Art. 17 |
+| `FederatedIdentityErasedEvent` | Domain | After hard-delete in handler | GDPR Art. 17 |
 | `UserCacheSyncedEto` | Integration | After cache upsert in handler | — |
 
 ### Privacy
@@ -117,10 +120,10 @@ repository.
 
 | Event | Type | Trigger | Compliance |
 |-------|------|---------|------------|
-| `ImportJobCompletedEvent` | Integration | Import orchestrator | — |
+| `ImportJobCompletedEto` | Integration | Import orchestrator | — |
 | `ImportJobCancelledEvent` | Domain | `ImportJob.Cancel()` | ISO 27001 |
-| `ExportJobCompletedEvent` | Integration | Export orchestrator | — |
-| `ExportJobFailedEto` | Integration | Export orchestrator catch block | SLA |
+| `ExportJobCompletedEto` | Integration | Export orchestrator | — |
+| `ExportCompletedEto` | Integration | Export archive assembled and downloadable | — |
 
 ### Timeline
 

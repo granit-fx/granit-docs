@@ -254,12 +254,15 @@ negligible but unnecessary.
 
 | Metric | Tags | Description |
 |--------|------|-------------|
-| `granit.persistence.entity.audited` | `tenant_id`, `operation` (`created` / `modified`) | Entities processed by audit interceptor |
-| `granit.persistence.entity.soft_deleted` | `tenant_id` | Entities converted from hard delete to soft delete |
+| `granit.persistence.entity.purged` | `tenant_id` | Soft-deleted entities permanently purged |
+| `granit.persistence.cross_tenant_query` | `entity_name`, `origin`, `tenant_id` | A query that bypassed the multi-tenant filter |
 
-Both counters include the current `tenant_id` tag (coalesced to `"global"` when no
-tenant is active). Use these to monitor write throughput per tenant and detect
-anomalous deletion spikes.
+`tenant_id` is coalesced to `"global"` when no tenant is active. The
+`cross_tenant_query` counter is the interesting one to alert on: `origin`
+distinguishes `host_endpoint` (a route explicitly marked host-scoped),
+`explicit` (a deliberate `QueryAcrossTenants` call), and
+`implicit_unsignaled` — a bypass that happened with no host-access signal at
+all, which is the shape of a tenant-isolation bug.
 
 ## See also
 

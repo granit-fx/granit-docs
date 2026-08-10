@@ -112,7 +112,7 @@ Add the localization keys to each of your module's 17 culture files:
 }
 ```
 
-The registry serves two purposes: it powers the `GET /event-types` discovery endpoint (used by admin UIs to build subscription forms), and it **validates subscriptions at creation time** — subscribing to an unknown event type is rejected immediately with `Granit:Validation:UnknownWebhookEventType`.
+The registry serves two purposes: it powers the `GET /event-types` discovery endpoint (used by admin UIs to build subscription forms), and it **validates subscriptions at creation time** — subscribing to an unknown event type is rejected immediately with `Validation:UnknownWebhookEventType`.
 
 ## Publishing — one call, outbox-backed
 

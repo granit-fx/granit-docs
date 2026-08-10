@@ -103,11 +103,16 @@ in their pod spec.
 
 ## Tenant boundary
 
-`TenantAwareHeadlessBrowser` decorates `IHeadlessBrowser` to stamp every
-page with the acquiring `ICurrentTenant.Id` and refuse cross-tenant reuse.
-Tests that fake `ICurrentTenant` need to set it *before* `AcquirePageAsync`,
-not after — the canonical "tenant leaked across an `await`" bug surfaces as
-a `CrossTenantPageAcquisitionException`.
+`TenantAwareHeadlessBrowser` decorates `IHeadlessBrowser` to stamp the
+acquiring `ICurrentTenant.Id` onto the page metrics and the
+`BrowserPageAcquiredEvent`, and — when an `IPermissionChecker` is registered —
+to require `Granit.Browsing.Pages.Acquire` before handing out a page, throwing
+`UnauthorizedAccessException` otherwise. Pages are also wrapped in
+`PermissionAwareBrowserPage` so per-operation permissions keep applying.
+
+Tenant identity is captured at acquisition time, so tests that fake
+`ICurrentTenant` must set it *before* `AcquirePageAsync`, not after: setting it
+later produces pages attributed to the wrong tenant in metrics and events.
 
 ## See also
 

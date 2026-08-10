@@ -107,7 +107,7 @@ responses in the OpenAPI documentation.
   "title": "One or more validation errors occurred.",
   "status": 422,
   "errors": {
-    "Name": ["Granit:Validation:NotEmptyValidator"]
+    "Name": ["Validation:Builtin:NotEmpty"]
   }
 }
 ```
@@ -515,7 +515,7 @@ package was merged in — see [API Documentation](/dotnet/api/api-documentation/
 
 ### Configuration
 
-`ApiDocumentation:MajorVersions` is the single source for both route segments
+`Http:ApiDocumentation:MajorVersions` is the single source for both route segments
 and per-version OpenAPI documents:
 
 ```json

@@ -193,7 +193,7 @@ when persisting to the audit log.
 | --- | --- | --- |
 | `BrowserPageAcquiredEvent` | After `AcquirePageAsync` succeeds. | `TenantId`, `PageId`, `Engine`, `CapabilityFlags`. |
 | `BrowserUrlNavigatedEvent` | After `NavigateAsync` completes (success or sandbox-block). | `PageId`, **`Url`**, `Outcome` (`Allowed` / `BlockedBySandbox` / `EngineError`). |
-| `BrowserScriptInjectedEvent` | On `EvaluateAsync` / `AddScriptTagAsync` / `AddStyleTagAsync`. | `PageId`, **`ScriptHash`** (SHA-256 of source), `InjectionKind`. |
+| `BrowserScriptInjectedEvent` | On `EvaluateAsync` / `AddScriptTagAsync` / `AddStyleTagAsync`. | `PageId`, `EngineName`, `Kind`, **`ScriptHash`** (SHA-256, `[SensitiveData(Hash)]`), `InjectedAt`. |
 
 Hashing uses the same `Granit.Audit` `[SensitiveData]` machinery — the
 in-memory event carries the plaintext for in-process subscribers; the
@@ -304,12 +304,14 @@ Automatically registered. Decoration order is enforced by
 
 A hosted service that cooperates with the .NET host lifecycle:
 
-1. `IHostApplicationLifetime.ApplicationStopping` fires.
-2. Coordinator stops accepting new `AcquirePageAsync` calls (they get a
-   `BrowserDrainingException`).
-3. In-flight pages get `MaxRenderDuration` to complete; after that, the
-   browser is force-closed.
-4. Logged at `Information` per stage.
+1. Shutdown disposes the pool, which calls
+   `HeadlessBrowserDrainCoordinator.DrainAsync`.
+2. The drain is bounded by `GranitBrowsingOptions.DrainTimeout` (default
+   30 seconds) so a misbehaving page handle can never block shutdown
+   indefinitely.
+3. On timeout the coordinator increments
+   `granit.browsing.pool.drain.timeout`, logs a warning, and force-disposes
+   the browser when it implements `IAsyncDisposable`.
 
 In a Kubernetes graceful-shutdown scenario, the pod `terminationGracePeriod`
 should be `MaxRenderDuration + 10s` headroom.

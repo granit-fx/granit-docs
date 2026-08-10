@@ -182,8 +182,8 @@ meter and activity source.
 | Entity | lowercase noun (plural for collections) | `blobs`, `requests`, `jobs`, `rows` |
 | Action | lowercase past-tense verb or adjective | `completed`, `failed`, `active`, `duration` |
 
-Full example: `granit.blobstorage.blobs.deleted`,
-`granit.dataexchange.import.duration`
+Full example: `granit.notifications.deliveries.succeeded`,
+`granit.dataexchange.retention.purged`
 
 #### Instrument types
 

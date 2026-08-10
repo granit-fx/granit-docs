@@ -8,7 +8,7 @@ sidebar:
 
 import { Tabs, TabItem, FileTree } from "@astrojs/starlight/components";
 
-`@granit/templating` is a unified package (no TS/React split) that provides template
+`@granit/templating` and its React companion `@granit/react-templating` provide template
 management — mirroring `Granit.Templating` and `Granit.DocumentGeneration` on the .NET
 backend. It covers CRUD operations, Draft→Published→Archived lifecycle, HTML/PDF/Excel
 preview rendering, variable discovery, categories, and full revision history.
@@ -21,7 +21,8 @@ with automatic cache invalidation.
 ## Package structure
 
 <FileTree>
-- @granit/templating/ Types, API functions, provider, hooks (unified package)
+- @granit/templating/ Types, API functions (framework-agnostic)
+  - @granit/react-templating `TemplatingProvider`, query/mutation hooks
 </FileTree>
 
 | Package | Role | Depends on |
@@ -229,18 +230,12 @@ interface TemplateCategory {
   readonly templateCount: number;
 }
 
-interface CreateTemplateCategoryRequest {
+// One request shape for both create and update.
+interface SaveTemplateCategoryRequest {
   readonly name: string;
   readonly description?: string;
   readonly icon?: string;
   readonly sortOrder?: number;
-}
-
-interface UpdateTemplateCategoryRequest {
-  readonly name: string;
-  readonly description?: string;
-  readonly icon?: string;
-  readonly sortOrder: number;
 }
 ```
 
@@ -438,7 +433,7 @@ graph LR
 | Template types | `TemplateDetail`, `TemplateListItem`, `TemplateRevision`, `SaveTemplateRequest` | `@granit/templating` |
 | Preview types | `TemplatePreviewRequest`, `TemplatePreviewResponse`, `TemplateParseError` | `@granit/templating` |
 | Variable types | `TemplateVariable`, `TemplateVariables` | `@granit/templating` |
-| Category types | `TemplateCategory`, `CreateTemplateCategoryRequest` | `@granit/templating` |
+| Category types | `TemplateCategory`, `TemplateCategoryId`, `SaveTemplateCategoryRequest` | `@granit/templating` |
 | API functions | `listTemplates()`, `saveDraft()`, `publishTemplate()`, `previewTemplate()`, `getVariables()` | `@granit/templating` |
 | Provider | `TemplatingProvider`, `useTemplatingConfig()` | `@granit/templating` |
 | Query hooks | `useTemplates()`, `useTemplate()`, `useTemplateVariables()`, `useTemplateHistory()`, `useTemplateCategories()` | `@granit/templating` |

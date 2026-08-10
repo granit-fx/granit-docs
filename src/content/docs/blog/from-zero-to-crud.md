@@ -136,7 +136,7 @@ The response includes audit fields. The caller sees who created or modified each
 
 ## Step 4: Add FluentValidation
 
-Granit uses **FluentValidation** with structured error codes. Validators are auto-discovered from loaded module assemblies by `GranitValidationModule`. Error messages are returned as codes (e.g., `Granit:Validation:NotEmptyValidator`) that the frontend resolves from its localization dictionary.
+Granit uses **FluentValidation** with structured error codes. Validators are auto-discovered from loaded module assemblies by `GranitValidationModule`. Error messages are returned as codes (e.g., `Validation:Builtin:NotEmpty`) that the frontend resolves from its localization dictionary.
 
 ```csharp title="Validators/ProductCreateRequestValidator.cs"
 using FluentValidation;

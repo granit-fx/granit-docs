@@ -195,7 +195,7 @@ with an optional **colon-separated namespace prefix**:
 
 | Separator | Role | Example |
 |-----------|------|---------|
-| `:` colon | Namespace boundary (resource scope) | `Showcase:Admin:`, `Granit:Validation:` |
+| `:` colon | Namespace boundary (resource scope) | `Showcase:Admin:`, `Validation:Format:` |
 | `.` dot | Hierarchy within a scope | `Users.Columns.Email` |
 
 Backend JSON files include the full prefix:
@@ -247,7 +247,7 @@ pattern:
 | Application | Prefix | Example key |
 |-------------|--------|-------------|
 | Granit framework | `Granit:` | `Granit:EntityNotFound` |
-| Granit validation | `Granit:Validation:` | `Granit:Validation:NotEmptyValidator` |
+| Granit validation | `Validation:` | `Validation:Builtin:NotEmpty` |
 | Granit permissions | `Permission:` / `PermissionGroup:` | `Permission:Settings.Global.Read` |
 | Your application | `MyApp:Admin:` | `MyApp:Admin:Users.Title` |
 | Showcase admin | `Showcase:Admin:` | `Showcase:Admin:Auth.Login` |

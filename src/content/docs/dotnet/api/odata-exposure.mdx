@@ -373,7 +373,7 @@ app.MapGranitODataHostEndpoints("/api/{version}/odata/host", opts =>
 Four strict-config gates layered on top of the tenant-feed validator:
 
 1. **Permission must be `MultiTenancySides.Host`.** The validator resolves the
-   permission through `IPermissionDefinitionManager` at startup and refuses `Tenant`
+   permission through `IPermissionDefinitionRegistry` at startup and refuses `Tenant`
    or `Both`. A permission without an `IPermissionDefinitionProvider` declaration is
    also refused.
 2. **No anonymous access.** The host builder doesn't expose `AllowAnonymousAccess()`

@@ -119,7 +119,7 @@ builder.AddGranit(granit => granit
 ```
 
 - **Logs**: Serilog with `[LoggerMessage]` source generation. No string interpolation, no PII in log output, structured output to the Grafana Loki stack.
-- **Metrics**: every module emits named metrics via `IMeterFactory` (e.g. `granit.authorization.permission.check`, `granit.persistence.query.duration`). Mimir stores and alerts on them.
+- **Metrics**: every module emits named metrics via `IMeterFactory` (e.g. `granit.authorization.check.denied`, `granit.persistence.cross_tenant_query`). Mimir stores and alerts on them.
 - **Traces**: `ActivitySource` per module, correlated with logs via `trace_id`. Grafana Tempo provides flame graphs for any production request.
 
 The Grafana LGTM stack ships as a Docker Compose overlay for local development. The same configuration deploys to production.

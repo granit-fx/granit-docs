@@ -37,7 +37,7 @@ When a visitor logs in after opting out anonymously, the application should merg
 the anonymous opt-out with their user profile:
 
 ```csharp
-// In your login handler (e.g., Wolverine handler on UserLoggedInEto)
+// In your login handler (e.g., a Wolverine handler on UserSessionCreatedEto)
 await optOutWriter.MergeAnonymousAsync(anonymousTrackId, userId);
 ```
 

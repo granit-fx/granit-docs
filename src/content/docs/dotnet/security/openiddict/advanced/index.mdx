@@ -93,8 +93,8 @@ sequenceDiagram
     API->>API: Verify no chain-impersonation
     API->>Token: Issue short-lived token (max 1h)
     Token-->>API: Access + Refresh tokens with impersonator_id claim
-    API->>Audit: Write audit log entry
-    API->>Events: Publish UserImpersonatedEto
+    API->>Audit: Write durable audit entry (ImpersonationAuditMarker)
+    Audit->>Events: Publish AuditEntryPersistedEto
     API-->>Admin: 200 OK { accessToken, refreshToken, expiresIn }
 
     Note over Admin: Admin uses impersonation token for API calls
@@ -113,7 +113,7 @@ sequenceDiagram
 | Max duration | 1 hour, hardcoded, non-configurable |
 | Permission | Requires `OpenIddict.Users.Impersonate` permission |
 | Audit trail | Mandatory `IAuditingWriter` entry on every impersonation |
-| Transparency | `UserImpersonatedEto` published via `IDistributedEventBus` -- consumed by `Granit.Notifications` to notify the impersonated user (GDPR / SOC2) |
+| Transparency | The durable audit entry raises `AuditEntryPersistedEto`; `ImpersonationAuditNotificationHandler` consumes it and notifies the impersonated user (GDPR / SOC2) |
 
 ### Impersonation claims
 
@@ -504,20 +504,28 @@ public sealed record AccountDeletedEto(
 **Typical subscriber:** Clean up user-specific data across all modules (blob storage,
 audit logs, notification preferences, timeline entries, workflow assignments).
 
-### UserImpersonatedEto
+### AuditEntryPersistedEto (impersonation)
 
-Published when an administrator impersonates a user.
+Impersonation does not publish a dedicated event. The endpoint writes a
+**durable audit entry** first, and the transparency notification is derived from
+that record — so a notification can never exist without its audit trail.
 
 ```csharp
-public sealed record UserImpersonatedEto(
-    Guid TargetUserId, Guid ImpersonatorId,
-    Guid? TenantId, DateTimeOffset OccurredAt) : IIntegrationEvent;
+public sealed record AuditEntryPersistedEto(
+    Guid Id,
+    DateTimeOffset Timestamp,
+    string UserId,
+    AuditCategory Category,
+    int EntityChangeCount,
+    Guid? TenantId,
+    string? PrimaryEntityType = null) : IIntegrationEvent;
 ```
 
-**Published by:** `AdminUserEndpoints.ImpersonateAsync`
+**Published by:** the auditing pipeline, once the entry is committed.
 
-**Typical subscriber:** Send transparency notification to the impersonated user
-("An administrator accessed your account on \{date\}") — GDPR / SOC2 compliance.
+**Impersonation subscriber:** `ImpersonationAuditNotificationHandler` filters on
+the impersonation category (`ImpersonationAuditMarker`) and sends the
+transparency notification to the impersonated user — GDPR / SOC2 compliance.
 
 ### Subscribing to events
 

@@ -281,7 +281,7 @@ cannot grant permissions they do not themselves possess (returns 403 Forbidden).
 | Category | Key types | Package |
 |----------|-----------|---------|
 | Modules | `GranitAuthorizationModule`, `GranitAuthorizationEntityFrameworkCoreModule` | — |
-| Abstractions | `IPermissionDefinitionProvider`, `IPermissionDefinitionManager`, `IPermissionChecker`, `IPermissionGrantStore`, `PermissionAttribute` | `Granit.Authorization` |
+| Abstractions | `IPermissionDefinitionProvider`, `IPermissionDefinitionContext`, `IPermissionDefinitionRegistry`, `IPermissionChecker`, `IPermissionGrantStore`, `PermissionAttribute` | `Granit.Authorization` |
 | Options | `GranitAuthorizationOptions` | — |
 | EF Core | `PermissionGrant`, `IPermissionGrantDbContext`, `IPermissionManagerReader`, `IPermissionManagerWriter` | `Granit.Authorization.EntityFrameworkCore` |
 | Extensions | `AddGranitAuthorization()`, `AddGranitAuthorizationEntityFrameworkCore<T>()` | — |

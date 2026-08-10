@@ -42,7 +42,7 @@ Granit.IoT closes the gap with opinionated, framework-aligned defaults.
 | **Duplicate messages** | Same payload fires alerts N times | Redis `SETNX` dedup on transport message-id (TTL 5 min) |
 | **Multi-tenancy leaks** | A missing `WHERE tenant_id = …` ships another customer's data | Named query filter on `TenantId`, enforced by arch tests |
 | **Exploding telemetry tables** | A year of data → multi-minute queries | BRIN + GIN + monthly partitioning, opt-in TimescaleDB hypertables |
-| **Provider lock-in** | Each cloud is a re-integration | Pluggable `IIngestionParser` / `IPayloadSignatureValidator` |
+| **Provider lock-in** | Each cloud is a re-integration | Pluggable `IInboundMessageParser` / `IPayloadSignatureValidator` |
 | **Silos for alerts & audit** | Threshold alerts live in their own UI | Bridge to `Granit.Notifications` + `Granit.Timeline` |
 | **No AI surface** | Operators chase dashboards by hand | `[McpServerTool]` wrappers, tenant-scoped, read-only |
 

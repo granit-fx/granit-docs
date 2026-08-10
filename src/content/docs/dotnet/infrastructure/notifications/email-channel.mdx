@@ -35,7 +35,7 @@ Every email sent through `EmailNotificationChannel` automatically includes a
 - **Accessibility** — CLI clients, screen readers, and wearables use the text version
 - **Fallback** — clients that block HTML rendering show the plain text
 
-The conversion uses `HtmlToPlainTextConverter` (AngleSharp-based), which:
+The conversion uses `IHtmlToPlainTextConverter` (`AngleSharpHtmlToPlainTextConverter`), which:
 
 | HTML | Plain text |
 |------|-----------|

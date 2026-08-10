@@ -83,7 +83,7 @@ public sealed class CreateOrderRequestValidator : GranitValidator<CreateOrderReq
         RuleFor(x => x.Items)
             .NotEmpty()
             .Must(items => items.Count <= 100)
-            .WithErrorCodeAndMessage("Granit:Validation:TooManyItems");
+            .WithErrorCodeAndMessage("Validation:TooManyItems");
 
         RuleForEach(x => x.Items).SetValidator(new OrderItemRequestValidator());
 
@@ -93,9 +93,9 @@ public sealed class CreateOrderRequestValidator : GranitValidator<CreateOrderReq
 }
 ```
 
-`GranitValidator<T>` is a thin base class that emits **structured error codes** (`Granit:Validation:NotEmptyValidator`, `Granit:Validation:EmailValidator`) instead of raw English strings. The frontend resolves codes to localized messages via `GET /api/{version}/localization`. No backend code change ships a French translation; no hardcoded English leaks into a German UI.
+`GranitValidator<T>` is a thin base class that emits **structured error codes** (`Validation:Builtin:NotEmpty`, `Validation:Builtin:Email`) instead of raw English strings. The frontend resolves codes to localized messages via `GET /api/{version}/localization`. No backend code change ships a French translation; no hardcoded English leaks into a German UI.
 
-For custom rules, `WithErrorCodeAndMessage("Granit:Validation:TooManyItems")` keeps the code and the message key in sync — they are the same value. Diverging the two is the single most common cause of "validation passes but UI shows nothing", and the helper makes it impossible.
+For custom rules, `WithErrorCodeAndMessage("Validation:TooManyItems")` keeps the code and the message key in sync — they are the same value. Diverging the two is the single most common cause of "validation passes but UI shows nothing", and the helper makes it impossible.
 
 ## Wiring it up — the wrong way
 
@@ -207,7 +207,7 @@ public Task TransformAsync(
 
 The result: `maxLength`, `minLength`, `pattern`, `minimum`, `maximum`, `required`, and `format` end up in the generated `openapi.json`. Frontend code generators (Kiota, NSwag, openapi-typescript) pick them up automatically. Your TypeScript types know the email field has a max length of 254. Your Zod schemas can be derived without manual reconciliation.
 
-Custom domain validators that have no standard OpenAPI equivalent — IBAN, E.164 phone, Belgian NISS — are exposed as `x-granit-validator` extensions, and a paired `WithPatternHint("Granit:Validation:Hints:Alpha2Code")` lets the frontend show a human-readable hint ("2 uppercase letters") instead of the raw regex.
+Custom domain validators that have no standard OpenAPI equivalent — IBAN, E.164 phone, Belgian NISS — are exposed as `x-granit-validator` extensions, and a paired `WithPatternHint("Validation:Hint:Alpha2Code")` lets the frontend show a human-readable hint ("2 uppercase letters") instead of the raw regex.
 
 ## Opting out — when you have to
 
@@ -226,7 +226,7 @@ The convention is enforced at build time by `ValidationConventionTests`, which s
 
 - A `*Request` record exists without a matching `IValidator<T>`.
 - A route group is created with stock `MapGroup` instead of `MapGranitGroup`.
-- A `WithMessage("hardcoded English string")` slips into a validator instead of `WithErrorCodeAndMessage("Granit:Validation:Code")`.
+- A `WithMessage("hardcoded English string")` slips into a validator instead of `WithErrorCodeAndMessage("Validation:Code")`.
 
 These tests are not optional. They run in the same shard as every other architecture test (`tests/Granit.ArchitectureTests`) and the CI gate refuses to merge a PR that violates them. The result: a junior dev cannot accidentally bypass validation, even by copy-pasting from the wrong tutorial.
 
@@ -250,7 +250,7 @@ The async uniqueness case is the one most teams get wrong. They put it in the va
 - **Validate exactly once, at the API boundary.** Scattering checks across controllers, services, and entities produces drift, duplication, and silent gaps.
 - **`MapGranitGroup` runs validation automatically** for every endpoint in the group. No per-endpoint filter, no `IValidator<T>` injection, no boilerplate.
 - **Return `422 Unprocessable Entity`** for semantic validation failures, not `400 Bad Request`. The client can act on the difference.
-- **Use structured error codes** (`Granit:Validation:*`) instead of hardcoded strings. The frontend localizes them via `GET /api/{version}/localization`.
+- **Use structured error codes** (`Validation:*`) instead of hardcoded strings. The frontend localizes them via `GET /api/{version}/localization`.
 - **OpenAPI gets the rules for free** — `maxLength`, `pattern`, `required`, etc. flow into the generated schema, so frontend code generators stay accurate.
 - **Domain invariants stay on aggregate roots.** Validation is for shape; the domain owns business rules.
 

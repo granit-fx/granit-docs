@@ -238,8 +238,9 @@ Works with any provider that issues `cnf.jkt`-bound tokens.
 
 | Metric | Type | Tags | Description |
 |--------|------|------|-------------|
-| `granit.authentication.dpop.validation.total` | Counter | `tenant_id`, `result` | Total proof validations (success/failure) |
-| `granit.authentication.dpop.replay.rejected` | Counter | `tenant_id` | Replay attempts blocked by `jti` check |
+| `granit.authentication.dpop.validation.success` | Counter | `tenant_id` | Proof validations that passed |
+| `granit.authentication.dpop.validation.failure` | Counter | `tenant_id`, `reason` | Proof validations that failed |
+| `granit.authentication.dpop.replay.detected` | Counter | `tenant_id` | Replay attempts blocked by `jti` check |
 
 **Activity source** (`Granit.Authentication.DPoP`):
 

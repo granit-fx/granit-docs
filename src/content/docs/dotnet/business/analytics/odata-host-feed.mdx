@@ -86,7 +86,7 @@ listing every misconfigured set in a single message.
 ### Gate 1 — Permission must resolve to `MultiTenancySides.Host`
 
 The host-feed validator resolves the EntitySet's `RequirePermission` name
-through `IPermissionDefinitionManager` at startup. The resolved
+through `IPermissionDefinitionRegistry` at startup. The resolved
 `PermissionDefinition.MultiTenancySides` MUST equal `Host`. `Tenant` and
 `Both` are rejected; an unregistered permission name is rejected too.
 

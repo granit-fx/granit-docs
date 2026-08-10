@@ -225,7 +225,7 @@ enumeration is owner-only.
 `TempFileJanitorService : BackgroundService` runs every `JanitorInterval`,
 walks `{RootDirectory}` (skipping live `DeleteOnClose` files by inspecting
 their `LastWriteTime`), and deletes entries older than `MaxLifetime`. Metric:
-`granit.io.tempfile.janitor.deleted.count`.
+`granit.io.temp.janitor.purged`.
 
 The janitor is the recovery path for the cases `DeleteOnClose` can't cover —
 node crashes, hard kernel panics, application errors that leave the

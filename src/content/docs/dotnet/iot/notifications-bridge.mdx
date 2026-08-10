@@ -147,7 +147,8 @@ The IoT bridges are the reference pattern — 15 lines apiece.
 | `granit.iot.device.offline_detected` | `tenant_id` | Heartbeat job flagged first offline detection |
 
 `Granit.Notifications` adds its own metrics on channel-level delivery
-(`granit.notifications.sent`, `granit.notifications.failed`) — wire both
+(`granit.notifications.deliveries.succeeded`,
+`granit.notifications.deliveries.failed`) — wire both
 for a complete picture of *"alert fired → customer notified"*.
 
 ## Anti-patterns to avoid

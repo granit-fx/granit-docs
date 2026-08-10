@@ -219,12 +219,16 @@ await db.Patients
 
 Two counters land in your OpenTelemetry pipeline without any code:
 
-| Metric                                   | Tags                                              | Use                                                  |
-| ---------------------------------------- | ------------------------------------------------- | ---------------------------------------------------- |
-| `granit.persistence.entity.audited`      | `tenant_id`, `operation` (`created` / `modified`) | Write throughput per tenant                          |
-| `granit.persistence.entity.soft_deleted` | `tenant_id`                                       | Soft-delete spikes (mass-deletion or data corruption) |
+| Metric | Tags | Use |
+| --- | --- | --- |
+| `granit.persistence.entity.purged` | `tenant_id` | Retention sweeps — how much soft-deleted data actually leaves the database |
+| `granit.persistence.cross_tenant_query` | `entity_name`, `origin`, `tenant_id` | Every query that bypassed the tenant filter |
 
-Plot both in Grafana. The first tells you which tenants are growing. The second is a leading indicator for problems: a 10x jump on a single tenant overnight is almost never legitimate.
+Plot both in Grafana. The first tells you whether your retention job is really
+reclaiming rows. The second is the one to alert on: `origin` separates a
+deliberate `QueryAcrossTenants` call from `implicit_unsignaled` — a bypass with
+no host-access signal behind it, which is what a tenant-isolation bug looks
+like in production.
 
 ## Three things to remember
 
