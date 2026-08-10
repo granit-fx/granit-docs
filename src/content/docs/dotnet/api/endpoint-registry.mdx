@@ -271,7 +271,7 @@ The static files / SPA fallback endpoint is only registered when
 ## Data Lookup
 
 **Module:** `Granit.DataLookup.Endpoints`
-**Prefix:** `data-lookup`
+**Prefix:** `lookups` *(`DataLookupEndpointsOptions.RoutePrefix`)*
 
 Generic typeahead / autocomplete surface for every entity that declares a
 `LookupDefinition<TEntity>`. The frontend uses one client to drive every
@@ -292,7 +292,9 @@ for selected-value hydration.
 ## OData (BI feed)
 
 **Module:** `Granit.Http.ODataExposure`
-**Prefix:** `odata` (per-tenant feed) / `odata/host` (cross-tenant host feed)
+**Prefix:** host-supplied — `MapGranitODataEndpoints(prefix, …)` for the
+per-tenant feed and `MapGranitODataHostEndpoints(prefix, …)` for the
+cross-tenant host feed. The examples below use `odata` and `odata/host`.
 
 Bridges registered `QueryDefinition<TEntity>` instances to OData v4 EntitySets so
 Power BI / Excel / Tableau consume them via the standard "Get Data → OData feed"
