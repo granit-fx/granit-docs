@@ -176,9 +176,13 @@ services.AddSingleton<ITenantConnectionStringProvider, VaultTenantConnectionStri
 ```
 
 :::note[Good to know]
-The resolver is called once per request scope and its result is cached for the duration
-of the scope. For `SchemaPerTenant`, `ApplyGranitConventions` prepends the schema name to
-all table references via a `ModelCreatingContext`. No raw SQL schema-switching required.
+The providers are called once per request scope and the result is cached for the
+duration of the scope. `SchemaPerTenant` does **not** rewrite the EF model: the
+schema is switched on the connection by `ITenantSchemaActivator` — on PostgreSQL
+that is `SET search_path`, executed **unconditionally on every activation**.
+Pooled connections retain the previous tenant's schema, so skipping the switch
+would be a cross-tenant data breach; the contract mandates it rather than
+optimising it away.
 :::
 
 ## Transparent query filters
@@ -192,15 +196,18 @@ implementing `IMultiTenant`:
 WHERE "t"."TenantId" = @__currentTenant_Id
 ```
 
-This filter combines with other Granit filters (`ISoftDeletable`, `IActive`,
-`IPublishable`, `IProcessingRestrictable`) into a single `HasQueryFilter`
-expression per entity. You never write manual `HasQueryFilter` calls —
-`ApplyGranitConventions` handles all of them centrally.
+Each applicable interface (`ISoftDeletable`, `IActive`, `IPublishable`,
+`IProcessingRestrictable`, `IHasMergeTombstone`) gets its own **named** filter,
+and EF Core combines them as AND conditions. You never write manual
+`HasQueryFilter` calls — the conventions pass owns them, and a manual filter
+would collide with the named keys.
 
 :::note[Good to know]
 Manual `HasQueryFilter` calls conflict with the framework's auto-applied
-filters. EF Core allows only one `HasQueryFilter` per entity — the last
-one wins. Let `ApplyGranitConventions` own all query filters.
+filters. EF Core 10 supports several **named** filters per entity, but an
+unnamed `HasQueryFilter(expr)` silently **replaces** them all. Let the
+conventions pass own every query filter, and bypass individual ones with
+`IgnoreQueryFilters([GranitFilterNames.SoftDelete])`.
 :::
 
 ## Implementing a multi-tenant entity

@@ -17,7 +17,7 @@ flows — testers still reach for Postman or curl.
 
 **Granit.Http.ApiDocumentation** generates one OpenAPI 3.1 document per API major
 version and configures URL-segment API versioning from the same declaration —
-`ApiDocumentation:MajorVersions` is the single source of truth for both the
+`Http:ApiDocumentation:MajorVersions` is the single source of truth for both the
 `/api/v{n}/` route constraint and the `/openapi/v{n}.json` documents. The optional
 companion package **Granit.Http.ApiDocumentation.Scalar** serves
 [Scalar](https://scalar.com), a modern interactive UI where developers authenticate
@@ -90,7 +90,7 @@ public class AppModule : GranitModule { }
 ```
 
 The document-level `OAuth2` section (endpoints + scopes) describes the flow in the
-OpenAPI document; the `Scalar:OAuth2` section holds the browser-client bits
+OpenAPI document; the `Http:ApiDocumentation:Scalar:OAuth2` section holds the browser-client bits
 (`ClientId`, PKCE) the UI needs to actually run it. When both are configured,
 Scalar enables interactive Authorization Code + PKCE authentication.
 
@@ -170,7 +170,7 @@ Each call to a deprecated endpoint is logged at Warning level.
 
 `UseGranitApiDocumentation()` (in `Granit.Http.ApiDocumentation.Scalar`) maps the
 OpenAPI documents and the Scalar UI at `/scalar`. The UI is enabled in Development
-always; in Production only when `Scalar:EnableInProduction` is `true` — and the
+always; in Production only when `Http:ApiDocumentation:Scalar:EnableInProduction` is `true` — and the
 module warns when the UI is exposed in Production without an
 `AuthorizationPolicy`.
 

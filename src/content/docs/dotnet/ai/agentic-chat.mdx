@@ -254,7 +254,7 @@ The EF Core satellite registers an **isolated** `AIChatDbContext` and maps three
 configurable via `GranitAIChatDbProperties`). Conversations are indexed by
 `(TenantId, OwnerId, CreatedAt)` for the "my conversations, newest first" query;
 messages by `(ConversationId, CreatedAt)` for thread pagination. Two store seams sit on
-top: `IConversationStore` (owner-scoped CRUD) and `IConversationDataManager`
+top: `IConversationStore` (owner-scoped CRUD) and `IConversationDataStore`
 (privacy/retention operations that deliberately cross the owner boundary).
 
 ## Extension points

@@ -146,7 +146,7 @@ lockout count.
 }
 ```
 
-The `GranitLockoutOptions` class is bound to `Identity:Lockout`. All values have
+The `GranitLockoutOptions` class is bound to `Identity:Local:Lockout`. All values have
 sensible defaults — zero configuration is needed for most deployments.
 
 ### Automatic reset
@@ -221,7 +221,7 @@ it resets `AccessFailedCount`, clears `LockoutEnd`, and resets
 
 ### Implementation details
 
-The exponential backoff is implemented via `GranitUserManager` — a custom
+The exponential backoff is implemented via `LocalIdentityManager` — a custom
 `UserManager<LocalIdentity>` that overrides `AccessFailedAsync()`:
 
 1. `base.AccessFailedAsync()` increments the failed count and triggers lockout

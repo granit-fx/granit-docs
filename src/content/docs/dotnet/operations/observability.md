@@ -261,7 +261,7 @@ service:
 
 ## See also
 
-- [Core observability](/dotnet/core/observability/) — `ILogger`, `IActivitySourceRegistry`, meters convention
+- [Core observability](/dotnet/core/observability/) — `ILogger`, `GranitActivitySourceRegistry`, meters convention
 - [Event Catalog](/dotnet/infrastructure/event-catalog/) — domain and integration events that surface in traces
 - [Deployment](/dotnet/operations/deployment/) — sidecar / collector wiring on Kubernetes
 - [Production Checklist](/dotnet/operations/production-checklist/) — pre-go-live observability items

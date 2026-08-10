@@ -14,27 +14,51 @@ When an entity transitions in a workflow, publish a notification automatically.
 The `WorkflowStateChangedEvent` is published by Wolverine — handle it in a
 notification handler:
 
+A notification is declared once as a `NotificationType<TData>` singleton, then
+published against it — the publisher is generic over the payload, so the data
+shape is checked at compile time:
+
 ```csharp
+// Declared once, next to the module that owns the notification.
+public sealed class InvoiceApprovalRequiredNotificationType
+    : NotificationType<InvoiceApprovalRequiredData>
+{
+    public static readonly InvoiceApprovalRequiredNotificationType Instance = new();
+
+    public override string Name => "invoicing.approval_requested";
+    public override NotificationSeverity DefaultSeverity => NotificationSeverity.Warning;
+    public override IReadOnlyList<string> DefaultChannels { get; } =
+        [NotificationChannels.InApp, NotificationChannels.Email];
+}
+
+public sealed record InvoiceApprovalRequiredData(string InvoiceNumber);
+
 public static class InvoiceApprovalNotificationHandler
 {
     public static async Task Handle(
         WorkflowStateChangedEvent @event,
+        IInvoiceReader invoices,
         INotificationPublisher publisher,
         CancellationToken ct)
     {
         if (@event.NewState != nameof(InvoiceStatus.PendingApproval))
             return;
 
-        await publisher.PublishAsync(new NotificationRequest(
-            Type: "InvoiceApprovalRequired",
-            EntityType: "Invoice",
-            EntityId: @event.EntityId,
-            Recipients: [@event.Properties["ApproverId"]],
-            Data: new { InvoiceNumber = @event.Properties["Number"] }), ct)
-            .ConfigureAwait(false);
+        Invoice invoice = await invoices.GetAsync(@event.EntityId, ct);
+
+        await publisher.PublishAsync(
+            InvoiceApprovalRequiredNotificationType.Instance,
+            new InvoiceApprovalRequiredData(invoice.Number),
+            recipientUserIds: [invoice.ApproverId],
+            relatedEntity: new EntityReference(@event.EntityType, @event.EntityId),
+            cancellationToken: ct);
     }
 }
 ```
+
+`WorkflowStateChangedEvent` carries `EntityType`, `EntityId`, `PreviousState`,
+`NewState` and `TransitionedBy` — it has no free-form property bag, so resolve
+anything else from your own store, as above.
 
 ## Authorization + Notifications: permission-gated channels
 
@@ -136,17 +160,17 @@ for the field mapping and the `Identity:RecipientResolver` options.
 | Entity tracking | `ITrackedEntity`, `TrackedPropertyConfig`, `EntityStateChangedData`, `EntityReference` | `Granit.Notifications` |
 | Messages | `NotificationTrigger`, `DeliverNotificationCommand` | `Granit.Notifications` |
 | Handlers | `NotificationFanoutHandler`, `NotificationDeliveryHandler` | `Granit.Notifications` |
-| Options | `NotificationsOptions`, `EmailChannelOptions`, `SmtpOptions`, `BrevoOptions`, `ScalewayEmailOptions`, `SendGridEmailOptions`, `AcsEmailOptions`, `SmsChannelOptions`, `AcsSmsOptions`, `AwsSnsSmsOptions`, `TwilioOptions`, `MobilePushChannelOptions`, `GoogleFcmOptions`, `AzureNotificationHubsOptions`, `AwsSnsMobilePushOptions`, `SignalRChannelOptions`, `PushChannelOptions`, `SseChannelOptions`, `ZulipChannelOptions`, `ZulipBotOptions` | various |
+| Options | `NotificationsOptions`, `EmailChannelOptions`, `SmtpOptions`, `BrevoOptions`, `ScalewayEmailOptions`, `SendGridEmailOptions`, `AcsEmailOptions`, `SmsChannelOptions`, `AcsSmsOptions`, `AwsSnsSmsOptions`, `TwilioOptions`, `MobilePushChannelOptions`, `GoogleFcmOptions`, `AzureNotificationHubsOptions`, `AwsSnsMobilePushOptions`, `SignalRChannelOptions`, `WebPushChannelOptions`, `SseChannelOptions`, `ZulipChannelOptions`, `ZulipBotOptions` | various |
 | Email | `IEmailSender`, `EmailMessage` | `Granit.Notifications.Email`, `Granit.Notifications.AzureCommunicationServices`, `Granit.Notifications.Scaleway`, `Granit.Notifications.SendGrid` |
 | SMS | `ISmsSender`, `SmsMessage` | `Granit.Notifications.Sms`, `Granit.Notifications.AwsSns`, `Granit.Notifications.Twilio` |
 | WhatsApp | `IWhatsAppSender`, `WhatsAppMessage` | `Granit.Notifications.WhatsApp`, `Granit.Notifications.Twilio` |
 | Mobile Push | `IMobilePushSender`, `MobilePushMessage`, `IMobilePushTokenReader`, `IMobilePushTokenWriter`, `MobilePushTokenInfo`, `MobilePlatform` | `Granit.Notifications.MobilePush`, `Granit.Notifications.AwsSns` |
 | SignalR | `NotificationHub`, `SignalRNotificationMessage` | `Granit.Notifications.SignalR` |
-| Web Push | `IPushSubscriptionReader`, `IPushSubscriptionWriter`, `PushSubscriptionInfo` | `Granit.Notifications.WebPush` |
+| Web Push | `IWebPushSubscriptionReader`, `IWebPushSubscriptionWriter`, `WebPushSubscriptionInfo` | `Granit.Notifications.WebPush` |
 | SSE | `ISseConnectionManager`, `SseConnection`, `SseNotificationMessage` | `Granit.Notifications.Sse` |
 | Zulip | `IZulipSender`, `ZulipMessage` | `Granit.Notifications.Zulip` |
 | Exceptions | `NotificationDeliveryException` | `Granit.Notifications` |
-| Endpoints | `NotificationEndpointsOptions`, `MobilePushTokenEndpoints` | `Granit.Notifications.Endpoints` |
+| Endpoints | `NotificationsEndpointsOptions`, `MobilePushTokenEndpoints` | `Granit.Notifications.Endpoints` |
 | Extensions | `AddGranitNotifications()`, `AddGranitNotificationsEntityFrameworkCore()`, `AddGranitNotificationsEmail()`, `AddGranitNotificationsSmtp()`, `AddGranitNotificationsAcsEmail()`, `AddGranitNotificationsAcsSms()`, `AddGranitNotificationsScaleway()`, `AddGranitNotificationsSendGrid()`, `AddGranitNotificationsBrevo()`, `AddGranitNotificationsAwsSes()`, `AddGranitNotificationsSms()`, `AddGranitNotificationsAwsSnsSms()`, `AddGranitNotificationsTwilio()`, `AddGranitNotificationsWhatsApp()`, `AddGranitNotificationsMobilePush()`, `AddGranitNotificationsGoogleFcm()`, `AddGranitNotificationsAzureNotificationHubs()`, `AddGranitNotificationsAwsSnsMobilePush()`, `AddGranitNotificationsSignalR()`, `AddGranitNotificationsWebPush()`, `AddGranitNotificationsSse()`, `AddGranitNotificationsSseRedisBackplane()`, `AddGranitNotificationsZulip()`, `AddNotificationDefinitions<T>()`, `MapGranitNotifications()`, `MapGranitMobilePushTokens()` | various |
 
 ## See also

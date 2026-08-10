@@ -14,8 +14,8 @@ filters, sorts, pagination (offset and cursor), grouping, saved views, query ser
 and a SmartFilterBar suggestion engine.
 
 `@granit/react-query-engine` wraps everything into React hooks with TanStack Query integration:
-`useQueryEndpoint` (full query state machine), `usePagination`, `useInfiniteScroll`,
-`useSavedViews`, `useSmartFilter`, and `useQueryMeta`.
+`useQueryEndpoint` (full query state machine), `usePagedInfiniteQuery`, `useInfiniteScroll`,
+`useSmartFilter`, `useQueryMeta`, and `useQueryCatalog`.
 
 **Peer dependencies:** `axios`, `@granit/utils`, `react ^19`, `@tanstack/react-query ^5`
 
@@ -29,7 +29,7 @@ and a SmartFilterBar suggestion engine.
 | Package | Role | Depends on |
 |---------|------|------------|
 | `@granit/query-engine` | Filter/sort/pagination types, API functions, query serialization, operator utilities | `axios`, `@granit/utils` |
-| `@granit/react-query-engine` | `QueryProvider`, `useQueryEndpoint`, `usePagination`, `useInfiniteScroll`, `useSmartFilter`, `useSavedViews` | `@granit/query-engine`, `@tanstack/react-query`, `react` |
+| `@granit/react-query-engine` | `QueryProvider`, `QueryCatalogProvider`, `useQueryEndpoint`, `usePagedInfiniteQuery`, `useInfiniteScroll`, `useSmartFilter`, `useQueryMeta`, `useQueryCatalog` | `@granit/query-engine`, `@tanstack/react-query`, `react` |
 
 ## Setup
 

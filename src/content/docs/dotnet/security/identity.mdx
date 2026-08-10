@@ -893,8 +893,8 @@ await userLookupService.PseudonymizeByIdAsync("user-123", cancellationToken)
 - **Delete** removes the `UserCacheEntry` entirely (physical delete, not soft delete)
 - **Pseudonymize** replaces PII fields with anonymized values while preserving the record
 
-Both operations emit Wolverine domain events (`IdentityUserDeletedEvent`,
-`IdentityUserUpdatedEvent`) for downstream modules to react.
+Both operations emit Wolverine integration events (`IdentityUserDeletedEto`,
+`IdentityUserProfileUpdatedEto`) for downstream modules to react.
 
 ## Security notifications
 

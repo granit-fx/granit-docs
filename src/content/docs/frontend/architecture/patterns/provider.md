@@ -33,7 +33,7 @@ Every `@granit/react-*` package follows this pattern:
 |----------|------|---------|
 | `WorkflowProvider` | `useWorkflowConfig()` | `@granit/react-workflow` |
 | `TimelineProvider` | `useTimelineConfig()` | `@granit/react-timeline` |
-| `NotificationProvider` | `useNotificationContext()` | `@granit/react-notifications` |
+| `NotificationsProvider` | `useNotifications()` | `@granit/react-notifications` |
 | `QueryProvider` | `useQueryConfig()` | `@granit/react-query-engine` |
 | `SettingsProvider` | `useSettingsConfig()` | `@granit/react-settings` |
 | `TemplatingProvider` | `useTemplatingConfig()` | `@granit/templating` |

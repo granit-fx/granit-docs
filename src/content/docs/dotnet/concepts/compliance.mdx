@@ -82,7 +82,6 @@ public interface IProcessingRestrictable
 {
     bool IsProcessingRestricted { get; set; }
     DateTimeOffset? ProcessingRestrictedAt { get; set; }
-    string? ProcessingRestrictedBy { get; set; }
 }
 ```
 
@@ -175,8 +174,8 @@ Application code never sets these fields. The interceptor runs inside the `SaveC
 
 | Implementation | Key management | Use case |
 |----------------|---------------|----------|
-| `AesStringEncryptionService` | Local config key (AES-256-CBC) | Development, testing |
-| `VaultTransitEncryptionService` | HashiCorp Vault Transit | Production (key never leaves Vault) |
+| `AesStringEncryptionProvider` | Local config key (AES-256-CBC) | Development, testing |
+| `HashiCorpTransitEncryptionService` | HashiCorp Vault Transit | Production (key never leaves Vault) |
 | `AzureKeyVaultStringEncryptionProvider` | Azure Key Vault RSA-OAEP-256 | Production on Azure (key never leaves Key Vault) |
 
 The Vault module is conditionally loaded -- it disables itself in `Development` environment, falling back to the local AES implementation automatically.

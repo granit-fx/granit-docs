@@ -270,7 +270,7 @@ All counters include `tenant_id`, `provider_name`, and `setting_name` tags.
 |----------|-----------|---------|
 | Modules | `GranitSettingsModule`, `GranitSettingsEntityFrameworkCoreModule`, `GranitSettingsEndpointsModule` | -- |
 | Abstractions | `ISettingProvider` (`GetOrNullAsync`, `GetAllAsync`), `ISettingWriter` (`SetGlobalAsync`, `SetForTenantAsync`, `SetForUserAsync`) | `Granit.Settings` |
-| Definitions | `SettingDefinition`, `ISettingDefinitionProvider`, `SettingDefinitionManager` | `Granit.Settings` |
+| Definitions | `SettingDefinition`, `ISettingDefinitionProvider`, `ISettingDefinitionContext`, `SettingDefinitionRegistry` | `Granit.Settings` |
 | Options | `SettingsOptions` (section `"Settings"`, `CacheExpiration`) | `Granit.Settings` |
 | Endpoints | `MapGranitUserSettings()`, `MapGranitGlobalSettings()`, `MapGranitTenantSettings()`, `SettingsCultureMiddleware` | `Granit.Settings.Endpoints` |
 
