@@ -336,8 +336,8 @@ All counters include the `tenant_id` tag (coalesced to `"global"` when null).
 
 | Metric name | Type | Tags | Description |
 |-------------|------|------|-------------|
-| `granit.bff.logins` | Counter | `tenant_id` | Successful BFF logins (callback completed) |
-| `granit.bff.logouts` | Counter | `tenant_id` | BFF logouts (session cleared) |
+| `granit.bff.session.login` | Counter | `tenant_id` | Successful BFF logins (callback completed) |
+| `granit.bff.session.logout` | Counter | `tenant_id` | BFF logouts (session cleared) |
 | `granit.bff.token.refreshes` | Counter | `tenant_id` | Silent token refreshes by the YARP proxy |
 | `granit.bff.proxy.requests` | Counter | `tenant_id` | Total requests proxied through BFF |
 | `granit.bff.proxy.errors` | Counter | `tenant_id`, `reason` | Proxy errors (see reason values below) |

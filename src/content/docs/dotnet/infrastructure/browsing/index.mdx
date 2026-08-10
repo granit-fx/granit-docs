@@ -155,8 +155,8 @@ Disabling CSP requires both a sandbox with `ForceCsp = false` *and* the
 
 ## Observability
 
-- **Meter** `Granit.Browsing` — counters `granit.browsing.pages.acquired.count`,
-  `granit.browsing.pages.released.count`, `granit.browsing.errors.count`;
+- **Meter** `Granit.Browsing` — counters `granit.browsing.page.acquire`,
+  `granit.browsing.page.release`, `granit.browsing.error`;
   histograms `granit.browsing.pool.acquire.duration`,
   `granit.browsing.render.duration`. Tags: `engine`, `operation`, `error_type`,
   `tenant_id`.

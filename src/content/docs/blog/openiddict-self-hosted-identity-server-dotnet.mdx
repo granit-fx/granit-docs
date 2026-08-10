@@ -301,7 +301,7 @@ Override per-tenant via the Settings admin API without touching `appsettings.jso
 - **Impersonation** — admins can act as any user for support scenarios, with mandatory audit trail and transparency notification
 - **Passkeys (WebAuthn)** — opt-in via `OpenIddict.Passkeys` feature flag
 - **TOTP 2FA** — built-in via `urn:granit:grant_type:two_factor` custom grant
-- **Integration events** — `UserRegisteredEto`, `PasswordResetRequestedEto`, `AccountDeletedEto`, `UserImpersonatedEto` published via Wolverine outbox
+- **Integration events** — `UserRegisteredEto`, `PasswordResetRequestedEto`, `AccountDeletedEto` published via Wolverine outbox; impersonation transparency rides the durable audit entry (`AuditEntryPersistedEto`)
 
 ## Takeaways
 

@@ -414,7 +414,8 @@ Metrics are recorded via `OpenIddictMetrics` (meter: `Granit.OpenIddict`):
 | `granit.openiddict.tokens.issued` | Counter | `tenant_id`, `grant_type` |
 | `granit.openiddict.tokens.revoked` | Counter | `tenant_id`, `reason` |
 | `granit.openiddict.authentication.failures` | Counter | `tenant_id`, `reason` |
-| `granit.openiddict.registrations` | Counter | `tenant_id` |
+| `granit.openiddict.authentication.successes` | Counter | `tenant_id` |
+| `granit.openiddict.keys.rotated` | Counter | `tenant_id` |
 | `granit.openiddict.token.issuance.duration` | Histogram (seconds) | `tenant_id`, `grant_type` |
 
 All metrics follow the `granit.{module}.{entity}.{action}` naming convention and

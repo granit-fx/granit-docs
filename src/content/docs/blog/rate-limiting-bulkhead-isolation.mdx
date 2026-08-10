@@ -318,10 +318,10 @@ Bulkhead is unaffected by Redis availability — it is entirely in-memory.
 
 | Metric | Type | Description |
 |---|---|---|
-| `granit.http.bulkhead.leases.active` | UpDownCounter | Currently active leases per policy and tenant |
-| `granit.http.bulkhead.requests.rejected` | Counter | Rejected requests (bulkhead full) |
+| `granit.bulkhead.leases.active` | UpDownCounter | Currently active leases per policy and tenant |
+| `granit.bulkhead.requests.rejected` | Counter | Rejected requests (bulkhead full) |
 
-Both metrics carry `policy` and `tenant_id` attributes, so you can alert on a per-tenant surge without aggregating across the platform. A spike in `granit.http.bulkhead.requests.rejected` for a single tenant is the early warning signal that rate limiting alone would have hidden until the `429`s started.
+Both metrics carry `policy` and `tenant_id` attributes, so you can alert on a per-tenant surge without aggregating across the platform. A spike in `granit.bulkhead.requests.rejected` for a single tenant is the early warning signal that rate limiting alone would have hidden until the `429`s started.
 
 ## Key takeaways
 

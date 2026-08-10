@@ -254,15 +254,10 @@ and a database column constraint).
 
 ### Observability
 
-`SettingsMetrics` emits three counters via `IMeterFactory` (meter: `Granit.Settings`):
-
-| Metric | Description |
-|--------|-------------|
-| `granit.settings.value.changed` | Setting values created or updated |
-| `granit.settings.value.deleted` | Setting values deleted |
-| `granit.settings.cache.invalidated` | Cache entries invalidated after a write |
-
-All counters include `tenant_id`, `provider_name`, and `setting_name` tags.
+`Granit.Settings` ships an `ActivitySource` (`Granit.Settings`) but no meter of
+its own — setting reads and writes are traced, not counted. Cache behaviour is
+observable through the FusionCache instrumentation exposed by
+[`Granit.Caching`](/dotnet/data/caching/).
 
 ## Public API summary
 

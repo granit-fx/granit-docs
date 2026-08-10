@@ -157,10 +157,10 @@ Both handlers emit metrics through `TokenManagementMetrics`:
 
 | Metric | Tags | Meaning |
 |--------|------|---------|
-| `granit.oidc.token.request` | `tenant_id`, `grant_type`, `client_id` | Token endpoint calls (includes token-exchange grants) |
-| `granit.oidc.token.cache.hit` | `tenant_id`, `client_name` | Cached-token reuse |
-| `granit.oidc.token.cache.miss` | `tenant_id`, `client_name` | Forced IdP round-trip |
-| `granit.oidc.token.error` | `tenant_id`, `error` | Any token endpoint refusal |
+| `granit.oidc.token_management.request.sent` | `tenant_id`, `grant_type`, `client_id` | Token endpoint calls (includes token-exchange grants) |
+| `granit.oidc.token_management.cache.hit` | `tenant_id`, `client_name` | Cached-token reuse |
+| `granit.oidc.token_management.cache.miss` | `tenant_id`, `client_name` | Forced IdP round-trip |
+| `granit.oidc.token_management.error.occurred` | `tenant_id`, `error` | Any token endpoint refusal |
 
 Warning-level log lines to alert on:
 

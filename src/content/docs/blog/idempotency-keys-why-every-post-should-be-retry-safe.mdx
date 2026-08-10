@@ -230,10 +230,10 @@ The middleware exposes four OpenTelemetry counters:
 
 | Metric | What it tells you |
 | -------- | ------------------ |
-| `granit.http.idempotency.lock_acquired` | Successful lock acquisitions (new requests) |
-| `granit.http.idempotency.conflicts` | 409 responses (concurrent duplicates) |
-| `granit.http.idempotency.replayed` | Cached responses served (successful dedup) |
-| `granit.http.idempotency.hash_mismatches` | 422 responses (key reuse with different payload) |
+| `granit.http.idempotency.lock.acquired` | Successful lock acquisitions (new requests) |
+| `granit.http.idempotency.lock.conflict` | 409 responses (concurrent duplicates) |
+| `granit.http.idempotency.response.replayed` | Cached responses served (successful dedup) |
+| `granit.http.idempotency.hash.mismatch` | 422 responses (key reuse with different payload) |
 
 A spike in `replayed` means clients are retrying heavily — check upstream timeouts. A spike in `hash_mismatches` means clients are reusing keys incorrectly — check the SDK documentation.
 
