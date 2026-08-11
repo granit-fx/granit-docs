@@ -141,8 +141,8 @@ A `sealed record` distinct from the EF Core entity.
 | Module | File | Specificity |
 | --- | --- | --- |
 | Identity | `src/Granit.Identity.Endpoints/Endpoints/IdentityUserCacheReadEndpoints.cs` | Full CRUD, DTOs separated in `Dtos/` |
-| Notifications | `src/Granit.Notifications.Endpoints/Endpoints/MobilePushTokenEndpoints.cs` | DTOs inline in the endpoint file |
-| ReferenceData | `src/Granit.ReferenceData.Endpoints/Endpoints/ReferenceDataAdminEndpoints.cs` | Generic `(TEntity)` endpoints |
+| Notifications | `src/Granit.Notifications.MobilePush.Endpoints/Endpoints/MobilePushTokenEndpoints.cs` | DTOs inline in the endpoint file |
+| ReferenceData | `src/Granit.ReferenceData.Endpoints/Endpoints/ReferenceDataAdminEndpoints.cs` *(granit-business)* | Generic `(TEntity)` endpoints |
 | DataExchange | `src/Granit.DataExchange.Endpoints/Endpoints/Import/ImportUploadEndpoints.cs` | `IFormFile` upload, complex validation |
 | Authorization | `src/Granit.Authorization.Endpoints/Endpoints/MyPermissionsEndpoints.cs` | Response-only, no Request body |
 

@@ -27,7 +27,7 @@ sequenceDiagram
     participant API as Granit API
     participant S3 as S3 in Europe
     participant V as Validation Pipeline
-    participant DB as BlobDescriptorStore
+    participant DB as IBlobDescriptorWriter
 
     Note over C,DB: Phase 1 -- Initiation
     C->>API: InitiateUploadAsync("medical-docs", request)
@@ -65,8 +65,8 @@ sequenceDiagram
 |-----------|------|------|
 | `IBlobStorage` | `src/Granit.BlobStorage/IBlobStorage.cs` | Public API: `InitiateUploadAsync`, `CreateDownloadUrlAsync`, `DeleteAsync` |
 | `DefaultBlobStorage` | `src/Granit.BlobStorage/Internal/DefaultBlobStorage.cs` | Facade orchestrating all components |
-| `BlobDescriptor` | `src/Granit.BlobStorage/BlobDescriptor.cs` | Entity: status, metadata, audit trail |
-| `BlobStatus` | `src/Granit.BlobStorage/BlobStatus.cs` | State machine: Pending > Uploading > Valid/Rejected > Deleted |
+| `BlobDescriptor` | `src/Granit.BlobStorage/Domain/BlobDescriptor.cs` | Entity: status, metadata, audit trail |
+| `BlobStatus` | `src/Granit.BlobStorage/Domain/BlobStatus.cs` | State machine: Pending > Uploading > Valid/Rejected > Deleted |
 | `PresignedUploadTicket` | `src/Granit.BlobStorage/PresignedUploadTicket.cs` | DTO: BlobId, URL, HttpMethod, Expiry, RequiredHeaders |
 | `PresignedDownloadUrl` | `src/Granit.BlobStorage/PresignedDownloadUrl.cs` | DTO: URL + expiry |
 

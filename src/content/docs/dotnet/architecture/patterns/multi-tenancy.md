@@ -69,10 +69,10 @@ no `[DependsOn(GranitMultiTenancyModule)]` required.
 
 | Strategy | File | Mechanism |
 |----------|------|-----------|
-| `SharedDatabase` | `src/Granit.Persistence/MultiTenancy/SharedDatabaseDbContextFactory.cs` | EF Core query filters on `TenantId` |
-| `SchemaPerTenant` | `src/Granit.Persistence/MultiTenancy/TenantPerSchemaDbContextFactory.cs` | `SET search_path TO tenant_{id}` (PostgreSQL) |
-| `DatabasePerTenant` | `src/Granit.Persistence/MultiTenancy/TenantPerDatabaseDbContextFactory.cs` | Dedicated connection string per tenant |
-| `TenantIsolationStrategy` | `src/Granit.Persistence/MultiTenancy/TenantIsolationStrategy.cs` | Selection enum |
+| `SharedDatabase` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/SharedDatabaseDbContextFactory.cs` | EF Core query filters on `TenantId` |
+| `SchemaPerTenant` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/TenantPerSchemaDbContextFactory.cs` | `SET search_path TO tenant_{id}` (PostgreSQL) |
+| `DatabasePerTenant` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/TenantPerDatabaseDbContextFactory.cs` | Dedicated connection string per tenant |
+| `TenantIsolationStrategy` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/TenantIsolationStrategy.cs` | Selection enum |
 
 ### Tenant provisioning (`Granit.MultiTenancy.Provisioning`)
 

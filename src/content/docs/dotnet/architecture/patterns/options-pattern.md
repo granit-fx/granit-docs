@@ -110,8 +110,8 @@ internal sealed class S3BlobOptionsValidator : IValidateOptions<S3BlobOptions>
 
 | File | Role |
 | --- | --- |
-| `src/Granit.Vault/Options/VaultOptions.cs` | Canonical simple example |
-| `src/Granit.Identity.Keycloak/Options/KeycloakAdminOptions.cs` | Complex options with helpers |
+| `src/Granit.Vault/Options/SecretStoreOptions.cs` | Canonical simple example |
+| `src/Granit.Identity.Federated.Keycloak/Options/KeycloakAdminOptions.cs` | Complex options with helpers |
 | `src/Granit.BlobStorage.S3/Options/S3BlobOptions.cs` | Custom `IValidateOptions<T>` |
 | `src/Granit.Webhooks/Options/WebhooksOptions.cs` | `[Range]` validation |
 | `src/Granit.Observability/Options/ObservabilityOptions.cs` | Observability options |

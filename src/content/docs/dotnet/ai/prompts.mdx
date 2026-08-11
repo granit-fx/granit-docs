@@ -83,8 +83,9 @@ privacy module's owner-wide operations.
 builder.Services.AddGranitAIPromptsEntityFrameworkCore(
     shared => shared.UseNpgsql(connectionString));
 
-builder.Services.AddGranitPrivacy()
-    .AddGranitAIPromptsPrivacyProvider();   // optional — GDPR participation
+// GDPR participation (optional) — providers register inside the builder.
+builder.Services.AddGranitPrivacy(privacy =>
+    privacy.AddGranitAIPromptsPrivacyProvider());
 ```
 
 ```csharp

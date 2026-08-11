@@ -26,7 +26,7 @@ sequenceDiagram
     participant API as Granit API
     participant CT as ClaimsTransformation
     participant PC as PermissionChecker
-    participant PS as PermissionGrantStore
+    participant PS as IPermissionGrantStore
 
     C->>KC: Authentication
     KC-->>C: JWT (access_token)
@@ -52,7 +52,7 @@ sequenceDiagram
 
 | Component | File | Role |
 | --- | --- | --- |
-| `ICurrentUserService` | `src/Granit.Users/ICurrentUserService.cs` | `UserId`, `UserName`, `Email`, `GetRoles()`, `IsInRole()` |
+| `ICurrentUserService` | `src/Granit/Users/ICurrentUserService.cs` | `UserId`, `UserName`, `Email`, `GetRoles()`, `IsInRole()` |
 | `KeycloakClaimsTransformation` | `src/Granit.Authentication.JwtBearer.Keycloak/Authentication/KeycloakClaimsTransformation.cs` | Extracts `realm_access.roles` from the Keycloak JWT |
 | `WolverineCurrentUserService` | `src/Granit.Wolverine/Internal/WolverineCurrentUserService.cs` | `AsyncLocal` fallback for background handlers |
 
@@ -62,7 +62,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `DynamicPermissionPolicyProvider` | `src/Granit.Authorization/Authorization/DynamicPermissionPolicyProvider.cs` | Creates `AuthorizationPolicy` on the fly from permission names |
 | `PermissionChecker` | `src/Granit.Authorization/Services/PermissionChecker.cs` | Evaluates permissions against role grants |
-| `IPermissionDefinitionProvider` | `src/Granit.Authorization/Definitions/IPermissionDefinitionProvider.cs` | Permission declaration (code-first) |
+| `IPermissionDefinitionProvider` | `src/Granit.Authorization/IPermissionDefinitionProvider.cs` | Permission declaration (code-first) |
 | `EfCorePermissionGrantStore` | `src/Granit.Authorization.EntityFrameworkCore/Stores/EfCorePermissionGrantStore.cs` | EF Core grant persistence |
 
 ### Strict RBAC

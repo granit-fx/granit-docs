@@ -37,7 +37,7 @@ sequenceDiagram
     participant TVP as TenantValueProvider (20)
     participant PVP as PlanValueProvider (10)
     participant DVP as DefaultValueProvider (0)
-    participant FS as IFeatureStore (DB)
+    participant FS as IFeatureStoreReader (DB)
 
     API->>FC: GetValueAsync("MaxUsers")
     FC->>HC: GetOrSetAsync("t:{tid}:MaxUsers")
@@ -74,7 +74,7 @@ sequenceDiagram
 
 | Provider | Order | File | Source |
 |----------|-------|------|--------|
-| `TenantFeatureValueProvider` | 20 | `src/Granit.Features/ValueProviders/TenantFeatureValueProvider.cs` | `IFeatureStore` (DB) |
+| `TenantFeatureValueProvider` | 20 | `src/Granit.Features/ValueProviders/TenantFeatureValueProvider.cs` | `IFeatureStoreReader` (DB) |
 | `PlanFeatureValueProvider` | 10 | `src/Granit.Features/ValueProviders/PlanFeatureValueProvider.cs` | `IPlanFeatureStore` (application) |
 | `DefaultValueFeatureValueProvider` | 0 | `src/Granit.Features/ValueProviders/DefaultValueFeatureValueProvider.cs` | `FeatureDefinition.DefaultValue` (code) |
 
@@ -90,8 +90,8 @@ sequenceDiagram
 
 | Component | File | Role |
 |-----------|------|------|
-| `IFeatureLimitGuard` | `src/Granit.Features/Limits/IFeatureLimitGuard.cs` | `CheckAsync(feature, currentCount)` -- throws `FeatureLimitExceededException` |
-| `FeatureLimitGuard` | `src/Granit.Features/Limits/FeatureLimitGuard.cs` | Implementation |
+| `IFeatureLimitGuard` | `src/Granit.Features/IFeatureLimitGuard.cs` | `CheckAsync(feature, currentCount)` -- throws `FeatureLimitExceededException` |
+| `FeatureLimitGuard` | `src/Granit.Features/Internal/FeatureLimitGuard.cs` | Implementation |
 
 ### Transport bindings (HTTP + Wolverine)
 

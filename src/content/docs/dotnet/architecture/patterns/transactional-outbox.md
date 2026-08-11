@@ -85,7 +85,7 @@ the same transaction:
 
 | Component | File | Role |
 |-----------|------|------|
-| `RecurringJobSchedulingMiddleware` | `src/Granit.BackgroundJobs/Internal/RecurringJobSchedulingMiddleware.cs` | Inserts the next scheduled message into the Outbox **before** handler execution |
+| `RecurringJobSchedulingMiddleware` | `src/Granit.BackgroundJobs.Wolverine/RecurringJobSchedulingMiddleware.cs` | Inserts the next scheduled message into the Outbox **before** handler execution |
 
 The `Before()` middleware writes the next scheduled message and updates
 `NextExecutionAt` in DB. Everything is in the same Outbox transaction. If the

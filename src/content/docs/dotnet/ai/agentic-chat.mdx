@@ -66,9 +66,9 @@ builder.Services.AddBlobStorageChatAttachments(options =>
     options.MaxAttachmentBytes = 5 * 1024 * 1024; // 5 MiB
 });
 
-// GDPR participation (optional)
-builder.Services.AddGranitPrivacy()
-    .AddGranitAIChatPrivacyProvider();
+// GDPR participation (optional) — providers register inside the builder.
+builder.Services.AddGranitPrivacy(privacy =>
+    privacy.AddGranitAIChatPrivacyProvider());
 ```
 
 ```csharp

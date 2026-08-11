@@ -38,7 +38,7 @@ sequenceDiagram
 | Command | File | Handler |
 |---------|------|---------|
 | `SendWebhookCommand` | `src/Granit.Webhooks/Messages/SendWebhookCommand.cs` | `SendWebhookHandler` |
-| `RunMigrationBatchCommand` | `src/Granit.Persistence.Migrations/Messages/RunMigrationBatchCommand.cs` | `RunMigrationBatchHandler` |
+| `RunMigrationBatchCommand` | `src/Granit.Persistence.EntityFrameworkCore.Migrations/Messages/RunMigrationBatchCommand.cs` | `RunMigrationBatchHandler` |
 
 Commands are plain C# classes (serializable DTOs). Wolverine discovers
 handlers by naming convention (`Handle()` method).

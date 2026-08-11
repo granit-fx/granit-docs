@@ -161,8 +161,8 @@ public class AppModule : GranitModule { }
 | File | Role |
 |------|------|
 | `src/Granit.AI/IAIChatClientFactory.cs` | Factory interface |
-| `src/Granit.AI/AIWorkspace.cs` | Resolved workspace record |
-| `src/Granit.AI/GranitAIOptions.cs` | Top-level options with workspace dictionary |
+| `src/Granit.AI/Workspaces/AIWorkspace.cs` | Resolved workspace record |
+| `src/Granit.AI/Options/GranitAIOptions.cs` | Top-level options with workspace dictionary |
 | `src/Granit.AI.EntityFrameworkCore/` | DB-persisted workspace configurations |
 
 ## Rationale

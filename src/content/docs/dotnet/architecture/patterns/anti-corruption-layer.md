@@ -119,8 +119,8 @@ from proprietary JSON structures (`realm_access.roles`,
 
 | File | Role |
 | --- | --- |
-| `src/Granit.Identity.Keycloak/Internal/KeycloakIdentityProvider.cs` | Primary ACL (9 conversion methods) |
-| `src/Granit.Identity.Keycloak/Internal/KeycloakUserRepresentation.cs` | Keycloak external DTO |
+| `src/Granit.Identity.Federated.Keycloak/Internal/KeycloakIdentityProvider.cs` | Primary ACL (9 conversion methods) |
+| `src/Granit.Identity.Federated.Keycloak/Internal/KeycloakUserRepresentation.cs` | Keycloak external DTO |
 | `src/Granit.Authentication.JwtBearer.Keycloak/Authentication/KeycloakClaimsTransformation.cs` | JWT claims to Role |
 | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` | S3 adapter |
 | `src/Granit.Notifications.Smtp/Internal/MailKitEmailSender.cs` | SMTP adapter |

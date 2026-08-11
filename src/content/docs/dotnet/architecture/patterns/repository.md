@@ -19,12 +19,12 @@ Redis).
 
 ```mermaid
 classDiagram
-    class IBlobDescriptorStoreReader {
+    class IBlobDescriptorReader {
         <<interface>>
         +FindAsync(blobId) BlobDescriptor?
     }
 
-    class IBlobDescriptorStoreWriter {
+    class IBlobDescriptorWriter {
         <<interface>>
         +SaveAsync(descriptor)
         +UpdateAsync(descriptor)
@@ -58,8 +58,8 @@ classDiagram
     class EfCoreFeatureStore
     class EfCoreSettingStore
 
-    IBlobDescriptorStoreReader <|.. EfBlobDescriptorStore
-    IBlobDescriptorStoreWriter <|.. EfBlobDescriptorStore
+    IBlobDescriptorReader <|.. EfBlobDescriptorStore
+    IBlobDescriptorWriter <|.. EfBlobDescriptorStore
     IFeatureStoreReader <|.. InMemoryFeatureStore
     IFeatureStoreWriter <|.. InMemoryFeatureStore
     IFeatureStoreReader <|.. EfCoreFeatureStore
@@ -72,7 +72,7 @@ classDiagram
 
 | Store (port) | Location | Implementations |
 | ----------- | -------- | --------------- |
-| `IBlobDescriptorStoreReader` / `IBlobDescriptorStoreWriter` | `src/Granit.BlobStorage/` | `EfBlobDescriptorStore` |
+| `IBlobDescriptorReader` / `IBlobDescriptorWriter` | `src/Granit.BlobStorage/` | `EfBlobDescriptorStore` |
 | `IFeatureStoreReader` / `IFeatureStoreWriter` | `src/Granit.Features/Store/` | `InMemoryFeatureStore`, `EfCoreFeatureStore` |
 | `IBackgroundJobStoreReader` / `IBackgroundJobStoreWriter` | `src/Granit.BackgroundJobs/Internal/` | `InMemoryBackgroundJobStore`, `EfBackgroundJobStore` |
 | `ISettingStoreReader` / `ISettingStoreWriter` | `src/Granit.Settings/Values/` | `EfCoreSettingStore` |

@@ -113,16 +113,16 @@ through string concatenation.
 
 | File | Role |
 | --- | --- |
-| `src/Granit.QueryEngine/QueryDefinition.cs` | Abstract specification class |
-| `src/Granit.QueryEngine/QueryDefinitionBuilder.cs` | Fluent builder (Column, FilterGroup, GlobalSearch) |
-| `src/Granit.QueryEngine/Filtering/FilterCriteria.cs` | Record (Field, Operator, Value) |
-| `src/Granit.QueryEngine/Filtering/FilterOperator.cs` | Operator enum |
-| `src/Granit.QueryEngine/QueryRequest.cs` | Query DTO (page, sort, filter, presets) |
+| `src/Granit.QueryEngine.Abstractions/QueryDefinition.cs` | Abstract specification class |
+| `src/Granit.QueryEngine.Abstractions/QueryDefinitionBuilder.cs` | Fluent builder (Column, FilterGroup, GlobalSearch) |
+| `src/Granit.QueryEngine.Abstractions/Filtering/FilterCriteria.cs` | Record (Field, Operator, Value) |
+| `src/Granit.QueryEngine.Abstractions/Filtering/FilterOperator.cs` | Operator enum |
+| `src/Granit.QueryEngine.Abstractions/QueryRequest.cs` | Query DTO (page, sort, filter, presets) |
 | `src/Granit.QueryEngine.EntityFrameworkCore/Internal/FilterExpressionBuilder.cs` | Filter to Expression compilation |
 | `src/Granit.QueryEngine.EntityFrameworkCore/Internal/QueryableFilterExtensions.cs` | Filter application on IQueryable |
 | `src/Granit.QueryEngine.EntityFrameworkCore/Internal/QueryableSortExtensions.cs` | Dynamic sorting via expressions |
 | `src/Granit.QueryEngine.EntityFrameworkCore/Internal/QueryablePaginationExtensions.cs` | Offset + keyset pagination |
-| `src/Granit.QueryEngine.AspNetCore/Binding/QueryRequestBinder.cs` | REST query string parsing |
+| `src/Granit.QueryEngine.Endpoints/Binding/QueryRequestBinder.cs` | REST query string parsing |
 
 ## Rationale
 

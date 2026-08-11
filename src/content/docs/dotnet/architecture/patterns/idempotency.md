@@ -50,9 +50,9 @@ flowchart TD
 |-----------|------|------|
 | `IdempotencyMiddleware` | `src/Granit.Http.Idempotency/Internal/IdempotencyMiddleware.cs` | ASP.NET Core middleware -- full state machine |
 | `IdempotencyState` | `src/Granit.Http.Idempotency/Models/IdempotencyState.cs` | Enum: `Absent`, `InProgress`, `Completed` |
-| `[Idempotent]` | `src/Granit.Http.Idempotency/Attributes/IdempotentAttribute.cs` | Marker attribute on endpoints |
-| `RedisIdempotencyStore` | `src/Granit.Http.Idempotency/Redis/RedisIdempotencyStore.cs` | Redis store with configurable TTL |
-| `IIdempotencyMetadata` | `src/Granit.Http.Idempotency/Abstractions/IIdempotencyMetadata.cs` | Marker interface for endpoints |
+| `[Idempotent]` | `src/Granit.Http.Idempotency.Abstractions/IdempotentAttribute.cs` | Marker attribute on endpoints |
+| `RedisIdempotencyStore` | `src/Granit.Http.Idempotency.StackExchangeRedis/Internal/RedisIdempotencyStore.cs` | Redis store with configurable TTL |
+| `IIdempotencyMetadata` | `src/Granit.Http.Idempotency.Abstractions/IIdempotencyMetadata.cs` | Marker interface for endpoints |
 
 ### Detailed algorithm
 

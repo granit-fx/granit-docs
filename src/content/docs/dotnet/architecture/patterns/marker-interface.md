@@ -89,7 +89,7 @@ classDiagram
 
 | Interface | File | Detected by |
 | --------- | ---- | ----------- |
-| `IIdempotencyMetadata` | `src/Granit.Http.Idempotency/Abstractions/IIdempotencyMetadata.cs` | `IdempotencyMiddleware` -- enables idempotency on the endpoint |
+| `IIdempotencyMetadata` | `src/Granit.Http.Idempotency.Abstractions/IIdempotencyMetadata.cs` | `IdempotencyMiddleware` -- enables idempotency on the endpoint |
 
 ## Rationale
 

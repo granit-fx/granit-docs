@@ -97,7 +97,10 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>();
+        // The federated cache owns its own DbContext — pass the EF provider,
+        // not a host context type.
+        context.Builder.AddGranitIdentityFederatedEntityFrameworkCore(
+            opts => opts.UseNpgsql(context.Configuration.GetConnectionString("Identity")));
         context.Services.AddGranitIdentityEndpoints();
     }
 
@@ -119,7 +122,10 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>();
+        // The federated cache owns its own DbContext — pass the EF provider,
+        // not a host context type.
+        context.Builder.AddGranitIdentityFederatedEntityFrameworkCore(
+            opts => opts.UseNpgsql(context.Configuration.GetConnectionString("Identity")));
         context.Services.AddGranitIdentityEndpoints();
     }
 
@@ -142,7 +148,10 @@ public class AppModule : GranitModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddGranitIdentityEntityFrameworkCore<AppDbContext>();
+        // The federated cache owns its own DbContext — pass the EF provider,
+        // not a host context type.
+        context.Builder.AddGranitIdentityFederatedEntityFrameworkCore(
+            opts => opts.UseNpgsql(context.Configuration.GetConnectionString("Identity")));
         context.Services.AddGranitIdentityEndpoints();
     }
 
@@ -998,7 +1007,7 @@ Email templates ship in EN + FR; additional cultures are produced via the
 | Notifications options | `IdentityNotificationOptions` | `Granit.Identity.Local.Notifications` |
 | Recipient resolver | `GranitIdentityNotificationsModule`, `IdentityRecipientResolverOptions`, `AddGranitIdentityRecipientResolver()` | `Granit.Identity.Notifications` |
 | Events | `PasswordChangedEto`, `AccountLockedEto` (includes `LockoutEndUtc` + `ResetToken`), `TwoFactorChangedEto`, `EmailConfirmationRequestedEto`, `EmailChangeRequestedEto` | `Granit.Identity.Local` |
-| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore<T>()`, `AddGranitIdentityEndpoints()`, `MapGranitIdentityUserCache()`, `MapGranitUserSessions()`, `MapGranitIdentityProvider()` | — |
+| Extensions | `AddGranitIdentity()`, `AddIdentityProvider<T>()`, `AddGranitIdentityKeycloak()`, `AddGranitIdentityCognito()`, `AddGranitIdentityGoogleCloud()`, `AddGranitGoogleCloudAuthentication()`, `AddGranitIdentityEntityFrameworkCore()`, `AddGranitIdentityFederatedEntityFrameworkCore()`, `AddGranitIdentityEndpoints()`, `MapGranitIdentityUserCache()`, `MapGranitUserSessions()`, `MapGranitIdentityProvider()` | — |
 
 ## See also
 

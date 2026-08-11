@@ -145,8 +145,8 @@ without interference.
 | File | Role |
 | --- | --- |
 | `src/Granit.Wolverine/Extensions/WolverineHostApplicationBuilderExtensions.cs` | Queue routing for domain-events |
-| `src/Granit.RateLimiting/Internal/TenantPartitionedRateLimiter.cs` | Per-tenant isolation |
-| `src/Granit.Identity.Keycloak/Internal/KeycloakAdminTokenService.cs` | SemaphoreSlim anti-stampede |
+| `src/Granit.RateLimiting/TenantPartitionedRateLimiter.cs` | Per-tenant isolation |
+| `src/Granit.Identity.Federated.Keycloak/Internal/KeycloakAdminTokenService.cs` | SemaphoreSlim anti-stampede |
 | `src/Granit.Caching/` | FusionCache native stampede protection |
 | `src/Granit.Webhooks/Internal/WebhookDispatchWorker.cs` | Separate trigger/delivery channels |
 

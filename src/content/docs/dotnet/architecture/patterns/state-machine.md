@@ -54,8 +54,8 @@ States: `Absent` -> `InProgress` -> `Completed`
 
 | Component | File |
 |-----------|------|
-| `BlobStatus` | `src/Granit.BlobStorage/BlobStatus.cs` |
-| `BlobDescriptor` | `src/Granit.BlobStorage/BlobDescriptor.cs` |
+| `BlobStatus` | `src/Granit.BlobStorage/Domain/BlobStatus.cs` |
+| `BlobDescriptor` | `src/Granit.BlobStorage/Domain/BlobDescriptor.cs` |
 
 States: `Pending` -> `Uploading` -> `Valid`/`Rejected` -> `Deleted`
 
