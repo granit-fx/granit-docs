@@ -76,7 +76,7 @@ flowchart LR
     Aggregate -->|"private set"| EF["EF Core column"]
 
     Interceptor["AuditedEntityInterceptor<br/>(Added)"] -.->|"does NOT touch OwnerId"| Aggregate
-    Tenant["MultiTenantInterceptor<br/>(Added)"] -->|"injects TenantId"| Aggregate
+    Tenant["AuditedEntityInterceptor<br/>(Added)"] -->|"injects TenantId"| Aggregate
 
     style Factory fill:#0ea5e9,color:#fff
     style Interceptor stroke-dasharray: 5 5

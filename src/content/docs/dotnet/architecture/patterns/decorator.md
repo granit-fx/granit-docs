@@ -30,20 +30,20 @@ classDiagram
         +DeserializeAsync()
     }
 
-    class ILocalizationOverrideStore {
+    class ILocalizationOverrideStoreReader {
         +GetOverridesAsync()
         +SetOverrideAsync()
     }
 
     class CachedLocalizationOverrideStore {
-        -inner : ILocalizationOverrideStore
+        -inner : ILocalizationOverrideStoreReader
         -cache : IFusionCache
         +GetOverridesAsync()
         +SetOverrideAsync()
     }
 
     EncryptingFusionCacheSerializer --> IFusionCacheSerializer : decorates
-    CachedLocalizationOverrideStore --> ILocalizationOverrideStore : decorates
+    CachedLocalizationOverrideStore --> ILocalizationOverrideStoreReader : decorates
 ```
 
 ## Implementation in Granit
@@ -51,7 +51,7 @@ classDiagram
 | Decorator | File | Target | Added responsibilities |
 |-----------|------|--------|-----------------------|
 | `EncryptingFusionCacheSerializer` | `src/Granit.Caching/Internal/EncryptingFusionCacheSerializer.cs` | `IFusionCacheSerializer` | AES-256-GCM authenticated encryption of L2 (Redis) cache values |
-| `CachedLocalizationOverrideStore` | `src/Granit.Localization/Internal/CachedLocalizationOverrideStore.cs` | `ILocalizationOverrideStore` | FusionCache with per-tenant invalidation |
+| `CachedLocalizationOverrideStore` | `src/Granit.Localization/Internal/CachedLocalizationOverrideStore.cs` | `ILocalizationOverrideStoreReader` | FusionCache with per-tenant invalidation |
 
 **Custom variant -- Conditional encryption**: `EncryptingFusionCacheSerializer`
 wraps the inner serializer and applies AES-256-GCM authenticated encryption to all

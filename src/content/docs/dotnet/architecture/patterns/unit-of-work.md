@@ -52,7 +52,7 @@ execute in a strictly defined order on each `SaveChangesAsync()`.
 
 ### Interceptor chain
 
-Registered in `src/Granit.Persistence/Extensions/DbContextOptionsBuilderExtensions.cs`:
+Registered in `src/Granit.Persistence.EntityFrameworkCore/Extensions/DbContextOptionsBuilderExtensions.cs`:
 
 | Order | Interceptor | Role |
 | --- | --- | --- |
@@ -93,12 +93,12 @@ synchronous `SaveChanges()` is called instead of `SaveChangesAsync()`.
 
 | File | Role |
 | --- | --- |
-| `src/Granit.Persistence/Interceptors/AuditedEntityInterceptor.cs` | ISO 27001 audit trail |
-| `src/Granit.Persistence/Interceptors/SoftDeleteInterceptor.cs` | GDPR soft delete |
-| `src/Granit.Persistence/Interceptors/VersioningInterceptor.cs` | Auto-versioning |
-| `src/Granit.Persistence/Interceptors/DomainEventDispatcherInterceptor.cs` | Atomic domain events |
-| `src/Granit.Persistence/Extensions/DbContextOptionsBuilderExtensions.cs` | Interceptor chain wiring |
-| `src/Granit.Persistence/Extensions/PersistenceServiceCollectionExtensions.cs` | DI registration (all Scoped) |
+| `src/Granit.Persistence.EntityFrameworkCore/Interceptors/AuditedEntityInterceptor.cs` | ISO 27001 audit trail |
+| `src/Granit.Persistence.EntityFrameworkCore/Interceptors/SoftDeleteInterceptor.cs` | GDPR soft delete |
+| `src/Granit.Persistence.EntityFrameworkCore/Interceptors/VersioningInterceptor.cs` | Auto-versioning |
+| `src/Granit.Persistence.EntityFrameworkCore/Interceptors/DomainEventDispatcherInterceptor.cs` | Atomic domain events |
+| `src/Granit.Persistence.EntityFrameworkCore/Extensions/DbContextOptionsBuilderExtensions.cs` | Interceptor chain wiring |
+| `src/Granit.Persistence.EntityFrameworkCore/Extensions/PersistenceServiceCollectionExtensions.cs` | DI registration (all Scoped) |
 | `src/Granit.Wolverine.Postgresql/Extensions/WolverinePostgresqlHostApplicationBuilderExtensions.cs` | Transactional outbox |
 | `src/Granit.Analyzers/SynchronousSaveChangesAnalyzer.cs` | Analyzer GR-EF001 |
 

@@ -44,7 +44,7 @@ flowchart TD
 |-----------|------|------|
 | `GranitWolverineModule` | `src/Granit.Wolverine/GranitWolverineModule.cs` | Mediator configuration |
 | `AddGranitWolverine()` | `src/Granit.Wolverine/Extensions/WolverineHostApplicationBuilderExtensions.cs` | Registers policies (retry, validation, DLQ) |
-| `WolverineMessagingOptions` | `src/Granit.Wolverine/WolverineMessagingOptions.cs` | Retry delays: 5s, 30s, 5min |
+| `WolverineMessagingOptions` | `src/Granit.Wolverine/Options/WolverineMessagingOptions.cs` | Retry delays: 5s, 30s, 5min |
 
 ### Policies managed by the mediator
 

@@ -47,7 +47,7 @@ classDiagram
 | --- | --- | --- | --- |
 | `NullTenantContext` | `src/Granit/MultiTenancy/NullTenantContext.cs` | `ICurrentTenant` | `IsAvailable = false`, `Id = null`, `Change()` is a no-op |
 | `NullCacheValueEncryptor` | `src/Granit.Caching/NullCacheValueEncryptor.cs` | `ICacheValueEncryptor` | Passes bytes through without encryption (dev) |
-| `NullWebhookDeliveryStore` | `src/Granit.Webhooks/Internal/NullWebhookDeliveryStore.cs` | `IWebhookDeliveryStore` | No-op operations |
+| `NullWebhookDeliveryStore` | `src/Granit.Webhooks/Internal/NullWebhookDeliveryWriter.cs` | `IWebhookDeliveryStore` | No-op operations |
 
 `NullTenantContext` is registered by default in the DI container. It is
 replaced by `CurrentTenant` only when `Granit.MultiTenancy` is installed.

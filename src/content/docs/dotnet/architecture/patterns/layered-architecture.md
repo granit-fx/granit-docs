@@ -38,7 +38,7 @@ flowchart BT
 
     subgraph Domain
         ENT["Entity, AuditedEntity<br/>FullAuditedEntity"]
-        INT["IBlobStorage, IFeatureStore<br/>IBackgroundJobStore"]
+        INT["IBlobStorage, IFeatureStoreReader<br/>IBackgroundJobStoreReader"]
         EVT["IDomainEvent<br/>IIntegrationEvent"]
         EXC["BusinessException<br/>NotFoundException"]
         MRK["ISoftDeletable, IMultiTenant<br/>IActive"]
@@ -78,11 +78,11 @@ flowchart BT
 
 | Service | File |
 | ------- | ---- |
-| `FeatureChecker` | `src/Granit.Features/Checker/FeatureChecker.cs` |
+| `FeatureChecker` | `src/Granit.Features/Internal/FeatureChecker.cs` |
 | `BackgroundJobManager` | `src/Granit.BackgroundJobs/Internal/BackgroundJobManager.cs` |
 | `DefaultBlobStorage` | `src/Granit.BlobStorage/Internal/DefaultBlobStorage.cs` |
 | `PermissionChecker` | `src/Granit.Authorization/Services/PermissionChecker.cs` |
-| `GranitExceptionHandler` | `src/Granit.Http.ExceptionHandling/GranitExceptionHandler.cs` |
+| `GranitExceptionHandler` | `src/Granit.Http.ExceptionHandling/Internal/GranitExceptionHandler.cs` |
 
 ### Infrastructure layer (`*.EntityFrameworkCore`, `*.S3`, etc.)
 
@@ -92,7 +92,7 @@ flowchart BT
 | `EfCoreFeatureStore` | `src/Granit.Features.EntityFrameworkCore/Internal/EfCoreFeatureStore.cs` |
 | `EfBackgroundJobStore` | `src/Granit.BackgroundJobs.EntityFrameworkCore/Internal/EfBackgroundJobStore.cs` |
 | `S3BlobClient` | `src/Granit.BlobStorage.S3/Internal/S3BlobClient.cs` |
-| `VaultClientFactory` | `src/Granit.Vault/Services/VaultClientFactory.cs` |
+| `VaultClientFactory` | `src/Granit.Vault.HashiCorp/Services/VaultClientFactory.cs` |
 
 ### Dependency rule
 

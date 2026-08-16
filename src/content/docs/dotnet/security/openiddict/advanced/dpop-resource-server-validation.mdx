@@ -198,15 +198,20 @@ DPoP proofs but no `cnf.jkt` in the access token are then rejected with `401 Una
 <TabItem label="OpenIddict resource server">
 
 ```csharp
-// Built-in: ValidateProofOfPossession handler
-// No extra package needed
-builder.AddGranitOpenIddictAuthentication(options =>
-{
-    options.RequireDPoP = true;
-});
+// No extra package, no configuration flag.
+builder.AddGranitOpenIddictAuthentication();
 ```
 
-Uses OpenIddict's native DPoP validation pipeline. Only works when the
+The extension takes no delegate: it binds `GranitOpenIddictValidationOptions`
+from the `Authentication:OpenIddict` section and always registers
+`DPoPValidationTokenExtractionHandler`.
+
+OpenIddict has **no DPoP support of its own** — its built-in
+`ExtractAccessTokenFromAuthorizationHeader` only understands the `Bearer`
+scheme. Granit adds the `DPoP`-scheme extractor (RFC 9449 §7.1) as a fallback
+one slot after the Bearer extractor, so a resource server can authenticate
+`Authorization: DPoP <token>` requests. It is harmless when no DPoP client is
+in play, which is why there is nothing to switch on. Only works when the
 resource server validates tokens against an OpenIddict server.
 
 </TabItem>

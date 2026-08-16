@@ -60,8 +60,8 @@ standard resilience handler:
 
 | Service | Registration file |
 | --- | --- |
-| Keycloak Admin API | `src/Granit.Identity.Keycloak/Extensions/IdentityKeycloakServiceCollectionExtensions.cs` |
-| Microsoft Graph (Entra ID) | `src/Granit.Identity.EntraId/Extensions/IdentityEntraIdServiceCollectionExtensions.cs` |
+| Keycloak Admin API | `src/Granit.Identity.Federated.Keycloak/Extensions/IdentityKeycloakServiceCollectionExtensions.cs` |
+| Microsoft Graph (Entra ID) | `src/Granit.Identity.Federated.EntraId/Extensions/IdentityEntraIdServiceCollectionExtensions.cs` |
 | Brevo (email/SMS/WhatsApp) | `src/Granit.Notifications.Brevo/Extensions/BrevoNotificationsServiceCollectionExtensions.cs` |
 | Zulip (chat) | `src/Granit.Notifications.Zulip/Extensions/ZulipNotificationsServiceCollectionExtensions.cs` |
 | Firebase FCM (push) | `src/Granit.Notifications.GoogleFcm/Extensions/GoogleFcmMobilePushServiceCollectionExtensions.cs` |
@@ -126,7 +126,7 @@ Each external service exposes a timeout via the Options pattern:
 
 | File | Role |
 | --- | --- |
-| `src/Granit.Identity.Keycloak/Extensions/IdentityKeycloakServiceCollectionExtensions.cs` | Standard resilience on Keycloak |
+| `src/Granit.Identity.Federated.Keycloak/Extensions/IdentityKeycloakServiceCollectionExtensions.cs` | Standard resilience on Keycloak |
 | `src/Granit.Notifications.Brevo/Extensions/BrevoNotificationsServiceCollectionExtensions.cs` | Standard resilience on Brevo |
 | `src/Granit.Webhooks/Extensions/WebhooksHostApplicationBuilderExtensions.cs` | RetryWithCooldown 6 levels |
 

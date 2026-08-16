@@ -135,10 +135,10 @@ Business workflow orchestration with transitions, permissions, and routing to a
 
 | File | Role |
 | --- | --- |
-| `src/Granit.Privacy/DataExport/PersonalDataExportSaga.cs` | GDPR scatter-gather saga |
-| `src/Granit.Privacy/DataExport/PersonalDataExportSagaState.cs` | Saga state |
-| `src/Granit.DataExchange.EntityFrameworkCore/Internal/Import/Pipeline/EfImportOrchestrator.cs` | Import pipeline |
-| `src/Granit.DataExchange/Export/Internal/ExportOrchestrator.cs` | Export pipeline |
+| `src/Granit.Privacy.Wolverine/PersonalDataExportSaga.cs` | GDPR scatter-gather saga |
+| `src/Granit.Privacy.Wolverine/PersonalDataExportSaga.cs` | Saga state |
+| `src/Granit.DataExchange/Import/Internal/ImportOrchestrator.cs` | Import pipeline |
+| `src/Granit.DataExchange/Export/ExportOrchestrator.cs` | Export pipeline |
 | `src/Granit.Workflow/WorkflowManager.cs` | FSM with approval |
 
 ## Rationale

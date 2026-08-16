@@ -108,7 +108,7 @@ tenant's embeddings are stored in a separate namespace or table, enforced by
 | File | Role |
 |------|------|
 | `src/Granit.AI.VectorData/IVectorCollection.cs` | Vector store abstraction |
-| `src/Granit.AI.VectorData/VectorSearchOptions.cs` | Top-K, similarity threshold |
+| `src/Granit.AI.VectorData/Options/VectorDataOptions.cs` | Top-K, similarity threshold |
 | `src/Granit.AI/IAIChatClientFactory.cs` | Workspace resolution |
 | `src/Granit.AI.EntityFrameworkCore/` | Per-tenant collection partitioning |
 

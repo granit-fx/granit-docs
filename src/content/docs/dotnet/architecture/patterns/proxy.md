@@ -44,7 +44,7 @@ sequenceDiagram
 
 | Component | File | Role |
 |-----------|------|------|
-| `FilterProxy` | `src/Granit.Persistence/Extensions/ModelBuilderExtensions.cs` (lines 133-140) | Exposes boolean properties (`SoftDeleteEnabled`, `ActiveEnabled`, `MultiTenantEnabled`) so EF Core can extract them as query parameters |
+| `FilterProxy` | `src/Granit.Persistence.EntityFrameworkCore/Extensions/ModelBuilderExtensions.cs` (lines 133-140) | Exposes boolean properties (`SoftDeleteEnabled`, `ActiveEnabled`, `MultiTenantEnabled`) so EF Core can extract them as query parameters |
 
 EF Core cannot translate arbitrary method calls in query filters. The
 `FilterProxy` works around this limitation by exposing simple properties that
@@ -54,8 +54,8 @@ EF Core treats as SQL parameters.
 
 | Interceptor | File | Role |
 |-------------|------|------|
-| `AuditedEntityInterceptor` | `src/Granit.Persistence/Interceptors/AuditedEntityInterceptor.cs` | Injects `CreatedAt/By`, `ModifiedAt/By`, `TenantId`, `Id` (sequential) |
-| `SoftDeleteInterceptor` | `src/Granit.Persistence/Interceptors/SoftDeleteInterceptor.cs` | Converts `DELETE` to `UPDATE` with `IsDeleted=true`, `DeletedAt/By` |
+| `AuditedEntityInterceptor` | `src/Granit.Persistence.EntityFrameworkCore/Interceptors/AuditedEntityInterceptor.cs` | Injects `CreatedAt/By`, `ModifiedAt/By`, `TenantId`, `Id` (sequential) |
+| `SoftDeleteInterceptor` | `src/Granit.Persistence.EntityFrameworkCore/Interceptors/SoftDeleteInterceptor.cs` | Converts `DELETE` to `UPDATE` with `IsDeleted=true`, `DeletedAt/By` |
 
 ## Rationale
 

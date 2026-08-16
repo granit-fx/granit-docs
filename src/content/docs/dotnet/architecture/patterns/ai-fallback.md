@@ -132,9 +132,9 @@ internal sealed class AIMappingSuggestionService(
 
 | File | Role |
 |------|------|
-| `src/Granit.QueryEngine.AI/AINaturalLanguageQueryTranslator.cs` | 2s timeout + null fallback |
-| `src/Granit.DataExchange.AI/AIMappingSuggestionService.cs` | 5s timeout + heuristic fallback |
-| `src/Granit.Validation.AI/AIContentModerationValidator.cs` | 1s timeout + pass-through |
+| `src/Granit.QueryEngine.AI/Internal/LlmNaturalLanguageQueryTranslator.cs` | 2s timeout + null fallback |
+| `src/Granit.DataExchange.AI/Internal/AISemanticMappingService.cs` | 5s timeout + heuristic fallback |
+| `src/Granit.Validation.AI/Internal/LlmContentModerator.cs` | 1s timeout + pass-through |
 
 ## Rationale
 

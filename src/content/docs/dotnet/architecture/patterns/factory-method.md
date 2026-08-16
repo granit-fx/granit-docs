@@ -51,10 +51,10 @@ classDiagram
 
 | Factory | File | Selection |
 |---------|------|-----------|
-| `VaultClientFactory` | `src/Granit.Vault/Services/VaultClientFactory.cs` | Switch expression on `AuthMethod` (Kubernetes / Token) |
-| `SharedDatabaseDbContextFactory` | `src/Granit.Persistence/MultiTenancy/SharedDatabaseDbContextFactory.cs` | SharedDatabase strategy |
-| `TenantPerSchemaDbContextFactory` | `src/Granit.Persistence/MultiTenancy/TenantPerSchemaDbContextFactory.cs` | SchemaPerTenant strategy |
-| `TenantPerDatabaseDbContextFactory` | `src/Granit.Persistence/MultiTenancy/TenantPerDatabaseDbContextFactory.cs` | DatabasePerTenant strategy |
+| `VaultClientFactory` | `src/Granit.Vault.HashiCorp/Services/VaultClientFactory.cs` | Switch expression on `AuthMethod` (Kubernetes / Token) |
+| `SharedDatabaseDbContextFactory` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/SharedDatabaseDbContextFactory.cs` | SharedDatabase strategy |
+| `TenantPerSchemaDbContextFactory` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/TenantPerSchemaDbContextFactory.cs` | SchemaPerTenant strategy |
+| `TenantPerDatabaseDbContextFactory` | `src/Granit.Persistence.EntityFrameworkCore/MultiTenancy/TenantPerDatabaseDbContextFactory.cs` | DatabasePerTenant strategy |
 
 **Custom variant**: the persistence factories combine Factory Method +
 Strategy -- the strategy is selected at configuration time, and the factory

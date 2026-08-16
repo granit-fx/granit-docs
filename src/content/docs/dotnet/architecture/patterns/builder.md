@@ -45,7 +45,7 @@ Each module exposes an `AddGranit*()` extension method:
 | `AddGranit<TModule>()` | `src/Granit/Extensions/GranitHostBuilderExtensions.cs` | `IHostApplicationBuilder` |
 | `AddGranitWolverine()` | `src/Granit.Wolverine/Extensions/WolverineHostApplicationBuilderExtensions.cs` | `IHostApplicationBuilder` |
 | `AddGranitBackgroundJobs()` | `src/Granit.BackgroundJobs/Extensions/BackgroundJobsHostApplicationBuilderExtensions.cs` | `IHostApplicationBuilder` |
-| `AddGranitFeatures()` | `src/Granit.Features/ServiceCollectionExtensions.cs` | `IServiceCollection` |
+| `AddGranitFeatures()` | `src/Granit.Features/Extensions/ServiceCollectionExtensions.cs` | `IServiceCollection` |
 | `AddGranitLocalization()` | `src/Granit.Localization/Extensions/LocalizationServiceCollectionExtensions.cs` | `IServiceCollection` |
 
 **Audit note**: the signatures are not yet symmetric across modules (see

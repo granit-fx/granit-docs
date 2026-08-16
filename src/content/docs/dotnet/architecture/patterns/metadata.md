@@ -22,7 +22,7 @@ Also known as: **Property Bag**, **EAV** (legacy), **user_metadata** (Auth0),
 
 ```mermaid
 flowchart LR
-    subgraph Entity["Entity (e.g., GranitUser)"]
+    subgraph Entity["Entity (e.g., LocalIdentity)"]
         JSON["MetadataJson<br/>(JSONB column)"]
         COL1["JobTitle<br/>(SQL column)"]
         COL2["IsVip<br/>(SQL column)"]
@@ -95,7 +95,7 @@ to real EF Core Shadow Properties at startup:
 
 ```csharp
 // In the host application's module (ConfigureServices)
-services.AddMetadataMappings<GranitUser>(options =>
+services.AddMetadataMappings<LocalIdentity>(options =>
 {
     options.MapProperty<string>("JobTitle", maxLength: 128);
     options.MapProperty<string>("Department", maxLength: 64);
@@ -127,7 +127,7 @@ JSON for the rest).
 
 | Entity | Package | JSON column |
 |--------|---------|-------------|
-| `GranitUser` | `Granit.OpenIddict` | `CustomAttributesJson` |
+| `LocalIdentity` | `Granit.Identity.Local` | `CustomAttributesJson` |
 | `UserCacheEntry` | `Granit.Identity.Federated.EntityFrameworkCore` | `MetadataJson` |
 | `ReferenceDataEntity` | `Granit.ReferenceData.EntityFrameworkCore` | `MetadataJson` |
 
@@ -155,10 +155,10 @@ JSON for the rest).
 |------|---------|
 | `src/Granit/Domain/IHasMetadata.cs` | Interface |
 | `src/Granit/Domain/MetadataExtensions.cs` | Get/Set/Has extension methods |
-| `src/Granit.Persistence/Metadata/MetadataMappingOptions.cs` | `MapProperty<T>()` config |
-| `src/Granit.Persistence/Metadata/MetadataSyncInterceptor.cs` | Save-time sync (no duplication) |
-| `src/Granit.Persistence/Metadata/MetadataModelBuilderExtensions.cs` | Applies Shadow Properties to ModelBuilder |
-| `src/Granit.Persistence/Metadata/MetadataServiceCollectionExtensions.cs` | DI registration helpers |
+| `src/Granit.Persistence.EntityFrameworkCore/Metadata/MetadataMappingOptions.cs` | `MapProperty<T>()` config |
+| `src/Granit.Persistence.EntityFrameworkCore/Metadata/MetadataSyncInterceptor.cs` | Save-time sync (no duplication) |
+| `src/Granit.Persistence.EntityFrameworkCore/Metadata/MetadataModelBuilderExtensions.cs` | Applies Shadow Properties to ModelBuilder |
+| `src/Granit.Persistence.EntityFrameworkCore/Metadata/MetadataServiceCollectionExtensions.cs` | DI registration helpers |
 
 ## Anti-patterns
 

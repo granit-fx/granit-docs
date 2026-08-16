@@ -41,8 +41,8 @@ flowchart TD
 
 | Component | File | Lines |
 | --------- | ---- | ----- |
-| `ApplyGranitConventions()` | `src/Granit.Persistence/Extensions/ModelBuilderExtensions.cs` | 54-126 |
-| `FilterProxy` | `src/Granit.Persistence/Extensions/ModelBuilderExtensions.cs` | 133-140 |
+| `ApplyGranitConventions()` | `src/Granit.Persistence.EntityFrameworkCore/Extensions/ModelBuilderExtensions.cs` | 54-126 |
+| `FilterProxy` | `src/Granit.Persistence.EntityFrameworkCore/Extensions/ModelBuilderExtensions.cs` | 133-140 |
 
 ### Why a FilterProxy?
 
