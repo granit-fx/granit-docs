@@ -1,6 +1,6 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-10
+Last generated: 2026-08-17
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
@@ -168,7 +168,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@types/sax` | 1.2.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/sax) |
 | `@types/trusted-types` | 2.0.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types) |
 | `@types/unist` | 2.0.11 / 3.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist) |
-| `@ungap/structured-clone` | 1.3.1 | ISC | [github.com](https://github.com/ungap/structured-clone#readme) |
+| `@ungap/structured-clone` | 1.3.1 / 1.3.3 | ISC | [github.com](https://github.com/ungap/structured-clone#readme) |
 | `@upsetjs/venn.js` | 2.0.0 | MIT | [github.com](https://github.com/upsetjs/venn.js) |
 | `@webgpu/types` | 0.1.21 | BSD-3-Clause | [github.com](https://github.com/gpuweb/types) |
 | `acorn` | 8.18.0 | MIT | [github.com](https://github.com/acornjs/acorn) |
