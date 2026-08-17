@@ -38,6 +38,6 @@
     "cspell": "^10.0.1",
     "markdownlint-cli2": "^0.23.2",
     "starlight-image-zoom": "^0.15.0",
-    "starlight-links-validator": "^0.25.2"
+    "starlight-links-validator": "^0.25.3"
   }
 }
