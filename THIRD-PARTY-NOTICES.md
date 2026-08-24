@@ -35,7 +35,7 @@ Packages declared in [package.json](package.json):
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
-| `@astrojs/markdown-remark` | 7.2.1 / 7.2.2 | MIT | [astro.build](https://astro.build) |
+| `@astrojs/markdown-remark` | 7.2.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/starlight` | 0.41.7 | MIT | [starlight.astro.build](https://starlight.astro.build) |
 | `@fontsource-variable/fira-code` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/fira-code) |
 | `@fontsource-variable/plus-jakarta-sans` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/plus-jakarta-sans) |
@@ -47,7 +47,7 @@ Packages declared in [package.json](package.json):
 | `mermaid` | 11.17.0 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
-| `starlight-blog` | 0.28.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
+| `starlight-blog` | 0.29.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
 | `starlight-kbd` | 0.4.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-kbd) |
 | `starlight-llms-txt` | 0.11.0 | MIT | [delucis.github.io](https://delucis.github.io/starlight-llms-txt/) |
 | `starlight-scroll-to-top` | 1.0.1 | MIT | [github.com](https://github.com/frostybee/starlight-scroll-to-top) |
@@ -68,7 +68,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@astrojs/compiler-binding` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-binding-linux-x64-gnu` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-rs` | 0.3.2 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/internal-helpers` | 0.10.1 / 0.10.2 | MIT | [github.com](https://github.com/withastro/astro#readme) |
+| `@astrojs/internal-helpers` | 0.10.2 | MIT | [github.com](https://github.com/withastro/astro#readme) |
 | `@astrojs/markdown-satteri` | 0.3.5 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/mdx` | 7.0.5 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/mdx/) |
 | `@astrojs/prism` | 4.0.2 | MIT | [docs.astro.build](https://docs.astro.build/en/reference/api-reference/#prism-) |
