@@ -1,18 +1,18 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-17
+Last generated: 2026-08-24
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
 with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
 
-**Total production packages:** 509
+**Total production packages:** 511
 
 ## License summary
 
 | License | Packages |
 | --- | --- |
-| MIT | 428 |
+| MIT | 430 |
 | ISC | 39 |
 | BSD-3-Clause | 12 |
 | Apache-2.0 | 9 |
@@ -44,7 +44,7 @@ Packages declared in [package.json](package.json):
 | `astro-mermaid` | 2.1.0 | MIT | [github.com](https://github.com/joesaby/astro-mermaid#readme) |
 | `astro-og-canvas` | 0.13.0 | MIT | [github.com](https://github.com/delucis/astro-og-canvas#readme) |
 | `canvaskit-wasm` | 0.41.1 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
-| `mermaid` | 11.16.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
+| `mermaid` | 11.17.0 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
 | `starlight-blog` | 0.28.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
@@ -60,7 +60,7 @@ The full transitive graph (resolved by pnpm) contains the following packages.
 Versions reflect the pinned `pnpm-lock.yaml`.
 
 <details>
-<summary>Show 491 transitive packages</summary>
+<summary>Show 493 transitive packages</summary>
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
@@ -102,7 +102,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@jridgewell/sourcemap-codec` | 1.5.5 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec) |
 | `@jridgewell/trace-mapping` | 0.3.31 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping) |
 | `@mdx-js/mdx` | 3.1.1 | MIT | [mdxjs.com](https://mdxjs.com) |
-| `@mermaid-js/parser` | 1.2.0 | MIT | [github.com](https://github.com/mermaid-js/mermaid/tree/develop/packages/mermaid/parser/#readme) |
+| `@mermaid-js/parser` | 1.2.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid/tree/develop/packages/mermaid/parser/#readme) |
 | `@nodable/entities` | 3.0.0 | MIT | [github.com](https://github.com/nodable/val-parsers#readme) |
 | `@oslojs/encoding` | 1.1.0 | MIT | [github.com](https://github.com/oslo-project/encoding#readme) |
 | `@oxc-project/types` | 0.142.0 | MIT | [oxc.rs](https://oxc.rs) |
@@ -293,6 +293,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `fast-wrap-ansi` | 0.2.2 | MIT | [github.com](https://github.com/43081j/fast-wrap-ansi#readme) |
 | `fast-xml-builder` | 1.3.0 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-builder#readme) |
 | `fast-xml-parser` | 5.10.1 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-parser#readme) |
+| `fastdom` | 1.0.12 | MIT | [github.com](https://github.com/wilsonpage/fastdom) |
 | `fdir` | 6.5.0 | MIT | [github.com](https://github.com/thecodrr/fdir#readme) |
 | `fill-range` | 7.1.1 | MIT | [github.com](https://github.com/jonschlinkert/fill-range) |
 | `find-process` | 2.1.1 | MIT | [github.com](https://github.com/yibn2008/find-process#readme) |
@@ -502,6 +503,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `source-map-js` | 1.2.1 | BSD-3-Clause | [github.com](https://github.com/7rulnik/source-map-js) |
 | `space-separated-tokens` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/space-separated-tokens#readme) |
 | `stream-replace-string` | 2.0.0 | MIT | [github.com](https://github.com/ChocolateLoverRaj/stream-replace-string#readme) |
+| `strictdom` | 1.0.1 | MIT | [github.com](https://github.com/wilsonpage/strictdom) |
 | `stringify-entities` | 4.0.4 | MIT | [github.com](https://github.com/wooorm/stringify-entities#readme) |
 | `strnum` | 2.4.1 | MIT | [github.com](https://github.com/NaturalIntelligence/strnum#readme) |
 | `style-to-js` | 1.1.21 | MIT | [github.com](https://github.com/remarkablemark/style-to-js#readme) |

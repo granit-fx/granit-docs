@@ -22,7 +22,7 @@
     "astro-mermaid": "^2.1.0",
     "astro-og-canvas": "^0.13.0",
     "canvaskit-wasm": "^0.41.1",
-    "mermaid": "^11.16.1",
+    "mermaid": "^11.17.0",
     "rehype-external-links": "^3.0.0",
     "sharp": "^0.35.3",
     "starlight-blog": "^0.28.0",
@@ -38,6 +38,6 @@
     "cspell": "^10.0.1",
     "markdownlint-cli2": "^0.23.2",
     "starlight-image-zoom": "^0.15.0",
-    "starlight-links-validator": "^0.25.2"
+    "starlight-links-validator": "^0.25.3"
   }
 }
