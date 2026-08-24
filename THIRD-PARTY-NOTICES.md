@@ -1,6 +1,6 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-10
+Last generated: 2026-08-24
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
@@ -43,7 +43,7 @@ Packages declared in [package.json](package.json):
 | `astro` | 7.2.0 | MIT | [astro.build](https://astro.build) |
 | `astro-mermaid` | 2.1.0 | MIT | [github.com](https://github.com/joesaby/astro-mermaid#readme) |
 | `astro-og-canvas` | 0.13.0 | MIT | [github.com](https://github.com/delucis/astro-og-canvas#readme) |
-| `canvaskit-wasm` | 0.41.1 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
+| `canvaskit-wasm` | 0.41.1 / 0.42.0 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
 | `mermaid` | 11.16.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
