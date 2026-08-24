@@ -1,18 +1,18 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-10
+Last generated: 2026-08-17
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
 with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
 
-**Total production packages:** 500
+**Total production packages:** 509
 
 ## License summary
 
 | License | Packages |
 | --- | --- |
-| MIT | 419 |
+| MIT | 428 |
 | ISC | 39 |
 | BSD-3-Clause | 12 |
 | Apache-2.0 | 9 |
@@ -40,7 +40,7 @@ Packages declared in [package.json](package.json):
 | `@fontsource-variable/fira-code` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/fira-code) |
 | `@fontsource-variable/plus-jakarta-sans` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/plus-jakarta-sans) |
 | `@tailwindcss/vite` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
-| `astro` | 7.2.0 | MIT | [astro.build](https://astro.build) |
+| `astro` | 7.2.2 | MIT | [astro.build](https://astro.build) |
 | `astro-mermaid` | 2.1.0 | MIT | [github.com](https://github.com/joesaby/astro-mermaid#readme) |
 | `astro-og-canvas` | 0.13.0 | MIT | [github.com](https://github.com/delucis/astro-og-canvas#readme) |
 | `canvaskit-wasm` | 0.41.1 | BSD-3-Clause | [github.com](https://github.com/google/skia/tree/main/modules/canvaskit) |
@@ -60,7 +60,7 @@ The full transitive graph (resolved by pnpm) contains the following packages.
 Versions reflect the pinned `pnpm-lock.yaml`.
 
 <details>
-<summary>Show 482 transitive packages</summary>
+<summary>Show 491 transitive packages</summary>
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
@@ -110,13 +110,13 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@pagefind/linux-x64` | 1.5.2 | MIT | [github.com](https://github.com/Pagefind/pagefind#readme) |
 | `@rolldown/binding-linux-x64-gnu` | 1.2.2 | MIT | [rolldown.rs](https://rolldown.rs/) |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | [github.com](https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme) |
-| `@shikijs/core` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-javascript` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-oniguruma` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/langs` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/primitive` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/themes` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/types` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/core` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-javascript` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-oniguruma` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/langs` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/primitive` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/themes` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/types` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `@shikijs/vscode-textmate` | 10.0.2 | MIT | [github.com](https://github.com/shikijs/vscode-textmate#readme) |
 | `@tailwindcss/node` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
 | `@tailwindcss/oxide` | 4.3.3 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
@@ -174,6 +174,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `acorn` | 8.18.0 | MIT | [github.com](https://github.com/acornjs/acorn) |
 | `acorn-jsx` | 5.3.2 | MIT | [github.com](https://github.com/acornjs/acorn-jsx) |
 | `am-i-vibing` | 0.4.0 | MIT | [github.com](https://github.com/ascorbic/am-i-vibing) |
+| `ansi-styles` | 4.3.0 | MIT | [github.com](https://github.com/chalk/ansi-styles#readme) |
 | `anymatch` | 3.1.3 | ISC | [github.com](https://github.com/micromatch/anymatch) |
 | `anynum` | 1.0.1 | MIT | [github.com](https://github.com/NaturalIntelligence/anynum#readme) |
 | `arg` | 5.0.2 | MIT | [github.com](https://github.com/vercel/arg#readme) |
@@ -190,6 +191,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `boolbase` | 1.0.0 | ISC | [github.com](https://github.com/fb55/boolbase) |
 | `braces` | 3.0.3 | MIT | [github.com](https://github.com/micromatch/braces) |
 | `ccount` | 2.0.1 | MIT | [github.com](https://github.com/wooorm/ccount#readme) |
+| `chalk` | 4.1.2 | MIT | [github.com](https://github.com/chalk/chalk#readme) |
 | `character-entities` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/character-entities#readme) |
 | `character-entities-html4` | 2.1.0 | MIT | [github.com](https://github.com/wooorm/character-entities-html4#readme) |
 | `character-entities-legacy` | 3.0.0 | MIT | [github.com](https://github.com/wooorm/character-entities-legacy#readme) |
@@ -198,8 +200,10 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `ci-info` | 4.4.0 | MIT | [github.com](https://github.com/watson/ci-info) |
 | `clsx` | 2.1.1 | MIT | [github.com](https://github.com/lukeed/clsx#readme) |
 | `collapse-white-space` | 2.1.0 | MIT | [github.com](https://github.com/wooorm/collapse-white-space#readme) |
+| `color-convert` | 2.0.1 | MIT | [github.com](https://github.com/Qix-/color-convert#readme) |
+| `color-name` | 1.1.4 | MIT | [github.com](https://github.com/colorjs/color-name) |
 | `comma-separated-tokens` | 2.0.3 | MIT | [github.com](https://github.com/wooorm/comma-separated-tokens#readme) |
-| `commander` | 7.2.0 / 8.3.0 / 11.1.0 | MIT | [github.com](https://github.com/tj/commander.js#readme) |
+| `commander` | 7.2.0 / 8.3.0 / 11.1.0 / 14.0.3 | MIT | [github.com](https://github.com/tj/commander.js#readme) |
 | `common-ancestor-path` | 2.0.0 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/common-ancestor-path#readme) |
 | `cookie` | 2.0.1 | MIT | [github.com](https://github.com/jshttp/cookie#readme) |
 | `cookie-es` | 1.2.3 | MIT | [github.com](https://github.com/unjs/cookie-es#readme) |
@@ -291,6 +295,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `fast-xml-parser` | 5.10.1 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-parser#readme) |
 | `fdir` | 6.5.0 | MIT | [github.com](https://github.com/thecodrr/fdir#readme) |
 | `fill-range` | 7.1.1 | MIT | [github.com](https://github.com/jonschlinkert/fill-range) |
+| `find-process` | 2.1.1 | MIT | [github.com](https://github.com/yibn2008/find-process#readme) |
 | `flattie` | 1.1.1 | MIT | [github.com](https://github.com/lukeed/flattie#readme) |
 | `fontace` | 0.4.1 | MIT | [github.com](https://github.com/delucis/fontace#readme) |
 | `fontkitten` | 1.0.3 | MIT | [github.com](https://github.com/delucis/fontkitten#readme) |
@@ -299,6 +304,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `graceful-fs` | 4.2.11 | ISC | [github.com](https://github.com/isaacs/node-graceful-fs#readme) |
 | `h3` | 1.15.11 | MIT | [github.com](https://github.com/h3js/h3#readme) |
 | `hachure-fill` | 0.5.2 | MIT | [github.com](https://github.com/pshihn/hachure-fill#readme) |
+| `has-flag` | 4.0.0 | MIT | [github.com](https://github.com/sindresorhus/has-flag#readme) |
 | `hast-util-embedded` | 3.0.0 | MIT | [github.com](https://github.com/syntax-tree/hast-util-embedded#readme) |
 | `hast-util-format` | 1.1.0 | MIT | [github.com](https://github.com/syntax-tree/hast-util-format#readme) |
 | `hast-util-from-html` | 2.0.3 | MIT | [github.com](https://github.com/syntax-tree/hast-util-from-html#readme) |
@@ -349,9 +355,10 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `lightningcss` | 1.32.0 / 1.33.0 | MPL-2.0 | [github.com](https://github.com/parcel-bundler/lightningcss#readme) |
 | `lightningcss-linux-x64-gnu` | 1.32.0 / 1.33.0 | MPL-2.0 | [github.com](https://github.com/parcel-bundler/lightningcss#readme) |
 | `lodash-es` | 4.18.1 | MIT | [lodash.com](https://lodash.com/custom-builds) |
+| `loglevel` | 1.9.2 | MIT | [github.com](https://github.com/pimterry/loglevel) |
 | `longest-streak` | 3.1.0 | MIT | [github.com](https://github.com/wooorm/longest-streak#readme) |
 | `lru-cache` | 11.5.2 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/node-lru-cache#readme) |
-| `magic-string` | 0.30.21 / 1.1.0 | MIT | [github.com](https://github.com/Rich-Harris/magic-string#readme) |
+| `magic-string` | 0.30.21 / 1.2.0 | MIT | [github.com](https://github.com/Rich-Harris/magic-string#readme) |
 | `magicast` | 0.5.4 | MIT | [github.com](https://github.com/unjs/magicast#readme) |
 | `markdown-extensions` | 2.0.0 | MIT | [github.com](https://github.com/sindresorhus/markdown-extensions#readme) |
 | `markdown-table` | 3.0.4 | MIT | [github.com](https://github.com/wooorm/markdown-table#readme) |
@@ -423,7 +430,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `nth-check` | 2.1.1 | BSD-2-Clause | [github.com](https://github.com/fb55/nth-check) |
 | `obug` | 2.1.4 | MIT | [github.com](https://github.com/sxzz/obug#readme) |
 | `ofetch` | 1.5.1 | MIT | [github.com](https://github.com/unjs/ofetch#readme) |
-| `ohash` | 2.0.11 | MIT | [github.com](https://github.com/unjs/ohash#readme) |
+| `ohash` | 2.0.12 | MIT | [github.com](https://github.com/unjs/ohash#readme) |
 | `oniguruma-parser` | 0.12.2 | MIT | [github.com](https://github.com/slevithan/oniguruma-parser#readme) |
 | `oniguruma-to-es` | 4.3.6 | MIT | [github.com](https://github.com/slevithan/oniguruma-to-es#readme) |
 | `p-limit` | 7.3.1 | MIT | [github.com](https://github.com/sindresorhus/p-limit#readme) |
@@ -487,10 +494,10 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `schema-dts` | 2.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `schema-dts-lib` | 1.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `semver` | 7.8.5 | ISC | [github.com](https://github.com/npm/node-semver#readme) |
-| `shiki` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `shiki` | 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `sisteransi` | 1.0.5 | MIT | [github.com](https://github.com/terkelg/sisteransi#readme) |
 | `sitemap` | 9.0.1 | MIT | [github.com](https://github.com/ekalinin/sitemap.js#readme) |
-| `smol-toml` | 1.7.1 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
+| `smol-toml` | 1.7.1 / 1.8.0 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
 | `source-map` | 0.7.6 | BSD-3-Clause | [github.com](https://github.com/mozilla/source-map) |
 | `source-map-js` | 1.2.1 | BSD-3-Clause | [github.com](https://github.com/7rulnik/source-map-js) |
 | `space-separated-tokens` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/space-separated-tokens#readme) |
@@ -500,6 +507,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `style-to-js` | 1.1.21 | MIT | [github.com](https://github.com/remarkablemark/style-to-js#readme) |
 | `style-to-object` | 1.0.14 | MIT | [github.com](https://github.com/remarkablemark/style-to-object#readme) |
 | `stylis` | 4.4.0 | MIT | [github.com](https://github.com/thysultan/stylis.js) |
+| `supports-color` | 7.2.0 | MIT | [github.com](https://github.com/chalk/supports-color#readme) |
 | `svgo` | 4.0.2 | MIT | [svgo.dev](https://svgo.dev) |
 | `tapable` | 2.3.3 | MIT | [github.com](https://github.com/webpack/tapable) |
 | `tiny-inflate` | 1.0.3 | MIT | [github.com](https://github.com/devongovett/tiny-inflate) |
@@ -515,9 +523,10 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `ufo` | 1.6.4 | MIT | [github.com](https://github.com/unjs/ufo#readme) |
 | `ultrahtml` | 1.7.0 | MIT | [github.com](https://github.com/natemoo-re/ultrahtml#README) |
 | `uncrypto` | 0.1.3 | MIT | [github.com](https://github.com/unjs/uncrypto#readme) |
+| `undici` | 8.10.0 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
 | `undici-types` | 7.18.2 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
 | `unified` | 11.0.5 | MIT | [unifiedjs.com](https://unifiedjs.com) |
-| `unifont` | 0.7.4 | MIT | [github.com](https://github.com/unjs/unifont#readme) |
+| `unifont` | 0.7.5 | MIT | [github.com](https://github.com/unjs/unifont#readme) |
 | `unist-util-find-after` | 5.0.0 | MIT | [github.com](https://github.com/syntax-tree/unist-util-find-after#readme) |
 | `unist-util-is` | 6.0.1 | MIT | [github.com](https://github.com/syntax-tree/unist-util-is#readme) |
 | `unist-util-modify-children` | 4.0.0 | MIT | [github.com](https://github.com/syntax-tree/unist-util-modify-children#readme) |
