@@ -1,6 +1,6 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-10
+Last generated: 2026-08-24
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
@@ -35,7 +35,7 @@ Packages declared in [package.json](package.json):
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
-| `@astrojs/markdown-remark` | 7.2.1 / 7.2.2 | MIT | [astro.build](https://astro.build) |
+| `@astrojs/markdown-remark` | 7.2.2 / 7.2.4 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/starlight` | 0.41.7 | MIT | [starlight.astro.build](https://starlight.astro.build) |
 | `@fontsource-variable/fira-code` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/fira-code) |
 | `@fontsource-variable/plus-jakarta-sans` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/plus-jakarta-sans) |
@@ -47,7 +47,7 @@ Packages declared in [package.json](package.json):
 | `mermaid` | 11.16.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid#readme) |
 | `rehype-external-links` | 3.0.0 | MIT | [github.com](https://github.com/rehypejs/rehype-external-links#readme) |
 | `sharp` | 0.35.3 | Apache-2.0 | [sharp.pixelplumbing.com](https://sharp.pixelplumbing.com) |
-| `starlight-blog` | 0.28.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
+| `starlight-blog` | 0.29.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
 | `starlight-kbd` | 0.4.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-kbd) |
 | `starlight-llms-txt` | 0.11.0 | MIT | [delucis.github.io](https://delucis.github.io/starlight-llms-txt/) |
 | `starlight-scroll-to-top` | 1.0.1 | MIT | [github.com](https://github.com/frostybee/starlight-scroll-to-top) |
@@ -68,9 +68,9 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@astrojs/compiler-binding` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-binding-linux-x64-gnu` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-rs` | 0.3.2 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/internal-helpers` | 0.10.1 / 0.10.2 | MIT | [github.com](https://github.com/withastro/astro#readme) |
+| `@astrojs/internal-helpers` | 0.10.2 / 0.10.4 | MIT | [github.com](https://github.com/withastro/astro#readme) |
 | `@astrojs/markdown-satteri` | 0.3.5 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/mdx` | 7.0.5 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/mdx/) |
+| `@astrojs/mdx` | 7.0.5 / 7.0.7 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/mdx/) |
 | `@astrojs/prism` | 4.0.2 | MIT | [docs.astro.build](https://docs.astro.build/en/reference/api-reference/#prism-) |
 | `@astrojs/rss` | 4.0.19 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/sitemap` | 3.7.3 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/sitemap/) |
@@ -110,13 +110,13 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@pagefind/linux-x64` | 1.5.2 | MIT | [github.com](https://github.com/Pagefind/pagefind#readme) |
 | `@rolldown/binding-linux-x64-gnu` | 1.2.2 | MIT | [rolldown.rs](https://rolldown.rs/) |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | [github.com](https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme) |
-| `@shikijs/core` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-javascript` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/engine-oniguruma` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/langs` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/primitive` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/themes` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
-| `@shikijs/types` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/core` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-javascript` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/engine-oniguruma` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/langs` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/primitive` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/themes` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `@shikijs/types` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `@shikijs/vscode-textmate` | 10.0.2 | MIT | [github.com](https://github.com/shikijs/vscode-textmate#readme) |
 | `@tailwindcss/node` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
 | `@tailwindcss/oxide` | 4.3.3 | MIT | [github.com](https://github.com/tailwindlabs/tailwindcss#readme) |
@@ -268,7 +268,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `dset` | 3.1.4 | MIT | [github.com](https://github.com/lukeed/dset#readme) |
 | `enhanced-resolve` | 5.24.5 | MIT | [github.com](https://github.com/webpack/enhanced-resolve#readme) |
 | `entities` | 4.5.0 / 6.0.1 / 8.0.0 | BSD-2-Clause | [github.com](https://github.com/fb55/entities#readme) |
-| `es-module-lexer` | 2.3.1 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
+| `es-module-lexer` | 2.3.1 / 2.3.2 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
 | `es-toolkit` | 1.50.0 | MIT | [es-toolkit.dev](https://es-toolkit.dev) |
 | `esast-util-from-estree` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-estree#readme) |
 | `esast-util-from-js` | 2.0.1 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-js#readme) |
@@ -287,8 +287,8 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `fast-string-truncated-width` | 3.0.3 | MIT | [github.com](https://github.com/fabiospampinato/fast-string-truncated-width#readme) |
 | `fast-string-width` | 3.0.2 | MIT | [github.com](https://github.com/fabiospampinato/fast-string-width#readme) |
 | `fast-wrap-ansi` | 0.2.2 | MIT | [github.com](https://github.com/43081j/fast-wrap-ansi#readme) |
-| `fast-xml-builder` | 1.3.0 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-builder#readme) |
-| `fast-xml-parser` | 5.10.1 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-parser#readme) |
+| `fast-xml-builder` | 1.3.1 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-builder#readme) |
+| `fast-xml-parser` | 5.11.0 | MIT | [github.com](https://github.com/NaturalIntelligence/fast-xml-parser#readme) |
 | `fdir` | 6.5.0 | MIT | [github.com](https://github.com/thecodrr/fdir#readme) |
 | `fill-range` | 7.1.1 | MIT | [github.com](https://github.com/jonschlinkert/fill-range) |
 | `flattie` | 1.1.1 | MIT | [github.com](https://github.com/lukeed/flattie#readme) |
@@ -338,7 +338,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `is-hexadecimal` | 2.0.1 | MIT | [github.com](https://github.com/wooorm/is-hexadecimal#readme) |
 | `is-number` | 7.0.0 | MIT | [github.com](https://github.com/jonschlinkert/is-number) |
 | `is-plain-obj` | 4.1.0 | MIT | [github.com](https://github.com/sindresorhus/is-plain-obj#readme) |
-| `is-unsafe` | 2.0.0 | MIT | [github.com](https://github.com/NaturalIntelligence/is-unsafe#readme) |
+| `is-unsafe` | 2.0.2 | MIT | [github.com](https://github.com/NaturalIntelligence/is-unsafe#readme) |
 | `jiti` | 2.7.0 | MIT | [github.com](https://github.com/unjs/jiti#readme) |
 | `js-yaml` | 4.3.1 | MIT | [github.com](https://github.com/nodeca/js-yaml#readme) |
 | `jsonc-parser` | 3.3.1 | MIT | [github.com](https://github.com/microsoft/node-jsonc-parser#readme) |
@@ -487,16 +487,16 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `schema-dts` | 2.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `schema-dts-lib` | 1.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `semver` | 7.8.5 | ISC | [github.com](https://github.com/npm/node-semver#readme) |
-| `shiki` | 4.3.1 / 4.4.2 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
+| `shiki` | 4.3.1 / 4.4.2 / 4.4.3 | MIT | [github.com](https://github.com/shikijs/shiki#readme) |
 | `sisteransi` | 1.0.5 | MIT | [github.com](https://github.com/terkelg/sisteransi#readme) |
 | `sitemap` | 9.0.1 | MIT | [github.com](https://github.com/ekalinin/sitemap.js#readme) |
-| `smol-toml` | 1.7.1 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
+| `smol-toml` | 1.7.1 / 1.8.0 | BSD-3-Clause | [github.com](https://github.com/squirrelchat/smol-toml#readme) |
 | `source-map` | 0.7.6 | BSD-3-Clause | [github.com](https://github.com/mozilla/source-map) |
 | `source-map-js` | 1.2.1 | BSD-3-Clause | [github.com](https://github.com/7rulnik/source-map-js) |
 | `space-separated-tokens` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/space-separated-tokens#readme) |
 | `stream-replace-string` | 2.0.0 | MIT | [github.com](https://github.com/ChocolateLoverRaj/stream-replace-string#readme) |
 | `stringify-entities` | 4.0.4 | MIT | [github.com](https://github.com/wooorm/stringify-entities#readme) |
-| `strnum` | 2.4.1 | MIT | [github.com](https://github.com/NaturalIntelligence/strnum#readme) |
+| `strnum` | 2.4.2 | MIT | [github.com](https://github.com/NaturalIntelligence/strnum#readme) |
 | `style-to-js` | 1.1.21 | MIT | [github.com](https://github.com/remarkablemark/style-to-js#readme) |
 | `style-to-object` | 1.0.14 | MIT | [github.com](https://github.com/remarkablemark/style-to-object#readme) |
 | `stylis` | 4.4.0 | MIT | [github.com](https://github.com/thysultan/stylis.js) |
