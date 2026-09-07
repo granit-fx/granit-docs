@@ -1,18 +1,18 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-24
+Last generated: 2026-09-07
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
 with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
 
-**Total production packages:** 511
+**Total production packages:** 510
 
 ## License summary
 
 | License | Packages |
 | --- | --- |
-| MIT | 430 |
+| MIT | 429 |
 | ISC | 39 |
 | BSD-3-Clause | 12 |
 | Apache-2.0 | 9 |
@@ -35,8 +35,8 @@ Packages declared in [package.json](package.json):
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
-| `@astrojs/markdown-remark` | 7.2.2 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/starlight` | 0.41.7 | MIT | [starlight.astro.build](https://starlight.astro.build) |
+| `@astrojs/markdown-remark` | 7.2.2 / 7.2.4 | MIT | [astro.build](https://astro.build) |
+| `@astrojs/starlight` | 0.41.11 | MIT | [starlight.astro.build](https://starlight.astro.build) |
 | `@fontsource-variable/fira-code` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/fira-code) |
 | `@fontsource-variable/plus-jakarta-sans` | 5.3.0 | OFL-1.1 | [fontsource.org](https://fontsource.org/fonts/plus-jakarta-sans) |
 | `@tailwindcss/vite` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
@@ -60,7 +60,7 @@ The full transitive graph (resolved by pnpm) contains the following packages.
 Versions reflect the pinned `pnpm-lock.yaml`.
 
 <details>
-<summary>Show 493 transitive packages</summary>
+<summary>Show 492 transitive packages</summary>
 
 | Package | Version | License | Homepage |
 | --- | --- | --- | --- |
@@ -68,29 +68,29 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@astrojs/compiler-binding` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-binding-linux-x64-gnu` | 0.3.2 | MIT | [astro.build](https://astro.build) |
 | `@astrojs/compiler-rs` | 0.3.2 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/internal-helpers` | 0.10.2 | MIT | [github.com](https://github.com/withastro/astro#readme) |
-| `@astrojs/markdown-satteri` | 0.3.5 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/mdx` | 7.0.5 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/mdx/) |
+| `@astrojs/internal-helpers` | 0.10.2 / 0.10.4 | MIT | [github.com](https://github.com/withastro/astro#readme) |
+| `@astrojs/markdown-satteri` | 0.3.5 / 0.3.8 | MIT | [astro.build](https://astro.build) |
+| `@astrojs/mdx` | 7.0.5 / 7.0.8 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/mdx/) |
 | `@astrojs/prism` | 4.0.2 | MIT | [docs.astro.build](https://docs.astro.build/en/reference/api-reference/#prism-) |
 | `@astrojs/rss` | 4.0.19 | MIT | [astro.build](https://astro.build) |
-| `@astrojs/sitemap` | 3.7.3 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/sitemap/) |
+| `@astrojs/sitemap` | 3.7.4 | MIT | [docs.astro.build](https://docs.astro.build/en/guides/integrations-guide/sitemap/) |
 | `@astrojs/telemetry` | 3.3.3 | MIT | [astro.build](https://astro.build) |
 | `@babel/helper-string-parser` | 7.29.7 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-helper-string-parser) |
 | `@babel/helper-validator-identifier` | 7.29.7 | MIT | [github.com](https://github.com/babel/babel#readme) |
 | `@babel/parser` | 7.29.8 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-parser) |
 | `@babel/types` | 7.29.8 | MIT | [babel.dev](https://babel.dev/docs/en/next/babel-types) |
 | `@braintree/sanitize-url` | 7.1.2 | MIT | [github.com](https://github.com/braintree/sanitize-url#readme) |
-| `@bruits/satteri-linux-x64-gnu` | 0.9.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
+| `@bruits/satteri-linux-x64-gnu` | 0.9.5 / 0.10.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
 | `@capsizecss/unpack` | 4.0.1 | MIT | [github.com](https://github.com/seek-oss/capsize#readme) |
 | `@chevrotain/types` | 11.1.2 | Apache-2.0 | [chevrotain.io](https://chevrotain.io/documentation/) |
 | `@clack/core` | 1.4.3 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/core#readme) |
 | `@clack/prompts` | 1.7.0 | MIT | [github.com](https://github.com/bombshell-dev/clack/tree/main/packages/prompts#readme) |
 | `@ctrl/tinycolor` | 4.2.0 | MIT | [tinycolor.vercel.app](https://tinycolor.vercel.app) |
 | `@esbuild/linux-x64` | 0.28.2 | MIT | [github.com](https://github.com/evanw/esbuild#readme) |
-| `@expressive-code/core` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
-| `@expressive-code/plugin-frames` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
-| `@expressive-code/plugin-shiki` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
-| `@expressive-code/plugin-text-markers` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `@expressive-code/core` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `@expressive-code/plugin-frames` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `@expressive-code/plugin-shiki` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `@expressive-code/plugin-text-markers` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `@iconify/types` | 2.0.0 | MIT | [github.com](https://github.com/iconify/iconify) |
 | `@iconify/utils` | 3.1.4 | MIT | [iconify.design](https://iconify.design/docs/libraries/utils/) |
 | `@img/colour` | 1.1.0 | MIT | [github.com](https://github.com/lovell/colour#readme) |
@@ -99,7 +99,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@jridgewell/gen-mapping` | 0.3.13 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping) |
 | `@jridgewell/remapping` | 2.3.5 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/remapping) |
 | `@jridgewell/resolve-uri` | 3.1.2 | MIT | [github.com](https://github.com/jridgewell/resolve-uri#readme) |
-| `@jridgewell/sourcemap-codec` | 1.5.5 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec) |
+| `@jridgewell/sourcemap-codec` | 1.5.5 / 1.6.0 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec) |
 | `@jridgewell/trace-mapping` | 0.3.31 | MIT | [github.com](https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping) |
 | `@mdx-js/mdx` | 3.1.1 | MIT | [mdxjs.com](https://mdxjs.com) |
 | `@mermaid-js/parser` | 1.2.1 | MIT | [github.com](https://github.com/mermaid-js/mermaid/tree/develop/packages/mermaid/parser/#readme) |
@@ -164,7 +164,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `@types/micromatch` | 4.0.10 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/micromatch) |
 | `@types/ms` | 2.1.0 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ms) |
 | `@types/nlcst` | 2.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/nlcst) |
-| `@types/node` | 24.13.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
+| `@types/node` | 24.13.3 / 26.4.1 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
 | `@types/sax` | 1.2.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/sax) |
 | `@types/trusted-types` | 2.0.7 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/trusted-types) |
 | `@types/unist` | 2.0.11 / 3.0.3 | MIT | [github.com](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist) |
@@ -182,7 +182,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `aria-query` | 5.3.2 | Apache-2.0 | [github.com](https://github.com/A11yance/aria-query#readme) |
 | `array-iterate` | 2.0.1 | MIT | [github.com](https://github.com/wooorm/array-iterate#readme) |
 | `astring` | 1.9.0 | MIT | [github.com](https://github.com/davidbonnet/astring#readme) |
-| `astro-expressive-code` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `astro-expressive-code` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `axobject-query` | 4.1.0 | Apache-2.0 | [github.com](https://github.com/A11yance/axobject-query#readme) |
 | `bail` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/bail#readme) |
 | `base-64` | 1.0.0 | MIT | [mths.be](https://mths.be/base64) |
@@ -272,7 +272,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `dset` | 3.1.4 | MIT | [github.com](https://github.com/lukeed/dset#readme) |
 | `enhanced-resolve` | 5.24.5 | MIT | [github.com](https://github.com/webpack/enhanced-resolve#readme) |
 | `entities` | 4.5.0 / 6.0.1 / 8.0.0 | BSD-2-Clause | [github.com](https://github.com/fb55/entities#readme) |
-| `es-module-lexer` | 2.3.1 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
+| `es-module-lexer` | 2.3.1 / 2.3.2 | MIT | [github.com](https://github.com/guybedford/es-module-lexer#readme) |
 | `es-toolkit` | 1.50.0 | MIT | [es-toolkit.dev](https://es-toolkit.dev) |
 | `esast-util-from-estree` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-estree#readme) |
 | `esast-util-from-js` | 2.0.1 | MIT | [github.com](https://github.com/syntax-tree/esast-util-from-js#readme) |
@@ -281,12 +281,12 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `estree-util-attach-comments` | 3.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-attach-comments#readme) |
 | `estree-util-build-jsx` | 3.0.1 | MIT | [github.com](https://github.com/syntax-tree/estree-util-build-jsx#readme) |
 | `estree-util-is-identifier-name` | 3.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-is-identifier-name#readme) |
-| `estree-util-scope` | 1.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-scope#readme) |
+| `estree-util-scope` | 1.0.1 | MIT | [github.com](https://github.com/syntax-tree/estree-util-scope#readme) |
 | `estree-util-to-js` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-to-js#readme) |
 | `estree-util-visit` | 2.0.0 | MIT | [github.com](https://github.com/syntax-tree/estree-util-visit#readme) |
 | `estree-walker` | 3.0.3 | MIT | [github.com](https://github.com/Rich-Harris/estree-walker#readme) |
 | `eventemitter3` | 5.0.4 | MIT | [github.com](https://github.com/primus/eventemitter3#readme) |
-| `expressive-code` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `expressive-code` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `extend` | 3.0.2 | MIT | [github.com](https://github.com/justmoon/node-extend#readme) |
 | `fast-string-truncated-width` | 3.0.3 | MIT | [github.com](https://github.com/fabiospampinato/fast-string-truncated-width#readme) |
 | `fast-string-width` | 3.0.2 | MIT | [github.com](https://github.com/fabiospampinato/fast-string-width#readme) |
@@ -331,7 +331,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `html-void-elements` | 3.0.0 | MIT | [github.com](https://github.com/wooorm/html-void-elements#readme) |
 | `html-whitespace-sensitive-tag-names` | 3.0.1 | MIT | [github.com](https://github.com/rehypejs/rehype-minify/tree/main#readme) |
 | `http-cache-semantics` | 4.2.0 | BSD-2-Clause | [github.com](https://github.com/kornelski/http-cache-semantics#readme) |
-| `i18next` | 26.3.6 | MIT | [i18next.com](https://www.i18next.com) |
+| `i18next` | 26.4.2 | MIT | [i18next.com](https://www.i18next.com) |
 | `iconv-lite` | 0.6.3 | MIT | [github.com](https://github.com/ashtuchkin/iconv-lite) |
 | `import-meta-resolve` | 4.2.0 | MIT | [github.com](https://github.com/wooorm/import-meta-resolve#readme) |
 | `inline-style-parser` | 0.2.7 | MIT | [github.com](https://github.com/remarkablemark/inline-style-parser#readme) |
@@ -347,7 +347,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `is-plain-obj` | 4.1.0 | MIT | [github.com](https://github.com/sindresorhus/is-plain-obj#readme) |
 | `is-unsafe` | 2.0.0 | MIT | [github.com](https://github.com/NaturalIntelligence/is-unsafe#readme) |
 | `jiti` | 2.7.0 | MIT | [github.com](https://github.com/unjs/jiti#readme) |
-| `js-yaml` | 4.3.1 | MIT | [github.com](https://github.com/nodeca/js-yaml#readme) |
+| `js-yaml` | 4.3.1 / 4.3.2 | MIT | [github.com](https://github.com/nodeca/js-yaml#readme) |
 | `jsonc-parser` | 3.3.1 | MIT | [github.com](https://github.com/microsoft/node-jsonc-parser#readme) |
 | `katex` | 0.16.47 | MIT | [katex.org](https://katex.org) |
 | `khroma` | 2.1.0 | Unknown | [github.com](https://github.com/fabiospampinato/khroma#readme) |
@@ -449,7 +449,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `picomatch` | 4.0.4 / 4.0.5 | MIT | [github.com](https://github.com/micromatch/picomatch) |
 | `points-on-curve` | 0.2.0 | MIT | [github.com](https://github.com/pshihn/bezier-points#readme) |
 | `points-on-path` | 0.2.1 | MIT | [github.com](https://github.com/pshihn/points-on-path#readme) |
-| `postcss` | 8.5.26 | MIT | [postcss.org](https://postcss.org/) |
+| `postcss` | 8.5.28 | MIT | [postcss.org](https://postcss.org/) |
 | `postcss-nested` | 6.2.0 | MIT | [github.com](https://github.com/postcss/postcss-nested#readme) |
 | `postcss-selector-parser` | 6.1.4 | MIT | [github.com](https://github.com/postcss/postcss-selector-parser) |
 | `prismjs` | 1.30.0 | MIT | [github.com](https://github.com/PrismJS/prism#readme) |
@@ -465,7 +465,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `regex-recursion` | 6.0.2 | MIT | [github.com](https://github.com/slevithan/regex-recursion#readme) |
 | `regex-utilities` | 2.3.0 | MIT | [github.com](https://github.com/slevithan/regex-utilities#readme) |
 | `rehype` | 13.0.2 | MIT | [github.com](https://github.com/rehypejs/rehype) |
-| `rehype-expressive-code` | 0.44.1 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
+| `rehype-expressive-code` | 0.44.2 | MIT | [github.com](https://github.com/expressive-code/expressive-code#readme) |
 | `rehype-format` | 5.0.1 | MIT | [github.com](https://github.com/rehypejs/rehype-format#readme) |
 | `rehype-minify-whitespace` | 6.0.2 | MIT | [github.com](https://github.com/rehypejs/rehype-minify/tree/main#readme) |
 | `rehype-parse` | 9.0.1 | MIT | [github.com](https://github.com/rehypejs/rehype) |
@@ -490,7 +490,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `roughjs` | 4.6.6 | MIT | [roughjs.com](https://roughjs.com) |
 | `rw` | 1.3.3 | BSD-3-Clause | [github.com](https://github.com/mbostock/rw) |
 | `safer-buffer` | 2.1.2 | MIT | [github.com](https://github.com/ChALkeR/safer-buffer#readme) |
-| `satteri` | 0.9.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
+| `satteri` | 0.9.5 / 0.10.5 | MIT | [github.com](https://github.com/bruits/satteri#readme) |
 | `sax` | 1.6.1 | BlueOak-1.0.0 | [github.com](https://github.com/isaacs/sax-js#readme) |
 | `schema-dts` | 2.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
 | `schema-dts-lib` | 1.0.0 | Apache-2.0 | [opensource.google](https://opensource.google/projects/schema-dts) |
@@ -502,7 +502,6 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `source-map` | 0.7.6 | BSD-3-Clause | [github.com](https://github.com/mozilla/source-map) |
 | `source-map-js` | 1.2.1 | BSD-3-Clause | [github.com](https://github.com/7rulnik/source-map-js) |
 | `space-separated-tokens` | 2.0.2 | MIT | [github.com](https://github.com/wooorm/space-separated-tokens#readme) |
-| `stream-replace-string` | 2.0.0 | MIT | [github.com](https://github.com/ChocolateLoverRaj/stream-replace-string#readme) |
 | `strictdom` | 1.0.1 | MIT | [github.com](https://github.com/wilsonpage/strictdom) |
 | `stringify-entities` | 4.0.4 | MIT | [github.com](https://github.com/wooorm/stringify-entities#readme) |
 | `strnum` | 2.4.1 | MIT | [github.com](https://github.com/NaturalIntelligence/strnum#readme) |
@@ -526,7 +525,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `ultrahtml` | 1.7.0 | MIT | [github.com](https://github.com/natemoo-re/ultrahtml#README) |
 | `uncrypto` | 0.1.3 | MIT | [github.com](https://github.com/unjs/uncrypto#readme) |
 | `undici` | 8.10.0 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
-| `undici-types` | 7.18.2 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
+| `undici-types` | 7.18.2 / 8.3.0 | MIT | [undici.nodejs.org](https://undici.nodejs.org) |
 | `unified` | 11.0.5 | MIT | [unifiedjs.com](https://unifiedjs.com) |
 | `unifont` | 0.7.5 | MIT | [github.com](https://github.com/unjs/unifont#readme) |
 | `unist-util-find-after` | 5.0.0 | MIT | [github.com](https://github.com/syntax-tree/unist-util-find-after#readme) |
@@ -555,7 +554,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `yaml` | 2.9.0 | ISC | [eemeli.org](https://eemeli.org/yaml/) |
 | `yargs-parser` | 22.0.0 | ISC | [github.com](https://github.com/yargs/yargs-parser#readme) |
 | `yocto-queue` | 1.2.2 | MIT | [github.com](https://github.com/sindresorhus/yocto-queue#readme) |
-| `zod` | 4.4.3 | MIT | [zod.dev](https://zod.dev) |
+| `zod` | 4.4.3 / 4.5.4 | MIT | [zod.dev](https://zod.dev) |
 | `zwitch` | 2.0.4 | MIT | [github.com](https://github.com/wooorm/zwitch#readme) |
 
 </details>
