@@ -1,6 +1,6 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-24
+Last generated: 2026-09-07
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
@@ -446,7 +446,7 @@ Versions reflect the pinned `pnpm-lock.yaml`.
 | `path-expression-matcher` | 1.6.2 | MIT | [github.com](https://github.com/NaturalIntelligence/path-expression-matcher#readme) |
 | `piccolore` | 0.1.3 | ISC | [github.com](https://github.com/delucis/piccolore#readme) |
 | `picocolors` | 1.1.1 | ISC | [github.com](https://github.com/alexeyraspopov/picocolors#readme) |
-| `picomatch` | 4.0.4 / 4.0.5 | MIT | [github.com](https://github.com/micromatch/picomatch) |
+| `picomatch` | 4.0.4 / 4.0.5 / 4.0.7 | MIT | [github.com](https://github.com/micromatch/picomatch) |
 | `points-on-curve` | 0.2.0 | MIT | [github.com](https://github.com/pshihn/bezier-points#readme) |
 | `points-on-path` | 0.2.1 | MIT | [github.com](https://github.com/pshihn/points-on-path#readme) |
 | `postcss` | 8.5.26 | MIT | [postcss.org](https://postcss.org/) |
