@@ -1,6 +1,6 @@
 # THIRD-PARTY NOTICES — Granit Docs
 
-Last generated: 2026-08-24
+Last generated: 2026-09-07
 
 This file lists the third-party open-source packages bundled or used at build
 time by `granit-fx/granit-docs`, together with their licenses. The site is built
@@ -50,7 +50,7 @@ Packages declared in [package.json](package.json):
 | `starlight-blog` | 0.29.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-blog) |
 | `starlight-kbd` | 0.4.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-kbd) |
 | `starlight-llms-txt` | 0.11.0 | MIT | [delucis.github.io](https://delucis.github.io/starlight-llms-txt/) |
-| `starlight-scroll-to-top` | 1.0.1 | MIT | [github.com](https://github.com/frostybee/starlight-scroll-to-top) |
+| `starlight-scroll-to-top` | 2.0.0 | MIT | [github.com](https://github.com/frostybee/starlight-scroll-to-top) |
 | `starlight-sidebar-topics` | 0.8.0 | MIT | [github.com](https://github.com/HiDeoo/starlight-sidebar-topics) |
 | `tailwindcss` | 4.3.3 | MIT | [tailwindcss.com](https://tailwindcss.com) |
 
